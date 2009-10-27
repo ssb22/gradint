@@ -82,6 +82,7 @@ recorder.exe: $(Common_Files) gradint.py
 gradint.cab: $(Common_Files) gradint.py
 	make cleanup
 	rm -rf PocketPC0 ; cp -r PocketPC PocketPC0
+	cd PocketPC0 && tar -jxf espeak.bgz && tar -jxf tkinter.bgz && rm espeak.bgz tkinter.bgz && cd ..
 	cp -r gradint.py $(Common_Files) PocketPC0/gradint
 	# if using partials, must combine them for CAB:
 	for Dir in PocketPC0/gradint/partials/*/*; do if cd $$Dir; then if wc -c *.raw | grep -v total$$ | sed -e 's/^ *//' > audiodata.dat ; then cat *.raw >> audiodata.dat ; rm *.raw; else rm -f audiodata.dat; fi; cd ../../../../..; else true; fi; done
