@@ -166,6 +166,7 @@ publish: $(All_Versions)
 	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/public_html/gradint/latest-version.txt
 	make clean
 	~/homepage/update
+	ssh -i ~/.srcf/keyfile st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m . build-sync.sh"
 
 gradint-build.bgz:
 	rm -rf publicSrc ; cp -r src publicSrc
