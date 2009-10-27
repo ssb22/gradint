@@ -1,0 +1,19 @@
+yali-voice.exe is a zip file that must be
+compatible with unzip on non-Windows platforms
+as well as being self-extracting.
+
+unzipsfx.exe is a Win32 build of unzipsfx
+(cross-compiled with Mingw32) with
+CHEAP_SFX_AUTORUN defined, and hacked process.c
+so it doesn't confirm the Auto-run command.
+
+Here's how to make a new yali-voice.exe
+(unzip the old one to get setup.bat etc)
+
+find setup.bat partials -type f | sort | zip -9 yali-voice.zip -@
+echo '$AUTORUN$>setup.bat' | zip -z yali-voice.zip
+cat unzipsfx.exe yali-voice.zip > yali-voice.exe
+zip -A yali-voice.exe
+
+Alternatively the existing one can be adjusted by using
+zip -A yali-voice.exe partials/zh/yali/replacement-syllable.raw

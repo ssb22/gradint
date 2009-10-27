@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+
+# Program to read the clipboard using Gradint.
+# You can put this on a desktop menu or whatever.
+# Note: In X11, reads the "clipboard", not the X selection.
+
+# Make sure to set up the below chdir command correctly.
+
+import sys, os
+
+os.chdir(os.environ["HOME"]+"/gradint")
+sys.path.insert(0,os.getcwd())
+import gradint
+
+try:
+    import gtk
+    gradint.justSynthesize = gtk.clipboard_get().wait_for_text() # should be utf-8
+except ImportError: # no GTK on this system; try Tk
+    import Tkinter
+    gradint.justSynthesize = Tkinter.Tk().selection_get(selection="CLIPBOARD")
+    if type(gradint.justSynthesize)==type(u""): gradint.justSynthesize=gradint.justSynthesize.encode('utf-8') # good, we got Unicode
+    else: gradint.show_warning("Warning: Don't know what character encoding the Tk clipboard is using.")
+
+gradint.just_synthesize()

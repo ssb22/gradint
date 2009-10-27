@@ -1,0 +1,146 @@
+# This is vocab.txt.  You can list here any words that you
+# want synthesized by computer.  List one word per line.
+# On each line, put the word or phrase in the second
+# language, followed by an equals sign (=), followed by the
+# word or phrase in the first language.  For example,
+# zai4 = again
+# The words will be introduced into the course in the order
+# that you list them.  (For more advanced options see below.)
+# 
+# If you have used the Gradint GUI to add words,
+# they will appear at the END of this file (scroll down).
+# 
+# Any lines starting with a '#' (such as these instructions)
+# will be ignored by the program.
+#
+# If you want to learn more than one language at a time, or
+# if you want to use foreign-language prompts, etc, see the
+# file 'advanced.txt' as well.
+#
+# IMPORTANT: Before speech synthesis will work, make sure
+# that your computer has the necessary speech synthesizers
+# for BOTH languages.  Gradint supports:
+#
+# 1. eSpeak, a very multilingual and multiplatform speech
+# synthesizer available at http://espeak.sourceforge.net/
+# and bundled with the Windows and Mac versions of Gradint.
+#
+#    - Just install it and gradint will find it.  Any of
+#    eSpeak's languages can be used as long as you use the
+#    same language abbreviations as eSpeak does, e.g. "en"
+#    for English, "zh" for Zhongwen (Mandarin).
+#
+#    - By default eSpeak will be used for English too; if you want
+#    to use Windows's or Mac OS X's voices for English, set the variable
+#    'synth_priorities' in advanced.txt.
+#
+#    - You can improve eSpeak's English by installing
+#    Festival's dictionary and using lexconvert to convert
+#    it, see http://people.pwf.cam.ac.uk/ssb22/gradint/lexconvert.html
+#    (this has already been done in the bundled version).
+#
+#    - eSpeak is not very natural-sounding, but it is very
+#    clear and accurate in English, Mandarin and some other
+#    languages (although some languages may be poor e.g. the
+#    ones marked "testing" or "feedback needed").
+# 
+# 2. Microsoft SAPI 5 (included with Windows XP, and can be
+# added to earlier versions of Windows)
+#
+#  - can be used for English (language abbreviation 'en')
+#
+#  - can be used for Chinese if you have installed the
+#  NeoSpeech "Lily" Mandarin voice (language abbreviation
+#  must be 'zh', and use pinyin with tone numbers, 5 for
+#  neutral tone, v or u: for u-umlaut and if possible put spaces
+#  between meaningful words).
+#  You can also include hanzi, if you make sure to save the file in UTF-8 format.
+#     - Lily is very natural-sounding, but it has been known
+#       to get quite a few phrases subtly wrong,
+#       so make sure you can tell the difference.
+#
+#  - can be used for other voices if you set
+#    sapiVoices in advanced.txt.
+#
+# The control panel's "Speech" option can choose the English
+# voice (if you're using SAPI for English), and also the
+# speed of all SAPI voices.
+#
+# 3. Other speech synthesizers:
+#
+# MANDARIN CHINESE - language abbreviation must be 'zh';
+#   text should use Hanyu Pinyin with a tone number after
+#   each syllable (use 5 for neutral) and v or u: for u-umlaut
+#   (and if possible put spaces between meaningful words but
+#   not between syllables within a word):
+#
+#    - eSpeak or NeoSpeech Lily, as described above.
+#      (you can also include hanzi in UTF-8)
+#      + others (MeiLing, Loquendo, etc) if you set sapiVoices
+#
+#    - Yali Cheng's Mandarin syllable recordings - see
+#      instructions on website.  (You can also include
+#      hanzi in UTF-8 if eSpeak is present.)  Recommended.
+#
+# ENGLISH (language abbreviation must be "en"):
+#
+#    - Mac OS X comes with English speech as standard
+#      (you can choose the voice and speed in system preferences)
+#
+#    - Festival Lite on Windows (if all else fails) :
+#      put flite.exe in the gradint folder
+#
+#    - Linux: install Festival, or flite if you want a US
+#      accent, or (as already mentioned) eSpeak
+#
+#    - RISC OS: if for some reason you can't install eSpeak
+#      as mentioned above, you can instead install an older
+#      version of Jonathan Duddington's !Speak, or the even
+#      older "Speech!" utility.  These can be used only for
+#      playing in real-time, not for generating files.
+# 
+#
+# 5. Other speech software can be used if you can tell
+# gradint how to run it.  See 'advanced.txt' for details.
+#
+#
+# OTHER POINTS TO NOTE:
+#
+# If you want to specify that a group of words should be
+# introduced more slowly (for example because they are very
+# similar and you don't want a whole lesson of just them),
+# you can put the lines
+# limit on
+# and
+# limit off
+# before and after that group respectively.  You can do this
+# for multiple groups and each will be treated independently.
+#
+# You can also specify "begin poetry" and "end poetry"
+# around groups of lines that should be memorised in
+# sequence (these do not need first-language equivalents but
+# it is desirable to have them anyway, and beware that
+# several consecutive lines that are very long might cause
+# scheduling problems - split if necessary.)
+# In the middle of a poem, you can write "poetry vocab line:" (without
+# quotes) on a line by itself, and the line immediately under it will be
+# interpreted normally without being linked into the poem.  This is useful
+# for setting relevant vocabulary to be introduced part-way through learning
+# the poem.
+#
+# If you have recordings in one language and you want the
+# equivalents in another language to be synthesized, you can
+# make ".txt" files to match the ".wav" files in the
+# "samples" directory and its subdirectories.  For example
+# if you have somefile_lang1.wav you can add
+# somefile_lang2.txt to make a version in lang2 (where lang1
+# and lang2 are any language abbreviations).  Each .txt file
+# should contain only 1 phrase in 1 language and nothing else.
+# (RISC OS users should replace '.' with '/'.)
+# Verbal annotations, and -meaning files (see samples README
+# file for details) can also be in .txt files.
+
+#The three lines below are to help the Emacs editor.
+#Local Variables:
+#mode: winmgr
+#End:

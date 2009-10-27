@@ -1,0 +1,1 @@
+start notepad vocab.txt

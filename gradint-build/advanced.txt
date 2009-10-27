@@ -1,0 +1,812 @@
+
+# ---------- ADVANCED OPTIONS ------------
+
+# This file contains several sections; you will have to
+# scroll down to see all of them.  Each section starts with
+# a header between lines of dashes    ---- like this ----
+
+# ---- Options for outputting lessons to sound files ------
+
+# Sometimes it is useful to get gradint to output a lesson
+# to a sound file instead of playing it directly, for
+# example if you want to listen to it on a mobile device.
+# To do this without using the GUI, change the value of
+# outputFile (below) to a filename, e.g. outputFile = "myfile.mp3"
+
+outputFile = ""
+
+# Depending on the extension you specify, you will need a
+# copy of LAME (for MP3), TooLame (for MP2), oggenc (for
+# OGG), faac (for AAC) or speexenc (for SPX).  On Windows
+# put the .exe in the gradint folder; on other systems you can
+# put the binary in either the gradint folder or the PATH.
+# You will also need "sox" (you may already have this).
+
+# The Gradint GUI will offer to export to files of any
+# type that it can find encoders for, plus WAV.  So for
+# example if it finds lame, it will give an MP3 option.
+# On Windows (or Cygwin) you can also download
+# Windows Media Encoder from
+# http://www.microsoft.com/windows/windowsmedia/forpros/encoder/default.mspx
+# or http://www.microsoft.com/downloads/details.aspx?FamilyID=5691ba02-e496-465a-bba9-b2f1182cdf24
+# and the Gradint GUI will offer to use this to make WMA files.
+# On Mac it can make AAC files using afconvert if it finds it (10.5+ should have this).
+
+# In each case Gradint uses encoding parameters that have been
+# found to give good compression without sacrificing too
+# much quality for a language-learning application.
+
+# You can also specify .wav, .cdr, .au, etc (only sox is required)
+# but it will be very large.  .wav might be your best option if you
+# want to use a non-commandline music compressor.  .cdr is useful
+# for making old-style audio CDs.
+
+# gradint can also output to .sh (shell-script) files,
+# which, when run, produce wav audio on their standard
+# output for redirecting to an audio encoder or player.
+# These shell-script files store each sample only once and
+# without changing its rate, which means they can be
+# generated very quickly even on a machine with no
+# floating-point processor such as an NAS device.  They do
+# however require sox and floating point at runtime, because
+# the pipe to stdout means they all need to be converted to
+# one rate, but if you're piping to an audio encoder then
+# you probably need more floating-point for that anyway.
+compress_SH = False
+# - set that to True to make the .sh file smaller at the
+# expense of quality.  (Does not include (g)zip compression;
+# you can do that separately.)
+
+# If you specify no extension then gradint will output raw
+# samples.  If outputFile is "-" then gradint will send the
+# raw samples to the standard output for use in a pipe.
+# (You still need sox even for raw samples.)  Additionally,
+# you can specify "-" as a filename followed by any of the
+# above extentions, in which case gradint will write to its
+# standard output in the format appropriate for that extention.
+
+# If you want to append silence to the end of the output
+# (useful if there's going to be another track) then you can
+# set the number of seconds of silence here:
+
+outputFile_appendSilence = 0
+if outputFile.endswith("cdr"): outputFile_appendSilence = 5
+
+# If writing an early lesson to tape for a beginner, it is
+# possible that the long gaps will cause the beginner to
+# think that the tape has finished, even with the "longpause"
+# message in place.  So the following variable sets the
+# minimum length of silence to be replaced by beeps every few
+# seconds.  It is effective only for outputFile (not for
+# playing lessons in real time)
+
+beepThreshold = 20
+
+# You can set the following to "file.wav" for file.wav to be
+# included as an announcement at the start and end
+# respectively.  NB the time taken by this file will be
+# subtracted from the lesson time.
+# (.mp3 is also supported on some systems - see note in samples/README)
+
+startAnnouncement = None
+endAnnouncement = None
+
+# If you want to put additional comments into spare
+# graduated-interval gaps on the first lesson, you can set
+# the following variable to ['comment1.wav','comment2.wav',...]
+# (.mp3 is also supported on some systems - see note in samples/README)
+# commentsToAdd will be added first, in order, then
+# orderlessCommentsToAdd will be added after.
+# (Warning!  If the comments can't fit, program will crash.)
+
+commentsToAdd = None
+orderlessCommentsToAdd = None
+
+# ------- Options for learning multiple languages ---------
+
+# List of auxiliary languages (other than second language)
+# that you want to learn some phrases in.  NB you need
+# prompts like cant_en.wav, cant_zh.wav or cant_cant.wav in
+# the prompts directory (program may fail otherwise).
+
+otherLanguages = ["cant","ko","jp"]
+
+# possible_otherLanguages (below) is a list of POSSIBLE
+# auxiliary languages.  This should list all the auxiliary
+# languages for which you have prompt files in the prompts
+# directory, even if you don't want to learn them.  For
+# example if you have cant_en.wav as described above, and
+# later remove "cant" from otherLanguages to temporarily
+# disable that language, you need to ensure that "cant" is
+# in possible_otherLanguages, otherwise gradint will not be
+# able to tell the difference between cant_en.wav and an
+# ordinary English prompt and might use it wrongly.
+
+possible_otherLanguages = ["cant","ko","jp","en","zh"]
+
+# You can also add lines in vocab.txt that say
+# "SET LANGUAGE" followed by a list of abbreviations
+# separated by spaces, so for example you can say:
+# SET LANGUAGE zh en ko
+# phrase1 in zh = phrase1 in en = phrase1 in ko
+# phrase2 in zh = phrase2 in en = phrase2 in ko
+# etc (SET LANGUAGE applies to all subsequent lines up to
+# the next SET LANGUAGE, and the default is your second
+# language followed by your first language).
+
+# If you want a prompt word to be in the same language as
+# the target word, use for example "set language zh zh"
+# where the 2nd column is the prompt phrase and the 1st
+# column is the target word.
+
+# ------- Options for changing the type of lesson ---------
+
+# Maximum length of each lesson, in seconds.
+# Longer than 30 minutes is not recommended.  Shorter may be OK
+# but if you set it less than 5 or 10 minutes then you may
+# have to adjust some of the other parameters and it may not
+# work very well.
+
+maxLenOfLesson = 30*60
+
+# The following variable controls whether or not gradint will
+# save your progress.  If you set it to 0 then the progress
+# will not be saved.  This might be useful for testing.
+
+saveProgress = 1
+
+# Set ask_teacherMode (below) to 1 to enable a rather
+# experimental "teacher assistant mode" designed to help
+# language teachers to use graduated-interval timings
+# in a class.  Instead of playing the lesson, Gradint
+# will tell you when each word is due, and you can choose
+# whether to say it yourself or have the computer say it.
+# Gradint can adapt to some timing fluctuations, but quick
+# reactions are usually needed.  However Gradint does
+# display the next word in advance and give a countdown.
+# It's probably better to use keyboard shortcuts or a
+# touch screen, not a mouse.
+
+ask_teacherMode = 0
+
+# The following settings control various things such as the
+# maximum number of new words introduced in each lesson,
+# etc.  You shouldn't normally have to change any of this
+# unless you have very special requirements.
+# Note: a maximum of -1 means no maximum.
+
+maxNewWords = 5
+maxReviseBeforeNewWords = 3
+newInitialNumToTry = 5
+recentInitialNumToTry = 3
+newWordsTryAtLeast = 3 # if introducing a new word and can't
+# fit in this number of times, don't bother
+knownThreshold = 5 # after which it won't repeat so much
+reallyKnownThreshold = 10 # after which never added before new words
+meaningTestThreshold = 20 # or 0; if >= this then 50% chance of "what meaning" test
+randomDropThreshold = 14 # after which drop some words even if they can fit
+randomDropLevel = 0.67 # fraction of above that is dropped
+randomDropThreshold2 = 35 # (or set to the same as above)
+randomDropLevel2 = 0.97
+shuffleConstant = 2.0 # Used to control how much the number
+# of repetitions matters when it is high.  Higher values of
+# this constant mean it doesn't matter so much and samples
+# that have been repeated a lot will get shuffled more.
+transitionPromptThreshold = 10 # after repeating a prompt
+# this many times, begin transition to target-language prompt
+advancedPromptThreshold = 20 # ONLY use target-language prompt
+transitionPromptThreshold2 = 2 # for 3rd, 4th etc languages
+advancedPromptThreshold2 = 5
+limit_words = max(1,int(maxNewWords * 0.4)) # num words to
+# include from limited directories.  Done separately for
+# EACH limited directory, but limits deeper in the tree are
+# "masked" by higher-level limits (this behaviour may change
+# in future)
+
+# If you set logFile (below) to anything other than None, gradint
+# will try to create a log containing the time at which each
+# word is played.  This can be useful if you have a separate
+# way of logging the time at which you had some trouble
+# (make sure to synchronize with the computer's clock first).
+# (When writing to an output file, the times are in minutes and
+# seconds from the start of the file, but when playing in
+# real-time, actual clock time can be logged.)
+# (Note: Following the log while listening to the lesson
+# may distract you from the audio.  It can however be useful if
+# you need to check something afterwards, especially if you are
+# going over lots of very old words.)
+
+logFile = "log.txt"
+
+# You can set the default number of seconds that the lesson will be
+# interrupted when you press "Brief interrupt".  Don't make this too
+# big, though - Gradint will DROP any graduated-interval sequences that
+# cannot properly fit in as a result of the delay.  (Progress update
+# will reflect this.)  The same thing will happen if Gradint is
+# delayed for other reasons, like Unix process signalling (Ctrl-Z stuff).
+
+briefInterruptLength = 10
+
+# ---- Speech synthesis options ---
+
+# If you have several speech programs on your system,
+# you can set their relative priorities here.  For example
+# if you like one of your MacOS voices better than eSpeak then
+# you can move MacOS to before eSpeak (in which case MacOS will be
+# used for English and eSpeak for other languages).
+# (Festival, FLite and old-RISCOS will be added to the end of the list.)
+# (Note: the priority of eSpeak is automatically reduced for
+# most non-English languages, so if you explicity install some
+# other synth for those languages then it will be used instead)
+
+synth_priorities = "eSpeak MacOS SAPI"
+
+# (SAPI is the name of the Windows speech synthesis system,
+# so if you have a Windows voice then it is probably SAPI.
+# More details are in vocab.txt.)
+
+# You can also set extra_speech to a list of (language prefix,
+# command), for example:
+# extra_speech=[ ("la","say-latvian"),("de","say-german") ]
+# This will take priority over other speech systems.
+# The commands must be available and must take a text string
+# on the command line.  You will not be able to use these
+# when the output is going to a sound file.
+# YOU DO NOT NEED TO SET THIS if your speech synthesizer is
+# supported by default.
+
+extra_speech = []
+
+# If you have speech software which can take a text string
+# and output it to a file, you can list that here.  Each
+# element of the list should be of the form:
+# ("la","command with %s for text","resulting filename")
+# (generally best to use wav, but mp3 is also supported on
+#  some systems; see note at end of samples/README)
+# The %s argument will already be quoted for the shell if applicable.
+
+extra_speech_tofile = []
+
+sapiVoices = {
+# Here you can set extra SAPI 5 voices.  The default voice
+# will be used for English unless overridden here.  If you
+# have Neospeech Lily then that will be used for Chinese unless
+# overridden here.  (Although Lily is not always accurate.)
+# Add them in this format but without the # at the beginning:
+    # "language abbrev" : ("full voice name", rate),
+# For example, if you have "ScanSoft Mei-Ling_Full_22kHz"
+# (which reads most Chinese hanzi quite well, but can't read
+# pinyin and sometimes glitches so be careful), you can have
+    # "zh" : ("ScanSoft Mei-Ling_Full_22kHz", 22050),
+# or if you have Loquendo Lisheng (which can pronounce pinyin
+# and the June 2008 release is better than Neospeech Lily
+# although still not perfect) you can have
+    # "zh" : ("Lisheng", 16000),
+# or if you have other voices in other languages, you can
+# use them too.  Note that FULL voice names must be used,
+# exactly as they are shown in the Control Panel under Speech.
+# (You may set 'rate' to 0 for the default of 44100.)
+# All non-ASCII input to gradint MUST be in UTF-8.
+# Note: if you set an "en" voice here, and eSpeak is also
+# on the system, remember to reduce the priority of eSpeak
+# in synth_priorities above.
+}
+
+# Another thing you can do is to selectively override the
+# speech synthesis of certain words.  To do this, set
+# synthCache (below) to a directory, and in that directory
+# put the words you want to selectively override, with
+# filenames of the form text_languagename.wav
+# (e.g. hello_en.wav) in lower case.  gradint will use these
+# files whenever possible, and will fall back to using
+# speech synthesis.  (If a speech synthesizer is not
+# available then gradint will leave out any words that are
+# not covered by the files in the cache - this might be
+# useful if you want to synthesize words on one machine and
+# run gradint on another, see samples/utils/cache-synth.py.)
+# ('utils' is called 'advanced utilities' on Win/Mac.)  If the
+# text contains characters that your operating system will
+# not allow in filenames, then you can make a TRANS.TBL file
+# inside the synthCache directory (the first word of each
+# line is the real filename and the rest of the line is the
+# filename that you want gradint to see).  On RISC OS this
+# should be called TRANS/TBL, and remember to specify /wav
+# rather than .wav in its contents.  It is also advisable
+# not to include spaces in any of the real filenames on RISC
+# OS, because RISC OS Python can't always cope.
+
+synthCache = ""
+
+# You can populate synthCache quickly by installing gradint
+# on a machine that does have the synth and using
+# samples/utils/cache-synth.py.
+
+# mp3 is also supported in synth-cache on some systems, but
+# see the section "IMPORTANT NOTES ABOUT MP3" in
+# samples/README.txt.  mp3-encoding the existing
+# synth-cache files without adjusting TRANS.TBL is ok.
+
+# If you are using eSpeak, you can use SSML for emphasis
+# and for embedding another language in a sentence
+# e.g. <voice name="en">some English</voice>
+# but note that in vocab.txt this can only be done in
+# the LAST column, otherwise the '=' will be treated as
+# a column separator.  (So you need to use a 'set language'
+# command to put the columns into an appropriate order
+# so you can put the SSML commands in the last one.)
+
+# If you set synthCache_test_mode below to 1, then the files
+# in the synthCache directory will still be used but they
+# will be interleaved with calls to the synth (if
+# available).  You can use this to compare a new synth with
+# the one you used to make the cache.  (It can also be set
+# to a list of search terms that gradint should try to avoid
+# sending to the new synth, and if the Python 're' library
+# is present then they can be regular expressions.)
+
+synthCache_test_mode = 0
+
+# If you want to do the reverse, i.e. use a synth (or partials,
+# see below) by default but sometimes substitute synthCache words
+# for comparison, then add a _ character at the start of their
+# filenames (or TRANS.TBL entries), e.g. _someWord_en.mp3
+# - Gradint will use these files more sporadically.
+
+# The GUI has functions for managing the cache which appear when
+# you enter or select a cached word.  "Reject from cache" means
+# rename it to __rejected_<word> (where 'word' is the word) which
+# you can truncate or delete later.  There are also cache-related
+# utilities in the utils directory.
+
+# If you set justSynthesize (below, or on the command line -
+# see end of this file for notes about the command line),
+# gradint will not run normally but will JUST synthesize the
+# words you specify in the language you specify.  This may
+# be useful for setting up reminder scripts etc using the
+# synthesizers and sound devices that you have already got
+# working for gradint.  (Audio reminders in your second
+# language are good practice.)  The first word should be the
+# language abbreviation; the rest should be the text
+# (e.g. "en Hello there" or "zh da4jia1 hao3") You can use
+# the '#' character as a separator for a list, and numbers
+# can be used for pauses (in seconds), e.g.
+# "en Time's up in one minute.#60#en Time's up."
+# (i.e. say "Time's up in one minute" in English, wait 60
+# seconds, and say "Time's up" in English).  If the number
+# is negative then the time is counted from the START
+# (rather than the end) of the previous speech, which may
+# help in situations where greater accuracy is important.
+# You can also specify a pathname to a file to
+# be played, e.g. "en starting#/path/to/somefile.wav#en finished"
+# (.mp3 is also supported on some systems - see note in samples/README.txt)
+# as long as there are no spaces in the pathname.
+# You can add shell commands by starting with "sh: "
+# e.g. "en starting command#sh: command#en command finished"
+# (commands are assumed to take 0 time for scheduling purposes;
+# if they take longer then subsequent delays are cut to make up).
+# You can also specify R to repeat the speech continuously
+# until interrupted, e.g. 'en critical error#5#R'.  Otherwise,
+# if you add a * character to the end of the string of text
+# then gradint will also run normally after doing this (but with
+# waitBeforeStart = 0).  Note: If you need to put the
+# reminder words into synthCache then try using
+# samples/utils/cache-synth.py after listing them in vocab.txt with no
+# prompts (if they have no prompts and are not marked as
+# poetry then they will not be used in the lesson but will
+# still be generated by samples/utils/cache-synth.py).
+# If you set justSynthesize to "-" (a single hyphen)
+# then Gradint will enter a simple loop that asks for
+# words to synthesize from the terminal (this is the
+# default when the collection is empty and no GUI can run).
+
+justSynthesize = ""
+
+# If you're using Neospeech Lily (which I don't
+# recommend because it can be inaccurate about tones etc)
+# then you can set its location here if you've
+# installed it to somewhere other than the default:
+# note you need to put \\ for every \
+lily_file = "C:\\Program Files\\NeoSpeech\\Lily16\\data-common\\userdict\\userdict_chi.csv"
+# (the version sold in Asia might have it
+# somewhere under C:\Program Files\VW\VT\Lily\M16-SAPI5\lib\
+# but I don't know exactly)
+
+# If you want to use SAPI under WINE in Linux
+# then you can set ptts_program:
+ptts_program = None
+# (hint: run winecfg and set Windows version to Millenium (ME)
+# before installing speechsdk51.exe and the voices; you
+# can change home directory before running WINE if you want.)
+# example: ptts_program="HOME=$HOME/sapi wine ptts.exe"
+# (you will need to get ptts.exe, e.g. from Windows Gradint)
+# Note: Depending on your WINE version, you might find it
+# works only for English.  See samples/utils/synth-batchconvert-helper.py
+# for an alternative.
+
+# ---- Speech synthesis from "partials" ---
+
+# You can set partialsDirectory below.  This is
+# used for concatenative speech synthesis using your own
+# speech units.  (If a word or phrase cannot be built from
+# your own units, Gradint will fall back to another speech
+# synthesizer.)
+
+partialsDirectory = "partials"
+
+# If that directory exists, it should contain a subdirectory
+# for each language you want to do concatenative synthesis
+# in.  Each of those should contain other subdirectories,
+# one for each "voice".  For example, partials/zh/voice1
+# (Gradint will choose the first voice that has the
+# necessary units for the phrase it is trying to say).
+# Each voice directory should contain files named like
+# syllable-s.wav or syllable-m.wav or syllable-e.wav
+# where s, m or e denote whether the syllable was taken
+# from the start, middle or end of a phrase (which affects
+# voicing).  You can also put more than one syllable in a
+# file if you wish.  i/m/f (initial/mid/final) are acceptable
+# aliases for s/m/e.  The s/m/e can also be followed by a
+# number or other text so as to have multiple versions of
+# each (but currently only one of these will be used).
+# If no "-" is present, "-m" is currently assumed.
+# You can cut the syllable from the recording using
+# Audacity or a similar tool; try to make sure that there
+# is no silence or other noise either side of it.
+# MP3 files are also acceptable (see note at end of samples
+# readme file), but beware that the MP3 encoder will add
+# extra silence at the start (and possibly end) of the file
+# and this will be noticable when the units are concatenated.
+
+# In the language 'zh', gradint will re-write 3rd tones
+# appropriately (if specified as pinyin with tone numbers)
+# and will avoid using this method for any phrases that
+# contain two or more consecutive tone 1's as this can be
+# particularly poor-sounding when using this method,
+# unless you've pitch-calibrated your files, in which
+# case you can add a file called !calibrated to the voice
+# directory to let gradint know consecutive tone 1's are OK.
+# One way to pitch-calibrate the tone 1's is to download
+# praat from www.praat.org and use a script like this:
+# for N in *1*.wav; do echo "Read from file... $N"; echo "Change gender... 75.0 600.0 1.0 250 1.0 1.0"; echo "nowarn Write to WAV file... $N"; echo "Remove"; done > temp.praat ; praat temp.praat
+# replacing 250 with the frequency of an average tone 1
+# (don't worry about the function being called "change gender"; the
+# parameters here are set to change the pitch but not the gender)
+# (you can check your frequency guess by choosing a typical
+# syllable and doing something like
+# play syllable.wav ; play syllable.wav synth sine 250
+# and revise the number up or down until the synth sounds
+# at the same pitch as the syllable.  For female voices it
+# could be anything from about 180 to 300+, male voices lower.)
+# (If you have over 1000 files to normalise then you may need
+# to modify that command to run praat separately on each file
+# rather than on all the files at once.)
+# You may want to do a similar thing to raise the pitch of tone 5
+# (the "neutral tone" or qingshen) - if you save the higher-pitched
+# versions as tone 6, Gradint will use these when a tone 5 follows a
+# tone 3.
+
+# Note: On Windows/Mac, Gradint can have trouble concatenating the partials
+# quickly enough even if they are in WAV format.  You can create a file
+# partials/header.wav (containing a wav header that specifies the sample
+# rate and an unknown length) and all the other files should be *.raw and
+# are raw data that is added to the end of this header.wav.
+# You can also put a header.wav in an individual voice directory
+# if its *.raw files have a different sample rate from those of
+# the other voices (but still put a default header.wav in partials).
+# If you don't like having so many *.raw files in a directory
+# then you can also do (in a Unix evironment such as OSX or Cygwin) :
+# wc -c *.raw | grep -v total$ | sed -e 's/^ *//' > audiodata.dat ; cat *.raw >> audiodata.dat ; rm *.raw
+
+# You can also store syllables using UTF-8 filenames, but some systems may
+# have difficulty storing all of these (especially for Korean); therefore
+# you can use Unicode escaping in filenames, e.g. _ud79d for Unicode D79D
+# (equivalent to UTF-8 sequence ED 9E 9D).  Example conversion command:
+# for N in *; do cp "$N" "/path/to/fat/$(python -c "print repr('$N'.decode('utf-8'))[2:-1].replace(r'\\u','_u')")";done
+
+# When using partials, you can change the length of pause
+# between phrases by changing the following (in seconds) :
+betweenPhrasePause = 0.3
+# (Note it might pause for longer than that when playing in
+# real-time on certain systems)
+
+# You can also set partials_are_sporadic to 1, if you
+# want partials to be used more sporadically, instead of at
+# every opportunity.  This might be useful if you have a
+# fluent-but-sometimes-unclear synthesizer and
+# clear-but-not-fluent partials and you wish to mostly use the
+# synthesizer but introduce partials as a secondary thing to check it
+# (a bit like the inverse of sporadic synthCache and synthCache_test_mode).
+partials_are_sporadic = 0
+
+# You can set partials_cache_file to a filename
+# if you want Gradint to cache its scan of partialsDirectory.
+# This will speed up Gradint's loading, but you must
+# manually delete the cache file whenever you change
+# any of the partials.
+partials_cache_file = ""
+
+# ------- Where to find files and directories ---------
+
+# Normally these settings are OK but in some circumstances
+# you might need to change them.
+
+vocabFile = "vocab.txt"      # for synthesized words
+samplesDirectory = "samples" # for recorded words
+promptsDirectory = "samples"+os.sep+"prompts" # for prompts
+
+# (note: if you change samplesDirectory, promptsDirectory will NOT
+# automatically change with it.  This is so that with samples/utils/email-lesson.sh
+# you can set samplesDirectory to some subset of your collection and still
+# have the main promptsDirectory.)
+
+progressFile = "progress.txt"
+progressFileBackup = "progress.bak" # or None
+pickledProgressFile = "progress.bin"
+# (pickledProgressFile is used only on platforms that support it.  It is
+# quicker and takes less memory to load.  The text progressFile is still there
+# and will be used if manually updated, i.e. time stamp newer than pickledProgressFile.)
+
+gui_output_directory = "output"
+
+# See README.txt in the samples directory for what these mean:
+limit_filename = "!limit"   # do not specify an extension
+intro_filename = "_intro"   # ditto
+poetry_filename = "!poetry" # ditto
+exclude_from_scan = "_disabled"
+exclude_from_coverage = "z_try_again" # not counted in "covered .. of .."
+
+userNameFile="username.txt"
+# userNameFile stores the user's name in the GUI (which has limited support
+# for multiple students, e.g. for a single-user machine in use by a family).
+# Set it to "" to disable this feature.
+
+import_recordings_from = r"\My Documents"
+# This is really for Windows Mobile, but can also be adapted
+# for other platforms.  If you leave Recording1.wav, Recording2.wav
+# etc in that directory, Gradint will offer to "import" them
+# when you make a lesson.  Record the second-language words
+# into odd-numbered files, and their first-language meanings
+# into even numbered files.
+# This can be useful to catch words with the Notes app on a PocketPC
+# (which saves its recordings to \My Documents by default).
+
+# ------- GUI "preset collections" buttons ---------
+
+# If you are giving gradint to your students then you might
+# want to bundle it with a pre-made vocabulary collection.
+# If this collection is large then it might be good to let
+# the student choose which sections to learn first.
+# You can have them do that within the GUI:
+# 1.  Put each section in its own directory (as recorded words or .txt
+# files).  Name each directory with a name that ends with exclude_from_scan
+# (default "_disabled"), e.g. unit1words_disabled, extraWords_disabled, etc.
+# 2.  If any words are to be added to vocab.txt by a section, then create
+# a file add-to-vocab.txt in that directory, with the contents (you'd better
+# include a SET LANGUAGE command).  (You don't have to do this; you could
+# just have sampled words and/or words in .txt files.)
+# 3.  Create a file short-description.txt for each section.  This should be
+# very short because it will be displayed on a button in the GUI.
+# 4. Optionally create long-description.txt for some sections.  This will be
+# displayed in a yes/no box asking the user to confirm their addition.
+# 5. Put all those _disabled directories into the user's samplesDirectory (or
+# drag into the recorded words folder and restart gradint).  You can also
+# put them in the directory above, to avoid confusing any users who open
+# "recorded words".
+
+max_extra_buttons = 12
+# - this setting limits the number of "add pre-made collection" buttons that
+# are displayed on the screen at one time.  Set it to 0 to disable this feature.
+
+# ------- GUI translation dictionary ---------
+
+# The format of this is:
+# {"en phrase A":{"laX":u"language X translation", "laY":"language Y translation", ...}, "en phrase B":{...}, ...}
+# UTF-8 encoding should be used.
+# You can specify alternative scripts for one language with variation numbers (e.g. zh=Simplified Chinese zh2=Traditional Chinese)
+# in which case you should set an @variants option listing their names
+# e.g. "@variants-zh":[u"simplified",u"traditional"]
+# Known bug: After pressing "Change languages", Gradint has to be restarted for *all* GUI messages to update.
+# (Note: These translations will NOT be used on versions of Mac OS that might have TkInter Unicode display problems.)
+GUI_translations={
+"@variants-zh":[u"简体字",u"繁體字"],
+"Word in %s":{"zh":u"%s词语","zh2":u"%s詞語"},
+"Meaning in %s":{"zh":u"%s意思"},
+"en":{"zh":u"英文"},
+"zh":{"zh":u"中文"},
+"press Control-V to paste":{"zh":u"剪贴: 打Ctrl+V","zh2":u"剪貼: 打Ctrl+V"},
+"press Apple-V to paste":{"zh":u"剪贴: 打苹果+V","zh2":u"剪貼: 打蘋果+V"},
+"Your first language":{"zh":u"你的语言","zh2":u"你的語言"},
+"second":{"zh":u"学习","zh2":u"學習"},
+"Change languages":{"zh":u"改变语言选择","zh2":u"改變語言選擇"},
+"Cancel lesson":{"zh":u"退出课","zh2":u"退出課"},
+"Manage word list":{"zh":u"管理词汇","zh2":u"管理詞匯"},
+"words in":{"zh":u"词, 用","zh2":u"詞, 用"},
+"new words in":{"zh":u"新词, 用","zh2":u"新詞, 用"},
+"mins":{"zh":u"分钟","zh2":u"分鐘"},
+"Start lesson":{"zh":u"开始课","zh2":u"開始課"},
+"Clear test boxes":{"zh":u"扫清输入地方","zh2":u"掃清輸入地方"},
+"Quit":{"zh":u"放弃","zh2":u"放棄"},
+"Back to main menu":{"zh":u"回去主要项目表","zh2":u"回去主要項目表"},
+"Delete non-hanzi":{"zh":u"除字非汉字","zh2":u"除字非漢字"},
+"Speak":{"zh":u"发音","zh2":u"發音"},
+"Add to %s":{"zh":u"加到词汇(%s)","zh2":u"加到詞匯(%s)"},
+"Recorded words":{"zh":u"录音词语","zh2":u"錄音詞語"},
+"To":{"zh":u"到"},
+"Make":{"zh":u"做"},
+"Speaker":{"zh":u"扬声器","zh2":u"揚聲器"},
+"Change or delete item":{"zh":u"更换/删除","zh2":u"更換/刪除"},
+"You have not changed the test boxes.  Do you want to delete %s?":{"zh":u"你还没编辑了。你想删除%s吗?","zh2":u"你還沒編輯了。你想刪除%s嗎?"},
+"Restore":{"zh":u"归还","zh2":u"歸還"},
+"Hear this lesson again?":{"zh":u"再次听那个课吗?","zh2":u"再次聽那個課嗎?"},
+"Start this lesson again?":{"zh":u"再次开始这个课吗?","zh2":u"再次開始這個課嗎?"},
+"You have %d words in your collection":{"zh":u"你的汇编有%d词","zh2":u"你的彙編有%d詞"},
+"%d new words + %d old words":{"zh":u"%d新词而%d旧词","zh2":u"%d新詞而%d舊詞"},
+"minutes":{"zh":u"分钟","zh2":u"分鐘"},
+"seconds":{"zh":u"秒"},
+"Today's lesson teaches %d new words\nand revises %d old words\n\nPlaying time: %d %s %d %s":{"zh":u"今天我们学%d新词而复习%d旧词\n需要%d%s%d%s","zh2":u"今天我們學%d新詞而複習%d舊詞\n需要%d%s%d%s"},
+"Today we will learn %d words\nThis will require %d %s %d %s\nFollow the spoken instructions carefully":{"zh":u"今天我们学%d新词, 需要%d%s%d%s\n请仔细听从口头指示","zh2":u"今天我們學%d新詞, 需要%d%s%d%s\n請仔細聽從口頭指示"},
+"Family mode (multiple user)":{"zh":u"加别的学生(家人等)","zh2":u"加別的學生(家人等)"},
+"Add new name":{"zh":u"加名字"},
+"Students":{"zh":u"学生","zh2":u"學生"},
+"Brief interrupt":{"zh":u"短打岔"},
+"Resume":{"zh":u"恢复","zh2":u"恢復"},
+"Emergency brief interrupt":{"zh":u"紧急的短打岔","zh2":u"緊急的短打岔"},
+"Resuming...":{"zh":u"正在恢复...","zh2":u"正在恢復..."},
+"Big print":{"zh":u"大号字体","zh2":u"大號字體"},
+"Compressing, please wait":{"zh":u"正在压缩...","zh2":u"正在壓縮..."},
+"All recordings have been compressed to MP3.  Do you also want to make a ZIP file for sending as email?":{"zh":u"所有录音都压缩成为MP3了。 你也想做一个ZIP文件所以能随email附上吗?","zh2":u"所有錄音都壓縮成為MP3了。 你也想做一個ZIP文件所以能隨email附上嗎?"},
+"Compress all recordings":{"zh":u"压缩一切录音","zh2":u"壓縮一切錄音"},
+"Play":{"zh":u"演"},
+"Re-record":{"zh":u"从新录音","zh2":u"從新錄音"},
+"(empty)":{"zh":u"(空虚)","zh2":u"(空虛)"},
+"Record":{"zh":u"录音","zh2":u"錄音"},
+"Add more words":{"zh":u"加多词","zh2":u"加多詞"},
+"New folder":{"zh":u"新卷宗"},
+"Stop":{"zh":u"停止"},
+"Action of spacebar during recording:":{"zh":u"空格键在录音的时候的功能:","zh2":u"空格鍵在錄音的時候的功能:"},
+"move down":{"zh":u"进步下面"},
+"move along":{"zh":u"进步右边","zh2":u"進步右邊"},
+"stop":{"zh":u"停止"},
+"(Up)":{"zh":u"(上面)"},
+"Record from %s":{"zh":u"从%s做录音","zh2":u"從%s做錄音"},
+"Record from file":{"zh":u"从文件做录音","zh2":u"從文件做錄音"},
+"Manage recorded words using Gradint":{"zh":u"用这个软件管理录音","zh2":u"用這個軟件管理錄音"},
+"Open the recorded words folder":{"zh":u"打开录音的卷宗","zh2":u"打開錄音的卷宗"},
+    }
+
+# scriptVariants optionally maps language abbreviation to default script
+# variant number starting from 0; you don't have to fill this in to get the
+# 1st one as default; may be overridden in settings.txt
+scriptVariants = {}
+
+# Space-saving options if you want a more compact GUI:
+GUI_for_editing_only = 0 # if 1, omit controls for making a lesson (just vocab edit)
+GUI_omit_settings = 0 # omit change language controls (for use if you don't set them anymore), and advanced.txt
+# (change language controls are not omitted when you create a new user before that user's vocab file exists)
+GUI_omit_statusline = 0
+
+# If you set recorderMode, GUI will go straight into the recorder screen (if tkSnack is available)
+recorderMode = 0
+
+# ------- Unix forking, alternative DSPs, lesson saving, etc ---------
+
+# Set the following to 1 ONLY if you are on Unix and have Tk
+# and want gradint to spawn to the background:
+
+runInBackground = 0
+
+# Set the following to 0 if you don't want to use the Tk GUI
+# (it's only used if you have Tk anyway) :
+
+useTK = 1
+
+# Set the following to 0 if you want gradint to start
+# a lesson without waiting for the user (in which case
+# teacher-assistant mode is disabled) :
+
+waitBeforeStart = 1
+
+# If you want, you can call an arbitrary function just
+# before the lesson starts:
+
+startFunction = None
+
+# On Unix under OSS (or OSS-emulation), you can set
+# oss_sound_device to a different sound device
+# (e.g. "/dev/dsp2") or leave it blank to auto-detect.
+
+oss_sound_device = ""
+
+# On Unix (OSS and ALSA) you can limit the volume in the
+# soundVolume variable below (1 = normal, 0.05 = 5% of
+# normal which for example I needed to use on a Debian NSLU2
+# "slug" with a USB soundcard connected to a cheap
+# FM-headphones transmitter, because the transmitter was too
+# easily overloaded and the lowest setting of the ALSA mixer
+# was still too high).
+
+soundVolume = 1
+
+# On non-Windows systems (or on Windows if you are running
+# from the Python source) you can here specify a file to
+# save the lesson to (in Python pickle format) and re-load
+# it later.  saveLesson should be set to the full pathname.
+# loadLesson should be set to 1 (either here or on the
+# command-line) when you want to re-play the earlier lesson
+# (all its samples etc must still be available).
+# If loadLesson is set to -1, then the lesson will be
+# re-played if and only if the file specified in saveLesson
+# was created on the same calendar day.
+# Limitation: If the lesson is cut short or interrupted, the *complete* lesson
+# will be saved by saveLesson but only the *partial* progress will be saved
+# to progressFile.  If you then use loadLesson and play it completely,
+# Gradint is not currently able to reflect this fact in progressFile (and
+# probably wouldn't be able to if progressFile has since been changed anyway).
+# This limitation should not cause any trouble in practice.
+# Note: If running from Python source on Windows, delete all
+# .pyd files because you may have a different Python version.
+
+saveLesson = ""
+loadLesson = 0
+
+# You can also set justSaveLesson (below) to 1 - if you
+# do then any lesson that is generated will be saved
+# immediately (and the progress updated) without actually
+# playing it.  This may be useful if you then want to do
+# 2 or more things in parallel with it (e.g. play it and
+# convert to another format on slow hardware), but it's up
+# to you to ensure that interruptions don't make the
+# progress file wrong.
+
+justSaveLesson = 0
+
+# Set compress_progress_file to 1 if you want progressFile
+# to be compressed by gzip (you must have gzip on your
+# PATH for this to work).  This might help if your
+# progressFile is large and is kept on a Flash storage
+# device with slow write speed.  (binary progress files and
+# saved lessons are also compressed when this is set.)
+
+compress_progress_file = 0
+
+# Set paranoid_file_management to 1 if you are
+# keeping your vocab.txt over an ftpfs mount or something
+# (gradint will try to be more careful not to erase it
+# if the mount goes wrong).  If you are not using that
+# kind of mount then leave it at 0 (it just takes more time).
+
+paranoid_file_management = 0
+
+# If you set once_per_day (below) to 1, gradint will run
+# only if progressFile's date stamp does not match the
+# current date.  This may be useful for putting gradint in a
+# startup script.
+# If you set once_per_day to 2, gradint will remain running
+# when quit and wait for the next day.  This may be useful
+# if the computer is hibernated overnight instead of shut down.
+# If you set once_per_day to 3, gradint will do both (i.e. not
+# immediately pop up a GUI if already done today + wait after quit).
+# Best not set runInBackground when using once_per_day > 1
+# (otherwise gradint will fork only when about to start the GUI).
+
+once_per_day = 0
+
+# Besides altering this file, you can also put assignment
+# statements on the command line of gradint.py.  In that
+# case runInBackground=0 is assumed and
+# progressFileBackup=logFile=None is assumed, unless you
+# specify otherwise (on the command line, not here).
+# You can also set the Gradint_Extra_Options environment variable
+# - leading and trailing semicolons are removed from this so
+# you can do things like: export Gradint_Extra_Options="$Gradint_Extra_Options;once_per_day=1"
+
+# Note: Further advanced things are possible by using the
+# scripts in the 'samples/utils' directory (for example,
+# automatically emailing lessons to students, or creating
+# HTML reports). See the README file in 'samples/utils' for details.
+# (on Windows and Mac, 'utils' is called 'advanced utilities')
+
+#The three lines below are to help the Emacs editor.
+#Local Variables:
+#mode: python
+#End:

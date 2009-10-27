@@ -1,0 +1,1560 @@
+# This file is part of the source code of
+program_name = "gradint v0.9927 (c) 2002-2009 Silas S. Brown. GPL v3+."
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 3 of the License, or
+#    (at your option) any later version.
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
+# Start of frontend.py - Tk and other front-ends
+
+def interrupt_instructions():
+    if soundCollector or app or appuifw: return ""
+    elif msvcrt: return "\nPress Space if you have to interrupt the lesson."
+    elif riscos_sound: return "\nLesson interruption not yet implemented on RISC OS.  If you stop the program before the end of the lesson, your progress will be lost.  Sorry about that."
+    elif winCEsound: return "\nLesson interruption not implemented on\nWinCE without GUI.  Can't stop, sorry!"
+    elif macsound: return "\nPress Ctrl-C if you have to interrupt the lesson."
+    else: return "\nPress Control-C if you have to interrupt the lesson."
+
+appTitle += time.strftime(" %A") # in case leave 2+ instances on the desktop
+def waitOnMessage(msg):
+    global warnings_printed
+    if type(msg)==type(u""): msg2=msg.encode("utf-8")
+    else: msg2=msg
+    if appuifw:
+        t=appuifw.Text() ; t.add(u"".join(warnings_printed)+msg) ; appuifw.app.body = t # in case won't fit in the query()  (and don't use note() because it doesn't wait)
+        if appuifw.query(u"".join(warnings_printed)+msg,'query'): return
+        t=appuifw.Text()
+        t.add(u"You pressed Cancel in a message dialogue. Dropping back to justSynthesize loop.")
+        appuifw.app.body = t
+        primitive_synthloop()
+        sys.exit()
+    elif app:
+        if not (winsound or winCEsound or mingw32 or cygwin): show_info(msg2+"\n\nWaiting for you to press OK on the message box... ",True) # in case terminal is in front
+        app.todo.alert = "".join(warnings_printed)+msg
+        while hasattr(app.todo,"alert"): time.sleep(0.5)
+        if not (winsound or winCEsound or mingw32 or cygwin): show_info("OK\n",True)
+        warnings_printed = []
+    else:
+        if clearScreen(): msg2 = "This is "+program_name.replace("(c)","\n(c)")+"\n\n"+msg2 # clear screen is less confusing for beginners, but NB it may not happen if warnings etc
+        show_info(msg2+"\n\n"+cond(winCEsound,"Press OK to continue\n","Press Enter to continue\n"))
+        sys.stderr.flush() # hack because some systems don't do it (e.g. some mingw32 builds), and we don't want the user to fail to see why the program is waiting (especially when there's an error)
+        try:
+            raw_input(cond(winCEsound,"See message under this window.","")) # (WinCE uses boxes for raw_input so may need to repeat the message - but can't because the prompt is size-limited, so need to say look under the window)
+            clearScreen() # less confusing for beginners
+        except EOFError: show_info("EOF on input - continuing\n")
+
+def getYN(msg,defaultIfEof="n"):
+    if appuifw:
+        appuifw.app.body = None
+        return appuifw.query(u""+msg,'query')
+    elif app:
+        app.todo.question = localise(msg)
+        while not hasattr(app,"answer_given"): time.sleep(0.5)
+        ans = app.answer_given
+        del app.answer_given
+        return ans
+    else:
+        ans=None
+        clearScreen() # less confusing for beginners
+        while not ans=='y' and not ans=='n':
+            try: ans = raw_input("%s\nPress y for yes, or n for no.  Then press Enter.  --> " % (msg,))
+            except EOFError:
+                ans=defaultIfEof ; print ans
+        clearScreen() # less confusing for beginners
+        if ans=='y': return 1
+        return 0
+
+def primitive_synthloop():
+    while True:
+        global justSynthesize,warnings_printed
+        if appuifw:
+            justSynthesize=appuifw.query(u"Say:","text",u""+justSynthesize)
+            if not justSynthesize: break
+        else:
+            try: justSynthesize=raw_input(cond(winCEsound and warnings_printed,"(see warnings under this window) Say:","Say: ")) # (WinCE uses an input box so need to repeat the warnings if any - but can't because prompt is size-limited, so need to say move the window.)
+            except EOFError: break
+            if (winCEsound or riscos_sound) and not justSynthesize: break # because no way to send EOF (and we won't be taking i/p from a file)
+        if justSynthesize: lang = just_synthesize(callSanityCheck=(appuifw or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty()))
+        # and see if it transliterates:
+        if justSynthesize and lang and not "#" in justSynthesize:
+            if justSynthesize.startswith(lang+" "):
+                t = transliterates_differently(justSynthesize[len(lang+" "):],lang)
+                if t: t=lang+" "+t
+            else: t = transliterates_differently(justSynthesize,lang)
+            if t:
+                if appuifw: justSynthesize = t
+                else: show_info("Spoken as "+t+"\n")
+        if warnings_printed: # at end not beginning, because don't want to overwrite the info message if appuifw
+            if appuifw:
+                t=appuifw.Text()
+                t.add(u"".join(warnings_printed))
+                appuifw.app.body = t
+            # else they'll have already been printed
+            warnings_printed = []
+
+def startBrowser(url): # true if success
+  try: import webbrowser
+  except: webbrowser=0
+  if webbrowser:
+      g=webbrowser.get()
+      if g and (winCEsound or macsound or (hasattr(g,"background") and g.background) or (hasattr(webbrowser,"Konqueror") and g.__class__==webbrowser.Konqueror)):
+          # (TODO "background" should cover Galeon, Mozilla, Netscape, Opera, but is this always the case?)
+          return g.open_new(url)
+      # else don't risk it - it might be text-mode and unsuitable for multitask-with-gradint
+  if winsound: return not os.system('start "%ProgramFiles%\\Internet Explorer\\iexplore.exe" '+url) # use os.system not system here (don't know why but system() doesn't always work for IE)
+
+def clearScreen():
+    global warnings_printed
+    if not (winsound or mingw32 or unix): return # can't do it anyway
+    if warnings_printed:
+        # don't do it this time (had warnings etc)
+        warnings_printed = []
+        return
+    if winsound or mingw32: os.system("cls")
+    else: os.system("clear 1>&2") # (1>&2 in case using stdout for something else)
+    return True
+
+cancelledFiles = []
+def handleInterrupt(): # called only if there was an interrupt while the runner was running (interrupts in setup etc are propagated back to mainmenu/exit instead, because lesson state could be anything)
+    needCountItems = 0
+    if app==None:
+        if not saveProgress: pass
+        elif dbase and not dbase.saved_completely:
+            show_info("Calculating partial progress... ")
+            needCountItems = 1
+        elif dbase: show_info("Interrupted on not-first-time; no need to save partial progress\n")
+    # DON'T init cancelledFiles to empty - there may have been other missed events.
+    while copy_of_runner_events:
+        cancelledEvent = copy_of_runner_events[0][0]
+        try: runner.cancel(copy_of_runner_events[0][1])
+        except: pass # wasn't in the queue - must have slipped out
+        del copy_of_runner_events[0]
+        # cancelledEvent = runner.queue[0][-1][0] worked in python 2.3, but sched implementation seems to have changed in python 2.5 so we're using copy_of_runner_events instead
+        if hasattr(cancelledEvent,"wordToCancel") and cancelledEvent.wordToCancel: cancelledFiles.append(cancelledEvent.wordToCancel)
+    if needCountItems and cancelledFiles: show_info("(%d cancelled items)...\n" % len(cancelledFiles))
+    global repeatMode ; repeatMode = 0 # so Ctrl-C on justSynth-with-R works
+
+tkNumWordsToShow = 10 # the default number of list-box items
+
+def addStatus(widget,status,mouseOnly=0):
+    # Be VERY CAREFUL with status line changes.  Don't do it on things that are focused by default (except with mouseOnly=1).  Don't do it when the default status line might be the widest thing (i.e. when list box is not displayed) or window size could jump about too much.  And in any event don't use lines longer than about 53 characters (the approx default width of the listbox when using monospace fonts).
+    widget.bind('<Enter>',lambda *args:app.set_statusline(status))
+    widget.bind('<Leave>',app.restore_statusline)
+    if not mouseOnly:
+        widget.bind('<FocusIn>',lambda *args:app.set_statusline(status))
+        widget.bind('<FocusOut>',app.restore_statusline)
+def removeStatus(widget):
+    widget.unbind('<Enter>')
+    widget.unbind('<Leave>')
+    widget.unbind('<FocusIn>')
+    widget.unbind('<FocusOut>')
+def addButton(parent,text,command,packing=None,status=None):
+    button = Tkinter.Button(parent)
+    button["text"] = text
+    button["command"] = command
+    button.bind('<Return>',command) # so can Tab through them
+    button.bind('<ButtonRelease-3>', app.wrongMouseButton)
+    if status: addStatus(button,status)
+    if packing=="nopack": pass
+    elif packing: button.pack(packing)
+    else: button.pack()
+    return button
+def addLabel(row,label):
+    label = Tkinter.Label(row,text=label)
+    label.pack({"side":"left"})
+    return label
+def CXVMenu(e): # callback for right-click
+    e.widget.focus()
+    m=Tkinter.Menu(None, tearoff=0, takefocus=0)
+    ctrl=cond(macsound,"<Command-","<Control-")
+    m.add_command(label="Cut",command=(lambda e=e: e.widget.event_generate(ctrl+'x>')))
+    m.add_command(label="Copy",command=(lambda e=e: e.widget.event_generate(ctrl+'-c>')))
+    m.add_command(label="Paste",command=(lambda e=e: e.widget.event_generate(ctrl+'-v>')))
+    m.add_command(label="Delete",command=(lambda e=e: e.widget.event_generate('<Delete>')))
+    m.add_command(label="Select All",command=(lambda e=e: selectAll(e)))
+    m.tk_popup(e.x_root-3, e.y_root+3,entry="0")
+def selectAll(e):
+    e.widget.event_generate('<Home>')
+    e.widget.event_generate('<Shift-End>')
+def selectAllButNumber(e): # hack for recordings.py - select all but any number at the start
+    e.widget.event_generate('<Home>')
+    for i in list(e.widget.theText.get()):
+        if "0"<=i<="9": e.widget.event_generate('<Right>')
+        else: return e.widget.event_generate('<Shift-End>')
+def addTextBox(row,wide=0):
+    text = Tkinter.StringVar(row)
+    entry = Tkinter.Entry(row,textvariable=text)
+    if winsound or mingw32 or cygwin or macsound: entry.bind('<Button-3>',CXVMenu)
+    if macsound: entry.bind('<Control-Button-1>',CXVMenu)
+    if winCEsound: # this is awkward
+        def timeStamp(entry): entry.buttonPressTime=time.time()
+        entry.bind('<ButtonPress-1>',lambda e:timeStamp(entry))
+        def pasteInstructions(t):
+            if t>=0.5: # they probably want tap-and-hold, which we don't do properly
+                app.todo.alert="Double-click in the box if you want to replace it with the clipboard contents"
+        entry.bind('<ButtonRelease-1>',lambda e:pasteInstructions(time.time()-getattr(entry,"buttonPressTime",time.time())))
+        entry.bind('<Double-Button-1>',lambda e:text.set(entry.selection_get(selection="CLIPBOARD")))
+    else:
+        # Tkinter bug workaround (some versions): event_generate from within a key event handler can be unreliable, so the Ctrl-A handler delays selectAll by 10ms:
+        entry.bind(cond(macsound,'<Command-a>','<Control-a>'),(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
+    if wide=="nopack": pass
+    elif wide:
+        if winCEsound or olpc: entry["width"]=1 # so it will squash down rather than push off-screen any controls to the right (but DON'T do this on other platforms, where we want the window to expand in that case, e.g. when there are cache controls)
+        entry.pack(side="left",fill=Tkinter.X,expand=1)
+    else: entry.pack({"side":"left"})
+    return text,entry
+def addLabelledBox(row,wide=0):
+    label = addLabel(row,"") # will set contents later
+    text,entry = addTextBox(row,wide)
+    return label,text,entry
+def addRow(parent,wide=0):
+    row = Tkinter.Frame(parent)
+    if wide: row.pack(fill=Tkinter.X,expand=1)
+    else: row.pack()
+    return row
+def addRightRow(widerow): # call only after adding any left-hand buttons.  better tab order than filling buttons from the right.
+    rrow = Tkinter.Frame(widerow)
+    rrow.pack(side="right") ; return rrow
+
+def make_output_row(parent):
+    # make a row of buttons for choosing where the output goes to
+    # if there aren't any options then return None
+    # we also put script-variant selection here, if any
+    row = None
+    if "@variants-"+firstLanguage in GUI_translations: # the firstLanguage has script variants
+        row = Tkinter.Frame(parent)
+        row.pack(fill=Tkinter.X,expand=1)
+        if not hasattr(app,"scriptVariant"): app.scriptVariant = Tkinter.StringVar(app)
+        count = 0
+        for variant in GUI_translations["@variants-"+firstLanguage]:
+            Tkinter.Radiobutton(row, text=u" "+variant+u" ", variable=app.scriptVariant, value=str(count), indicatoron=0).pack({"side":"left"})
+            count += 1
+        app.scriptVariant.set(str(scriptVariants.get(firstLanguage,0)))
+    if not got_program("sox"): return row # can't do any file output without sox
+    if not hasattr(app,"outputTo"): app.outputTo = Tkinter.StringVar(app) # NB app not parent (as parent is no longer app)
+    if not row:
+        row = Tkinter.Frame(parent)
+        row.pack(fill=Tkinter.X,expand=1)
+    rightrow = addRightRow(row) # to show beginners this row probably isn't the most important thing despite being in a convenient place, we'll right-align
+    def addFiletypeButton(fileType): Tkinter.Radiobutton(rightrow, text=" "+fileType.upper()+" ", variable=app.outputTo, value=fileType, indicatoron=0).pack({"side":"left"})
+    if winsound or mingw32: got_windows_encoder = fileExists(programFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs")
+    elif cygwin: got_windows_encoder = fileExists(programFiles+"/Windows Media Components/Encoder/WMCmd.vbs")
+    else: got_windows_encoder = 0
+    Tkinter.Label(rightrow,text=localise("To")+":").pack({"side":"left"})
+    Tkinter.Radiobutton(rightrow, text=" "+localise("Speaker")+" ", variable=app.outputTo, value="", indicatoron=0).pack({"side":"left"})
+    if got_program("lame"): addFiletypeButton("mp3")
+    if got_windows_encoder: addFiletypeButton("wma")
+    if got_program("faac") or got_program("afconvert"): addFiletypeButton("aac")
+    if got_program("oggenc"): addFiletypeButton("ogg")
+    if got_program("toolame"): addFiletypeButton("mp2")
+    if got_program("speexenc"): addFiletypeButton("spx")
+    addFiletypeButton("wav")
+    # "Get MP3 encoder" and "Get WMA encoder" changed to "MP3..." and "WMA..." to save width (+ no localisation necessary)
+    if unix and not got_program("lame") and got_program("make") and got_program("gcc") and (got_program("curl") or got_program("wget")): addButton(rightrow,"MP3...",app.getEncoder) # (checking gcc as well as make because some distros strangely have make but no compiler; TODO what if has a non-gcc compiler)
+    elif (winsound or mingw32) and not got_windows_encoder and not got_program("lame"): addButton(rightrow,"WMA...",app.getEncoder)
+    return row
+
+def updateSettingsFile(fname,newVals):
+    # leaves comments etc intact, but TODO does not cope with changing variables that have been split over multiple lines
+    replacement_lines = []
+    try: oldLines=u8strip(open(fname,"rb").read()).replace("\r\n","\n").split("\n")
+    except IOError: oldLines=[]
+    for l in oldLines:
+        found=0
+        for k in newVals.keys():
+            if l.startswith(k):
+                replacement_lines.append(k+"="+repr(newVals[k]))
+                del newVals[k]
+                found=1
+        if not found: replacement_lines.append(l)
+    for k,v in newVals.items(): replacement_lines.append(k+"="+repr(v))
+    if replacement_lines and replacement_lines[-1]: replacement_lines.append("") # ensure blank line at end so there's a \n but we don't add 1 more with each save
+    open(fname,"w").write("\n".join(replacement_lines))
+
+# GUI multi-users stuff:
+def addUserToFname(fname,userNo):
+  if not userNo or not fname: return fname
+  elif os.sep in fname: return fname+"-user"+str(userNo)
+  else: return "user"+str(userNo)+"-"+fname
+settingsFile = "settings"+dottxt
+user0 = (samplesDirectory,vocabFile,progressFile,progressFileBackup,pickledProgressFile,settingsFile)
+def select_userNumber(N,updateGUI=1):
+  global samplesDirectory,vocabFile,progressFile,progressFileBackup,pickledProgressFile,settingsFile
+  prevUser = samplesDirectory
+  samplesDirectory,vocabFile,progressFile,progressFileBackup,pickledProgressFile,settingsFile = user0
+  samplesDirectory=addUserToFname(samplesDirectory,N)
+  vocabFile=addUserToFname(vocabFile,N)
+  progressFile=addUserToFname(progressFile,N)
+  pickledProgressFile=addUserToFname(pickledProgressFile,N)
+  settingsFile = addUserToFname("settings"+dottxt,N)
+  if prevUser == samplesDirectory: return # called twice with same number
+  ofl = firstLanguage
+  if fileExists(settingsFile): readSettings(settingsFile)
+  else: readSettings("settings"+dottxt) # the default one
+  if not firstLanguage==ofl and updateGUI: # need to update the UI
+      app.thin_down_for_lesson()
+      app.todo.set_main_menu="keep-outrow"
+  if updateGUI and hasattr(app,"vocabList"): del app.vocabList # re-read
+def setup_samplesDir_ifNec(d=0): # if the user doesn't have a samples directory, create one, and copy in the README.txt if it exists
+  if not d: d=samplesDirectory
+  if not isDirectory(d):
+    os.mkdir(d)
+    if fileExists(user0[0]+os.sep+"README"+dottxt): open(d+os.sep+"README"+dottxt,'wb').write(open(user0[0]+os.sep+"README"+dottxt,"rb").read())
+def get_userNames(): # list of unicode user names or []
+  ret=[]
+  u=userNameFile ; c=0
+  while fileExists(u):
+    ret.append(unicode(u8strip(open(u).read()).strip(wsp),'utf-8'))
+    c += 1 ; u=addUserToFname(userNameFile,c)
+  global lastUserNames ; lastUserNames = ret
+  return ret
+def set_userName(N,unicodeName): open(addUserToFname(userNameFile,N),"w").write(unicodeName.encode("utf-8")+"\n") # implicitly adds if N=num+1
+def wrapped_set_userName(N,unicodeName):
+  if unicodeName.strip(wsp): set_userName(N,unicodeName)
+  else: app.todo.alert="You need to type the person's name in the box before you press "+localise("Add new name") # don't waitOnMessage because we're in the GUI thread
+GUI_usersRow = lastUserNames = None
+def updateUserRow(fromMainMenu=0):
+  row=GUI_usersRow
+  if not row: return
+  if hasattr(row,"widgetsToDel"):
+    for w in row.widgetsToDel: w.pack_forget()
+  row.widgetsToDel=[]
+  names = get_userNames()
+  if fromMainMenu and names==[""]:
+    # someone pressed "add other students" but didn't add any - better reset it this run
+    os.remove(userNameFile) ; names=[]
+  if names:
+    names.append("") # ensure at least one blank
+    if not hasattr(app,"userNo"):
+        app.userNo = Tkinter.StringVar(app)
+        app.userNo.set(0)
+    row["borderwidth"]=1
+    if hasattr(Tkinter,"LabelFrame") and not winCEsound: # new in Tk 8.4 and clearer (but takes up a bit more space, so not winCEsound)
+        r=Tkinter.LabelFrame(row,text=localise("Students"),padx=5,pady=5)
+    else:
+        r=addRow(row,1) ; Tkinter.Label(r,text=localise("Students")+":").grid(row=0,column=0,columnspan=2)
+    row.widgetsToDel.append(r) ; row=r
+    if winCEsound: row.pack()
+    else: row.pack(padx=10,pady=10)
+    if len(names)>4: # better have a scrollbar
+        row, c = setupScrollbar(row,1)
+        c.after(cond(winCEsound,1500,300),lambda *args:c.config(scrollregion=c.bbox(Tkinter.ALL),width=c.bbox(Tkinter.ALL)[2],height=min(c["height"],c.winfo_screenheight()/2,c.bbox(Tkinter.ALL)[3]))) # hacky (would be better if it could auto shrink on resize)
+    for i in range(len(names)):
+      if names[i].strip(wsp):
+        r=Tkinter.Radiobutton(row, text=names[i], variable=app.userNo, value=str(i), takefocus=0)
+        r.grid(row=i+1,column=0,sticky="w")
+        r["command"]=lambda i=i,*args: select_userNumber(i)
+        r2=Tkinter.Radiobutton(row, text="Select", variable=app.userNo, value=str(i), indicatoron=0)
+        r2.grid(row=i+1,column=1,sticky="e")
+        r2["command"]=lambda i=i,*args: select_userNumber(i)
+        addButton(row,"Rename",lambda i=i,r=r,row=row,*args:renameUser(i,r,row),"nopack").grid(row=i+1,column=2,sticky="e")
+        addButton(row,"Delete",lambda i=i,*args:deleteUser(i),"nopack").grid(row=i+1,column=3,sticky="e")
+      else:
+        r=Tkinter.Frame(row) ; r.grid(row=i+1,column=0,columnspan=4)
+        text,entry = addTextBox(r)
+        if not fromMainMenu: entry.focus() # because user has just pressed the "add other students" button, or has just added a name and may want to add another
+        l=lambda *args:(wrapped_set_userName(i,text.get()),updateUserRow())
+        addButton(r,localise("Add new name"),l)
+        entry.bind('<Return>',l)
+        if not i: Tkinter.Label(row,text="The first name should be that of the\nEXISTING user (i.e. YOUR name).").grid(row=i+2,column=0,columnspan=4)
+      if hasattr(row,"widgetsToDel"): row.widgetsToDel.append(r)
+      if not names[i]: break
+  else: row.widgetsToDel.append(addButton(row,localise("Family mode (multiple user)"),lambda *args:(set_userName(0,""),updateUserRow())))
+def renameUser(i,radioButton,parent,cancel=0):
+    if hasattr(radioButton,"in_renaming"):
+        del radioButton.in_renaming
+        n=radioButton.renameText.get()
+        if cancel: pass
+        elif not n.strip(wsp) and len(lastUserNames)>1: tkMessageBox.showinfo(app.master.title(),"You can't have blank user names unless there is only one user.  Keeping the original name instead.")
+        else:
+            set_userName(i,n)
+            radioButton["text"]=n
+        radioButton.renameEntry.grid_forget()
+        radioButton.grid(row=i+1,column=0,sticky="w")
+    else:
+        radioButton.in_renaming = 1
+        radioButton.grid_forget()
+        radioButton.renameText,radioButton.renameEntry = addTextBox(parent,"nopack")
+        radioButton.renameEntry.grid(row=i+1,column=0)
+        radioButton.renameText.set(lastUserNames[i])
+        radioButton.renameEntry.focus()
+        radioButton.after(10,lambda *args:radioButton.renameEntry.event_generate('<End>'))
+        radioButton.renameEntry.bind('<Return>',lambda *args:renameUser(i,radioButton,parent))
+        radioButton.renameEntry.bind('<Escape>',lambda *args:renameUser(i,radioButton,parent,cancel=1))
+def deleteUser(i):
+    for n in ["Are you sure","Are you REALLY sure","This is your last chance: Are you REALLY SURE"]:
+        if not tkMessageBox.askyesno(app.master.title(),u""+n+" you want to delete "+lastUserNames[i]+" permanently, including any vocabulary list and recordings?"): return
+    numUsers=len(lastUserNames)
+    for fileOrDir in user0+(userNameFile,):
+        d=addUserToFname(fileOrDir,i)
+        if isDirectory(d):
+            while True:
+                try: import shutil
+                except: shutil = 0
+                if shutil: shutil.rmtree(d,1)
+                else: system(cond(winsound or mingw32,"del /F /S /Q \"","rm -rf \"")+d+"\"")
+                if not isDirectory(d): break
+                tkMessageBox.showinfo(app.master.title(),"Directory removal failed - make sure to close all windows etc that are open on it.")
+        elif fileExists(d): os.remove(d)
+        for j in range(i+1,numUsers):
+            d2=addUserToFname(fileOrDir,j)
+            if fileExists_stat(d2): os.rename(d2,d)
+            d=d2
+    select_userNumber(0) ; app.userNo.set(0) # save confusion
+    updateUserRow()
+
+def setupScrollbar(parent,rowNo):
+    s = Tkinter.Scrollbar(parent)
+    s.grid(row=rowNo,column=cond(winCEsound or olpc,0,1),sticky="ns")
+    c=Tkinter.Canvas(parent,bd=0,width=200,height=100,yscrollcommand=s.set)
+    c.grid(row=rowNo,column=cond(winCEsound or olpc,1,0),sticky="nsew")
+    s.config(command=c.yview)
+    scrolledFrame=Tkinter.Frame(c) ; c.create_window(0,0,window=scrolledFrame,anchor="nw")
+    for w in [parent,c,s]:
+        w.bind("<Button-5>",(lambda *args:c.yview("scroll","1","units")))
+        w.bind("<Down>",(lambda *args:c.yview("scroll","1","units")))
+        w.bind("<Button-4>",(lambda *args:c.yview("scroll","-1","units")))
+        w.bind("<Up>",(lambda *args:c.yview("scroll","-1","units")))
+    parent.focus() # TODO how to make sure it gets these events after the focus has changed?
+    return scrolledFrame, c
+
+# GUI presets buttons:
+shortDescriptionName = "short-description"+dottxt
+longDescriptionName = "long-description"+dottxt
+class ExtraButton(object):
+    def __init__(self,directory):
+        self.shortDescription = open(directory+os.sep+shortDescriptionName).read().strip(wsp)
+        if fileExists(directory+os.sep+longDescriptionName): self.longDescription = open(directory+os.sep+longDescriptionName).read().strip(wsp)
+        else: self.longDescription = self.shortDescription
+        self.directory = directory
+    def add(self):
+        app.extra_button_callables.append(self) # so we're not lost when deleted from the waiting list
+        self.button = addButton(app.rightPanel,localise("Add ")+self.shortDescription,self,{"fill":"x"})
+        self.button["anchor"]="w"
+    def __call__(self):
+        if not tkMessageBox.askyesno(app.master.title(),self.longDescription+"\n"+localise("Add this to your collection?")): return
+        newName = self.directory
+        if os.sep in newName: newName=newName[newName.rfind(os.sep)+1:]
+        if newName.endswith(exclude_from_scan): newName=newName[:-len(exclude_from_scan)]
+        if not newName: newName="1"
+        ls = []
+        try: ls = os.listdir(samplesDirectory)
+        except OSError: os.mkdir(samplesDirectory)
+        name1=newName
+        while newName in ls: newName+="1"
+        name2=newName
+        newName = samplesDirectory+os.sep+newName
+        os.rename(self.directory,newName)
+        which_collection = localise(" has been added to your recorded words collection.")
+        if fileExists(newName+os.sep+"add-to-vocab"+dottxt):
+            which_collection = localise(" has been added to your collection.")
+            o=open(vocabFile,"a")
+            o.write("# --- BEGIN "+self.shortDescription+" ---\n")
+            o.write(u8strip(open(newName+os.sep+"add-to-vocab"+dottxt,"rb").read()).strip(wsp)+"\n")
+            o.write("# ----- END "+self.shortDescription+" ---\n")
+            if hasattr(app,"vocabList"): del app.vocabList # so re-reads
+            os.remove(newName+os.sep+"add-to-vocab"+dottxt)
+        if not name1==name2: which_collection += "\n(NB you already had a "+name1+" so the new one was called "+name2+" - you might want to sort this out.)"
+        self.button.pack_forget()
+        app.extra_button_callables.remove(self)
+        if extra_buttons_waiting_list: app.add_extra_button()
+        if tkMessageBox.askyesno(app.master.title(),self.shortDescription+which_collection+"\n"+localise("Do you want to start learning immediately?")): app.makelesson()
+
+extra_buttons_waiting_list = []
+def make_extra_buttons_waiting_list():
+    if os.sep in samplesDirectory:
+        oneUp=samplesDirectory[:samplesDirectory.rfind(os.sep)]
+        if not oneUp: oneUp=os.sep
+    else: oneUp=os.getcwd()
+    for d in [samplesDirectory,oneUp]:
+        try: ls = os.listdir(d)
+        except OSError: continue
+        ls.sort()
+        for l in ls:
+            if l.endswith(exclude_from_scan) and fileExists(d+os.sep+l+os.sep+shortDescriptionName): extra_buttons_waiting_list.append(ExtraButton(d+os.sep+l))
+
+def startTk():
+    class Application(Tkinter.Frame):
+        def __init__(self, master=None):
+            Tkinter.Frame.__init__(self, master)
+            class EmptyClass: pass
+            self.todo = EmptyClass() ; self.toRestore = []
+            global app ; app = self
+            make_extra_buttons_waiting_list()
+            if olpc: self.master.option_add('*font',cond(extra_buttons_waiting_list,'Helvetica 9','Helvetica 14'))
+            elif macsound and Tkinter.TkVersion>=8.6: self.master.option_add('*font','System 13') # ok with magnification.  Note >13 causes square buttons.  (Including this line causes "Big print" to work)
+            if winsound or cygwin or macsound: self.master.resizable(1,0) # resizable in X direction but not Y (latter doesn't make sense, see below).  (Don't do this on X11 because on some distros it results in loss of automatic expansion as we pack more widgets.)
+            self.extra_button_callables = []
+            self.pack(fill=Tkinter.BOTH,expand=1)
+            self.leftPanel = Tkinter.Frame(self)
+            self.leftPanel.pack(side="left",fill=Tkinter.X,expand=1) # "fill" needed so listbox can fill later
+            self.rightPanel = None # for now
+            self.cancelling = 0 # guard against multiple presses of Cancel
+            self.Label = Tkinter.Label(self.leftPanel,text="Please wait a moment")
+            self.Label.pack()
+            self.Label["wraplength"]=self.Label.winfo_screenwidth() # don't go off-screen in teacherMode
+            # See if we can figure out what Tk is doing with the fonts (on systems without magnification):
+            try:
+                f=str(self.Label.cget("font")).split()
+                nominalSize = int(f[-1]) # IF it's in that format (e.g. Windows)
+                fontRest=" ".join(f[:-1])
+                pixelSize = self.Label.winfo_reqheight()-2*int(str(self.Label["borderwidth"]))-2*int(str(self.Label["pady"]))
+                # NB DO NOT try to tell Tk a desired pixel size - you may get a *larger* pixel size.  Need to work out the desired nominal size.
+                approx_lines_per_screen_when_large = 25 # TODO really? (24 at 800x600 192dpi 15in but misses the status line, but OK for advanced users.  setting 25 gives nominal 7 which is rather smaller.)
+                largeNominalSize = int(nominalSize*self.Label.winfo_screenheight()/approx_lines_per_screen_when_large/pixelSize)
+                if largeNominalSize >= nominalSize+3: self.bigPrintFont = fontRest+" "+str(largeNominalSize)
+                else: self.after(100,self.check_window_position) # (needs to happen when window is already drawn if you want it to preserve the X co-ordinate)
+            except: pass # wrong font format or something - can't do it
+            if winCEsound and ask_teacherMode: self.Label["font"]="Helvetica 16" # might make it slightly easier
+            self.remake_cancel_button(localise("Cancel lesson"))
+            self.copyright_string = u"This is "+(u""+program_name).replace("(c)",u"\n\u00a9").replace("-",u"\u2013")
+            self.Version = Tkinter.Label(self.leftPanel,text=self.copyright_string)
+            if olpc: self.Version["font"]='Helvetica 9'
+            self.pollInterval = cond(winCEsound,300,100) # ms
+            self.startTime=time.time()
+            self.after(self.pollInterval,self.poll)
+            # and hide the console on Mac OS:
+            try: self.tk.call('console','hide')
+            except: pass
+            self.change_button_shown = 0
+            self.bind("<Leave>",self.restore_copyright)
+            self.bind("<FocusOut>",self.restore_copyright)
+            global recorderMode
+            if recorderMode:
+                if tkSnack: doRecWords()
+                else:
+                    show_warning("Cannot do recorderMode because tkSnack library (python-tksnack) not installed")
+                    recorderMode = 0
+        def remake_cancel_button(self,text=""): # sometimes need to re-make it to preserve tab order
+            self.CancelRow = addRow(self.leftPanel)
+            self.Cancel = addButton(self.CancelRow,text,self.cancel,{"side":"left"})
+            self.CancelRow.pack()
+        def set_statusline(self,text): # ONLY from callbacks
+            if olpc and time.time()<self.startTime+2: return # because add/test shown on startup and don't want to change status immediately
+            if not "\n" in text: text += "\n(TODO: Make that a 2-line message)" # being 2 lines helps to reduce flashing problems.  but don't want to leave 2nd line blank.
+            self.Version["text"] = text
+        def restore_statusline(self,*args): # ONLY from callbacks
+            # self.Version["text"] = self.copyright_string
+            self.Version["text"] = "\n"
+        def restore_copyright(self,*args): self.Version["text"] = self.copyright_string
+        def addOrTestScreen_poll(self):
+            self.sync_listbox_etc()
+            if self.ListBox.curselection():
+                if not self.change_button_shown:
+                    self.ChangeButton.pack()
+                    self.change_button_shown = 1
+            else:
+                if self.change_button_shown:
+                    self.ChangeButton.pack_forget()
+                    self.change_button_shown = 0
+            if self.toRestore:
+                if not hasattr(self,"restoreButton"): self.restoreButton = addButton(self.TestEtcCol,localise("Restore"),self.restoreText,status="This button will undo\nGradint's transliteration of the input")
+            elif hasattr(self,"restoreButton"):
+                self.restoreButton.pack_forget() ; del self.restoreButton
+            try:
+                if hasattr(self,"set_watch_cursor"):
+                    self.config(cursor="watch") ; self.TestTextButton.config(cursor="watch")
+                    del self.set_watch_cursor
+                if hasattr(self,"unset_watch_cursor"):
+                    self.config(cursor="") ; self.TestTextButton.config(cursor="")
+                    del self.unset_watch_cursor
+            except: pass # (if the Tk for some reason doesn't support them then that's OK)
+        def poll(self):
+          try:
+            if hasattr(self,"ListBox"): self.addOrTestScreen_poll()
+            if hasattr(self,"scriptVariant"):
+              v = self.scriptVariant.get()
+              if v: v=int(v)
+              else: v=0
+              if not v==scriptVariants.get(firstLanguage,0): self.setVariant(v)
+            if hasattr(self,"outputTo"):
+              if hasattr(self,"TestTextButton"):
+                if self.outputTo.get(): self.TestTextButton["text"]=localise("To")+" "+self.outputTo.get().upper()
+                else: self.TestTextButton["text"]=localise("Speak")
+                # used to be called "Test" instead of "Speak", but some people didn't understand that THEY'RE doing the testing (not the computer)
+              if hasattr(self,"MakeLessonButton"):
+                if self.outputTo.get(): self.MakeLessonButton["text"]=localise("Make")+" "+self.outputTo.get().upper()
+                else: self.MakeLessonButton["text"]=localise("Start lesson") # less confusing for beginners than "Make lesson", if someone else has set up the words
+            if hasattr(self,"BriefIntButton"):
+                if emergency_lessonHold_to < time.time(): t=localise("Brief interrupt")
+                else: t=localise("Resume")+" ("+str(int(emergency_lessonHold_to-time.time()))+")"
+                if not self.BriefIntButton["text"]==t:
+                    self.BriefIntButton["text"]=t
+                    if t==localise("Brief interrupt"): self.Label["text"]=localise("Resuming...")
+            if not self.todo.__dict__: return # can skip the rest
+            if hasattr(self.todo,"set_main_menu") and not recorderMode:
+                # set up the main menu (better do it on this thread just in case)
+                self.cancelling = 0 # in case just pressed "stop lesson" on a repeat - make sure Quit button will now work
+                if need1adayMessage: self.Label["text"]="If you quit before making today's lesson,\nGradint will come back in 1 hour." # "\n(This is to encourage you to learn every day.)" - no, maybe let users figure that out for themselves otherwise they might think they're being patronised
+                else: self.Label.pack_forget()
+                self.CancelRow.pack_forget()
+                if self.todo.set_main_menu=="keep-outrow":
+                    if hasattr(self,"OutputRow"): self.OutputRow.pack(fill=Tkinter.X,expand=1) # just done pack_forget in thindown
+                else:
+                    if hasattr(self,"OutputRow"): self.OutputRow.pack_forget()
+                    outRow = make_output_row(self.leftPanel)
+                    if outRow: self.OutputRow=outRow
+                self.TestButton = addButton(self.leftPanel,localise("Manage word list"),self.showtest) # used to be called "Add or test words", but "Manage word list" may be better for beginners
+                self.make_lesson_row()
+                if userNameFile:
+                    global GUI_usersRow
+                    # if GUI_usersRow: GUI_usersRow.pack() else:  -- don't do this (need to re-create every time for correct tab order)
+                    GUI_usersRow=addRow(self.leftPanel)
+                    updateUserRow(1)
+                if hasattr(self,"bigPrintFont"):
+                    self.BigPrintButton = addButton(self.leftPanel,localise("Big print"),self.bigPrint)
+                    self.BigPrintButton["font"]=self.bigPrintFont
+                self.remake_cancel_button(localise("Quit"))
+                if not GUI_omit_statusline: self.Version.pack()
+                if olpc or self.todo.set_main_menu=="test" or GUI_for_editing_only: self.showtest() # olpc: otherwise will just get a couple of options at the top and a lot of blank space (no way to centre it)
+                else: self.TestButton.focus()
+                del self.todo.set_main_menu
+                self.set_statusline(self.copyright_string)
+            if hasattr(self.todo,"alert"):
+                # we have to do it on THIS thread (especially on Windows / Cygwin; Mac OS and Linux might get away with doing it from another thread)
+                tkMessageBox.showinfo(self.master.title(),self.todo.alert)
+                del self.todo.alert
+            if hasattr(self.todo,"question"):
+                self.answer_given = tkMessageBox.askyesno(self.master.title(),self.todo.question)
+                del self.todo.question
+            if hasattr(self.todo,"set_label"):
+                self.Label["text"] = self.todo.set_label
+                del self.todo.set_label
+            if hasattr(self.todo,"not_first_time"):
+                self.Cancel["text"] = "Stop lesson"
+                del self.todo.not_first_time
+            if hasattr(self.todo,"thindown"):
+                self.thin_down_for_lesson()
+                self.setLabel(self.todo.thindown)
+                del self.todo.thindown
+            if hasattr(self.todo,"add_briefinterrupt_button") and runner:
+                self.BriefIntButton = addButton(self.CancelRow,localise("Brief interrupt"),self.briefInterrupt,{"side":"left"}) # on RHS of Cancel = reminescient of the stop and pause controls on a tape recorder
+                self.BriefIntButton.focus()
+                del self.todo.add_briefinterrupt_button
+            if hasattr(self.todo,"remove_briefinterrupt_button"):
+                if hasattr(self,"BriefIntButton"):
+                    self.BriefIntButton.pack_forget() ; del self.BriefIntButton
+                elif hasattr(self.todo,"add_briefinterrupt_button"): del self.todo.add_briefinterrupt_button # cancel pressed while still making lesson
+                del self.todo.remove_briefinterrupt_button
+            if hasattr(self.todo,"exit_ASAP"):
+                self.master.destroy()
+                self.pollInterval = 0
+          finally: # (try to make sure GUI exceptions at least don't stop the poll loop)
+            if self.pollInterval: self.after(self.pollInterval,self.poll)
+        def briefInterrupt(self,*args):
+            global emergency_lessonHold_to
+            if emergency_lessonHold_to:
+                emergency_lessonHold_to = 0
+                self.setLabel("")
+            elif finishTime-lessonLen + 20 >= time.time(): # (TODO customise the 20?)
+                global askAgain_explain
+                askAgain_explain = "A brief interrupt when you've only just started is never a good idea.  "
+                self.cancel()
+            else:
+                emergency_lessonHold_to = time.time() + briefInterruptLength
+                self.setLabel(localise("Emergency brief interrupt"))
+        def make_lesson_row(self): # creates but doesn't pack.  May need to re-make to preserve tab order.  (Assumes any existing one is pack_forget)
+            words,mins = str(maxNewWords),cond(int(maxLenOfLesson/60)==maxLenOfLesson/60.0,str(int(maxLenOfLesson/60)),str(maxLenOfLesson/60.0))
+            if hasattr(self,"NumWords"): words=self.NumWords.get()
+            if hasattr(self,"Minutes"): mins=self.Minutes.get()
+            self.LessonRow = addRow(self.leftPanel)
+            if GUI_for_editing_only: return
+            self.NumWords,entry = addTextBox(self.LessonRow)
+            entry["width"]=2
+            self.NumWords.set(words)
+            addLabel(self.LessonRow,localise(cond(fileExists(progressFile),"new ","")+"words in"))
+            self.Minutes,entry = addTextBox(self.LessonRow)
+            entry["width"]=3
+            self.Minutes.set(mins)
+            addLabel(self.LessonRow,localise("mins"))
+            self.MakeLessonButton=addButton(self.LessonRow,localise("Start lesson"),self.makelesson,{"side":"left"})
+        def sync_listbox_etc(self):
+            if not hasattr(self,"vocabList"):
+                if hasattr(self,"needVocablist"): return # already waiting for main thread to make one
+                while self.ListBox.get(0): self.ListBox.delete(0) # clear completely (otherwise the following would just do a least-disruptive update)
+                self.ListBox.insert(0,"Updating list from "+vocabFile+"...")
+                self.needVocablist=1
+                return
+            elif hasattr(self,"needVocablist"):
+                del self.needVocablist
+                self.ListBox.delete(0) # the Loading...
+                self.lastText1=1 # so continues below
+            text1,text2 = self.Text1.get(),self.Text2.get()
+            if text1==self.lastText1 and text2==self.lastText2: return
+            for control,current,restoreTo in self.toRestore:
+                if not control.get()==current:
+                    self.toRestore = [] ; break
+            if text1 or text2: self.Cancel["text"] = localise("Clear test boxes")
+            else: self.Cancel["text"] = localise(cond(olpc or GUI_for_editing_only,"Quit","Back to main menu"))
+            h = hanzi_only(text1)
+            if Tk_might_display_wrong_hanzi and not self.Label1["text"].endswith(wrong_hanzi_message) and (h or hanzi_only(text2)): self.Label1["text"]+=("\n"+wrong_hanzi_message)
+            if h and not u"".join(fix_compatibility(text1).split())==hanzi_and_punc(text1):
+                # There is hanzi in the L2 text, but it's not all hanzi.  This might mean they've pasted in a mixture of hanzi+pinyin from ruby markup (or maybe even hanzi+pinyin+English), so offer to trim it down to hanzi only.  (Allow spacing differences.)
+                if not hasattr(self,"stripButton"): self.stripButton=addButton(self.TestEtcCol,localise("Delete non-hanzi"),self.stripText,status="If you pasted a mix of hanzi and\nother annotations, this can remove the annotations.")
+            elif hasattr(self,"stripButton"):
+                self.stripButton.pack_forget() ; del self.stripButton
+            if synthCache:
+                cacheManagementOptions = [] # (text, oldKey, newKey, oldFile, newFile)
+                for t,l in [(text1.encode('utf-8'),secondLanguage),(text2.encode('utf-8'),firstLanguage)]:
+                    k,f = synthcache_lookup("!synth:"+t+"_"+l,justQueryCache=1)
+                    if f and (l in synth_partials_voices or get_synth_if_possible(l,0)): # (2nd condition is because there's no point having these buttons if there's no chance we can synth it by any method OTHER than the cache)
+                        if k in synthCache_transtbl and k[0]=="_": cacheManagementOptions.append(("Keep in "+l+" cache",k,k[1:],0,0))
+                        elif k[0]=="_": cacheManagementOptions.append(("Keep in "+l+" cache",0,0,f,f[1:]))
+                        if k in synthCache_transtbl: cacheManagementOptions.append(("Reject from "+l+" cache",k,"__rejected_"+k,0,0))
+                        else: cacheManagementOptions.append(("Reject from "+l+" cache",0,0,f,"__rejected_"+f))
+                if not hasattr(self,"cacheManagementOptions"):
+                    self.cacheManagementOptions = []
+                    self.cacheManagementButtons = []
+                if not cacheManagementOptions==self.cacheManagementOptions:
+                    self.cacheManagementOptions = cacheManagementOptions
+                    for b in self.cacheManagementButtons: b.pack_forget()
+                    self.cacheManagementButtons = []
+                    for txt,a,b,c,d in cacheManagementOptions: self.cacheManagementButtons.append(addButton(self.TestEtcCol,txt,lambda e=self,a=a,b=b,c=c,d=d:e.doSynthcacheManagement(a,b,c,d),status="This button is for synthCache management.\nsynthCache is explained in advanced"+extsep+"txt"))
+            self.lastText1,self.lastText2 = text1,text2
+            if self.ListBox.curselection():
+                if not (text1 or text2): self.ListBox.selection_clear(0,'end') # probably just added a new word while another was selected (added a variation) - clear selection to reduce confusion
+                else: return # don't try to be clever with searches when editing an existing item (the re-ordering can be confusing)
+            text1,text2 = text1.lower().replace(" ",""),text2.lower().replace(" ","") # ignore case and whitespace when searching
+            l=map(lambda (x,y):x+"="+y, filter(lambda (x,y):text1 in x.lower().replace(" ","") and text2 in y.lower().replace(" ",""),self.vocabList)[-tkNumWordsToShow:])
+            l.reverse() ; synchronizeListbox(self.ListBox,l) # show in reverse order, in case the bottom of the list box is off-screen
+        def doSynthcacheManagement(self,oldKey,newKey,oldFname,newFname):
+            # should be a quick operation - might as well do it in the GUI thread
+            if oldKey in synthCache_transtbl:
+                if newKey: synthCache_transtbl[newKey]=synthCache_transtbl[oldKey]
+                else: del synthCache_transtbl[oldKey]
+                open(synthCache+os.sep+transTbl,'w').write("".join([v+" "+k+"\n" for k,v in synthCache_transtbl.items()]))
+            if oldFname:
+                del synthCache_contents[oldFname]
+                if newFname:
+                    os.rename(synthCache+os.sep+oldFname,synthCache+os.sep+newFname)
+                    synthCache_contents[newFname]=1
+                else: os.remove(synthCache+os.sep+oldFname)
+            self.lastText1 = 1 # ensure different so cache-management options get updated
+        def restoreText(self,*args):
+            for control,current,restoreTo in self.toRestore:
+                if control.get()==current: control.set(restoreTo)
+            self.toRestore = []
+        def stripText(self,*args): self.Text1.set(fix_commas(hanzi_and_punc(self.Text1.get())))
+        def thin_down_for_lesson(self):
+            if hasattr(self,"OutputRow"): self.OutputRow.pack_forget()
+            if hasattr(self,"CopyFromButton"):
+                self.CopyFromButton.pack_forget() ; del self.CopyFromButton
+            self.LessonRow.pack_forget()
+            if GUI_usersRow: GUI_usersRow.pack_forget()
+            if hasattr(self,"BigPrintButton"):
+                self.BigPrintButton.pack_forget() ; del self.BigPrintButton
+            if hasattr(self,"TestButton"): self.TestButton.pack_forget()
+            else:
+                for i in [self.row1,self.row2,self.row3,self.row4,self.ListBox,self.rightPanel]: i.pack_forget()
+                if hasattr(self,"alternateRightPanel"):
+                    self.alternateRightPanel.pack_forget()
+                    del self.alternateRightPanel
+                if self.change_button_shown:
+                    self.ChangeButton.pack_forget()
+                    self.change_button_shown = 0
+                del self.ListBox # so doesn't sync lists, or assume Cancel button is a Clear button
+                app.master.title(appTitle)
+            self.CancelRow.pack_forget() ; self.Version.pack_forget()
+            self.Label.pack() ; self.CancelRow.pack()
+            self.Label["text"] = "Working..." # (to be replaced by time indication on real-time, not on output-to-file)
+            self.Cancel["text"] = localise("Quit")
+        def bigPrint(self,*args):
+            self.thin_down_for_lesson()
+            self.master.option_add('*font',self.bigPrintFont)
+            self.Version["font"]=self.Label["font"]=self.bigPrintFont
+            del self.bigPrintFont # (TODO do we want an option to undo it?  or would that take too much of the big print real-estate.)
+            self.check_window_position()
+            self.todo.set_main_menu = 1
+        def check_window_position(self,*args): # called when likely to be large print and filling the screen
+            try: self.master.geometry("+"+str(int(self.winfo_rootx()))+"+0")
+            except: pass
+        def makelesson(self,*args):
+            if hasattr(self,"userNo"): select_userNumber(intor0(self.userNo.get())) # in case some race condition stopped that from taking effect before (e.g. WinCE)
+            try:  numWords=int(self.NumWords.get())
+            except:
+                self.todo.alert = "Error: maximum number of new words must be an integer" ; return
+            try:  mins=float(self.Minutes.get())
+            except:
+                self.todo.alert = "Error: minutes must be a number" ; return
+            if (numWords>10 and not tkMessageBox.askyesno(self.master.title(),str(numWords)+" new words is rather a lot for one lesson.  Are you sure?")) or (mins>30 and not tkMessageBox.askyesno(self.master.title(),"More than 30 minutes is rarely more helpful.  Are you sure?")) or (mins<20 and not tkMessageBox.askyesno(self.master.title(),"Less than 20 minutes can be a rush.  Are you sure?")): return
+            global maxNewWords,maxLenOfLesson
+            d={}
+            if not maxNewWords==numWords: d["maxNewWords"]=maxNewWords=numWords
+            if not maxLenOfLesson==int(mins*60): d["maxLenOfLesson"]=maxLenOfLesson=int(mins*60)
+            if d: updateSettingsFile("advanced"+dottxt,d)
+            self.thin_down_for_lesson()
+            self.Cancel["text"] = localise("Cancel lesson")
+            self.menu_response = "go"
+        def showtest(self,*args): # Can assume main menu is shown at the moment.
+            title = localise("Manage word list")
+            if hasattr(self,"userNo"):
+                try: uname = lastUserNames[intor0(self.userNo.get())]
+                except IndexError: uname="" # can happen if it's 0 but list is empty
+                if uname:
+                    title += (": "+uname)
+                    select_userNumber(intor0(self.userNo.get())) # in case some race condition stopped that from taking effect before (e.g. WinCE)
+            app.master.title(title)
+            if hasattr(self,"BigPrintButton"):
+                self.BigPrintButton.pack_forget() ; del self.BigPrintButton
+            self.TestButton.pack_forget() ; del self.TestButton
+            for i in [self.LessonRow,self.CancelRow,self.Version]: i.pack_forget()
+            if GUI_usersRow: GUI_usersRow.pack_forget()
+            self.row1 = addRow(self.leftPanel,1)
+            self.row2 = addRow(self.leftPanel,1)
+            self.row3 = addRow(self.leftPanel)
+            self.row4 = addRow(self.leftPanel,1)
+            self.Label1,self.Text1,self.Entry1 = addLabelledBox(self.row1,True)
+            self.TestEtcCol = addRow(self.row1) # effectively adding a column to the end of the row, for "Speak" and any other buttons to do with 2nd-language text (although be careful not to add too many due to tabbing)
+            self.TestTextButton = addButton(self.TestEtcCol,"",self.testText,status="Use this button to check how the\ncomputer will pronounce words before you add them") # will set text in updateLanguageLabels
+            self.Label2,self.Text2,self.Entry2 = addLabelledBox(self.row2,True)
+            self.Entry1.bind('<Return>',self.testText)
+            self.Entry1.bind('<F5>',self.debugText)
+            self.Entry2.bind('<Return>',self.addText)
+            for e in [self.Entry1,self.Entry2]: addStatus(e,"Enter a word or phrase to add or to test\nor to search your existing collection",mouseOnly=1)
+            self.AddButton = addButton(self.row2,"",self.addText,status="Adds the pair to your vocabulary collection\nor adds extra revision if it's already there") # will set text in updateLanguageLabels
+            self.L1Label,self.L1Text,self.L1Entry = addLabelledBox(self.row3)
+            self.L2Label,self.L2Text,self.L2Entry = addLabelledBox(self.row3)
+            self.L1Entry["width"]=self.L2Entry["width"]=3
+            self.ChangeLanguageButton = addButton(self.row3,"",self.changeLanguages,status="Use this button to set your\nfirst and second languages") # will set text in updateLanguageLabels
+            if GUI_omit_settings and fileExists(vocabFile): self.row3.pack_forget()
+            if (not olpc) or textEditorCommand or explorerCommand: # no point doing this on the XO, because no way to run editor or file browser (unless someone's installed one) and "do it yourself" is probably not helpful in that environment
+                self.RecordedWordsButton = addButton(self.row4,"",self.showRecordedWords,{"side":"left"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
+                row4right = addRightRow(self.row4)
+                self.EditVocabButton = addButton(row4right,"",self.openVocabFile,{"side":"left"},status="This button lets you edit your\nvocab collection in "+textEditorName)
+                if not GUI_omit_settings: addButton(row4right,"advanced"+dottxt,self.openAdvancedTxt,{"side":"left"},status="This button lets you change advanced settings\nand do other technical things - beginners beware!")
+                self.make_lesson_row()
+            else:
+                # can at least have Recorded Words button now we have a buillt-in manager
+                self.make_lesson_row()
+                self.RecordedWordsButton = addButton(self.LessonRow,"",self.showRecordedWords,{"side":"right"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
+            if ((not olpc) or textEditorCommand or explorerCommand) and lastUserNames and lastUserNames[0]: self.CopyFromButton = addButton(cond(GUI_omit_settings,row4right,self.LessonRow),localise("Copy from..."),self.showCopyFrom,{"side":"left"},status="This button lets you copy recorded\nand computer-voiced words from other users")
+            self.remake_cancel_button(localise(cond(olpc or GUI_for_editing_only,"Quit","Back to main menu")))
+            self.ChangeButton = addButton(self.CancelRow,"",self.changeItem,{"side":"left"}) ; self.ChangeButton.pack_forget() # don't display it until select a list item
+            self.updateLanguageLabels()
+            self.LessonRow.pack() ; self.CancelRow.pack()
+            self.ListBox = Tkinter.Listbox(self.leftPanel)
+            self.ListBox.bind('<ButtonRelease-1>', self.getListItem)
+            self.ListBox.bind('<ButtonRelease-3>', self.wrongMouseButton)
+            addStatus(self.ListBox,"This is your collection of computer-voiced words.\nClick to hear, change or remove an item.")
+            self.ListBox["width"]=1 # so it will also squash down if window is narrow
+            if winCEsound: self.ListBox["font"]="Helvetica 12" # larger is awkward, but it doesn't have to be SO small!
+            elif macsound and Tkinter.TkVersion>=8.6: self.ListBox["font"]="System 16" # ok with magnification, clearer than 13
+            self.ListBox.pack(fill=Tkinter.X,expand=1) # DON'T fill Y as well, because if you do we'll have to implement more items, and that could lose the clarity of incremental search
+            if not GUI_omit_statusline: self.Version.pack()
+            self.lastText1,self.lastText2=1,1 # (different from empty string, so it sync's)
+            if not self.rightPanel:
+                self.rightPanel = Tkinter.Frame(self)
+                for i in range(min(max_extra_buttons,len(extra_buttons_waiting_list))): self.add_extra_button()
+            if not hasattr(self,"userNo") or not intor0(self.userNo.get()): self.rightPanel.pack({"side":"left"})
+            elif self.extra_button_callables:
+                self.alternateRightPanel = Tkinter.Frame(self)
+                self.alternateRightPanel.pack({"side":"left"})
+                curWidth = self.winfo_width()
+                addLabel(self.alternateRightPanel,"Only the first user can access the preset collections, but you can copy the vocab lists and recordings from each other once you've added them.")["wraplength"]=int(curWidth/2) # (presets are not really compatible with multiple users, unless re-write for copy-and-track-what's-done, which would take double the disk space on a one-person setup AND would have trouble upgrading existing users who have started into their presets)
+            if hasattr(self,"OutputRow"): addStatus(self.OutputRow,u'"'+localise("Speaker")+u'" sets all sound to play immediately, or\navailable ways of copying it to disk are listed')
+            # (NB don't try to addStatus to anything that might be preserved once go back to main menu after a failed lesson.  OutputRow is either re-created or its status removed when go back to main menu.)
+            self.Entry1.focus()
+        def add_extra_button(self):
+            global extra_buttons_waiting_list
+            extra_buttons_waiting_list[0].add()
+            extra_buttons_waiting_list = extra_buttons_waiting_list[1:]
+        def openVocabFile(self,*args): self.fileToEdit, self.menu_response = vocabFile,"edit"
+        def openAdvancedTxt(self,*args): self.fileToEdit, self.menu_response = "advanced"+dottxt,"edit"
+        def showRecordedWords(self,*args): doRecordedWordsMenu()
+        def showCopyFrom(self,*args):
+            m=Tkinter.Menu(None, tearoff=0, takefocus=0)
+            for i in range(len(lastUserNames)):
+                if lastUserNames[i] and not i==intor0(self.userNo.get()):
+                    if fileExists(addUserToFname(user0[1],i)): m.add_command(label=u"Copy vocab list from "+lastUserNames[i],command=(lambda i=i,*args:self.copyVocabFrom(i)))
+                    m.add_command(label=u"Copy recordings to/from "+lastUserNames[i],command=(lambda i=i,*args:self.setToOpen((addUserToFname(user0[0],i),addUserToFname(user0[0],intor0(self.userNo.get()))))))
+            m.tk_popup(self.CopyFromButton.winfo_rootx(),self.CopyFromButton.winfo_rooty(),entry="0")
+        def setToOpen(self,toOpen): self.menu_response,self.toOpen = "samplesCopy",toOpen
+        def copyVocabFrom(self,userNo):
+            # Copy any NEW vocab lines (including comments).  TODO could also insert them in the right place (like 'diff' without the deletions)
+            select_userNumber(userNo,updateGUI=0)
+            vCopyFrom = vocabLinesWithLangs()
+            select_userNumber(intor0(self.userNo.get()),updateGUI=0)
+            vCurrent = list2set(vocabLinesWithLangs())
+            o=appendVocabFileInRightLanguages()
+            langs = (secondLanguage,firstLanguage)
+            for newLangs,line in vCopyFrom:
+                if (newLangs,line) in vCurrent: continue # already got it
+                if not newLangs==langs: o.write("SET LANGUAGES "+" ".join(list(newLangs))+"\n")
+                o.write(line+"\n")
+                langs = newLangs
+            o.close()
+            if hasattr(self,"vocabList"): del self.vocabList # re-read
+        def setVariant(self,v):
+            scriptVariants[firstLanguage] = v
+            updateSettingsFile(settingsFile,{"scriptVariants":scriptVariants})
+            if hasattr(self,"TestButton"):
+                self.thin_down_for_lesson()
+                self.todo.set_main_menu="keep-outrow"
+            else: self.updateLanguageLabels()
+        def changeLanguages(self,*args):
+            global firstLanguage,secondLanguage
+            firstLanguage1=self.L1Text.get().encode('utf-8')
+            secondLanguage1=self.L2Text.get().encode('utf-8')
+            if (firstLanguage,secondLanguage) == (firstLanguage1,secondLanguage1): # they didn't change anything
+                langs = ESpeakSynth().describe_supported_languages()
+                msg = (localise("To change languages, edit the boxes that say '%s' and '%s', then press the '%s' button.") % (firstLanguage,secondLanguage,localise("Change languages")))+"\n\n"+localise("Recorded words may be in ANY languages, and you may choose your own abbreviations for them.  However if you want to use the computer voice for anything then please use standard abbreviations.")
+                if langs:
+                    if tkMessageBox.askyesno(self.master.title(),msg+"  "+localise("Would you like to see a list of the standard abbreviations for languages that can be computer voiced?")): self.todo.alert = localise("Languages that can be computer voiced:")+"\n"+langs
+                else: self.todo.alert = msg+"  "+localise("(Sorry, a list of these is not available on this system - check eSpeak installation.)")
+                return
+            need_redisplay = "@variants-"+firstLanguage in GUI_translations or "@variants-"+firstLanguage1 in GUI_translations # if EITHER old or new lang has variants, MUST reconstruct that row.  (TODO also do it anyway to get the "Speaker" etc updated?  but may cause unnecessary flicker if that's no big problem)
+            firstLanguage,secondLanguage = firstLanguage1,secondLanguage1
+            updateSettingsFile(settingsFile,{"firstLanguage":firstLanguage,"secondLanguage":secondLanguage})
+            if need_redisplay:
+                self.thin_down_for_lesson()
+                self.todo.set_main_menu="test"
+            else: self.updateLanguageLabels()
+            if hasattr(self,"vocabList"): del self.vocabList # it will need to be re-made now
+        def updateLanguageLabels(self):
+            # TODO things like "To" and "Speaker" need updating dynamically with localise() as well, otherwise will be localised only on restart
+            self.Label1["text"] = (localise("Word in %s") % localise(secondLanguage))+":"
+            if winsound or mingw32 or cygwin: self.Label1["text"] += "\n(" + localise("press Control-V to paste")+")"
+            elif macsound: self.Label1["text"] += "\n("+localise("press Apple-V to paste")+")"
+            self.Label2["text"] = (localise("Meaning in %s") % localise(firstLanguage))+":"
+            self.L1Text.set(firstLanguage)
+            self.L2Text.set(secondLanguage)
+            self.L1Label["text"] = localise("Your first language")+":"
+            self.L2Label["text"] = localise("second")+":"
+            self.TestTextButton["text"] = localise("Speak")
+            if hasattr(self,"userNo") and intor0(self.userNo.get()): gui_vocabFile_name="vocab file" # don't expose which user number they are because that might change
+            elif len(vocabFile)>15 and os.sep in vocabFile: gui_vocabFile_name=vocabFile[vocabFile.rindex(os.sep)+1:]
+            else: gui_vocabFile_name=vocabFile
+            self.AddButton["text"] = localise("Add to %s") % gui_vocabFile_name
+            self.ChangeLanguageButton["text"] = localise("Change languages")
+            self.ChangeButton["text"] = localise("Change or delete item")
+            if hasattr(self,"EditVocabButton"): self.EditVocabButton["text"] = localise(textEditorName)+" "+gui_vocabFile_name
+            if hasattr(self,"RecordedWordsButton"): self.RecordedWordsButton["text"] = localise("Recorded words")
+        def wrongMouseButton(self,*args): self.todo.alert="Please use the OTHER mouse button when clicking on list and button controls." # Simulating it is awkward.  And we might as well teach them something.
+        def getListItem(self,*args):
+            sel = self.ListBox.curselection()
+            if sel:
+                item = self.ListBox.get(int(sel[0]))
+                if not "=" in item: return # ignore clicks on the Loading message
+                l2,l1 = item.split('=',1)
+                self.Text1.set(l2) ; self.Text2.set(l1)
+            elif not self.ListBox.size(): self.todo.alert="The synthesized words list is empty.  You need to add synthesized words before you can click in the list."
+            else: self.todo.alert="Click on a list item to test, change or delete.  You can add a new item using the test boxes above." # Should never get here in Tk 8.4 (if click below bottom of list then last item is selected)
+        def changeItem(self,*args):
+            self.zap_newlines()
+            sel = self.ListBox.curselection()
+            l2,l1 = self.ListBox.get(int(sel[0])).split('=',1)
+            self.toDelete = l2,l1
+            if (self.Text1.get(),self.Text2.get()) == (l2,l1):
+                if tkMessageBox.askyesno(self.master.title(),localise("You have not changed the test boxes.  Do you want to delete %s?") % (l2+"="+l1,)):
+                    self.menu_response="delete"
+            else: self.menu_response="replace"
+        def testText(self,*args):
+            self.zap_newlines() # (fullstop-quote-newline combinations have been known to confuse eSpeak)
+            self.menu_response="test"
+        def debugText(self,*args):
+            # called when F5 is pressed on the 1st text box
+            # currently adds Unicode values to the text, and shows as a dialogue
+            # (for use when trying to diagnose people's copy/paste problems)
+            setTo = []
+            for c in self.Text1.get(): setTo.append(c+"["+hex(ord(c))[2:]+"]")
+            setTo=u"".join(setTo)
+            self.Text1.set(setTo) ; self.todo.alert = setTo
+        def addText(self,*args):
+            self.zap_newlines()
+            self.menu_response="add"
+        def zap_newlines(self): # in case someone pastes in text that contains newlines, better not keep them when adding to vocab
+            text1,text2 = self.Text1.get(),self.Text2.get()
+            t1,t2 = text1.replace("\n"," ").replace("\r","").strip(wsp), text2.replace("\n"," ").replace("\r","").strip(wsp)
+            if not t1==text1: self.Text1.set(t1)
+            if not t2==text2: self.Text2.set(t2)
+        def getEncoder(self,*args):
+            self.thin_down_for_lesson()
+            self.menu_response="get-encoder"
+        def setNotFirstTime(self): self.todo.not_first_time = 1
+        def setLabel(self,t): self.todo.set_label = t
+        def cancel(self,*args):
+            if hasattr(self,"ListBox"): # it MIGHT be a 'clear' button
+                text1,text2 = self.Text1.get(),self.Text2.get()
+                if text1 or text2:
+                    self.Text1.set("") ; self.Text2.set("")
+                    if self.ListBox.curselection(): self.ListBox.selection_clear(int(self.ListBox.curselection()[0]))
+                    self.Cancel["text"] = localise(cond(olpc or GUI_for_editing_only,"Quit","Back to main menu"))
+                    return
+                elif olpc or GUI_for_editing_only: pass # fall through to Quit
+                else:
+                    # (comment this out if you want the Quit button to really quit even from add/test words, but probably don't want this now there are other options on the main menu e.g. user switching)
+                    self.thin_down_for_lesson()
+                    if hasattr(self,"OutputRow"): removeStatus(self.OutputRow)
+                    self.todo.set_main_menu="keep-outrow" ; return
+            if not self.cancelling:
+                if emulated_interruptMain:
+                    self.setLabel("Trying to interrupt main thread, please wait...")
+                    global need_to_interrupt ; need_to_interrupt = 1
+                else: thread.interrupt_main()
+            self.cancelling = 1
+    def appThread(appclass):
+        global app ; appclass() # sets 'app' to itself on construction
+        app.master.title(appTitle)
+        app.mainloop()
+        closeBoxPressed = not hasattr(app.todo,"exit_ASAP")
+        app = 0 # (not None - see 'app==None' below)
+        if closeBoxPressed:
+            if emulated_interruptMain:
+                global need_to_interrupt ; need_to_interrupt = 1
+            else: thread.interrupt_main()
+    def processing_thread():
+        while not app: time.sleep(0.1) # make sure started
+        rest_of_main()
+    if Tkinter.TkVersion < 8.5: # we can do the processing in the main thread, so interrupt_main works
+        thread.start_new_thread(appThread,(Application,))
+        processing_thread()
+    else: # GUI must have main thread
+        global emulated_interruptMain ; emulated_interruptMain = 1
+        thread.start_new_thread(processing_thread,())
+        appThread(Application)
+
+def hanzi_only(unitext): return u"".join(filter(lambda x:0x3000<=ord(x)<0xa700 or ord(x)>=0x10000, list(unitext)))
+def hanzi_and_punc(unitext): return u"".join(filter(lambda x:0x3000<=ord(x)<0xa700 or ord(x)>=0x10000 or x in '.,?;":\'()[]!0123456789-', list(remove_tone_numbers(fix_compatibility(unitext)))))
+def guiVocabList(parsedVocab):
+    # This needs to be fast.  Have tried writing interatively rather than filter and map, and assume stuff is NOT already unicode (so just decode rather than call ensure_unicode) + now assuming no !synth: (but can still run with .txt etc)
+    sl2,fl2 = "_"+secondLanguage,"_"+firstLanguage
+    sl3,fl3 = sl2+dottxt, fl2+dottxt # txt files
+    # (sample files are omitted from the list)
+    sl2Len,fl2Len = -len(sl2),-len(fl2)
+    def readText(l): return u8strip(open(samplesDirectory+cond(samplesDirectory,os.sep,"")+l,"rb").read()).strip(wsp) # see utils/transliterate.py (running guiVocabList on txt files from scanSamples)
+    ret = []
+    for a,b,c in parsedVocab:
+        if c.endswith(sl2): c=c[:sl2Len]
+        elif c.endswith(sl3): c=readText(c)
+        else: continue
+        if type(b)==type([]): b=b[cond(len(b)==3,1,-1)]
+        if b.endswith(fl2): b=b[:fl2Len]
+        elif b.endswith(fl3): b=readText(b)
+        else: continue
+        ret.append((unicode(c,"utf-8"),unicode(b,"utf-8")))
+    return ret
+
+def singular(number,s):
+  s=localise(s)
+  if firstLanguage=="en" and number==1 and s[-1]=="s": return s[:-1]
+  return s
+def localise(s):
+  d = GUI_translations.get(s,{}) ; s2 = 0
+  if scriptVariants.get(firstLanguage,0): s2 = d.get(firstLanguage+str(scriptVariants[firstLanguage]+1),0)
+  if not s2: s2 = d.get(firstLanguage,s)
+  return s2
+if Tk_might_display_wrong_hanzi: localise=lambda s:s
+if winCEsound: # some things need more squashing
+    del localise
+    def localise(s):
+        s=GUI_translations.get(s,{}).get(firstLanguage,s)
+        return {"Your first language":"1st","second":"2nd"}.get(s,s)
+
+def synchronizeListbox(listbox,masterList):
+    mi=li=0 ; toDelete = []
+    while True:
+        l=listbox.get(li)
+        if mi==len(masterList):
+            if not l: break
+            elif l in masterList: listbox.delete(li) # re-ordering - unconditionally delete
+            else:
+                toDelete.append(li) ; li += 1
+            continue
+        if masterList[mi]==l: mi,li=mi+1,li+1
+        elif (not l) or (l in masterList[mi+1:]): # masterList has an extra item before l, or at the end
+            listbox.insert(li,masterList[mi])
+            mi,li=mi+1,li+1
+        elif l in masterList[:mi]: listbox.delete(li) # re-ordering - unconditionally delete
+        else:
+            toDelete.append(li) ; li += 1
+    toDelete.reverse() # last one first so don't disrupt numbers
+    i=0
+    while i<len(toDelete):
+        if not listbox.get(tkNumWordsToShow): break
+        listbox.delete(toDelete[i]) ; i += 1
+    # When list shrinks small enough, move words down instead of deleting
+    li=len(masterList)+len(toDelete)-i # i.e. just past current end of list
+    while i<len(toDelete):
+        if not toDelete[i]==li-1: # not in right place already
+            listbox.insert(li,listbox.get(toDelete[i]))
+            listbox.delete(toDelete[i])
+        i += 1 ; li -= 1
+
+# Tk stuff (must be done outside of main() so the imported modules are globally visible)
+if soundCollector or justSynthesize or appuifw or not (winsound or winCEsound or mingw32 or macsound or riscos_sound or cygwin or "DISPLAY" in os.environ): useTK = runInBackground = 0
+if useTK:
+    # Find editor and file-manager commands for the GUI to use
+    textEditorName="Edit" ; textEditorWaits=0
+    textEditorCommand=explorerCommand=None
+    if winsound or mingw32 or cygwin:
+        textEditorName="Notepad" ; textEditorWaits=1
+        # Try Notepad++ first, otherwise plain notepad
+        textEditorCommand = programFiles+os.sep+"Notepad++"+os.sep+"notepad++.exe"
+        if fileExists(textEditorCommand): textEditorCommand='"'+textEditorCommand+'" -multiInst -notabbar -nosession'
+        else: textEditorCommand="notepad"
+        explorerCommand="explorer"
+    elif macsound:
+        textEditorName="TextEdit"
+        textEditorCommand="open -e"
+        if got_program("bbedit"):
+            textEditorName="bbedit"
+            textEditorCommand="bbedit -w" ; textEditorWaits=1
+        if sys.version.startswith("2.3.5") and "DISPLAY" in os.environ: explorerCommand = None # 'open' doesn't seem to work when running from within Python in X11 on 10.4
+        else: explorerCommand="open"
+    elif unix:
+        if "KDE_FULL_SESSION" is os.environ and got_program("kfmclient"):
+            # looks like we're in a KDE session and can use the kfmclient command
+            textEditorCommand=explorerCommand="kfmclient exec"
+        elif got_program("gnome-open"):
+            textEditorCommand=explorerCommand="gnome-open"
+        elif got_program("rox"):
+            # rox is available - try using that to open directories
+            # (better not use it for editor as it might not be configured)
+            # (TODO if both rox and gnome-open are available, can we tell which one the user prefers?  currently using gnome-open)
+            explorerCommand="rox"
+        # anyway, see if we can find a nice editor
+        for editor in ["gedit","nedit","kedit","xedit"]:
+            if got_program(editor):
+                textEditorName=textEditorCommand=editor
+                textEditorWaits = 1
+                if textEditorName.endswith("edit"):
+                    textEditorName=textEditorName[:-4]+"-"+textEditorName[-4:]
+                    textEditorName=textEditorName[0].upper()+textEditorName[1:]
+                break
+    # End of finding editor - now start GUI
+    try:
+        import thread,Tkinter,tkMessageBox
+        if olpc:
+            def interrupt_main(): os.kill(os.getpid(),2) # sigint
+            thread.interrupt_main = interrupt_main
+            # (os.kill is more reliable than interrupt_main() on OLPC, *but* on Debian Sarge (2.4 kernel) threads are processes so DON'T do this.)
+        elif not hasattr(thread,"interrupt_main"): emulated_interruptMain = 1
+        else:
+            try: # work around the "int object is not callable" thing on some platforms' interrupt_main
+                import signal
+                def raise_int(*args): raise KeyboardInterrupt
+                signal.signal(signal.SIGINT,raise_int)
+            except: pass
+    except RuntimeError:
+        runInBackground = useTK = 0
+        if __name__=="__main__": show_warning("Cannot start the GUI due to a Tk error")
+    except ImportError:
+        runInBackground = useTK = 0
+        if __name__=="__main__" and not riscos_sound: show_warning("Cannot start the GUI because tkinter package is not installed on this system"+cond(fileExists("/var/lib/dpkg/status")," (try python-tk in Debian)","")+".")
+
+def openDirectory(dir):
+    if winCEsound:
+        if not dir[0]=="\\": dir=os.getcwd()+cwd_addSep+dir # must be absolute
+        ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u"\\Windows\\fexplore",Parameters=u""+dir)))
+    elif explorerCommand:
+        cmd = explorerCommand+" "+dir
+        if winsound or mingw32: cmd="start "+cmd # (not needed on XP but is on Vista)
+        elif unix: cmd += "&"
+        os.system(cmd)
+    else: waitOnMessage("Don't know how to start the file explorer.  Please open the %s directory (in %s)" % (dir,os.getcwd()))
+
+def sanityCheck(text,language,pauseOnError=0): # text is utf-8; returns error message if any
+    if not text: return # always OK empty strings
+    if pauseOnError:
+        ret = sanityCheck(text,language)
+        if ret: waitOnMessage(ret)
+        return ret
+    if language=="zh":
+        for t in text:
+            if ord(t)>127: return # got hanzi or tone marks
+            if t in "12345": return # got tone numbers
+        return "Pinyin needs tones.  Please go back and add tone numbers to "+text+"."+cond(startBrowser("http://www.pristine.com.tw/lexicon.php?query="+fix_pinyin(text,[]).replace("1","1 ").replace("2","2 ").replace("3","3 ").replace("4","4 ").replace("5"," ").replace("  "," ").strip(wsp).replace(" ","+"))," Gradint has pointed your web browser at an online dictionary that might help.","")
+
+def check_for_slacking():
+    if fileExists(progressFile): checkAge(progressFile,localise("It has been %d days since your last Gradint lesson.  Please try to have one every day."))
+    else:
+        installDateFile = progressFile.replace("progress","installed")
+        if not fileExists(installDateFile):
+            try: open(installDateFile,"w")
+            except: pass
+        else: checkAge(installDateFile,localise("It has been %d days since you installed Gradint and you haven't had a lesson yet.  Please try to have one every day."))
+def checkAge(fname,message):
+    days = int((time.time()-os.stat(fname)[8])/3600/24)
+    if days>=5 and (days%5)==0: waitOnMessage(message % days)
+
+def gui_wrapped_main_loop():
+    app.todo.set_main_menu = 1 ; braveUser = 0
+    if (orig_onceperday&2) and not need1adayMessage: check_for_slacking() # when running every day + 1st run of today
+    while app:
+        while not hasattr(app,"menu_response"):
+            if warnings_printed: waitOnMessage("") # If running gui_wrapped_main_loop, better put any warnings in a separate dialogue now, rather than waiting for user to get one via 'make lesson' or some other method
+            if hasattr(app,"needVocablist") and not hasattr(app,"vocabList"):
+                v = guiVocabList(parseSynthVocab(vocabFile,1)) # (in non-GUI thread because can take a while when large)
+                if app: app.vocabList = v # check again because there's a race condition if close the app while parseSynthVocab is running
+                else: return
+                del v
+            if emulated_interruptMain: check_for_interrupts()
+            time.sleep(0.3)
+        if app.menu_response=="go":
+            gui_outputTo_start()
+            if not soundCollector: app.todo.add_briefinterrupt_button = 1
+            try: main_loop()
+            except KeyboardInterrupt: pass # probably pressed Cancel Lesson while it was still being made (i.e. before handleInterrupt)
+            if app and not soundCollector: app.todo.remove_briefinterrupt_button = 1 # (not app if it's closed by the close box)
+            gui_outputTo_end()
+            if not app: return # (closed by the close box)
+            else: app.todo.set_main_menu = 1
+        elif app.menu_response=="edit":
+            if winCEsound:
+                if braveUser or getYN("You can break things if you don't read what it says and keep to the same format.  Continue?"):
+                    braveUser = 1
+                    # WinCE Word does not save non-Western characters when saving plain text (even if there's a Unicode "cookie")
+                    waitOnMessage("WARNING: Word may not save non-Western characters properly.  Try an editor like MADE instead (need to set its font).") # TODO Flinkware MADE version 2.0.0 has been known to insert spurious carriage returns at occasional points in large text files
+                    if not app.fileToEdit[0]=="\\": app.fileToEdit=os.getcwd()+cwd_addSep+app.fileToEdit # must be absolute
+                    if not fileExists(app.fileToEdit): open(app.fileToEdit,"w") # at least make sure it exists
+                    ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u""+app.fileToEdit)))
+                    waitOnMessage("When you've finished editing "+app.fileToEdit+", close it and start gradint again.")
+                    return
+            elif textEditorCommand:
+                if braveUser or getYN("About to open "+app.fileToEdit+" in "+textEditorName+".\nYou can break things if you don't read what it says and keep to the same format.\nDo you really want to continue?"):
+                    braveUser = 1 ; fileToEdit=app.fileToEdit
+                    if not fileExists(fileToEdit): open(fileToEdit,"w") # at least make sure it exists
+                    if textEditorWaits:
+                        oldContents = open(fileToEdit,"rb").read()
+                        if paranoid_file_management: # run the editor on a temp file instead (e.g. because gedit can fail when saving over ftpfs)
+                            fileToEdit=os.tempnam()+dottxt
+                            open(fileToEdit,"w").write(oldContents)
+                    cmd = textEditorCommand+" "+fileToEdit
+                    if textEditorWaits:
+                        if macsound: app.todo.thindown="Waiting for you to close the "+textEditorName+" window"
+                        else: app.todo.thindown="Waiting for you to quit "+textEditorName
+                        t = time.time()
+                        system(cmd)
+                        if time.time() < t+3: waitOnMessage(textEditorName+" returned control to Gradint in less than 3 seconds.  Perhaps you already had an instance running and it loaded the file remotely.  Press OK when you have finished editing the file.")
+                        newContents = open(fileToEdit,"rb").read()
+                        if not newContents==oldContents:
+                            if paranoid_file_management: open(app.fileToEdit,"w").write(newContents)
+                            if app.fileToEdit==vocabFile: del app.vocabList # re-read
+                            else: waitOnMessage("The changes you made to "+app.fileToEdit+" will take effect when you quit Gradint and start it again.")
+                        del oldContents,newContents
+                        if paranoid_file_management: os.remove(fileToEdit) # the temp file
+                        app.todo.set_main_menu = "test" # back to the Add/Test screen
+                    else: # not textEditorWaits
+                        if winsound or mingw32: cmd="start "+cmd
+                        elif unix: cmd += "&"
+                        os.system(cmd)
+                        waitOnMessage("Gradint has started "+textEditorName+", and will now quit.\nWhen you have finished editing "+app.fileToEdit+", save it and start gradint again.")
+                        return
+            else: waitOnMessage("Don't know how to start the text editor.  Please edit %s yourself (in %s)" % (app.fileToEdit,os.getcwd()))
+        elif app.menu_response=="samples":
+            setup_samplesDir_ifNec()
+            openDirectory(samplesDirectory)
+        elif app.menu_response=="samplesCopy":
+            for i in app.toOpen:
+                setup_samplesDir_ifNec(i)
+                openDirectory(i)
+            del app.toOpen
+            waitOnMessage("Gradint has opened both of the recorded words folders, so you can copy things across.")
+        elif app.menu_response=="test":
+            text1 = app.Text1.get().encode('utf-8') ; text2 = app.Text2.get().encode('utf-8')
+            if not text1 and not text2: app.todo.alert=u"Before pressing the "+localise("Speak")+u" button, you need to type the text you want to hear into the box."
+            else:
+              msg=sanityCheck(text1,secondLanguage)
+              if msg: app.todo.alert=u""+msg
+              else:
+                app.set_watch_cursor = 1 ; app.toRestore = []
+                global justSynthesize ; justSynthesize = ""
+                def doControl(text,lang,control):
+                    global justSynthesize
+                    restoreTo = control.get()
+                    if text:
+                        if can_be_synthesized("!synth:"+text+"_"+lang): justSynthesize += ("#"+lang+" "+text)
+                        else: app.todo.alert="Cannot find a synthesizer that can say '"+text+"' in language '"+lang+"' on this system"
+                        t=transliterates_differently(text,lang)
+                        if t:
+                            control.set(t) ; app.toRestore.append((control,t,restoreTo))
+                doControl(text1,secondLanguage,app.Text1)
+                def doSynth():
+                    gui_outputTo_start() ; just_synthesize() ; gui_outputTo_end()
+                    global justSynthesize ; justSynthesize = ""
+                    if app: app.unset_watch_cursor = 1 # otherwise was closed by the close box
+                if ask_teacherMode and text1 and text2: # Do the L2, then ask if actually WANT the L1 as well (might be useful on WinCE etc, search-and-demonstrate-L2)
+                    doSynth()
+                    if app and getYN("Also speak the %s?" % firstLanguage):
+                        doControl(text2,firstLanguage,app.Text2)
+                        doSynth()
+                else:
+                    doControl(text2,firstLanguage,app.Text2)
+                    doSynth()
+        elif app.menu_response=="get-encoder":
+          if winsound or mingw32:
+            if getYN("Gradint can use Windows Media Encoder to make WMA files, which can be played on most pocket MP3 players and mobiles etc.  Do you want to go to the Microsoft site to install Windows Media Encoder now?"):
+              if not startBrowser('http://www.microsoft.com/windows/windowsmedia/forpros/encoder/default.mspx'): app.todo.alert = "There was a problem starting the web browser.  Please install manually (see notes in advanced.txt)."
+              else:
+                app.setLabel("Waiting for you to install Media Encoder")
+                while not fileExists(programFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs"): time.sleep(1)
+          else:
+            if getYN("Do you really want to download and compile the LAME MP3 encoder? (this may take a while)"):
+              app.setLabel("Downloading...")
+              while True:
+                if not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi; if ! test -e lame*.tar.gz; then if ! $Curl "$($Curl "http://sourceforge.net/project/showfiles.php?group_id=290&package_id=309"|grep tar.gz|head -1|sed -e 's/.*http:/http:/' -e 's/.tar.gz.*/.tar.gz/')" > lame.tar.gz; then rm -f lame.tar.gz; exit 1; fi; fi"""): break
+                if not getYN("Download failed.  Try again?"): break
+              app.setLabel("Compiling...")
+              if system("""tar -zxvf lame*.tar.gz && cd lame-* && if ./configure && make; then ln -s $(pwd)/frontend/lame ../lame || true; else cd .. ; rm -rf lame*; exit 1; fi"""): app.todo.alert = "Compile failed"
+          app.todo.set_main_menu = 1
+        elif (app.menu_response=="add" or app.menu_response=="replace") and not (app.Text1.get() and app.Text2.get()): app.todo.alert="You need to type text in both boxes before adding the word/meaning pair to "+vocabFile
+        elif app.menu_response=="add" and hasattr(app,"vocabList") and (app.Text1.get(),app.Text2.get()) in app.vocabList:
+            # Trying to add a word that's already there - do we interpret this as a progress adjustment?
+            app.set_watch_cursor = 1
+            d = ProgressDatabase(0)
+            lang2,lang1=app.Text1.get().lower(),app.Text2.get().lower() # because it's .lower()'d in progress.txt
+            l1find = "!synth:"+lang1.encode('utf-8')+"_"+firstLanguage
+            found = 0
+            msg=(u""+localise("%s=%s is already in %s.")) % (app.Text1.get(),app.Text2.get(),vocabFile)
+            for listToCheck in [d.data,d.unavail]:
+              if found: break
+              for item in listToCheck:
+                if (item[1]==l1find or (type(item[1])==type([]) and l1find in item[1])) and item[2]=="!synth:"+lang2.encode('utf-8')+"_"+secondLanguage:
+                    if not item[0]: break # not done yet - as not-found
+                    app.unset_watch_cursor = 1
+                    # suggested reduction:
+                    thresholds=[1,2,knownThreshold,reallyKnownThreshold,meaningTestThreshold,randomDropThreshold,randomDropThreshold2] ; thresholds.sort() ; thresholds.reverse()
+                    newItem0 = 0
+                    for i in range(len(thresholds)-1):
+                        if item[0]>thresholds[i]:
+                            newItem0=thresholds[i+1] ; break
+                    if getYN(msg+" "+localise("Repeat count is %d. Reduce this to %d for extra revision?" % (item[0],newItem0))):
+                        app.set_watch_cursor = 1
+                        listToCheck.remove(item)
+                        listToCheck.append((newItem0,item[1],item[2]))
+                        d.save() ; app.unset_watch_cursor = 1
+                        app.Text1.set("") ; app.Text2.set("") ; app.Entry1.focus()
+                    found = 1 ; break
+            if not found:
+                app.unset_watch_cursor = 1
+                app.todo.alert=msg+" "+localise("Repeat count is 0, so we cannot reduce it for extra revision.")
+        elif app.menu_response=="add":
+            text1 = app.Text1.get().encode('utf-8') ; text2 = app.Text2.get().encode('utf-8')
+            msg=sanityCheck(text1,secondLanguage)
+            if msg: app.todo.alert=u""+msg
+            else:
+                o=appendVocabFileInRightLanguages()
+                o.write(text1+"="+text2+"\n") # was " = " but it slows down parseSynthVocab
+                o.close()
+                if hasattr(app,"vocabList"): app.vocabList.append((app.Text1.get(),app.Text2.get()))
+                app.Text1.set("") ; app.Text2.set("") ; app.Entry1.focus()
+        elif app.menu_response=="delete" or app.menu_response=="replace":
+            app.set_watch_cursor = 1
+            lang2,lang1 = app.toDelete
+            langs = [secondLanguage,firstLanguage]
+            v=u8strip(open(vocabFile,"rb").read()).replace("\r\n","\n").replace("\r","\n")
+            o=open(vocabFile,"w") ; found = 0
+            if last_u8strip_found_BOM: o.write('\xef\xbb\xbf') # re-write it
+            v=v.split("\n")
+            if v and not v[-1]: v=v[:-1] # don't add an extra blank line at end
+            for l in v:
+                l2=l.lower()
+                if l2.startswith("set language ") or l2.startswith("set languages "):
+                    langs=l.split()[2:] ; o.write(l+"\n") ; continue
+                thisLine=map(lambda x:x.strip(wsp),l.split("=",len(langs)-1))
+                if (langs==[secondLanguage,firstLanguage] and thisLine==[lang2.encode('utf-8'),lang1.encode('utf-8')]) or (langs==[firstLanguage,secondLanguage] and thisLine==[lang1.encode('utf-8'),lang2.encode('utf-8')]):
+                    # delete this line.  and maybe replace it
+                    if app.menu_response=="replace":
+                        if langs==[secondLanguage,firstLanguage]: o.write(app.Text1.get().encode("utf-8")+"="+app.Text2.get().encode("utf-8")+"\n")
+                        else: o.write(app.Text2.get().encode("utf-8")+"="+app.Text1.get().encode("utf-8")+"\n")
+                    found = 1
+                else: o.write(l+"\n")
+            o.close()
+            if found and app.menu_response=="replace": # maybe hack progress.txt as well (taken out of the above loop for better failsafe)
+                d = ProgressDatabase(0)
+                lang2,lang1=lang2.lower(),lang1.lower() # because it's .lower()'d in progress.txt
+                l1find = "!synth:"+lang1.encode('utf-8')+"_"+firstLanguage
+                for item in d.data:
+                    if (item[1]==l1find or (type(item[1])==type([]) and l1find in item[1])) and item[2]=="!synth:"+lang2.encode('utf-8')+"_"+secondLanguage and item[0]:
+                        app.unset_watch_cursor = 1
+                        if not getYN(localise("You have repeated %s=%s %d times.  Do you want to pretend you already repeated %s=%s %d times?") % (lang2,lang1,item[0],app.Text2.get(),app.Text1.get(),item[0])):
+                            app.set_watch_cursor = 1 ; break
+                        d.data.remove(item)
+                        l1replace = "!synth:"+app.Text2.get().encode('utf-8')+"_"+firstLanguage
+                        if type(item[1])==type([]):
+                            l = item[1]
+                            l[l.index(l1find)] = l1replace
+                        else: l=l1replace
+                        item = (item[0],l,"!synth:"+app.Text1.get().encode('utf-8')+"_"+secondLanguage)
+                        d.data.append(item)
+                        app.set_watch_cursor = 1
+                        for i2 in d.unavail:
+                            if i2[1:]==item[1:]:
+                                d.unavail.remove(i2) # because we updated the item above - don't want duplicates
+                                break
+                        d.save()
+                        break
+            del app.vocabList # re-read
+            app.Text1.set("") ; app.Text2.set("")
+            app.Entry1.focus()
+            app.unset_watch_cursor = 1
+            if not found: app.todo.alert = "OOPS: Item to delete/replace was not found in "+vocabFile
+        if app: del app.menu_response
+
+def vocabLinesWithLangs(): # used for merging different users' vocab files
+    langs = [secondLanguage,firstLanguage] ; ret = []
+    try: v=u8strip(open(vocabFile,"rb").read()).replace("\r","\n")
+    except IOError: v=""
+    for l in v.split("\n"):
+        l2=l.lower()
+        if l2.startswith("set language ") or l2.startswith("set languages "): langs=l.split()[2:]
+        elif l: ret.append((tuple(langs),l)) # TODO what about blank lines? (currently they'd be considered duplicates)
+    return ret
+
+def appendVocabFileInRightLanguages():
+    # check if we need a SET LANGUAGE
+    langs = [secondLanguage,firstLanguage]
+    try: v=u8strip(open(vocabFile,"rb").read()).replace("\r","\n")
+    except IOError: v=""
+    for l in v.split("\n"):
+        l2=l.lower()
+        if l2.startswith("set language ") or l2.startswith("set languages "): langs=l.split()[2:]
+    o=open(vocabFile,"a")
+    if not v.endswith("\n"): o.write("\n")
+    if not langs==[secondLanguage,firstLanguage]: o.write("SET LANGUAGES "+secondLanguage+" "+firstLanguage+"\n")
+    return o
+
+def transliterates_differently(text,lang):
+    global last_partials_transliteration ; last_partials_transliteration=None
+    global partials_are_sporadic ; o=partials_are_sporadic ; partials_are_sporadic = None # don't want to touch the counters here
+    if synthcache_lookup("!synth:"+text+"_"+lang):
+        partials_are_sporadic = o
+        if last_partials_transliteration and not last_partials_transliteration==text: return last_partials_transliteration
+        else: return # (don't try to translit. if was in synth cache - will have no idea which synth did it)
+    partials_are_sporadic = o
+    synth=get_synth_if_possible(lang,0) # not to_transliterate=True this time because we want the synth that actually synth'd it (may have done it differently from the transliterating synth)
+    if not synth: return
+    translit=synth.transliterate(lang,text,forPartials=0)
+    if translit and not translit==text: return translit
+
+gui_output_counter = 1
+def gui_outputTo_start():
+    if hasattr(app,"outputTo") and app.outputTo.get():
+        global outputFile ; outputFile=None
+        try: os.mkdir(gui_output_directory)
+        except: pass
+        global gui_output_counter
+        while not outputFile or fileExists(outputFile):
+            outputFile=gui_output_directory+os.sep+str(gui_output_counter)+extsep+app.outputTo.get()
+            gui_output_counter += 1
+        global write_to_stdout ; write_to_stdout = 0
+        global out_type ; out_type = app.outputTo.get()
+        global need_run_media_encoder
+        if out_type=="wma" or (out_type=="aac" and not got_program("faac")):
+            need_run_media_encoder = (out_type,outputFile)
+            out_type="wav" ; outputFile=os.tempnam()+dotwav
+        else: need_run_media_encoder = 0
+        global soundCollector ; soundCollector = SoundCollector()
+        global waitBeforeStart, waitBeforeStart_old
+        waitBeforeStart_old = waitBeforeStart ; waitBeforeStart = 0
+def gui_outputTo_end():
+    global outputFile, soundCollector, waitBeforeStart
+    if outputFile:
+        no_output = not soundCollector.tell() # probably 'no words to put in the lesson'
+        soundCollector = None
+        if no_output: os.remove(outputFile)
+        elif need_run_media_encoder:
+            t,f = need_run_media_encoder
+            oldF = f
+            if cygwin:
+                o=outputFile.replace("/","\\")
+                if o.lower().startswith("\\cygdrive\\"): o=o[10]+":"+o[11:] # reverse \cygdrive paths back to DOS (in case used for temp dirs etc)
+                if o.startswith("\\"): o="C:\\cygwin"+o # e.g. c:\cygwin\tmp
+                f=f.replace("/","\\")
+            else: o=outputFile
+            if t=="wma":
+                pFiles = programFiles
+                if cygwin: pFiles=os.environ.get("ProgramFiles","C:\\Program Files") # re-generate it (don't want Cygwin path version)
+                # NB we're passing this to cmd, NOT bash:
+                cmd = "cscript \""+pFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs\" -input \""+o+"\" -output \""+f+"\" -profile a20_1 -a_content 1"
+            elif t=="aac": cmd="afconvert \""+o+"\" -d aac \""+f+"\"" # could also use "afconvert file.wav -d samr file.amr", but amr is bigger than aac and not as good; don't know if anyone has a device that plays amr but not aac.
+            else: assert 0
+            if cygwin:
+                assert not "'" in cmd, "apostrophees in pathnames could cause trouble on cygwin"
+                cmd="echo '"+cmd+" && exit' | cmd" # seems the only way to get it to work on cygwin
+            system(cmd)
+            os.remove(outputFile)
+            if not fileExists(oldF):
+                m = "This computer's "+t.upper()+" encoder failed to write any output.  Try a different format."
+                if t=="wma": m += " (This condition can be caused by some program changing the registry entries for VBS scripts.)"
+                app.todo.alert = m
+                no_output = 1
+        outputFile=None
+        waitBeforeStart = waitBeforeStart_old
+        if not no_output: openDirectory(gui_output_directory)
+
+def main():
+    global useTK,runInBackground,justSynthesize,waitBeforeStart,traceback,appTitle
+    if useTK and runInBackground and not (winsound or mingw32) and hasattr(os,"fork") and not "gradint_no_fork" in os.environ:
+        if os.fork(): sys.exit()
+        os.setsid() # decouple
+        sys.stdin.close() ; sys.stdout.close() ; sys.stderr.close() # for cron (??? doesn't work?) ('at' OK)
+        class Sink(file):
+            def __init__(self): pass
+            def write(self,*args): pass
+        sys.stdout = sys.stderr = Sink()
+        # emacs still not ok with this; even double-fork doesn't help
+    else: runInBackground = 0
+    if useTK:
+        if justSynthesize and not justSynthesize[-1]=='*': appTitle=cond('#' in justSynthesize,"Gradint","Reader") # not "language lesson"
+        startTk()
+    else: rest_of_main()
+def rest_of_main():
+    global useTK,runInBackground,justSynthesize,waitBeforeStart,traceback,appTitle
+    exitStatus = 0
+    try:
+        if justSynthesize=="-": primitive_synthloop()
+        elif justSynthesize and justSynthesize[-1]=='*':
+            justSynthesize=justSynthesize[:-1]
+            waitBeforeStart = 0
+            just_synthesize() ; main_loop()
+        elif justSynthesize: just_synthesize()
+        elif app and waitBeforeStart: gui_wrapped_main_loop()
+        else: main_loop()
+    except SystemExit: pass
+    except KeyboardInterrupt: pass
+    except PromptException:
+        waitOnMessage("\nProblem finding prompts:\n"+sys.exc_info()[1].message+"\n")
+        exitStatus = 1
+    except:
+        w="\nSomething has gone wrong with my program.\nThis is not your fault.\nPlease let me know what it says.\nThanks.  Silas\n"
+        w += str(sys.exc_info()[0])
+        if not sys.exc_info()[1]==None: w += (": "+str(sys.exc_info()[1]))
+        tbObj = sys.exc_info()[2]
+        while tbObj and hasattr(tbObj,"tb_next") and tbObj.tb_next: tbObj=tbObj.tb_next
+        if tbObj and hasattr(tbObj,"tb_lineno"): w += (" at line "+str(tbObj.tb_lineno))
+        if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and not tbObj.tb_frame.f_code.co_filename.find("gradint"+extsep+"py")>-1: w += (" in "+tbObj.tb_frame.f_code.co_filename+"\n")
+        else: w += (" in "+program_name[:program_name.index("(c)")]+"\n")
+        del tbObj
+        try: import traceback
+        except:
+            w += "Cannot import traceback"
+            traceback = None
+        if traceback and useTK: traceback.print_exc() # BEFORE waitOnMessage, in case Tk is stuck (hopefully the terminal is visible)
+        try:
+            if not soundCollector and get_synth_if_possible("en",0): synth_event("en","Error in gradint program.").play() # if possible, give some audio indication of the error
+        except: pass
+        waitOnMessage(w)
+        try: tracebackFile=open("last-gradint-error"+extsep+"txt","w") # TODO document this in the user message?
+        except: tracebackFile=None
+        if tracebackFile: tracebackFile.write(w+"\n")
+        if traceback and not useTK: traceback.print_exc()
+        if traceback and tracebackFile: traceback.print_exc(None,tracebackFile)
+        exitStatus = 1
+    # It is not guaranteed that __del__() methods are called for objects that still exist when the interpreter exits.  So:
+    global viable_synths,getsynth_cache,theMp3FileCache
+    del viable_synths,getsynth_cache,theMp3FileCache
+    if app:
+        app.todo.exit_ASAP=1
+        while app: time.sleep(0.2)
+    elif not app==None: pass # (gets here if WAS 'app' but was closed - DON'T output anything to stderr in this case)
+    elif appuifw: appuifw.app.set_exit()
+    elif riscos_sound: show_info("The gradint program has terminated - you can now close this Task Window.\n")
+    else: show_info("\n") # in case got any \r'd string there - don't want to confuse the next prompt
+    if exitStatus: sys.exit(exitStatus)
+
+if __name__=="__main__": main() # Note: calling main() is the ONLY control logic that can happen under the 'if __name__=="__main__"' block; everything else should be in main() itself.  This is because gradint-wrapper.exe under Windows calls main() from the exe and does not call this block

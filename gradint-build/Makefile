@@ -1,0 +1,205 @@
+
+# Do NOT run with "make -j" or other parallelisations - some of these rules have conflicting tempfiles
+
+# Stuff in Extra_Data does not have to be present,
+# but if present will be included in all versions.
+# Use this for bundling Gradint with partials-synths,
+# preset-collections, encoders, whatever, into one
+# installer for giving to someone.
+Extra_Data=partials *_disabled [^g]*.exe
+
+#Unix_To_Dos=flip -m
+# Unix_To_Dos=unix2dos -k -o -q # (keep date, run quietly)
+Unix_To_Dos=unix2dos # (-k -o -q are not recognised on all systems)
+
+All_Versions=gradint.exe gradint.tbz gradint.bgz gradint.zip gradint-build.bgz gradintcab.zip
+# dropping gradint-noGUI.exe and GUI.exe for now - probably don't need that separation anymore
+
+SHELL=/bin/bash
+
+EData := $(shell for N in $(Extra_Data); do if test -e $$N; then echo $$N; fi; done)
+
+Common_Files=vocab.txt settings.txt advanced.txt samples $(EData)
+Most_Mac_Files=$(Common_Files) gradint.py
+Mac_Files=$(Most_Mac_Files) start-gradint.app
+Linux_Files=$(Common_Files) gradint.py INSTALL.txt
+Riscos_Files=$(Common_Files) gradint.py
+
+CODE=src/lessonplan.py src/sequence.py src/loop.py src/booktime.py src/play.py src/synth.py src/makeevent.py src/filescan.py src/recording.py
+SETUP=src/top.py src/defaults.py src/system.py
+ENDING=src/frontend.py
+SOURCES=$(SETUP) $(CODE) $(ENDING)
+
+gradint.py: $(SOURCES)
+	chmod +w gradint.py 2>/dev/null || true
+	cat $(SOURCES) > gradint.py
+	chmod a-w gradint.py
+	chmod +x gradint.py
+	python -c "import gradint" && rm -f gradint.pyc # just to make sure it compiles
+
+src/defaults.py: settings.txt advanced.txt Makefile
+	echo "# This is the start of defaults.py - configuration defaults, automatically extracted from default settings.txt and advanced.txt, so user customisations don't have to be complete (helps with upgrades)" > src/defaults.py
+	cat settings.txt advanced.txt|grep -v "^#"|sed -e 's/  *# .*//'|grep '[^ ]' >> src/defaults.py
+
+gradint.exe: $(Common_Files) gradint.py
+	rm -rf windows0 ; cp -r windows windows0
+	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
+	cd windows0/gradint ; tar -jxf ../espeak-windows.bgz ; rm ../espeak-windows.bgz ; cd ../.. # bundled copy of eSpeak that unpacks in espeak/
+	cd windows0 ; tar -jxf ../windowsGUI/gradint.bgz ; cd ..
+	cp -r $(Common_Files) windows0/gradint/
+	mv windows0/gradint/samples/utils "windows0/gradint/samples/advanced utilities"
+	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
+	$(Unix_To_Dos) windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf
+	# add a utf-8 BOM to start of vocab.txt, to ensure Notepad saves it in utf-8
+	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
+	# can trim down the shortcuts, as the GUI now gives access to them
+	cd windows0/shortcuts; rm "advanced setup.bat" "advanced utilities.bat" "General setup.bat" "Prompts.bat" "Recorded words.bat" "Synthesized words.bat" ; mv "Main program.bat" Gradint.bat ; cd ../..
+	# shortcuts: Don't use .lnk files, they are far too horrible (even if you put %HOMEDRIVE%%HOMEPATH% in the shortcut, it still stores the original location, and you can't reliably create them on the client without delving rediculously deep into Windows programming).  Perhaps could use .url files, but we just use small batch files.  Prepend a common header to each one.  (NB it won't work to try to force the sort order by calling things _uninstall, ~uninstall, etc, unless you want Z_uninstall, Z_advanced etc)
+	cd windows0/shortcuts ; mv header.bat bat_header ; for N in *.bat ../startup/*.bat; do if ! test "$$N" == uninstall.bat; then cat bat_header "$$N" > n ; mv n "$$N"; fi; done ; rm bat_header ; cd ../..
+	# now run 7zip (look in a few extra places for it, and give it its full path in argv[0])
+	cd windows0 ; export PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH"; `(which 7z || which 7za || which 7zr) 2>/dev/null` a -y data.7z setup.bat gradint shortcuts startup ; cd ..
+	cat windows0/7zS.sfx windows0/7zip.conf windows0/data.7z > gradint.exe
+	rm -rf windows0
+
+recorder.exe: $(Common_Files) gradint.py
+	rm -rf windows0 ; cp -r windows windows0
+	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
+	rm windows0/espeak-windows.bgz
+	cd windows0 ; tar -jxf ../windowsGUI/gradint.bgz ; cd ..
+	cp -r $(Common_Files) windows0/gradint/
+	rm -rf windows0/gradint/samples/utils windows0/gradint/samples/prompts windows0/gradint/samples/README.txt
+	rm -f windows0/gradint/madplay.exe windows0/gradint/sox.exe windows0/gradint/ptts.exe
+	zip -0 windows0/gradint/library.zip gradint.py
+	cp extras/lame.exe extras/zip.exe windows0/gradint/
+	echo $$'@echo off\ncd gradint\ngradint-wrapper.exe recorderMode=1' > windows0/gradint/runme.bat
+	echo 'firstLanguage="zh";secondLanguage="en"' > windows0/gradint/settings.txt
+	cd windows0; zip -9r recorder.zip gradint/ ; cd ..
+	echo '$$AUTORUN$$>gradint\runme.bat' | zip -z windows0/recorder.zip
+	cat yali-voice/unzipsfx.exe windows0/recorder.zip > recorder.exe
+	zip -A recorder.exe
+	rm -rf windows0
+
+gradint.cab: $(Common_Files) gradint.py
+	make cleanup
+	rm -rf PocketPC0 ; cp -r PocketPC PocketPC0
+	cp -r gradint.py $(Common_Files) PocketPC0/gradint
+	# if using partials, must combine them for CAB:
+	for Dir in PocketPC0/gradint/partials/*/*; do if cd $$Dir; then if wc -c *.raw | grep -v total$$ | sed -e 's/^ *//' > audiodata.dat ; then cat *.raw >> audiodata.dat ; rm *.raw; else rm -f audiodata.dat; fi; cd ../../../../..; else true; fi; done
+	chmod +w PocketPC0/gradint/gradint.py # saves problems with pocketpc-cab
+	rm -rf PocketPC0/gradint/samples/utils # TODO really?
+	$(Unix_To_Dos) PocketPC0/gradint/*.txt
+	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
+	# PocketPC/espeak-data contains the altered phon* files in case the eSpeak version is slightly different, but we should be able to re-use the dictionaries etc
+	tar -jxvf windows/espeak-windows.bgz && mv PocketPC0/espeak-data/* espeak/espeak-data && rmdir PocketPC0/espeak-data && mv espeak/espeak-data PocketPC0 && rm -rf espeak
+	# Problem: we MUST have everything in ONE directory if it is to go on the storage card, otherwise it will go on the internal disk (which is a shame because the uninstall won't track where we really put things) (and no putting a file at top-level of device does not work)
+	cd PocketPC0 && mv bin Progra* espeak-data gradint && cd ..
+	# espeak compile instructions are at
+	# http://sourceforge.net/forum/message.php?msg_id=6511989
+	# but you don't have to recompile dictsource.
+	# + fclose(f_trans) at end of main() in speak.cpp
+	# + python -c 'd=open("speak","rb").read().replace("/temp/wcetrace.log","/notexist/tracelog") ; open("speak","wb").write(d)'
+	cd PocketPC0 && find . -type f | sort -f | grep -v /mb | grep -v /files.list | sed -e 's,./\(.*\)$$,\1 /\1,' -e 's,/\([^/]*\)/\([^/]*\)$$,/\1,' -e 's, /[^/]*.py$$, /,' -e 's/Program Files/Program~Files/g' > files.list && cd ..
+	cd PocketPC0 && export PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH" && pocketpc-cab -p "" -a "Gradint $$(head gradint/gradint.py | grep program_name | sed -e 's/.*t v/v/' -e 's/(c).*//')" files.list ../gradint.cab && cd ..
+	# (need pocketpc-cab and lcab binaries for that to work)
+	test -e gradint.cab # pocketpc-cab can fail silently if we add too many files, so check the output exists
+	rm -rf PocketPC0
+
+gradintcab.zip: gradint.cab
+	zip -9 gradintcab.zip gradint.cab
+	rm gradint.cab
+
+gradint-noGUI.exe: $(Common_Files) gradint.py
+	rm -rf windows0 ; cp -r windows windows0
+	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
+	cd windows0/gradint ; tar -jxf ../espeak-windows.bgz ; rm ../espeak-windows.bgz ; cd ../.. # bundled copy of eSpeak that unpacks in espeak/
+	cp -r $(Common_Files) windows0/gradint/
+	mv windows0/gradint/samples/utils "windows0/gradint/samples/advanced utilities"
+	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
+	$(Unix_To_Dos) windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf
+	# add a utf-8 BOM to start of vocab.txt, to ensure Notepad saves it in utf-8
+	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
+	# shortcuts: Don't use .lnk files, they are far too horrible (even if you put %HOMEDRIVE%%HOMEPATH% in the shortcut, it still stores the original location, and you can't reliably create them on the client without delving rediculously deep into Windows programming).  Perhaps could use .url files, but we just use small batch files.  Prepend a common header to each one.  (NB it won't work to try to force the sort order by calling things _uninstall, ~uninstall, etc, unless you want Z_uninstall, Z_advanced etc)
+	cd windows0/shortcuts ; mv header.bat bat_header ; for N in *.bat ../startup/*.bat; do if ! test "$$N" == uninstall.bat; then cat bat_header "$$N" > n ; mv n "$$N"; fi; done ; rm bat_header ; cd ../..
+	# now run 7zip (look in a few extra places for it, and give it its full path in argv[0])
+	cd windows0 ; export PATH=/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH; `(which 7z || which 7za || which 7zr) 2>/dev/null` a -y data.7z setup.bat gradint shortcuts startup ; cd ..
+	cat windows0/7zS.sfx windows0/7zip.conf windows0/data.7z > gradint-noGUI.exe
+	rm -rf windows0
+
+GUI.exe: gradint.py
+	rm -rf windows0 ; cp -r windowsGUI windows0
+	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
+	$(Unix_To_Dos) windows0/7zip.conf
+	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
+	cd windows0 ; export PATH=/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH; `(which 7z || which 7za || which 7zr) 2>/dev/null` a -y data.7z setup.bat gradint ; cd ..
+	cat windows/7zS.sfx windows0/7zip.conf windows0/data.7z > GUI.exe
+	rm -rf windows0
+
+gradint.tbz: $(Mac_Files)
+	mkdir gradint
+	cp -r $(Mac_Files) gradint
+	mv gradint/samples/utils "gradint/samples/advanced utilities"
+	cd gradint ; mv $(Most_Mac_Files) start-gradint.app/ ; mv start-gradint.app Gradint.app ; cd Gradint.app/Contents/MacOS ; sed -e s/start-gradint/Gradint/g -e s,Gradint.app/Contents,Contents,g < start-gradint > Gradint ; cp Gradint "Gradint 2"; chmod +x Gradint "Gradint 2" ; rm start-gradint ; cd ../../../.. # hide it all inside the app (optional) ("Gradint 2" is for upgrades - see code for details)
+	# tar -c gradint/ | bzip2 -9 > gradint.tbz
+	# use this alternative version if hiding all inside the app:
+	cd gradint ; tar -c Gradint.app | bzip2 -9 > ../gradint.tbz; cd ..
+	rm -rf gradint
+
+gradint.bgz: $(Linux_Files)
+	mkdir gradint
+	cp -r $(Linux_Files) gradint
+	tar -c gradint/ | bzip2 -9 > gradint.bgz
+	rm -rf gradint
+
+gradint.zip: $(Riscos_Files) riscos.zip
+	mkdir \!gradint
+	cp -r $(Riscos_Files) \!gradint
+	cp riscos.zip gradint.zip # the existing zip file has the right RISC OS filetype for the Obey file (difficult to do on non-RISCOS systems)
+	zip -9 -r gradint.zip \!gradint/* # update with gradint sources
+	rm -rf \!gradint
+
+publish: $(All_Versions)
+	mv $(All_Versions) ~/public_html/gradint/
+	cp vocab.txt advanced.txt ~/public_html/gradint/
+	cp samples/README.txt ~/public_html/gradint/samples-readme.txt
+	cp samples/prompts/README.txt ~/public_html/gradint/prompts-readme.txt
+	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/public_html/gradint/latest-version.txt
+	make clean
+	~/homepage/update
+
+gradint-build.bgz:
+	rm -rf publicSrc ; cp -r src publicSrc
+	cd publicSrc; for N in *.py; do if ! test $$N == top.py; then (echo "# This file is part of the source code of";grep "^program_name" top.py;grep "^#    " top.py;cat $$N) > $$N-new; mv $$N-new $$N; fi; done; cd ..
+	mkdir ../gradint-build
+	cp -r * ../gradint-build
+	mv ../gradint-build gradint
+	rm -rf publicSrc gradint/src
+	mv gradint/publicSrc gradint/src
+	cd gradint ; make clean ; rm -f zip.exe lame.exe ; cd ..
+	tar -jcf gradint-build.bgz gradint/
+	rm -rf gradint
+
+# "make CD" to make a CD/ directory with all versions, for a live CD
+CD: $(Mac_Files) gradint.zip
+	rm -rf CD ; mkdir CD
+	cd CD && tar -jxf ../windows/gradint.bgz && tar -jxf ../windowsGUI/gradint.bgz && cd ..
+	cp -r $(Mac_Files) CD/gradint
+	cp windows/setup.bat CD
+	cp -r windows/shortcuts windows/startup CD/gradint/
+	cd CD/gradint/shortcuts ; mv header.bat bat_header ; for N in *.bat ../startup/*.bat; do if ! test "$$N" == uninstall.bat; then cat bat_header "$$N" > n ; mv n "$$N"; fi; done ; rm bat_header ; cd ../../..
+	mv CD/gradint/start-gradint.app CD/gradint/MacOS-version.app
+	echo "@start gradint-wrapper.exe" > CD/gradint/Windows-version.bat # as can't rename the .exe
+	echo '#!/bin/bash'>CD/gradint/Linux-version.sh; echo python gradint.py>>CD/gradint/Linux-version.sh # don't rename gradint.py because it's used by Mac version also
+	mv gradint.zip CD/gradint/RiscOS-version.zip
+	zip -0 CD/gradint/library.zip gradint.py # (important to have no compression)
+	$(Unix_To_Dos) CD/gradint/*.txt CD/gradint/*/*.txt CD/gradint/*/*/*.txt CD/setup.bat CD/gradint/*.bat CD/gradint/*/*.bat
+	cd CD/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
+	echo "<html><body><h1>Gradint Live CD" > CD/Read_Me.html
+	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' >> CD/Read_Me.html
+	echo "</h1><h2>In the 'gradint' folder on this CD:</h2><ul><li>Recorded words are in <tt>samples</tt> folder<li>Synthesized words are in <tt>vocab.txt</tt> (and take priority over recorded words)<li>Run the program by choosing 'Windows-version', 'MacOS-version', 'Linux-version' or 'RiscOS-version' as appropriate<li>Don't worry about the many other files (they are supporting components)<li>Run it once per day if possible<li>You can change <tt>settings.txt</tt> and <tt>advanced.txt</tt> (e.g. set it to output to disk for listening later, or change the length of lesson), and you can manage the recorded and synthesized words, but you need to copy the 'gradint' folder to your hard disk (or use the 'setup' .bat file in Windows) before making changes, otherwise you can only run it the way it's set up at the moment because CDs are read-only.</ul></body></html>" >> CD/Read_Me.html
+	chmod -R +x CD # needed if you're going to copy it using Cygwin
+	echo;echo;echo "Made CD directory.  Can add gradint/samples, gradint/vocab.txt, gradint/espeak for Windows, gradint/espeak-.. for OSX, sox Win/Mac binaries, oggenc or whatever for Windows, etc."
+
+cleanup:
+	rm -f `find . -type f -name '*~' -o -name '*.pyc'`
+clean: cleanup
+	rm -f gradint.py $(All_Versions)

@@ -1,0 +1,16 @@
+
+firstLanguage = "en"
+secondLanguage = "zh"
+
+# Change the "en" and "zh" above to the abbreviations that
+# you intend to use for your first language and the language
+# you want to learn.
+#
+# For example, en = English, zh = Zhongwen.
+# 
+# Use any abbreviations you like, as long as you stick to
+# them later, but you might want to use the same abbreviations
+# as eSpeak if you'll be using synthesized words.  Keep the quotes (" ").
+# 
+# If you need to learn multiple languages at once, please
+# see the file advanced.txt as well.

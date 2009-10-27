@@ -1,0 +1,9 @@
+#!/bin/bash
+if test -e /usr/lib/tkConfig.sh || test -e /usr/local/lib/tkConfig.sh; then
+# run using only the Tk windows:
+cd "$(echo $0 | sed -e 's|start-gradint.app/Contents/MacOS/start-gradint.*$||')"
+exec pythonw gradint.py
+else
+# run in Terminal:
+open -a Terminal.app "$(echo $0 | sed -e 's|start-gradint.app/Contents/MacOS/start-gradint.*$|gradint.py|')"
+fi
