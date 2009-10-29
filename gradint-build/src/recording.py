@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9927 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.99271 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -344,7 +344,9 @@ class RecorderControls:
             self.addMoreRow += 1 ; self.maxPrefix += 1
         self.add_addMore_button()
     def doRecord(self,filename,row,languageNo,needToUpdatePlayButton=False):
-        if not tkSnack: return tkMessageBox.showinfo(app.master.title(),localise(cond(winCEsound,"Sorry not yet implemented on PocketPC, but Gradint can import voice recordings from PocketPC's Notes app.","Sorry, cannot record on this computer because the tkSnack library (python-tksnack) is not installed.")))
+        if not tkSnack:
+            if winCEsound: return tkMessageBox.showinfo(app.master.title(),localise("Sorry not implemented on PocketPC, but you can use PocketPC's Notes app (record %s to 1st file, %s to 2nd file, %s to 3rd etc) and Gradint can import this.") % (secondLanguage,firstLanguage,secondLanguage))
+            else: return tkMessageBox.showinfo(app.master.title(),localise("Sorry, cannot record on this computer because the tkSnack library (python-tksnack) is not installed."))
         theISM.startRecording(filename)
         if needToUpdatePlayButton: self.updateFile(filename,row,languageNo,2)
         self.coords2buttons[(row,3+3*languageNo)]["text"]=localise("Stop")

@@ -21,7 +21,7 @@ EData := $(shell for N in $(Extra_Data); do if test -e $$N; then echo $$N; fi; d
 
 Common_Files=vocab.txt settings.txt advanced.txt samples $(EData)
 Most_Mac_Files=$(Common_Files) gradint.py
-Mac_Files=$(Most_Mac_Files) start-gradint.app
+Mac_Files=$(Most_Mac_Files) mac/*
 Linux_Files=$(Common_Files) gradint.py INSTALL.txt
 Riscos_Files=$(Common_Files) gradint.py
 

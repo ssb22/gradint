@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9927 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.99271 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -168,9 +168,12 @@ elif not winsound: # ok if mingw32, appuifw etc (unzip_and_delete will warn)
         f=d+"yali-voice.exe"
         if fileExists(f): unzip_and_delete(f,ignore_fail=1) # ignore the error exit status from unzip, which will be because of extra bytes at the beginning
 
-# Filename / Unicode translation - need some safety across filesystems.  TODO synthCache(+utils) could be done this way also rather than having TRANS.TBL
+# Filename / Unicode translation - need some safety across filesystems.  synthCache(+utils) could be done this way also rather than having TRANS.TBL (however I'm not sure it would save that much code)
 non_normal_filenames = {}
 def filename2unicode(f):
+    def u8_or_raw(s):
+        try: return unicode(s,"utf-8")
+        except UnicodeDecodeError: return unicode(s,"latin1") # (actually should try the local codepage on Windows for correct display, but at least this stops a crash)
     if f.find("_u")>-1 or f.find("_U")>-1:
         try: return unicode(f.replace("_u","\\u").replace("_U","\\u"),"unicode_escape")
         except UnicodeDecodeError: # oops, need to be more careful
@@ -178,16 +181,17 @@ def filename2unicode(f):
             while True:
                 i = f.lower().find("_u")
                 if i==-1: break
-                ret.append(f[:i]) ; f=f[i:]
+                ret.append(u8_or_raw(f[:i]))
+                f=f[i:]
                 try:
                     r=unicode("\\u"+f[2:6],"unicode_escape")
                     f=f[6:]
                 except UnicodeDecodeError:
                     r=f[:2] ; f=f[2:]
                 ret.append(r)
-            return "".join(ret+[f])
-    u=unicode(f,"utf-8")
-    if filter(lambda x:ord(x)>=128, list(u)): non_normal_filenames[u] = f
+            return u"".join(ret+[f])
+    u=u8_or_raw(f)
+    if filter(lambda x:ord(x)>=128, list(u)): non_normal_filenames[u] = f # make at least some attempt to keep the old one for GUI rename()s etc, TODO this might not always cope with directories in the path being non-normal, so let's hope they don't set that up manually and then expect the GUI to cope with it
     return u
 def unicode2filename(u):
     if u in non_normal_filenames: return non_normal_filenames[u]

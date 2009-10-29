@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9927 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.99271 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -111,6 +111,7 @@ else: gotSox = got_program("sox")
 if winsound or mingw32:
     # in winsound can use PlaySound() but better not use it for LONGER sounds - find a playProgram anyway for those (see self.length condition in play() method below)
     # (TODO sndrec32.exe loads the whole of the file into memory before playing.  but mplayer/mplay32 sometimes halts on a yes/no dialogue about settings, and Media Player can't take files on command line so needs correct file association and executable permissions.  And many of the freeware command-line players have the same limitations as winsound.)
+    # TODO now that we (usually) have tkSnack bundled with the Windows version, can we try that also (with file=) before sndrec32?
     if fileExists(os.environ.get("windir","C:\\Windows")+"\\system32\\sndrec32.exe"): playProgram = "start /min sndrec32 /play /close" # TODO could also use ShellExecute or some other utility to make it completely hidden
 elif unix and not macsound:
     sox_type = "-t ossdsp -s "+sox_16bit # (always specify 16-bit because if we're adjusting the volume of 8-bit wav's then we could lose too many bits in the adjustment unless we first convert to 16-bit)   # TODO run sox -h to see if that device is actually supported (" ossdsp" will be in the output)
