@@ -50,7 +50,7 @@ def unzip_and_delete(f,specificFiles="",ignore_fail=0):
     if ignore_fail:
         # we had better at least check that the unzip command exists
         if not got_program("unzip"):
-            show_warning("Warning: Cannot unzip "+f+" because the 'unzip' command was not found")
+            show_warning("Please unzip "+f+" (Gradint cannot unzip it for you as there's no 'unzip' program on this system)")
             return 1
     show_info("Attempting to extract %s, please wait\n" % (f,))
     if os.system("unzip -uo "+f+" "+specificFiles) and not ignore_fail:
