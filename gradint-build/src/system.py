@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.99271 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.99272 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -60,8 +60,6 @@ if winsound:
         import ctypes # if that fails (pre-2.5, pre-Windows Mobile 2003) then we can't do much
         import ctypes.wintypes as wintypes
         class ShellExecuteInfo(ctypes.Structure): _fields_ = [("cbSize",wintypes.DWORD),("fMask",wintypes.ULONG),("hwnd",wintypes.HWND),("Verb",ctypes.c_wchar_p),("File",ctypes.c_wchar_p),("Parameters",ctypes.c_wchar_p),("Directory",ctypes.c_wchar_p),("nShow",ctypes.c_int),("hInstApp",wintypes.HINSTANCE),("IDList",ctypes.c_void_p),("Class",ctypes.c_wchar_p),("hkeyClass",wintypes.HKEY),("dwHotKey",wintypes.DWORD),("hIconOrMonitor",wintypes.HANDLE),("hProcess",wintypes.HANDLE)]
-
-import time,sched,sndhdr,random,math,pprint,codecs
 
 if macsound and __name__=="__main__": os.system("clear 1>&2") # so warnings etc start with a clear terminal (1>&2 just in case using stdout for something else)
 if riscos_sound: sys.stderr.write("Loading Gradint...\n") # in case it takes a while
@@ -161,6 +159,7 @@ def u8strip(d):
     else: return d
 GUI_translations_old = GUI_translations
 configFiles = map(lambda x:x+dottxt,["advanced","settings"]) # MUST have settings last so can have per-user override of scriptVariants
+if not hasattr(sys,"argv"): sys.argv=" " # some Symbian versions
 if not fileExists(configFiles[0]):
   oldDir=os.getcwd()
   if macsound and "_" in os.environ:
@@ -187,6 +186,9 @@ if not fileExists(configFiles[0]):
         except OSError: pass
 
 # directory should be OK by now
+if sys.platform.find("ymbian")>-1: sys.path.insert(0,os.getcwd()+os.sep+"lib")
+import time,sched,sndhdr,random,math,pprint,codecs
+
 def readSettings(f):
    try: exec(unicode(u8strip(open(f,"rb").read()).replace("\r","\n"),"utf-8")) in globals()
    except: show_warning("Warning: Could not load "+f)

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.99271 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.99272 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -320,7 +320,7 @@ class ESpeakSynth(Synth):
             try:
                 self.place = tryplace
                 langList = os.listdir(self.place+os.sep+"voices")
-            except OSError: pass
+            except OSError: self.place = None
             if langList: break
         for l in langList[:]:
             if l in ["default","!v","mb"]: langList.remove(l)

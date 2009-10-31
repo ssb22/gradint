@@ -12,7 +12,7 @@ Extra_Data=partials *_disabled [^g]*.exe
 # Unix_To_Dos=unix2dos -k -o -q # (keep date, run quietly)
 Unix_To_Dos=unix2dos # (-k -o -q are not recognised on all systems)
 
-All_Versions=gradint.exe gradint.tbz gradint.bgz gradint.zip gradint-build.bgz gradintcab.zip
+All_Versions=gradint.exe gradint.tbz gradint.bgz gradint.zip gradint-build.bgz gradintcab.zip gradint-S60.zip
 # dropping gradint-noGUI.exe and GUI.exe for now - probably don't need that separation anymore
 
 SHELL=/bin/bash
@@ -104,6 +104,13 @@ gradint.cab: $(Common_Files) gradint.py
 	# (need pocketpc-cab and lcab binaries for that to work)
 	test -e gradint.cab # pocketpc-cab can fail silently if we add too many files, so check the output exists
 	rm -rf PocketPC0
+
+gradint-S60.zip: $(Common_Files) gradint.py
+	cp S60.zip gradint-S60.zip
+	zip -9r gradint-S60.zip $(Common_Files)
+	mkdir gradint
+	cd gradint && python ../thindown.py s60 < ../gradint.py > gradint.py && zip -9r ../gradint-S60.zip gradint.py && cd ..
+	rm -rf gradint
 
 gradintcab.zip: gradint.cab
 	zip -9 gradintcab.zip gradint.cab
