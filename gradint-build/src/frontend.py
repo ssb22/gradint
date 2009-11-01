@@ -1537,7 +1537,7 @@ def rest_of_main():
             traceback = None
         if traceback and useTK: traceback.print_exc() # BEFORE waitOnMessage, in case Tk is stuck (hopefully the terminal is visible)
         try:
-            if not soundCollector and get_synth_if_possible("en",0): synth_event("en","Error in gradint program.").play() # if possible, give some audio indication of the error
+            if not soundCollector and get_synth_if_possible("en",0): synth_event("en","Error in graddint program.").play() # if possible, give some audio indication of the error (double D to try to force correct pronunciation if not eSpeak, e.g. S60)
         except: pass
         waitOnMessage(w)
         try: tracebackFile=open("last-gradint-error"+extsep+"txt","w") # TODO document this in the user message?
