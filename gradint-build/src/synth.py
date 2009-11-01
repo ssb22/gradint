@@ -102,7 +102,7 @@ class OldRiscosSynth(Synth):
 
 class S60Synth(Synth):
     def __init__(self): Synth.__init__(self)
-    def supports_language(self,lang): return lang=="en" # TODO handset language?
+    def supports_language(self,lang): return lang=="en" # (audio.say always uses English even when other languages are installed on the device)
     def works_on_this_platform(self): return appuifw and hasattr(audio,"say")
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
     def play(self,lang,text): audio.say(text)
