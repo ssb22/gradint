@@ -100,6 +100,13 @@ class OldRiscosSynth(Synth):
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
     def play(self,lang,text): return system("sayw %s" % (text,))
 
+class S60Synth(Synth):
+    def __init__(self): Synth.__init__(self)
+    def supports_language(self,lang): return lang=="en" # TODO handset language?
+    def works_on_this_platform(self): return appuifw and hasattr(audio,"say")
+    def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
+    def play(self,lang,text): audio.say(text)
+
 if winsound or mingw32: toNull=" > nul"
 else: toNull=" >/dev/null" # stdout only, not stderr, because we want to see any errors that happen
 
@@ -751,7 +758,7 @@ for s in synth_priorities.split():
        all_synth_classes.append(OSXSynth_Say)
        all_synth_classes.append(OSXSynth_OSAScript) # (prefer _Say if >=10.3 because it's faster)
     elif s.lower()=="sapi": all_synth_classes.append(PttsSynth)
-all_synth_classes = all_synth_classes + [FestivalSynth,FliteSynth,OldRiscosSynth]
+all_synth_classes = all_synth_classes + [FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth]
 
 viable_synths = []
 warned_about_nosynth = {}

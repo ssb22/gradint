@@ -1545,6 +1545,7 @@ def rest_of_main():
         if traceback and not useTK: traceback.print_exc()
         if traceback and tracebackFile: traceback.print_exc(None,tracebackFile)
         exitStatus = 1
+        if appuifw: raw_input() # so traceback stays visible
     # It is not guaranteed that __del__() methods are called for objects that still exist when the interpreter exits.  So:
     global viable_synths,getsynth_cache,theMp3FileCache
     del viable_synths,getsynth_cache,theMp3FileCache
