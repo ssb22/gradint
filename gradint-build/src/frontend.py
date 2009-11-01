@@ -73,7 +73,8 @@ def primitive_synthloop():
         global justSynthesize,warnings_printed
         if appuifw:
             justSynthesize=appuifw.query(u"Say:","text",u""+justSynthesize)
-            if not justSynthesize: break
+            if justSynthesize: justSynthesize=justSynthesize.encode("utf-8")
+            else: break
         else:
             try: justSynthesize=raw_input(cond(winCEsound and warnings_printed,"(see warnings under this window) Say:","Say: ")) # (WinCE uses an input box so need to repeat the warnings if any - but can't because prompt is size-limited, so need to say move the window.)
             except EOFError: break
