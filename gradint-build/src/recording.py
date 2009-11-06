@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9928 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -176,14 +176,15 @@ def wavToMp3(directory):
         elif isDirectory(directory+os.sep+l):
             wavToMp3(directory+os.sep+l)
 
-def makeMp3Zips(baseDir,outDir,zipNo,direc=None):
+def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):
     zipSplitThreshold = 5*1048576 # to be safe (as will split when it goes OVER that)
     if baseDir==outDir: return zipNo # omit
     elif not direc:
         for f in os.listdir(baseDir): zipNo = makeMp3Zips(baseDir,outDir,zipNo,f)
     elif isDirectory(baseDir+os.sep+direc): zipNo = makeMp3Zips(baseDir+os.sep+direc,outDir,zipNo)
     else:
-        zipNo -= 1 ; zipfile = None
+        if zipNo: zipNo -= 1
+        zipfile = None
         while not zipfile or (fileExists(zipfile) and filelen(zipfile) >= zipSplitThreshold):
             zipNo += 1
             zipfile = outDir+os.sep+"zipfile"+str(zipNo)+extsep+"zip"
@@ -232,14 +233,18 @@ class RecorderControls:
         self.coords2buttons[(row,col)] = Tkinter.Label(self.grid,text=utext,wraplength=int(self.ourCanvas.winfo_screenwidth()/(1+len(self.languagesToDraw))))
         self.coords2buttons[(row,col)].grid(row=row,column=col,sticky="w")
         if col==0: self.coords2buttons[(row,col)].bind('<Button-1>',lambda *args:self.startRename(row,col,utext))
-    def all2mp3(self):
+    def all2mp3_or_zip(self):
         self.CompressButton["text"] = localise("Compressing, please wait")
-        wavToMp3(self.currentDir) # TODO not in the GUI thread !! (but lock our other buttons while it's doing it)
-        if got_program("zip") and (explorerCommand or winCEsound) and tkMessageBox.askyesno(app.master.title(),localise("All recordings have been compressed to MP3.  Do you also want to make a ZIP file for sending as email?")):
+        if got_program("lame"): wavToMp3(self.currentDir) # TODO not in the GUI thread !! (but lock our other buttons while it's doing it)
+        if got_program("zip") and (explorerCommand or winCEsound) and (not got_program("lame") or tkMessageBox.askyesno(app.master.title(),localise("All recordings have been compressed to MP3.  Do you also want to make a ZIP file for sending as email?"))):
             try: os.mkdir(self.currentDir+os.sep+"zips")
             except: pass # already exists?
-            makeMp3Zips(self.currentDir,self.currentDir+os.sep+"zips",1)
-            openDirectory(self.currentDir+os.sep+"zips")
+            numZips = makeMp3Zips(self.currentDir,self.currentDir+os.sep+"zips")
+            if numZips:
+                openDirectory(self.currentDir+os.sep+"zips")
+                if numZips>1: app.todo.alert=localise("Please send the %d zip files as %d separate messages, in case one very large message doesn't get through.") % (zipNo,zipNo)
+                else: app.todo.alert=localise("You may now send the zip file by email.")
+            else: app.todo.alert=localise("No recordings found")
         self.undraw() ; self.draw()
     def startRename(self,row,col,filename):
         if hasattr(self,"renameToCancel"):
@@ -519,9 +524,10 @@ class RecorderControls:
         r=Tkinter.Frame(self.frame)
         r.grid(row=3,column=0,columnspan=3)
         Tkinter.Button(r,text=localise("Record from file"),command=self.do_recordFromFile).pack(side="left")
-        if got_program("lame"):
-            self.CompressButton = Tkinter.Button(r,text=localise("Compress all recordings"),command=(lambda *args:self.all2mp3()))
-            self.CompressButton.pack(side="left")
+        if got_program("lame"): self.CompressButton = Tkinter.Button(r,text=localise("Compress all recordings"),command=(lambda *args:self.all2mp3_or_zip()))
+        # TODO else can we see if it's possible to get the encoder on the fly, like in the main screen? (would need some restructuring)
+        elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = Tkinter.Button(r,text=localise("Zip for email"),command=(lambda *args:self.all2mp3_or_zip()))
+        if hasattr(self,"CompressButton"): self.CompressButton.pack(side="left")
         Tkinter.Button(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack()
         Tkinter.Label(self.frame,text="Choose a word and start recording. Then press space to advance to the next word (or the next language; see the control at top) and continue. You can also browse and manage previous recordings; click on filenames at left to rename (multi-line pastes are allowed). Also any *_"+secondLanguage+dottxt+", *_"+firstLanguage+dottxt+" files are shown as notes.",wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(row=4,column=0,columnspan=3) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
         # (Don't worry about making the text files editable - editable filenames should be enough + easier to browse the result outside Gradint; can include both languages in the filename if you like - hope the users figure this out as we don't want to make the instructions too complex)

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9928 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or

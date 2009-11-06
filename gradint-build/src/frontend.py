@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9928 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -143,16 +143,12 @@ tkNumWordsToShow = 10 # the default number of list-box items
 
 def addStatus(widget,status,mouseOnly=0):
     # Be VERY CAREFUL with status line changes.  Don't do it on things that are focused by default (except with mouseOnly=1).  Don't do it when the default status line might be the widest thing (i.e. when list box is not displayed) or window size could jump about too much.  And in any event don't use lines longer than about 53 characters (the approx default width of the listbox when using monospace fonts).
+    # (NB addStatus now takes effect only when the list box is displayed anyway, so OK for buttons that might also be displayed without it)
     widget.bind('<Enter>',lambda *args:app.set_statusline(status))
     widget.bind('<Leave>',app.restore_statusline)
     if not mouseOnly:
         widget.bind('<FocusIn>',lambda *args:app.set_statusline(status))
         widget.bind('<FocusOut>',app.restore_statusline)
-def removeStatus(widget):
-    widget.unbind('<Enter>')
-    widget.unbind('<Leave>')
-    widget.unbind('<FocusIn>')
-    widget.unbind('<FocusOut>')
 def addButton(parent,text,command,packing=None,status=None):
     button = Tkinter.Button(parent)
     button["text"] = text
@@ -208,9 +204,10 @@ def addTextBox(row,wide=0):
         entry.pack(side="left",fill=Tkinter.X,expand=1)
     else: entry.pack({"side":"left"})
     return text,entry
-def addLabelledBox(row,wide=0):
+def addLabelledBox(row,wide=0,status=None):
     label = addLabel(row,"") # will set contents later
     text,entry = addTextBox(row,wide)
+    if status: addStatus(entry,status)
     return label,text,entry
 def addRow(parent,wide=0):
     row = Tkinter.Frame(parent)
@@ -241,12 +238,17 @@ def make_output_row(parent):
         row = Tkinter.Frame(parent)
         row.pack(fill=Tkinter.X,expand=1)
     rightrow = addRightRow(row) # to show beginners this row probably isn't the most important thing despite being in a convenient place, we'll right-align
-    def addFiletypeButton(fileType): Tkinter.Radiobutton(rightrow, text=" "+fileType.upper()+" ", variable=app.outputTo, value=fileType, indicatoron=0).pack({"side":"left"})
+    def addFiletypeButton(fileType):
+        t = Tkinter.Radiobutton(rightrow, text=" "+fileType.upper()+" ", variable=app.outputTo, value=fileType, indicatoron=0)
+        addStatus(t,"Select this to save a lesson or\na phrase to a%s %s file" % (cond(fileType[0] in "AEFHILMNORSX","n",""),fileType))
+        t.pack({"side":"left"})
     if winsound or mingw32: got_windows_encoder = fileExists(programFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs")
     elif cygwin: got_windows_encoder = fileExists(programFiles+"/Windows Media Components/Encoder/WMCmd.vbs")
     else: got_windows_encoder = 0
     Tkinter.Label(rightrow,text=localise("To")+":").pack({"side":"left"})
-    Tkinter.Radiobutton(rightrow, text=" "+localise("Speaker")+" ", variable=app.outputTo, value="", indicatoron=0).pack({"side":"left"})
+    t=Tkinter.Radiobutton(rightrow, text=" "+localise("Speaker")+" ", variable=app.outputTo, value="", indicatoron=0)
+    addStatus(t,"Select this to send all sounds to\nthe speaker, not to files on disk")
+    t.pack({"side":"left"})
     if got_program("lame"): addFiletypeButton("mp3")
     if got_windows_encoder: addFiletypeButton("wma")
     if got_program("faac") or got_program("afconvert"): addFiletypeButton("aac")
@@ -255,8 +257,8 @@ def make_output_row(parent):
     if got_program("speexenc"): addFiletypeButton("spx")
     addFiletypeButton("wav")
     # "Get MP3 encoder" and "Get WMA encoder" changed to "MP3..." and "WMA..." to save width (+ no localisation necessary)
-    if unix and not got_program("lame") and got_program("make") and got_program("gcc") and (got_program("curl") or got_program("wget")): addButton(rightrow,"MP3...",app.getEncoder) # (checking gcc as well as make because some distros strangely have make but no compiler; TODO what if has a non-gcc compiler)
-    elif (winsound or mingw32) and not got_windows_encoder and not got_program("lame"): addButton(rightrow,"WMA...",app.getEncoder)
+    if unix and not got_program("lame") and got_program("make") and got_program("gcc") and (got_program("curl") or got_program("wget")): addButton(rightrow,"MP3...",app.getEncoder,status="Press this to compile an MP3 encoder\nso Gradint can output to MP3 files") # (checking gcc as well as make because some distros strangely have make but no compiler; TODO what if has a non-gcc compiler)
+    elif (winsound or mingw32) and not got_windows_encoder and not got_program("lame"): addButton(rightrow,"WMA...",app.getEncoder,status="Press this to download a WMA encoder\nso Gradint can output to WMA files")
     return row
 
 def updateSettingsFile(fname,newVals):
@@ -514,6 +516,7 @@ def startTk():
             self.remake_cancel_button(localise("Cancel lesson"))
             self.copyright_string = u"This is "+(u""+program_name).replace("(c)",u"\n\u00a9").replace("-",u"\u2013")
             self.Version = Tkinter.Label(self.leftPanel,text=self.copyright_string)
+            addStatus(self.Version,self.copyright_string)
             if olpc: self.Version["font"]='Helvetica 9'
             self.pollInterval = cond(winCEsound,300,100) # ms
             self.startTime=time.time()
@@ -535,10 +538,11 @@ def startTk():
             self.Cancel = addButton(self.CancelRow,text,self.cancel,{"side":"left"})
             self.CancelRow.pack()
         def set_statusline(self,text): # ONLY from callbacks
-            if olpc and time.time()<self.startTime+2: return # because add/test shown on startup and don't want to change status immediately
+            if not hasattr(self,"ListBox"): return # status changes on main screen can cause too much jumping
             if not "\n" in text: text += "\n(TODO: Make that a 2-line message)" # being 2 lines helps to reduce flashing problems.  but don't want to leave 2nd line blank.
             self.Version["text"] = text
         def restore_statusline(self,*args): # ONLY from callbacks
+            if not hasattr(self,"ListBox"): return
             # self.Version["text"] = self.copyright_string
             self.Version["text"] = "\n"
         def restore_copyright(self,*args): self.Version["text"] = self.copyright_string
@@ -610,11 +614,11 @@ def startTk():
                     self.BigPrintButton = addButton(self.leftPanel,localise("Big print"),self.bigPrint)
                     self.BigPrintButton["font"]=self.bigPrintFont
                 self.remake_cancel_button(localise("Quit"))
-                if not GUI_omit_statusline: self.Version.pack()
+                if not GUI_omit_statusline: self.Version.pack(fill=Tkinter.X,expand=1)
                 if olpc or self.todo.set_main_menu=="test" or GUI_for_editing_only: self.showtest() # olpc: otherwise will just get a couple of options at the top and a lot of blank space (no way to centre it)
                 else: self.TestButton.focus()
                 del self.todo.set_main_menu
-                self.set_statusline(self.copyright_string)
+                self.restore_copyright()
             if hasattr(self.todo,"alert"):
                 # we have to do it on THIS thread (especially on Windows / Cygwin; Mac OS and Linux might get away with doing it from another thread)
                 tkMessageBox.showinfo(self.master.title(),self.todo.alert)
@@ -666,13 +670,15 @@ def startTk():
             if GUI_for_editing_only: return
             self.NumWords,entry = addTextBox(self.LessonRow)
             entry["width"]=2
+            addStatus(entry,"Limits the maximum number of NEW words\nthat are put in each lesson")
             self.NumWords.set(words)
             addLabel(self.LessonRow,localise(cond(fileExists(progressFile),"new ","")+"words in"))
             self.Minutes,entry = addTextBox(self.LessonRow)
+            addStatus(entry,"Limits the maximum time\nthat a lesson is allowed to take")
             entry["width"]=3
             self.Minutes.set(mins)
             addLabel(self.LessonRow,localise("mins"))
-            self.MakeLessonButton=addButton(self.LessonRow,localise("Start lesson"),self.makelesson,{"side":"left"})
+            self.MakeLessonButton=addButton(self.LessonRow,localise("Start lesson"),self.makelesson,{"side":"left"},status="Press to create customized lessons\nusing the words in your collection")
         def sync_listbox_etc(self):
             if not hasattr(self,"vocabList"):
                 if hasattr(self,"needVocablist"): return # already waiting for main thread to make one
@@ -817,8 +823,8 @@ def startTk():
             self.Entry2.bind('<Return>',self.addText)
             for e in [self.Entry1,self.Entry2]: addStatus(e,"Enter a word or phrase to add or to test\nor to search your existing collection",mouseOnly=1)
             self.AddButton = addButton(self.row2,"",self.addText,status="Adds the pair to your vocabulary collection\nor adds extra revision if it's already there") # will set text in updateLanguageLabels
-            self.L1Label,self.L1Text,self.L1Entry = addLabelledBox(self.row3)
-            self.L2Label,self.L2Text,self.L2Entry = addLabelledBox(self.row3)
+            self.L1Label,self.L1Text,self.L1Entry = addLabelledBox(self.row3,status="The abbreviation of your\nfirst (i.e. native) language")
+            self.L2Label,self.L2Text,self.L2Entry = addLabelledBox(self.row3,status="The abbreviation of the other\nlanguage that you learn most")
             self.L1Entry["width"]=self.L2Entry["width"]=3
             self.ChangeLanguageButton = addButton(self.row3,"",self.changeLanguages,status="Use this button to set your\nfirst and second languages") # will set text in updateLanguageLabels
             if GUI_omit_settings and fileExists(vocabFile): self.row3.pack_forget()
@@ -834,7 +840,7 @@ def startTk():
                 self.RecordedWordsButton = addButton(self.LessonRow,"",self.showRecordedWords,{"side":"right"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
             if ((not olpc) or textEditorCommand or explorerCommand) and lastUserNames and lastUserNames[0]: self.CopyFromButton = addButton(cond(GUI_omit_settings,row4right,self.LessonRow),localise("Copy from..."),self.showCopyFrom,{"side":"left"},status="This button lets you copy recorded\nand computer-voiced words from other users")
             self.remake_cancel_button(localise(cond(olpc or GUI_for_editing_only,"Quit","Back to main menu")))
-            self.ChangeButton = addButton(self.CancelRow,"",self.changeItem,{"side":"left"}) ; self.ChangeButton.pack_forget() # don't display it until select a list item
+            self.ChangeButton = addButton(self.CancelRow,"",self.changeItem,{"side":"left"},status="Press to alter or to delete\nthe currently-selected word in the list") ; self.ChangeButton.pack_forget() # don't display it until select a list item
             self.updateLanguageLabels()
             self.LessonRow.pack() ; self.CancelRow.pack()
             self.ListBox = Tkinter.Listbox(self.leftPanel)
@@ -845,7 +851,7 @@ def startTk():
             if winCEsound: self.ListBox["font"]="Helvetica 12" # larger is awkward, but it doesn't have to be SO small!
             elif macsound and Tkinter.TkVersion>=8.6: self.ListBox["font"]="System 16" # ok with magnification, clearer than 13
             self.ListBox.pack(fill=Tkinter.X,expand=1) # DON'T fill Y as well, because if you do we'll have to implement more items, and that could lose the clarity of incremental search
-            if not GUI_omit_statusline: self.Version.pack()
+            if not GUI_omit_statusline: self.Version.pack(fill=Tkinter.X,expand=1)
             self.lastText1,self.lastText2=1,1 # (different from empty string, so it sync's)
             if not self.rightPanel:
                 self.rightPanel = Tkinter.Frame(self)
@@ -856,8 +862,6 @@ def startTk():
                 self.alternateRightPanel.pack({"side":"left"})
                 curWidth = self.winfo_width()
                 addLabel(self.alternateRightPanel,"Only the first user can access the preset collections, but you can copy the vocab lists and recordings from each other once you've added them.")["wraplength"]=int(curWidth/2) # (presets are not really compatible with multiple users, unless re-write for copy-and-track-what's-done, which would take double the disk space on a one-person setup AND would have trouble upgrading existing users who have started into their presets)
-            if hasattr(self,"OutputRow"): addStatus(self.OutputRow,u'"'+localise("Speaker")+u'" sets all sound to play immediately, or\navailable ways of copying it to disk are listed')
-            # (NB don't try to addStatus to anything that might be preserved once go back to main menu after a failed lesson.  OutputRow is either re-created or its status removed when go back to main menu.)
             self.Entry1.focus()
         def add_extra_button(self):
             global extra_buttons_waiting_list
@@ -989,7 +993,6 @@ def startTk():
                 else:
                     # (comment this out if you want the Quit button to really quit even from add/test words, but probably don't want this now there are other options on the main menu e.g. user switching)
                     self.thin_down_for_lesson()
-                    if hasattr(self,"OutputRow"): removeStatus(self.OutputRow)
                     self.todo.set_main_menu="keep-outrow" ; return
             if not self.cancelling:
                 if emulated_interruptMain:
