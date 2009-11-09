@@ -1,3 +1,13 @@
+# This file is part of the source code of
+# gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+.
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 3 of the License, or
+#    (at your option) any later version.
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
 
 # program to "thin down" the gradint .py for low memory environments
 # by taking out some of the code that's unused on that platform

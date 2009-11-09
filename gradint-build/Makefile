@@ -1,3 +1,13 @@
+# This file is part of the source code of
+# gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+.
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 3 of the License, or
+#    (at your option) any later version.
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
 
 # Do NOT run with "make -j" or other parallelisations - some of these rules have conflicting tempfiles
 
@@ -176,14 +186,11 @@ publish: $(All_Versions)
 	ssh -i ~/.srcf/keyfile st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c '. build-sync.sh'"
 
 gradint-build.bgz:
-	rm -rf publicSrc ; cp -r src publicSrc
-	cd publicSrc; for N in *.py; do if ! test $$N == top.py; then (echo "# This file is part of the source code of";grep "^program_name" top.py;grep "^#    " top.py;cat $$N) > $$N-new; mv $$N-new $$N; fi; done; cd ..
 	mkdir ../gradint-build
 	cp -r * ../gradint-build
 	mv ../gradint-build gradint
-	rm -rf publicSrc gradint/src
-	mv gradint/publicSrc gradint/src
-	cd gradint ; make clean ; rm -f zip.exe lame.exe ; cd ..
+	cd gradint; for N in *.py src/*.py Makefile; do if ! test $$N == src/top.py && ! test $$N == gradint.py; then (echo "# This file is part of the source code of";grep "^program_name" src/top.py|sed -e 's/[^"]*"//' -e 's/"//' -e 's/^/# /';grep "^#    " src/top.py;cat $$N) > $$N-new; mv $$N-new $$N; fi; done; cd ..
+	cd gradint ; make clean ; rm -rf extras ; cd ..
 	tar -jcf gradint-build.bgz gradint/
 	rm -rf gradint
 
