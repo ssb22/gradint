@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -19,6 +19,7 @@ limitedFiles = {} # empty this before calling scanSamples if
 dirsWithIntros = [] # ditto
 filesWithExplanations = {} # ditto
 singleLinePoems = {} # ditto (keys are any poem files which are single line only, so as to avoid saying 'beginning' in prompts)
+variantFiles = {} # ditto (but careful if prompts is using it also)
 def scanSamples(directory=None):
     if not directory: directory=samplesDirectory
     # Scans the samples directory for pairs of
@@ -54,17 +55,21 @@ def scanSamples(directory=None):
                     os.remove(import_recordings_from+os.sep+f)
     scanSamples_inner(directory,retVal,0)
     return retVal
+
 def exec_in_a_func(x): # helper function for below (can't be nested in python 2.3)
    # Also be careful of http://bugs.python.org/issue4315 (shadowing globals in an exec) - better do this in a dictionary
    d={"firstLanguage":firstLanguage,"secondLanguage":secondLanguage}
    exec x in d
    return d["secondLanguage"],d["firstLanguage"]
-def scanSamples_inner(directory,retVal,doLimit):
-    if not (directory.find(exclude_from_scan)==-1): return
-    firstLangSuffix = "_"+firstLanguage+extsep
-    secLangSuffix = "_"+secondLanguage+extsep
+
+def getLsDic(directory):
+    # Helper function for samples and prompts scanning
+    # Calls os.listdir, returns dict of filename-without-extension to full filename
+    # Puts variants into variantFiles and normalises them
+    # Also sorts out import_recordings (pointless for prompts, but settings.txt shouldn't be found in there)
+    if not (directory.find(exclude_from_scan)==-1): return {}
     try: ls = os.listdir(directory)
-    except OSError: return # (can run without a 'samples' directory at all if just doing synth)
+    except OSError: return {} # (can run without a 'samples' directory at all if just doing synth)
     if "settings"+dottxt in ls:
         # Sort out the o/p from import_recordings_from above (and legacy record-with-HDogg.bat if anyone's still using that)
         oddLanguage,evenLanguage = exec_in_a_func(u8strip(open(directory+os.sep+"settings"+dottxt,"rb").read().replace("\r\n","\n")).strip(wsp))
@@ -80,15 +85,48 @@ def scanSamples_inner(directory,retVal,doLimit):
         os.remove(directory+os.sep+"settings"+dottxt)
         ls = os.listdir(directory)
     ls.sort() ; lsDic = {}
+    if directory==promptsDirectory: has_variants = True
+    else:
+        has_variants=False
+        for file in ls:
+            if (file+extsep)[:file.rfind(extsep)]==variants_filename:
+                has_variants=True ; break
     for file in ls:
         filelower = file.lower()
         # in lsDic if it's in the list (any extension); =filename if it's an extension we know about (see comment below for reason for this)
-        if (filelower.endswith(dottxt) and file.find("_")>-1 and can_be_synthesized(file,directory)) or filelower.endswith(dotwav) or filelower.endswith(dotmp3): val = file
+        if has_variants and file.find("_",file.find("_")+1)>-1: languageOverride=file[file.find("_")+1:file.find("_",file.find("_")+1)]
+        else: languageOverride=None
+        if (filelower.endswith(dottxt) and file.find("_")>-1 and can_be_synthesized(file,directory,languageOverride)) or filelower.endswith(dotwav) or filelower.endswith(dotmp3): val = file
         else:
-            val = 0
+            val = ""
             if filelower.endswith(extsep+"zip"): show_warning("Warning: Ignoring "+file+" (please unpack it first)") # so you can send someone a zip file for their recorded words folder and they'll know what's up if they don't unpack it
         if filelower.endswith(dottxt) and (file+extsep)[:file.find(extsep)] in lsDic: continue # don't let a .txt override a recording if both exist
-        else: lsDic[(file+extsep)[:file.find(extsep)]] = val
+        else: lsDic[(file+extsep)[:file.find(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
+    if has_variants:
+        ls=list2set(ls)
+        for k,v in lsDic.items():
+            # check for _lang_variant.ext and take out the _variant,
+            # but keep them in variant_files dict for fileToEvent to put back
+            if not directory==promptsDirectory and v.find("_explain_")>-1: continue # don't get confused by that
+            last_ = v.rfind("_")
+            if last_==-1: continue
+            penult_ = v.rfind("_",0,last_)
+            if penult_==-1: continue
+            del lsDic[k]
+            newK,newV = k[:k.rfind("_")], v[:v.rfind("_")]+v[v.find(extsep):]
+            if not newK in lsDic: lsDic[newK] = newV
+            else: newV = lsDic[newK] # variants of different file types? better store them all under one (fileToEvent will sort out).  (Testing if the txt can be synth'd has already been done above)
+            dir_newV = directory+os.sep+newV
+            if not dir_newV in variantFiles:
+                variantFiles[dir_newV] = []
+                if newV in ls: variantFiles[dir_newV].append(newV) # the no-variants name is also a valid option
+            variantFiles[dir_newV].append(v)
+    return lsDic
+
+def scanSamples_inner(directory,retVal,doLimit):
+    firstLangSuffix = "_"+firstLanguage
+    secLangSuffix = "_"+secondLanguage
+    lsDic = getLsDic(directory)
     intro = intro_filename+"_"+firstLanguage
     if intro in lsDic: dirsWithIntros.append((directory[len(samplesDirectory)+len(os.sep):],lsDic[intro]))
     if not doLimit: doLimit = limit_filename in lsDic
@@ -96,56 +134,44 @@ def scanSamples_inner(directory,retVal,doLimit):
     if doPoetry:
         # check which language the poetry is to be in
         doPoetry = ""
-        for file in ls:
-            if file.find(secLangSuffix)>-1 and not doPoetry: doPoetry=secLangSuffix
-            elif (not file.find(firstLangSuffix)>-1):
+        for file,withExt in lsDic.items():
+          if withExt:
+            if file.endswith(secLangSuffix) and not doPoetry: doPoetry=secLangSuffix
+            elif (not file.endswith(firstLangSuffix)):
                 for l in otherLanguages:
-                    if file.find("_"+l+extsep)>=0:
-                        doPoetry="_"+l+extsep; break
-    prefix = directory[len(samplesDirectory)+len(os.sep):] # the directory relative to samplesDirectory
+                    if file.endswith("_"+l):
+                        doPoetry="_"+l; break
+    prefix = directory[len(samplesDirectory)+cond(samplesDirectory,len(os.sep),0):] # the directory relative to samplesDirectory
     if prefix: prefix += os.sep
     lastFile = None # for doPoetry
-    for file in ls:
-        if not lsDic.get(file[:file.rfind(extsep)]):
+    items = lsDic.items() ; items.sort()
+    for file,withExt in items:
+        if not withExt:
             lastFile = None # avoid problems with connecting poetry lines before/after a line that's not in the synth cache or something
             if isDirectory(directory+os.sep+file) and not directory+os.sep+file==promptsDirectory: # (NB putting that 'if' here, not before previous one, because isDirectory() can take time when got thousands of files.  Hopefully the risk of people putting ".wav" extensions on their directory names is low enough.)
-                if file=="RENAME.ME":
-                    # Hack for record-with-HDogg.bat: Rename any directory called RENAME.ME, in case the user forgot to do it
-                    newName = "%d-%02d-%02d" % time.localtime()[:3]
-                    count = 1
-                    while isDirectory(directory+os.sep+newName) or fileExists(directory+os.sep+newName):
-                        count += 1
-                        newName = "%d-%02d-%02d-%d" % (time.localtime()[:3]+[count])
-                    os.rename(directory+os.sep+file,directory+os.sep+newName)
-                    file=newName
                 scanSamples_inner(directory+os.sep+file,retVal,doLimit)
-            else: continue # no extension, or not an extension we know about - ignore (DO need this, because one way of temporarily disabling stuff is to rename it to another exension)
-        elif not file==lsDic.get(file[:file.rfind(extsep)]): continue # different extensions with same filename (e.g. both .txt and .wav) - ignore all but the "best" one
-        elif file.find(firstLangSuffix)==-1 or firstLanguage==secondLanguage:
+            # else no extension, or not an extension we know about - ignore (DO need this, because one way of temporarily disabling stuff is to rename it to another exension)
+        elif not file.endswith(firstLangSuffix) or firstLanguage==secondLanguage:
             # not a prompt word and not a directory
-            if doPoetry and not file.find(doPoetry)>-1: continue # save confusion
+            if doPoetry and not file.endswith(doPoetry): continue # save confusion
             # check for second & other languages
             # (there might not be a 1st-language prompt if learning poetry)
-            if file.find(secLangSuffix)>=0: wordSuffix=secLangSuffix
+            if file.endswith(secLangSuffix): wordSuffix=secLangSuffix
             else:
                 wordSuffix=None
                 for l in otherLanguages:
-                    if file.find("_"+l+extsep)>=0:
-                        wordSuffix="_"+l+extsep ; break
+                    if file.endswith("_"+l):
+                        wordSuffix="_"+l ; break
                 if not wordSuffix: continue # can't do anything with this file
             if firstLanguage==secondLanguage: promptFile=None
-            else:
-                promptFile=file.replace(wordSuffix,firstLangSuffix) # TODO what if some user puts wordSuffix earlier in the filename?  really want to replace only the LAST one.
-                promptFile = lsDic.get(promptFile[:promptFile.rfind(extsep)],0)
-            explanationFile = lsDic.get(file[:file.rfind(wordSuffix)]+wordSuffix[:-1]+"_explain_"+firstLanguage,0)
+            else: promptFile = lsDic.get(file[:-len(wordSuffix)]+firstLangSuffix,0)
+            explanationFile = lsDic.get(file[:-len(wordSuffix)]+wordSuffix+"_explain_"+firstLanguage,0)
             if not promptFile and not wordSuffix==secLangSuffix:
                 # May have prompt from second language to another language (TODO explanationFile also??)
-                promptFile = file.replace(wordSuffix,secLangSuffix)
-                promptFile = lsDic.get(promptFile[:promptFile.rfind(extsep)],0)
+                promptFile = lsDic.get(file[:-len(wordSuffix)]+secLangSuffix,0)
             if not promptFile:
                 # Try looking for a "-meaning" file
-                promptFile = file.replace(wordSuffix,"-meaning"+wordSuffix)
-                promptFile = lsDic.get(promptFile[:promptFile.rfind(extsep)],0)
+                promptFile = lsDic.get(file[:-len(wordSuffix)]+"-meaning"+wordSuffix,0)
             if promptFile:
                 # There is a simpler-language prompt
                 if doPoetry and lastFile:
@@ -158,13 +184,13 @@ def scanSamples_inner(directory,retVal,doLimit):
                     promptToAdd = prefix+lastFile[-1]
                     if directory[len(samplesDirectory)+len(os.sep):]+lastFile[-1] in singleLinePoems: del singleLinePoems[directory[len(samplesDirectory)+len(os.sep):]+lastFile[-1]]
                 else:
-                    promptToAdd = prefix+file # 1st line is its own prompt
+                    promptToAdd = prefix+withExt # 1st line is its own prompt
                     singleLinePoems[directory[len(samplesDirectory)+len(os.sep):]+file]=1
             else: continue # can't do anything with this file
-            retVal.append((0,promptToAdd,prefix+file))
-            if explanationFile: filesWithExplanations[prefix+file]=explanationFile
-            if doLimit: limitedFiles[prefix+file]=prefix
-            lastFile = [promptFile,file]
+            retVal.append((0,promptToAdd,prefix+withExt))
+            if explanationFile: filesWithExplanations[prefix+withExt]=explanationFile
+            if doLimit: limitedFiles[prefix+withExt]=prefix
+            lastFile = [promptFile,withExt]
 
 cache_maintenance_mode=0 # hack so cache-synth.py etc can cache promptless words for use in justSynthesize
 def parseSynthVocab(fname,forGUI=0):
@@ -256,35 +282,24 @@ class PromptException(Exception):
     def __init__(self,message): self.message = message
     def __repr__(self): return self.message
 class AvailablePrompts(object):
-    reservedPrefixes = list2set(["whatmean","meaningis","repeatAfterMe","sayAgain","longpause","begin","end",firstLanguage,secondLanguage] + otherLanguages + possible_otherLanguages)
+    reservedPrefixes = list2set(map(lambda x:x.lower(),["whatmean","meaningis","repeatAfterMe","sayAgain","longPause","begin","end",firstLanguage,secondLanguage] + otherLanguages + possible_otherLanguages))
     def __init__(self):
-        try: ls = os.listdir(promptsDirectory)
-        except: ls = [] # (won't be able to do a normal gradint run, but report that later)
-        self.prefixes = [] ; self.lsDic = {}
-        for file in ls:
-            filelower = file.lower()
-            if file.find("_")>-1 and (filelower.endswith(dotwav) or filelower.endswith(dotmp3) or (filelower.endswith(dottxt) and can_be_synthesized(file,promptsDirectory))):
-                # TODO this needs to be re-written in case some users make prompts with extra '_' characters in them.  We're assuming there are at most 2 _s, like sthg_lang_variant.{txt,wav}
-                self.prefixes.append(file[:file.index("_")])
-                second_ = file.find("_",file.index("_")+1)
-                if second_ > -1:
-                    normalised_name = file[:second_]
-                else: normalised_name = file[:file.rfind(extsep)]
-                if not normalised_name in self.lsDic:
-                    self.lsDic[normalised_name] = []
-                self.lsDic[normalised_name].append(file)
+        self.lsDic = getLsDic(promptsDirectory)
+        self.prefixes = {}
+        for k,v in self.lsDic.items():
+            if v: self.prefixes[k[:k.rfind("_")]]=1 # delete language
+            else: del self.lsDic[k] # !poetry etc doesn't make sense in prompts
+        self.prefixes = self.prefixes.keys()
         self.user_is_advanced = None
     def getRandomPromptList(self,promptsData,language):
         random.shuffle(self.prefixes)
         for p in self.prefixes:
-            if p in self.reservedPrefixes: continue
+            if p.lower() in self.reservedPrefixes: continue
             try:
                 theList = self.getPromptList(p,promptsData,language)
                 return theList
             except PromptException: pass
         raise PromptException("Can't find a non-reserved prompt suitable for language '%s'" % (language))
-    def fromLsDic(self,key):
-        return random.choice(self.lsDic[key])
     def getPromptList(self,prefix,promptsData,language):
         # used for introducing foreign-language prompts to
         # beginners.  language is the suffix of the language we're *learning*.
@@ -300,17 +315,17 @@ class AvailablePrompts(object):
         advancedPrompt = prefix+"_"+language
         if not advancedPrompt in self.lsDic:
             # Must use beginnerPrompt
-            if beginnerPrompt: r=[self.fromLsDic(beginnerPrompt)]
+            if beginnerPrompt: r=[self.lsDic[beginnerPrompt]]
             else:
                 if language in [firstLanguage,secondLanguage]: raise PromptException("Can't find "+prefix+"_"+firstLanguage+" or "+prefix+"_"+secondLanguage)
                 else: raise PromptException("Can't find "+prefix+"_"+language+", "+prefix+"_"+firstLanguage+" or "+prefix+"_"+secondLanguage)
         elif not beginnerPrompt:
             # Must use advancedPrompt
             if (not self.user_is_advanced) and cond(language==secondLanguage,advancedPromptThreshold,advancedPromptThreshold2): raise PromptException("Prompt '%s' is too advanced; need '%s_%s' (unless you set %s=0 in advanced%stxt)" % (advancedPrompt,prefix,firstLanguage,cond(language==secondLanguage,"advancedPromptThreshold","advancedPromptThreshold2"),extsep))
-            r=[self.fromLsDic(advancedPrompt)]
-        elif promptsData.get(advancedPrompt,0) >= cond(language==secondLanguage,advancedPromptThreshold,advancedPromptThreshold2): r=[self.fromLsDic(advancedPrompt)]
-        elif promptsData.get(advancedPrompt,0) >= cond(language==secondLanguage,transitionPromptThreshold,transitionPromptThreshold2): r=[self.fromLsDic(advancedPrompt), self.fromLsDic(beginnerPrompt)]
-        else: r=[self.fromLsDic(beginnerPrompt)]
+            r=[self.lsDic[advancedPrompt]]
+        elif promptsData.get(advancedPrompt,0) >= cond(language==secondLanguage,advancedPromptThreshold,advancedPromptThreshold2): r=[self.lsDic[advancedPrompt]]
+        elif promptsData.get(advancedPrompt,0) >= cond(language==secondLanguage,transitionPromptThreshold,transitionPromptThreshold2): r=[self.lsDic[advancedPrompt], self.lsDic[beginnerPrompt]]
+        else: r=[self.lsDic[beginnerPrompt]]
         # (NB may seem to go forward/backward across
         # thresholds in a lesson because things are added by
         # sequence, not chronological order, but that

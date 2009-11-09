@@ -48,7 +48,7 @@ the 'utils' directory.
 
 LEARNING A TEXT:
 
-If a file called !poetry is present in a directory, the
+If a file called !poetry or !poetry.txt is present in a directory, the
 program will assume that all the samples in the directory
 are part of a poem or other text that is to be memorised in
 sequence (the sequence is given by the ordering of the
@@ -92,7 +92,7 @@ This will be played when that word is introduced.
 
 BORING WORDS:
 
-If a file called !limit is present in a directory, the
+If a file called !limit or !limit.txt is present in a directory, the
 program will try to limit how many new words it introduces
 from that directory in any one lesson.  Useful for "boring"
 directories where you don't want to spend weeks on end
@@ -110,6 +110,14 @@ COMBINING RECORDED AND SYNTHESIZED WORDS:
 If you have recordings in one language and you want the
 equivalents in another language to be synthesized by
 computer, see the instructions in vocab.txt.
+
+VARIANTS:
+
+If a file called !variants or !variants.txt exists
+then samples are interpreted as word_language_variant.wav
+for example word_en_speaker1.wav and if there are
+several variants of a word they will be chosen from at random.
+(This is on by default in the prompts directory.)
 
 IMPORTANT NOTES ABOUT MP3
 -------------------------

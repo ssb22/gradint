@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -493,6 +493,8 @@ class RecorderControls:
                     self.addButton(curRow,0,text=filename2unicode(fname),command=(lambda f=newDir:self.changeDir(f)))
                     curRow += 1
             elif "_" in fname and languageof(fname) in allLangs: # something_lang where lang is a recognised language (don't just take "any _" because some podcasts etc will have _ in them)
+              # TODO what if there are variants? (currently languageof won't recognise so will drop to the next case!)
+              # TODO and what about letting them record _explain_ files etc from the GUI, + toggling !poetry
               prefix=fname[:fname.rindex("_")]
               wprefix = prefix
               if wprefix.startswith("word"): wprefix=wprefix[4:] # ditch any "word" before the integer

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -69,6 +69,7 @@ gui_output_directory = "output"
 limit_filename = "!limit"
 intro_filename = "_intro"
 poetry_filename = "!poetry"
+variants_filename = "!variants"
 exclude_from_scan = "_disabled"
 exclude_from_coverage = "z_try_again"
 userNameFile="username.txt"

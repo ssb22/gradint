@@ -552,6 +552,7 @@ gui_output_directory = "output"
 limit_filename = "!limit"   # do not specify an extension
 intro_filename = "_intro"   # ditto
 poetry_filename = "!poetry" # ditto
+variants_filename = "!variants" # ditto
 exclude_from_scan = "_disabled"
 exclude_from_coverage = "z_try_again" # not counted in "covered .. of .."
 

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -105,12 +105,8 @@ def reverseAnticipation(promptFile,zhFile,promptsData):
     theList.append(Event(random.choice([1,2,3])))
     return CompositeEvent(theList)
 
-def languageof(file,needVariants=False):
+def languageof(file):
     assert "_" in file, "no _ in %s" % (file,)
-    if needVariants:
-        second_ = file.find("_",file.index("_")+1)
-        if second_ > -1: # name_lang_variant.ext
-            return file[file.index("_")+1:second_]
     s=file[file.rindex("_")+1:]
     if extsep in s: return s[:s.rindex(extsep)]
     else: return s

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -189,7 +189,7 @@ class ProgressDatabase(object):
         o=maxLenOfLesson ; maxLenOfLesson = max(l.events)[0]
         if longpause in availablePrompts.lsDic and self.promptsData.get(longpause,0)==0:
             try:
-                def PauseEvent(): return fileToEvent(availablePrompts.fromLsDic(longpause),promptsDirectory)
+                def PauseEvent(): return fileToEvent(availablePrompts.lsDic[longpause],promptsDirectory)
                 firstPauseMsg = PauseEvent()
                 # the 1st potentially-awkward pause is likely to be a beepThreshold-length one
                 l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),CompositeEvent([firstPauseMsg,Event(max(5,beepThreshold-firstPauseMsg.length))]))])
@@ -407,9 +407,9 @@ def mergeProgress(progList,scan):
         if key in proglistDict:
             # an existing item - but in the case of synth'd vocab, we need to take the capitals/lower-case status from the scan rather than from the progress file (see comment above in denumber_synth) so:
             progList[proglistDict[key]]=(progList[proglistDict[key]][0],j,k)
-        elif (key[0]+key[1]).find("!synth")==-1 and ("_" in key[0] and "_" in key[1]):
-            # a file which might have been renamed and we may be able to catch a case of appending text to digits
-            # (TODO document that we do this in samples/readme and possibly the autosplit scripts etc, although nowadays recording GUI is more likely to be used and it lends itself to rename-all-but-digits)
+        elif type(key[0])==type("") and (key[0]+key[1]).find("!synth")==-1 and ("_" in key[0] and "_" in key[1]):
+            # a file which might have been renamed and we may be able to catch a case of appending text to digits (but we don't (yet?) support doing this with poetry, hence the type() precondition)
+            # TODO document that we do this in samples/readme and possibly the autosplit scripts etc, although nowadays recording GUI is more likely to be used and it lends itself to rename-all-but-digits.
             normK = key[1]
             lastDirsep = normK.rfind(os.sep)
             ki = len(normK)-1 ; found=0
@@ -420,12 +420,10 @@ def mergeProgress(progList,scan):
                 if key2 in proglistDict:
                     if not key2 in renames: renames[key2] = []
                     renames[key2].append((j,k))
-                    found=1
-                    break
+                    found=1 ; break
                 while ki>lastDirsep and "0"<=normK[ki]<="9": ki -= 1
-            if not found: progList.append((0,j,k))
-        else: # a new item
-            progList.append((0,j,k))
+            if not found: progList.append((0,j,k)) # new item
+        else: progList.append((0,j,k)) # ditto
         scanlistDict[key]=1
     for k,v in renames.items():
         if k in scanlistDict or len(v)>1: # can't make sense of this one - just add the new stuff

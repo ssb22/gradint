@@ -1,5 +1,5 @@
 # This file is part of the source code of
-program_name = "gradint v0.9929 (c) 2002-2009 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+."
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -58,7 +58,9 @@ class Partials_Synth(Synth):
 def fileToEvent(fname,dirBase=None):
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
-    if "_" in fname: lang = languageof(fname,(dirBase+fname).startswith(promptsDirectory))
+    if os.sep in fname: dirBase,fname = dirBase+fname[:fname.rindex(os.sep)+1], fname[fname.rindex(os.sep)+1:]
+    if dirBase+fname in variantFiles: fname=random.choice(variantFiles[dirBase+fname])
+    if "_" in fname: lang = languageof(fname)
     else: lang="-unknown-" # so can take a simple wav file, e.g. for endAnnouncement
     if fname.lower().endswith(dottxt) and fname.find("_")>0: # >0 makes more sense than >-1 here - files called _.txt aren't going to be useful
         fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+'_'+lang
@@ -107,7 +109,7 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0):
     # if justQueryCache (used by the GUI), return value is (synthCache_transtbl key, result if any).  If key starts with _, we got a sporadic one.
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
-    lang = languageof(fname,(dirBase+fname).startswith(promptsDirectory))
+    lang = languageof(fname)
     if fname.lower().endswith(dottxt): fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+"_"+lang # there *will* be a _ otherwise languageof would have failed
     text = textof(fname)
     useSporadic = -1 # undecided (no point accumulating counters for potentially-unbounded input)
@@ -127,7 +129,7 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0):
                     if useSporadic: return ret
                 else: return ret
     if justQueryCache: return 0,0
-    if lang not in partials_langs: l,tranlit=None,None # don't bother trying to transliterate here if there aren't even any partials for that language
+    if lang not in partials_langs: l,translit=None,None # don't bother trying to transliterate here if there aren't even any partials for that language
     elif (lang,text) not in synth_partials_cache:
         # See if we can transliterate the text first.
         synth,translit = get_synth_if_possible(lang,0,to_transliterate=True),None
@@ -146,11 +148,11 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0):
         global last_partials_transliteration
         last_partials_transliteration=translit
     if l: return l
-    if printErrors and synthCache and not (app and winsound): show_info("Not in cache: "+repr(text.lower()+"_"+lang)+"\n")
-def can_be_synthesized(fname,dirBase=None):
+    if printErrors and synthCache and not (app and winsound): show_info("Not in cache: "+repr(text.lower()+"_"+lang)+"\n",True)
+def can_be_synthesized(fname,dirBase=None,lang=None):
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
-    lang = languageof(fname,(dirBase+fname).startswith(promptsDirectory))
+    if not lang: lang = languageof(fname)
     if get_synth_if_possible(lang,0): return True
     elif synthcache_lookup(fname,dirBase,1): return True
     else: return get_synth_if_possible(lang) # and this time print the warning
