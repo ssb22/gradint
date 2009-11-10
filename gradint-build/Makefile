@@ -186,9 +186,9 @@ publish: $(All_Versions)
 	ssh -i ~/.srcf/keyfile st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c '. build-sync.sh'"
 
 gradint-build.bgz:
-	mkdir ../gradint-build
-	cp -r * ../gradint-build
-	mv ../gradint-build gradint
+	mkdir ../gradint-build00
+	cp -r * ../gradint-build00
+	mv ../gradint-build00 gradint
 	cd gradint; for N in *.py src/*.py Makefile; do if ! test $$N == src/top.py && ! test $$N == gradint.py; then (echo "# This file is part of the source code of";grep "^program_name" src/top.py|sed -e 's/[^"]*"//' -e 's/"//' -e 's/^/# /';grep "^#    " src/top.py;cat $$N) > $$N-new; mv $$N-new $$N; fi; done; cd ..
 	cd gradint ; make clean ; rm -rf extras ; cd ..
 	tar -jcf gradint-build.bgz gradint/
@@ -217,5 +217,6 @@ CD: $(Mac_Files) gradint.zip
 
 cleanup:
 	rm -f `find . -type f -name '*~' -o -name '*.pyc'`
+	rm -f src/defaults.py
 clean: cleanup
 	rm -f gradint.py $(All_Versions)
