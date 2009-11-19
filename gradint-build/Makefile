@@ -22,7 +22,7 @@ Extra_Data=partials *_disabled [^g]*.exe
 # Unix_To_Dos=unix2dos -k -o -q # (keep date, run quietly)
 Unix_To_Dos=unix2dos # (-k -o -q are not recognised on all systems)
 
-All_Versions=gradint.exe gradint.tbz gradint.bgz gradint.zip gradint-build.bgz gradintcab.zip gradint-S60.zip
+All_Versions=gradint-build.bgz gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip
 # dropping gradint-noGUI.exe and GUI.exe for now - probably don't need that separation anymore
 
 SHELL=/bin/bash
