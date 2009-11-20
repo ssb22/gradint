@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9931 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -102,8 +102,7 @@ def startBrowser(url): # true if success
   except: webbrowser=0
   if webbrowser:
       g=webbrowser.get()
-      if g and (winCEsound or macsound or (hasattr(g,"background") and g.background) or (hasattr(webbrowser,"Konqueror") and g.__class__==webbrowser.Konqueror)):
-          # (TODO "background" should cover Galeon, Mozilla, Netscape, Opera, but is this always the case?)
+      if g and (winCEsound or macsound or (hasattr(g,"background") and g.background) or (hasattr(webbrowser,"BackgroundBrowser") and g.__class__==webbrowser.BackgroundBrowser) or (hasattr(webbrowser,"Konqueror") and g.__class__==webbrowser.Konqueror)):
           return g.open_new(url)
       # else don't risk it - it might be text-mode and unsuitable for multitask-with-gradint
   if winsound: return not os.system('start "%ProgramFiles%\\Internet Explorer\\iexplore.exe" '+url) # use os.system not system here (don't know why but system() doesn't always work for IE)
@@ -232,7 +231,7 @@ def make_output_row(parent):
             Tkinter.Radiobutton(row, text=u" "+variant+u" ", variable=app.scriptVariant, value=str(count), indicatoron=0).pack({"side":"left"})
             count += 1
         app.scriptVariant.set(str(scriptVariants.get(firstLanguage,0)))
-    if not got_program("sox"): return row # can't do any file output without sox
+    if not gotSox: return row # can't do any file output without sox
     if not hasattr(app,"outputTo"): app.outputTo = Tkinter.StringVar(app) # NB app not parent (as parent is no longer app)
     if not row:
         row = Tkinter.Frame(parent)
@@ -920,7 +919,7 @@ def startTk():
             else: self.updateLanguageLabels()
             if hasattr(self,"vocabList"): del self.vocabList # it will need to be re-made now
         def updateLanguageLabels(self):
-            # TODO things like "To" and "Speaker" need updating dynamically with localise() as well, otherwise will be localised only on restart
+            # TODO things like "To" and "Speaker" need updating dynamically with localise() as well, otherwise will be localised only on restart (unless the old or new lang has variants, in which case it will be repainted anyway above)
             self.Label1["text"] = (localise("Word in %s") % localise(secondLanguage))+":"
             if winsound or mingw32 or cygwin: self.Label1["text"] += "\n(" + localise("press Control-V to paste")+")"
             elif macsound: self.Label1["text"] += "\n("+localise("press Apple-V to paste")+")"
@@ -1536,18 +1535,23 @@ def rest_of_main():
         del tbObj
         try: import traceback
         except:
-            w += "Cannot import traceback"
+            w += "Cannot import traceback\n"
             traceback = None
         if traceback and useTK: traceback.print_exc() # BEFORE waitOnMessage, in case Tk is stuck (hopefully the terminal is visible)
         try:
             if not soundCollector and get_synth_if_possible("en",0): synth_event("en","Error in graddint program.").play() # if possible, give some audio indication of the error (double D to try to force correct pronunciation if not eSpeak, e.g. S60)
         except: pass
-        waitOnMessage(w)
-        try: tracebackFile=open("last-gradint-error"+extsep+"txt","w") # TODO document this in the user message?
+        try: tracebackFile=open("last-gradint-error"+extsep+"txt","w")
         except: tracebackFile=None
-        if tracebackFile: tracebackFile.write(w+"\n")
+        if tracebackFile:
+            try:
+                tracebackFile.write(w+"\n")
+                if traceback: traceback.print_exc(None,tracebackFile)
+                tracebackFile.close()
+                if traceback: w += "Details have been written to "+os.getcwd()+os.sep+"last-gradint-error"+extsep+"txt" # do this only if there's a traceback, otherwise little point
+            except: pass
+        waitOnMessage(w.strip())
         if traceback and not useTK: traceback.print_exc()
-        if traceback and tracebackFile: traceback.print_exc(None,tracebackFile)
         exitStatus = 1
         if appuifw: raw_input() # so traceback stays visible
     # It is not guaranteed that __del__() methods are called for objects that still exist when the interpreter exits.  So:

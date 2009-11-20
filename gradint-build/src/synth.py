@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9931 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -75,7 +75,7 @@ class OSXSynth_Say(Synth):
 
 def aiff2wav(fname):
     if not system("sox \"%s\" \"%s\"" % (fname,fname[:-4]+"wav")):
-        # good, we can convert it to wav
+        # good, we converted it to wav
         os.remove(fname)
         fname=fname[:-4]+"wav"
     # else just return aiff and hope for the best (TODO won't work with cache-synth)
@@ -492,32 +492,44 @@ class ESpeakSynth(Synth):
           if not (winsound or macsound): show_warning("Warning: eSpeak's transliterate returned wrong number of items (%d instead of %d).  Falling back to separate runs for each item (slower)." % (len(data),len(indexList)))
           return None
       for index,dat in zip(indexList,data):
-          en_words=[] # any en words that espeak found embedded in the text
-          r=[] ; lastWasBlank=False ; ignore_next_translate = 0
+          en_words={} # any en words that espeak found embedded in the text
+          r=[] ; lastWasBlank=False
           delete_last_r_if_blank = 0
+          thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
           for l in dat.strip(wsp).split("\n"):
+              if lang=="zh": # sort out en_words
+                  lWords = l.split()
+                  if lWords: int0 = intor0(lWords[0])
+                  else: int0 = 0
+                  if int0:
+                      if int0 > thisgroup_max_priority:
+                          thisgroup_max_priority = int0
+                          if lWords[-1]=="[_^_]": thisgroup_enWord_priority = int0 # so far it looks like this is going to be an English word
+                  else: # a split between the groups
+                      if thisgroup_enWord_priority == thisgroup_max_priority: # the choice with the highest priority was the one containing the [_^_] to put the word into English
+                          en_words[r[-1]]=1
+                      thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
+              # end of sort out en_words
               if lang=="zh" and not lastWasBlank and r and (l.startswith("Replace") or l.startswith("Translate") or l.startswith("Found")): r[-1]+="," # (because not-blank is probably the line of phonemes)
               if delete_last_r_if_blank and not l: r=r[:-1] # "Translate" followed by blank line is probably corner-brackets or something; don't want that confusing the transliteration (especially if it's for partials)
+              delete_last_r_if_blank = 0
               foundLetter=0
               if l.startswith("Translate "):
                   toAppend=l[l.index("'")+1:-1].replace("\xc3\xbc","v")
-                  if lang=="zh" and ((not ignore_next_translate) or not r[-1]==toAppend): # 'or not' condition added because sometimes a "[_^_]" rule appears in the -X output as being considered but is not actually taken, e.g. "de2zhao2 da4di4".  TODO if this happens when the word really is repeated in the input, this code will erase the repetition.
+                  if lang=="zh" and not (toAppend in en_words and r and toAppend==r[-1]):
+                      # TODO what about partial English words? e.g. try "kao3 testing" - translate 'testing' results in a translate of 'test' also (which assumes it's already in en mode), resulting in a spurious word "test" added to the text box; not sure how to pick this up without parsing the original text and comparing with the Replace rules that occurred
                       r.append(toAppend)
                       delete_last_r_if_blank = 1
-                  else:
-                      en_words.append(toAppend)
-                      delete_last_r_if_blank = 0
-                  ignore_next_translate = 0
+                  else: # lang=="zhy", or it's a duplicate of a word we already know to be in en_words
+                      en_words[toAppend]=1 # make sure it's in there
               else: # not Translate
-                  delete_last_r_if_blank = 0
-                  if lang=="zh" and forPartials and l.startswith("Found: ") and l[8]==" " and "a"<=l[7]<="z": # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
-                      r.append("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1".split()[ord(l[7])-ord('a')])
+                  if lang=="zh" and l.startswith("Found: ") and l[8]==" " and "a"<=l[7]<="z": # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
+                      if forPartials: r.append("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1".split()[ord(l[7])-ord('a')])
+                      else: r.append(l[7])
                       foundLetter = 1
-                  elif lang=="zh" and lastWasBlank and l.find("[_^_]")>-1: en_words.append(r[-1]) # hack to make sure all en_words are detected
                   elif not lang=="zh" and l.startswith("Found: ") and ord(l[7])>127:
                       r.append(l[l.index("[")+1:l.index("]")])
               lastWasBlank=(l.startswith("Replace") or not l or foundLetter) # (take 'Replace' lines as blank, so 'Translate' doesn't add a second comma.  ditto letters thing.)
-              if l.find("[_^_]")>-1: ignore_next_translate=1 # because it will be a duplicate (an en word in the zh)
           if lang=="zh": retList[index]=fix_pinyin(" ".join(r),en_words)
           else: retList[index]=" ".join(r)
       return retList
@@ -601,7 +613,7 @@ def fix_pinyin(pinyin,en_words):
     def stripPunc(w):
       i=0 ; j=len(w) ; w=w.lower()
       while i<len(w) and not 'a'<=w[i]<='z': i+=1
-      while j>1 and not 'a'<=w[j-1]<='z': j-=1
+      while j>1 and not ('a'<=w[j-1]<='z' or '1'<w[j-1]<='5'): j-=1
       return w[i:j]
     for w in pinyin.split():
       if stripPunc(w) in en_words: ret.append(w)
@@ -679,16 +691,24 @@ def fix_compatibility(utext): # convert 'compatibility full-width' characters to
 
 # Older versions of eSpeak output WAVs with 0 length and can't be piped through aplay
 espeak_pipe_through = "" # or "--stdout|..." (NOT on Windows)
-done_espeak_recent = None
-def espeak_is_recent():
-    global done_espeak_recent
-    if done_espeak_recent==None: done_espeak_recent=('zh' in ESpeakSynth().languages)
-    return done_espeak_recent
+def espeak_stdout_works():
+    assert unix, "espeak_stdout_works should be called only if unix"
+    # recent enough for --stdout to work.  Don't be tempted to look for "zh" in languages
+    # because espeak 1.31 shipped with zh (broken) and a broken --stdout (length marked as 0)
+    versionLine = filter(lambda x:x,os.popen(ESpeakSynth().program+" --help 2>&1").read().split("\n"))[0]
+    versionLine = versionLine[versionLine.find(":")+1:].strip()
+    versionLine = versionLine[:versionLine.find(" ")]
+    versionLine = (versionLine+".")[:versionLine.find(".",versionLine.find(".")+1)] # if x.y.z just have x.y
+    try: return (float(versionLine)>=1.32)
+    except ValueError: return False
+def espeak_volume_ok():
+    # if has "zh", should be recent enough
+    return "zh" in ESpeakSynth().languages
 if unix and not macsound and not (oss_sound_device=="/dev/sound/dsp" or oss_sound_device=="/dev/dsp"):
-    if playProgram=="aplay" and espeak_is_recent(): espeak_pipe_through="--stdout|aplay -q" # e.g. NSLU2
+    if playProgram=="aplay" and espeak_stdout_works(): espeak_pipe_through="--stdout|aplay -q" # e.g. NSLU2
     else: del ESpeakSynth.play # because we have no way of sending it to the alternative device, so do it via a file
     if hasattr(FliteSynth,"play"): del FliteSynth.play
-if hasattr(ESpeakSynth,"play") and (soundVolume<0.04 or (soundVolume<0.1 and not espeak_is_recent()) or soundVolume>2): del ESpeakSynth.play # old versions of espeak are not very good at less than 10% volume, so generate offline and use sox
+if hasattr(ESpeakSynth,"play") and (soundVolume<0.04 or (soundVolume<0.1 and not espeak_volume_ok()) or soundVolume>2): del ESpeakSynth.play # old versions of espeak are not very good at less than 10% volume, so generate offline and use sox
 
 class FestivalSynth(Synth):
     def __init__(self): Synth.__init__(self)

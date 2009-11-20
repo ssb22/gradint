@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9931 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -114,7 +114,7 @@ if winsound or mingw32:
     # TODO now that we (usually) have tkSnack bundled with the Windows version, can we try that also (with file=) before sndrec32?
     if fileExists(os.environ.get("windir","C:\\Windows")+"\\system32\\sndrec32.exe"): playProgram = "start /min sndrec32 /play /close" # TODO could also use ShellExecute or some other utility to make it completely hidden
 elif unix and not macsound:
-    sox_type = "-t ossdsp -s "+sox_16bit # (always specify 16-bit because if we're adjusting the volume of 8-bit wav's then we could lose too many bits in the adjustment unless we first convert to 16-bit)   # TODO run sox -h to see if that device is actually supported (" ossdsp" will be in the output)
+    sox_type = "-t ossdsp -s "+sox_16bit # (we will check that sox can do ossdsp below) (always specify 16-bit because if we're adjusting the volume of 8-bit wav's then we could lose too many bits in the adjustment unless we first convert to 16-bit)
     if not soundVolume==1: sox_effect=" vol "+str(soundVolume)
     if sox_effect and not gotSox:
         show_warning("Warning: trying to adjust soundVolume when 'sox' is not on the system might not work")
@@ -126,7 +126,7 @@ elif unix and not macsound:
         for dsp in dsps_to_check:
             if fileExists_stat(dsp):
                 oss_sound_device = dsp
-                if dsp=="/dev/audio": sox_type="-t sunau -s "+sox_16bit # TODO run sox -h to see if that device is actually supported (" sunau" will be in the output)
+                if dsp=="/dev/audio": sox_type="-t sunau -s "+sox_16bit
                 break
     if sox_formats.find("-q")>-1: sox_type="-q "+sox_type
     # Try to find playProgram (and maybe mpg123, for use if no madplay or mp3-playing playProgram)
@@ -246,7 +246,7 @@ class SampleEvent(Event):
             except RuntimeError: return 1
         elif macsound: return system("qtplay \"%s\"" % (self.file,))
         elif riscos_sound:
-            if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (TODO find a RISC OS program that can play the MP3's directly?)
+            if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (TODO find a RISC OS program that can play the MP3s directly?)
             else: file=self.file
             system("PlayIt_Play \"%s\"" % (file,))
         elif playProgram.find('sndrec32')>-1:

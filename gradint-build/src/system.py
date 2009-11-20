@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9931 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -285,7 +285,7 @@ if winCEsound and __name__=="__main__":
 Tk_might_display_wrong_hanzi = wrong_hanzi_message = ""
 if macsound:
   if sys.version.startswith("2.3.5"): Tk_might_display_wrong_hanzi="10.4"
-  elif sys.version.startswith("2.5.1"):
+  elif sys.version[:5] >= "2.5.1": # 10.5+
     f="/System/Library/Frameworks/Python.framework/Versions/2.5/lib/python2.5/lib-dynload/_tkinter.so"
     if fileExists(f): # we might be able to patch this one up
      if not isDirectory("Frameworks") and fileExists("Frameworks.tbz"): os.system("tar -jxvf Frameworks.tbz && rm Frameworks.tbz && chmod -R +w Frameworks")
@@ -296,7 +296,7 @@ if macsound:
       _tkinter.TK_VERSION = _tkinter.TCL_VERSION = "8.6"
     else: Tk_might_display_wrong_hanzi="10.5"
   if Tk_might_display_wrong_hanzi: wrong_hanzi_message = "NB: In Mac OS "+Tk_might_display_wrong_hanzi+", Chinese\ncan display wrongly here." # so they don't panic when it does
-# TODO what about OS X 10.6+ ?
+# TODO can we test on OS X 10.6+ ?  is the above workaround still needed?
 
 # Handle keeping progress file and temp directories etc if we're running from a live CD
 # (and if the live CD has just been copied to the hard disk, look in the old progress file locations also)

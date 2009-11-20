@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.993 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9931 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -364,7 +364,7 @@ def simplified_header(fname):
     if h: return h[:3]+h[4:]
 def optimise_partial_playing_list(ceList):
     # similar to above, but returns a ShellEvent for a list of ce's that are to be separated by short pauses, or None if can't do this optimisation.  This is because sox on NSLU2's etc has too much latency for the short pauses.
-    if (soundCollector and not saveLesson) or not playProgram=="aplay": return
+    if (soundCollector and not saveLesson) or not playProgram=="aplay" or not gotSox: return
     format = None ; l = [] ; theLen = 0
     for ce in ceList:
         for e in ce.eventList:
