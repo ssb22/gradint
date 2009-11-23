@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9931 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9932 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -202,25 +202,32 @@ def unicode2filename(u):
     return f
 
 synth_partials_voices = {} # lang -> list of voices, each being a tuple of (directory,startDict,midDict,endDict,flags); see comments below for the dictionary format
+partials_cache_file="partials-cache"+extsep+"bin"
 if partialsDirectory:
-  if pickle and partials_cache_file and fileExists(partials_cache_file): partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials = pickle.Unpickler(open(partials_cache_file,"rb")).load()
-  else:
+  dirsToStat = []
+  if pickle and fileExists(partials_cache_file):
+    try: partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat = pickle.Unpickler(open(partials_cache_file,"rb")).load()
+    except: dirsToStat = []
+    for d,result in dirsToStat:
+      if not tuple(os.stat(d))==result:
+        dirsToStat=[] ; break
+  if not dirsToStat: # need to re-scan
     if riscos_sound or winCEsound: show_info("Scanning partials... ")
     try: partials_langs = os.listdir(partialsDirectory)
     except: partials_langs = []
+    if partials_langs: dirsToStat.append((partialsDirectory,os.stat(partialsDirectory)))
     audioDataPartials = {}
     partials_raw_mode = "header"+dotwav in partials_langs
     for l in partials_langs:
         try: voices = os.listdir(partialsDirectory+os.sep+l)
         except: voices = []
+        if voices: dirsToStat.append((partialsDirectory+os.sep+l,os.stat(partialsDirectory+os.sep+l)))
         thisLangVoices = [] ; voices.sort()
         for v in voices:
             start,mid,end = [],[],[] ; flags=0
-            try: files = open(partialsDirectory+os.sep+l+os.sep+v+os.sep+"filelist","rb").read().split()
-            except:
-                if riscos_sound: show_info("(if this os.listdir() operation takes too long or seems to crash, consider creating "+partialsDirectory+os.sep+l+os.sep+v+os.sep+"filelist with whitespace-separated filenames)  ")
-                try: files = os.listdir(partialsDirectory+os.sep+l+os.sep+v)
-                except: files = []
+            try: files = os.listdir(partialsDirectory+os.sep+l+os.sep+v)
+            except: files = []
+            if files: dirsToStat.append((partialsDirectory+os.sep+l+os.sep+v,os.stat(partialsDirectory+os.sep+l+os.sep+v)))
             def byReverseLength(a,b): return len(b)-len(a)
             files.sort(byReverseLength) # important if there are some files covering multiple syllables
             def addFile(f):
@@ -231,6 +238,7 @@ if partialsDirectory:
                 if partials_raw_mode and f=="header"+dotwav:
                     flags|=2 # has a separate header.wav
                 if f=="audiodata"+extsep+"dat": # parse audiodata.dat
+                    dirsToStat.append((partialsDirectory+os.sep+l+os.sep+v+os.sep+f,os.stat(partialsDirectory+os.sep+l+os.sep+v+os.sep+f)))
                     offset=0 ; f=l+os.sep+v+os.sep+f
                     ff=open(partialsDirectory+os.sep+f,"rb")
                     amend = []
@@ -270,7 +278,9 @@ if partialsDirectory:
             thisLangVoices.append((v,toDict(start),toDict(mid),toDict(end),flags))
         synth_partials_voices[l] = thisLangVoices
     if riscos_sound or winCEsound: show_info("done\n")
-    if pickle and partials_cache_file: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials))
+    if pickle:
+      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat))
+      except: pass # ignore write errors as it's only a cache
   if partials_raw_mode:
     (wtype,wrate,wchannels,wframes,wbits) = sndhdr.what(partialsDirectory+os.sep+"header"+dotwav)
     partials_raw_0bytes = int(betweenPhrasePause*wrate)*wchannels*(wbits/8)

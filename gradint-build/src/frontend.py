@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9931 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9932 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1538,9 +1538,6 @@ def rest_of_main():
             w += "Cannot import traceback\n"
             traceback = None
         if traceback and useTK: traceback.print_exc() # BEFORE waitOnMessage, in case Tk is stuck (hopefully the terminal is visible)
-        try:
-            if not soundCollector and get_synth_if_possible("en",0): synth_event("en","Error in graddint program.").play() # if possible, give some audio indication of the error (double D to try to force correct pronunciation if not eSpeak, e.g. S60)
-        except: pass
         try: tracebackFile=open("last-gradint-error"+extsep+"txt","w")
         except: tracebackFile=None
         if tracebackFile:
@@ -1550,8 +1547,13 @@ def rest_of_main():
                 tracebackFile.close()
                 if traceback: w += "Details have been written to "+os.getcwd()+os.sep+"last-gradint-error"+extsep+"txt" # do this only if there's a traceback, otherwise little point
             except: pass
+        try: # audio warning in case was away from computer.  Do this last as it may overwrite the exception.
+            if not soundCollector and get_synth_if_possible("en",0): synth_event("en","Error in graddint program.").play() # if possible, give some audio indication of the error (double D to try to force correct pronunciation if not eSpeak, e.g. S60)
+        except: pass
         waitOnMessage(w.strip())
-        if traceback and not useTK: traceback.print_exc()
+        if not useTK:
+            if tracebackFile: sys.stderr.write(open("last-gradint-error"+extsep+"txt").read())
+            elif traceback: traceback.print_exc() # will be wrong if there was an error in speaking
         exitStatus = 1
         if appuifw: raw_input() # so traceback stays visible
     # It is not guaranteed that __del__() methods are called for objects that still exist when the interpreter exits.  So:

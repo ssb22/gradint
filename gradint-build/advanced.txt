@@ -518,13 +518,6 @@ betweenPhrasePause = 0.3
 # (a bit like the inverse of sporadic synthCache and synthCache_test_mode).
 partials_are_sporadic = 0
 
-# You can set partials_cache_file to a filename
-# if you want Gradint to cache its scan of partialsDirectory.
-# This will speed up Gradint's loading, but you must
-# manually delete the cache file whenever you change
-# any of the partials.
-partials_cache_file = ""
-
 # ------- Where to find files and directories ---------
 
 # Normally these settings are OK but in some circumstances

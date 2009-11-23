@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9931 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9932 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -447,8 +447,9 @@ class ESpeakSynth(Synth):
             tlr = self.transliterate_multiple(lang,tl,keepIndexList=1)
             if not tlr: return # espeak's not up to it
             for i in self.lastIndexList: self.translitCache[tl[i]]=tlr[i]
-        try: pickle.Pickler(open(espeakTranslitCacheFile,"wb"),-1).dump((tuple(os.stat(self.place+os.sep+"espeak-data")),self.translitCache))
-        except IOError: pass # 'permission denied' is ok
+        if textList:
+            try: pickle.Pickler(open(espeakTranslitCacheFile,"wb"),-1).dump((tuple(os.stat(self.place+os.sep+"espeak-data")),self.translitCache))
+            except IOError: pass # 'permission denied' is ok
     def transliterate(self,lang,text,forPartials=1):
         if lang=="zh" and text in self.translitCache: return self.translitCache[text] # (TODO add "and forPartials"? but don't need to bother with this extra condition on slow systems)
         return self.transliterate_multiple(lang,[text],forPartials)[0] # and don't cache it - could be experimental, and we don't want cache to grow indefinitely
@@ -695,7 +696,7 @@ def espeak_stdout_works():
     assert unix, "espeak_stdout_works should be called only if unix"
     # recent enough for --stdout to work.  Don't be tempted to look for "zh" in languages
     # because espeak 1.31 shipped with zh (broken) and a broken --stdout (length marked as 0)
-    versionLine = filter(lambda x:x,os.popen(ESpeakSynth().program+" --help 2>&1").read().split("\n"))[0]
+    versionLine = (filter(lambda x:x,os.popen("(speak --help||espeak --help) 2>/dev/null").read().split("\n"))+[""])[0]
     versionLine = versionLine[versionLine.find(":")+1:].strip()
     versionLine = versionLine[:versionLine.find(" ")]
     versionLine = (versionLine+".")[:versionLine.find(".",versionLine.find(".")+1)] # if x.y.z just have x.y
