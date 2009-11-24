@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9932 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9935 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -60,6 +60,7 @@ class ProgressDatabase(object):
             # First, try evaluating it as self.data (legacy progress.txt from older versions).  If that doesn't work, execute it (newer versions).
             global firstLanguage, secondLanguage, otherLanguages
             try: self.data = eval(expr)
+            except TypeError: raise Exception(progressFile+" has not been properly decompressed") # 'expected string without null bytes'
             except SyntaxError:
                 try: import codeop
                 except: codeop = 0
@@ -81,7 +82,7 @@ class ProgressDatabase(object):
                 del self.promptsData[k]
     def save(self,partial=0):
         if need_say_where_put_progress: show_info("Saving "+cond(partial,"partial ","")+"progress to "+progressFile+"... ")
-        else: show_info("Saving progress... ")
+        else: show_info("Saving "+cond(partial,"partial ","")+"progress... ")
         global progressFileBackup
         # Remove 0-repeated items (helps editing by hand)
         data = [] # don't use self.data - may want to make another lesson after saving
@@ -120,12 +121,7 @@ class ProgressDatabase(object):
         curPD,curDat = self.promptsData, self.data[:] # in case want to save a more complete one later
         self.promptsData = self.oldPromptsData # partial recovery of prompts not implemented
         
-        filesNotPlayed2 = []
-        for f in filesNotPlayed:
-            if f.find("!synth:")>-1:
-                filesNotPlayed2.append(f[:f.find("!synth")]+f[f.find("_",f.find("!synth")):]+dottxt)
-        filesNotPlayed = list2set(filesNotPlayed + filesNotPlayed2) # this lets it find synth'd vocab from .txt files, which would have been changed in the runtime list by writing the words in rather than just a ref to the txt file
-        
+        filesNotPlayed = list2set(filesNotPlayed)
         if hasattr(self,"previous_filesNotPlayed"):
             for k in filesNotPlayed.keys():
                 if k not in self.previous_filesNotPlayed: del filesNotPlayed[k] # cumulative effects if managed to play it last time but not this time (and both lessons incomplete)

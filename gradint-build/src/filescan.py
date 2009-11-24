@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9932 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9935 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -66,7 +66,7 @@ def getLsDic(directory):
     # Helper function for samples and prompts scanning
     # Calls os.listdir, returns dict of filename-without-extension to full filename
     # Puts variants into variantFiles and normalises them
-    # Also sorts out import_recordings (pointless for prompts, but settings.txt shouldn't be found in there)
+    # Also sorts out import_recordings (pointless for prompts, but settings.txt shouldn't be found in prompts)
     if not (directory.find(exclude_from_scan)==-1): return {}
     try: ls = os.listdir(directory)
     except OSError: return {} # (can run without a 'samples' directory at all if just doing synth)
@@ -93,21 +93,25 @@ def getLsDic(directory):
                 has_variants=True ; break
     for file in ls:
         filelower = file.lower()
-        # in lsDic if it's in the list (any extension); =filename if it's an extension we know about (see comment below for reason for this)
+        # in lsDic if it's in the list (any extension); =filename if it's an extension we know about; =None if it's a directory (in which case the key is the full filename), ottherwise =""
         if has_variants and file.find("_",file.find("_")+1)>-1: languageOverride=file[file.find("_")+1:file.find("_",file.find("_")+1)]
         else: languageOverride=None
+        if filelower.endswith(dottxt) and (file+extsep)[:file.find(extsep)] in lsDic: continue # don't let a .txt override a recording if both exist
         if (filelower.endswith(dottxt) and file.find("_")>-1 and can_be_synthesized(file,directory,languageOverride)) or filelower.endswith(dotwav) or filelower.endswith(dotmp3): val = file
         else:
             val = ""
             if filelower.endswith(extsep+"zip"): show_warning("Warning: Ignoring "+file+" (please unpack it first)") # so you can send someone a zip file for their recorded words folder and they'll know what's up if they don't unpack it
-        if filelower.endswith(dottxt) and (file+extsep)[:file.find(extsep)] in lsDic: continue # don't let a .txt override a recording if both exist
-        else: lsDic[(file+extsep)[:file.find(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
+            elif isDirectory(directory+os.sep+file):
+                lsDic[file]=None # a directory: store full name even if it has extsep in it.  Note however that we don't check isDirectory() if it's .wav etc as that would take too long.  (however some dirnames can contain dots)
+                # (+ NB need to store the directories specifically due to cases like course/ and course.pdf which may otherwise result in 2 traversals of "course" if we check isDirectory on 'extension is either none or unknown')
+                continue
+        lsDic[(file+extsep)[:file.find(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
     if has_variants:
         ls=list2set(ls)
         for k,v in lsDic.items():
             # check for _lang_variant.ext and take out the _variant,
             # but keep them in variant_files dict for fileToEvent to put back
-            if not directory==promptsDirectory and v.find("_explain_")>-1: continue # don't get confused by that
+            if not v or (not directory==promptsDirectory and v.find("_explain_")>-1): continue # don't get confused by that
             last_ = v.rfind("_")
             if last_==-1: continue
             penult_ = v.rfind("_",0,last_)
@@ -139,7 +143,7 @@ def scanSamples_inner(directory,retVal,doLimit):
             if file.endswith(secLangSuffix) and not doPoetry: doPoetry=secLangSuffix
             elif (not file.endswith(firstLangSuffix)):
                 for l in otherLanguages:
-                    if file.endswith("_"+l):
+                    if not l in [firstLanguage,secondLanguage] and file.endswith("_"+l):
                         doPoetry="_"+l; break
     prefix = directory[len(samplesDirectory)+cond(samplesDirectory,len(os.sep),0):] # the directory relative to samplesDirectory
     if prefix: prefix += os.sep
@@ -148,7 +152,7 @@ def scanSamples_inner(directory,retVal,doLimit):
     for file,withExt in items:
         if not withExt:
             lastFile = None # avoid problems with connecting poetry lines before/after a line that's not in the synth cache or something
-            if isDirectory(directory+os.sep+file) and not directory+os.sep+file==promptsDirectory: # (NB putting that 'if' here, not before previous one, because isDirectory() can take time when got thousands of files.  Hopefully the risk of people putting ".wav" extensions on their directory names is low enough.)
+            if withExt==None and not directory+os.sep+file==promptsDirectory: # a directory
                 scanSamples_inner(directory+os.sep+file,retVal,doLimit)
             # else no extension, or not an extension we know about - ignore (DO need this, because one way of temporarily disabling stuff is to rename it to another exension)
         elif not file.endswith(firstLangSuffix) or firstLanguage==secondLanguage:
@@ -160,7 +164,7 @@ def scanSamples_inner(directory,retVal,doLimit):
             else:
                 wordSuffix=None
                 for l in otherLanguages:
-                    if file.endswith("_"+l):
+                    if not l in [firstLanguage,secondLanguage] and file.endswith("_"+l):
                         wordSuffix="_"+l ; break
                 if not wordSuffix: continue # can't do anything with this file
             if firstLanguage==secondLanguage: promptFile=None

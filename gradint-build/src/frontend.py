@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9932 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9935 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -121,12 +121,11 @@ def clearScreen():
 cancelledFiles = []
 def handleInterrupt(): # called only if there was an interrupt while the runner was running (interrupts in setup etc are propagated back to mainmenu/exit instead, because lesson state could be anything)
     needCountItems = 0
-    if app==None:
-        if not saveProgress: pass
-        elif dbase and not dbase.saved_completely:
-            show_info("Calculating partial progress... ")
-            needCountItems = 1
-        elif dbase: show_info("Interrupted on not-first-time; no need to save partial progress\n")
+    if saveProgress:
+        if dbase and not dbase.saved_completely:
+            show_info("Calculating partial progress... ") # (normally quite quick but might not be on PDAs etc, + we want this written if not app)
+            needCountItems = 1 # used if not app
+        elif dbase and not app: show_info("Interrupted on not-first-time; no need to save partial progress\n")
     # DON'T init cancelledFiles to empty - there may have been other missed events.
     while copy_of_runner_events:
         cancelledEvent = copy_of_runner_events[0][0]
@@ -135,7 +134,7 @@ def handleInterrupt(): # called only if there was an interrupt while the runner 
         del copy_of_runner_events[0]
         # cancelledEvent = runner.queue[0][-1][0] worked in python 2.3, but sched implementation seems to have changed in python 2.5 so we're using copy_of_runner_events instead
         if hasattr(cancelledEvent,"wordToCancel") and cancelledEvent.wordToCancel: cancelledFiles.append(cancelledEvent.wordToCancel)
-    if needCountItems and cancelledFiles: show_info("(%d cancelled items)...\n" % len(cancelledFiles))
+    if not app and needCountItems and cancelledFiles: show_info("(%d cancelled items)...\n" % len(cancelledFiles))
     global repeatMode ; repeatMode = 0 # so Ctrl-C on justSynth-with-R works
 
 tkNumWordsToShow = 10 # the default number of list-box items
@@ -411,9 +410,9 @@ def deleteUser(i):
 
 def setupScrollbar(parent,rowNo):
     s = Tkinter.Scrollbar(parent)
-    s.grid(row=rowNo,column=cond(winCEsound or olpc,0,1),sticky="ns")
+    s.grid(row=rowNo,column=cond(winCEsound or olpc,0,1),sticky="ns"+cond(winCEsound or olpc,"e","w"))
     c=Tkinter.Canvas(parent,bd=0,width=200,height=100,yscrollcommand=s.set)
-    c.grid(row=rowNo,column=cond(winCEsound or olpc,1,0),sticky="nsew")
+    c.grid(row=rowNo,column=cond(winCEsound or olpc,1,0),sticky="ns"+cond(winCEsound or olpc,"w","e"))
     s.config(command=c.yview)
     scrolledFrame=Tkinter.Frame(c) ; c.create_window(0,0,window=scrolledFrame,anchor="nw")
     for w in [parent,c,s]:
@@ -590,6 +589,9 @@ def startTk():
                     self.BriefIntButton["text"]=t
                     if t==localise("Brief interrupt"): self.Label["text"]=localise("Resuming...")
             if not self.todo.__dict__: return # can skip the rest
+            if hasattr(self.todo,"not_first_time"):
+                self.Cancel["text"] = "Stop lesson"
+                del self.todo.not_first_time
             if hasattr(self.todo,"set_main_menu") and not recorderMode:
                 # set up the main menu (better do it on this thread just in case)
                 self.cancelling = 0 # in case just pressed "stop lesson" on a repeat - make sure Quit button will now work
@@ -628,9 +630,6 @@ def startTk():
             if hasattr(self.todo,"set_label"):
                 self.Label["text"] = self.todo.set_label
                 del self.todo.set_label
-            if hasattr(self.todo,"not_first_time"):
-                self.Cancel["text"] = "Stop lesson"
-                del self.todo.not_first_time
             if hasattr(self.todo,"thindown"):
                 self.thin_down_for_lesson()
                 self.setLabel(self.todo.thindown)
@@ -1564,7 +1563,7 @@ def rest_of_main():
         while app: time.sleep(0.2)
     elif not app==None: pass # (gets here if WAS 'app' but was closed - DON'T output anything to stderr in this case)
     elif appuifw: appuifw.app.set_exit()
-    elif riscos_sound: show_info("The gradint program has terminated - you can now close this Task Window.\n")
+    elif riscos_sound: show_info("You may now close this Task Window.\n")
     else: show_info("\n") # in case got any \r'd string there - don't want to confuse the next prompt
     if exitStatus: sys.exit(exitStatus)
 

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9932 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9935 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -447,6 +447,7 @@ class ESpeakSynth(Synth):
             tlr = self.transliterate_multiple(lang,tl,keepIndexList=1)
             if not tlr: return # espeak's not up to it
             for i in self.lastIndexList: self.translitCache[tl[i]]=tlr[i]
+            if winCEsound: ctypes.cdll.coredll.SystemIdleTimerReset() # TODO here may not be often enough if auto-switchoff is an especially short time and/or CPU is especially slow (but then plugging it into external power would probably be best anyway)
         if textList:
             try: pickle.Pickler(open(espeakTranslitCacheFile,"wb"),-1).dump((tuple(os.stat(self.place+os.sep+"espeak-data")),self.translitCache))
             except IOError: pass # 'permission denied' is ok

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9932 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9935 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -58,12 +58,12 @@ class Partials_Synth(Synth):
 def fileToEvent(fname,dirBase=None):
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
+    orig_fname = fname
     if os.sep in fname: dirBase,fname = dirBase+fname[:fname.rindex(os.sep)+1], fname[fname.rindex(os.sep)+1:]
     if dirBase+fname in variantFiles: fname=random.choice(variantFiles[dirBase+fname])
     if "_" in fname: lang = languageof(fname)
     else: lang="-unknown-" # so can take a simple wav file, e.g. for endAnnouncement
-    if fname.lower().endswith(dottxt) and fname.find("_")>0: # >0 makes more sense than >-1 here - files called _.txt aren't going to be useful
-        fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+'_'+lang
+    if fname.lower().endswith(dottxt) and "_" in fname: fname = "!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+'_'+lang
     if fname.find("!synth:")>-1:
         s = synthcache_lookup(fname)
         if type(s)==type([]): # trying to synth from partials
@@ -80,7 +80,7 @@ def fileToEvent(fname,dirBase=None):
         else: e=synth_event(languageof(fname),textof(fname))
         e.is_prompt=(dirBase==promptsDirectory+os.sep)
     else: e=SampleEvent(dirBase+fname)
-    e.setOnLeaves('wordToCancel',fname)
+    e.setOnLeaves('wordToCancel',orig_fname)
     return e
 
 transTbl = "TRANS"+extsep+"TBL"
