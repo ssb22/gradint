@@ -583,7 +583,7 @@ class RecorderControls:
         Tkinter.Button(r2,text=localise("Advanced"),command=self.do_openInExplorer).pack()
         Tkinter.Button(r2,text=localise("Record from file"),command=self.do_recordFromFile).pack()
         r2 = Tkinter.Frame(r) ; r2.pack(side="left")
-        if not self.always_enable_synth: Tkinter.Button(r2,text=localise("Mix computer-voiced and recorded words"),command=self.enable_synth).pack()
+        if not self.always_enable_synth: Tkinter.Button(r2,text=localise("Mix with computer voice"),command=self.enable_synth).pack()
         r = Tkinter.Frame(r2) ; r.pack()
         if got_program("lame"): self.CompressButton = Tkinter.Button(r,text=localise("Compress all"),command=(lambda *args:self.all2mp3_or_zip())) # was "Compress all recordings" but it takes too much width
         # TODO else can we see if it's possible to get the encoder on the fly, like in the main screen? (would need some restructuring)
