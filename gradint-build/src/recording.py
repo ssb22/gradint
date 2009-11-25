@@ -254,7 +254,9 @@ class RecorderControls:
         editEntry.bind('<Return>',lambda *args:self.doEdit(editText,editEntry,row,col,filename))
         editEntry.bind('<Escape>',lambda *args:self.cancelEdit(editEntry,row,col,filename))
         self.scrollIntoView(editEntry)
-        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"): self.addLabel(row-1,col+1,localise("(synth'd)"))
+        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"):
+            self.addLabel(row-1,col+1,localise("(synth'd)"))
+            self.coords2buttons[(row-1,col+1)].is_synth_label = True
     def doEdit(self,editText,editEntry,row,col,filename):
         text = editText.get().encode("utf-8").strip(wsp)
         if text: open(filename,"w").write(text+"\n")
@@ -540,7 +542,7 @@ class RecorderControls:
                     newDir = self.currentDir+os.sep+fname
                     self.addButton(curRow,0,text=filename2unicode(fname),command=(lambda f=newDir:self.changeDir(f)))
                     curRow += 1
-                    hadDirectories = True
+                    if not flwr=="prompts": hadDirectories = True
             elif "_" in fname and languageof(fname) in allLangs: # something_lang where lang is a recognised language (don't just take "any _" because some podcasts etc will have _ in them)
               # TODO what if there are variants? (currently languageof won't recognise so will drop to the next case!)
               # TODO and what about letting them record _explain_ files etc from the GUI, + toggling !poetry
