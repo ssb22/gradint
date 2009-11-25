@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9935 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9936 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -408,11 +408,11 @@ def deleteUser(i):
     select_userNumber(0) ; app.userNo.set(0) # save confusion
     updateUserRow()
 
-def setupScrollbar(parent,rowNo):
+def setupScrollbar(parent,rowNo=0):
     s = Tkinter.Scrollbar(parent)
-    s.grid(row=rowNo,column=cond(winCEsound or olpc,0,1),sticky="ns"+cond(winCEsound or olpc,"e","w"))
+    s.grid(row=rowNo,column=cond(winCEsound or olpc,0,1),sticky="ns"+cond(winCEsound or olpc,"w","e"))
     c=Tkinter.Canvas(parent,bd=0,width=200,height=100,yscrollcommand=s.set)
-    c.grid(row=rowNo,column=cond(winCEsound or olpc,1,0),sticky="ns"+cond(winCEsound or olpc,"w","e"))
+    c.grid(row=rowNo,column=cond(winCEsound or olpc,1,0),sticky="nsw")
     s.config(command=c.yview)
     scrolledFrame=Tkinter.Frame(c) ; c.create_window(0,0,window=scrolledFrame,anchor="nw")
     for w in [parent,c,s]:
@@ -643,6 +643,9 @@ def startTk():
                     self.BriefIntButton.pack_forget() ; del self.BriefIntButton
                 elif hasattr(self.todo,"add_briefinterrupt_button"): del self.todo.add_briefinterrupt_button # cancel pressed while still making lesson
                 del self.todo.remove_briefinterrupt_button
+            if hasattr(self.todo,"clear_text_boxes"):
+                self.Text1.set("") ; self.Text2.set("") ; self.Entry1.focus()
+                del self.todo.clear_text_boxes
             if hasattr(self.todo,"exit_ASAP"):
                 self.master.destroy()
                 self.pollInterval = 0
@@ -867,7 +870,7 @@ def startTk():
             extra_buttons_waiting_list = extra_buttons_waiting_list[1:]
         def openVocabFile(self,*args): self.fileToEdit, self.menu_response = vocabFile,"edit"
         def openAdvancedTxt(self,*args): self.fileToEdit, self.menu_response = "advanced"+dottxt,"edit"
-        def showRecordedWords(self,*args): doRecordedWordsMenu()
+        def showRecordedWords(self,*args): doRecWords()
         def showCopyFrom(self,*args):
             m=Tkinter.Menu(None, tearoff=0, takefocus=0)
             for i in range(len(lastUserNames)):
@@ -1329,7 +1332,7 @@ def gui_wrapped_main_loop():
                         listToCheck.remove(item)
                         listToCheck.append((newItem0,item[1],item[2]))
                         d.save() ; app.unset_watch_cursor = 1
-                        app.Text1.set("") ; app.Text2.set("") ; app.Entry1.focus()
+                        app.todo.clear_text_boxes = 1
                     found = 1 ; break
             if not found:
                 app.unset_watch_cursor = 1
@@ -1343,7 +1346,7 @@ def gui_wrapped_main_loop():
                 o.write(text1+"="+text2+"\n") # was " = " but it slows down parseSynthVocab
                 o.close()
                 if hasattr(app,"vocabList"): app.vocabList.append((app.Text1.get(),app.Text2.get()))
-                app.Text1.set("") ; app.Text2.set("") ; app.Entry1.focus()
+                app.todo.clear_text_boxes=1
         elif app.menu_response=="delete" or app.menu_response=="replace":
             app.set_watch_cursor = 1
             lang2,lang1 = app.toDelete
@@ -1391,8 +1394,7 @@ def gui_wrapped_main_loop():
                         d.save()
                         break
             del app.vocabList # re-read
-            app.Text1.set("") ; app.Text2.set("")
-            app.Entry1.focus()
+            app.todo.clear_text_boxes=1
             app.unset_watch_cursor = 1
             if not found: app.todo.alert = "OOPS: Item to delete/replace was not found in "+vocabFile
         if app: del app.menu_response

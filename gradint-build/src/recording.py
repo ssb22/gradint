@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9935 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9936 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -480,6 +480,11 @@ class RecorderControls:
             button.grid(row=row,column=0,columnspan=1+3*len(self.languagesToDraw),sticky="w")
             self.coords2buttons[(row,0)] = button
             del self.current_recordFrom_button
+    def do_openInExplorer(self,*args):
+        openDirectory(self.currentDir)
+        tkMessageBox.showinfo(app.master.title(),localise("Gradint has opened the current folder for you to work on.  When you press OK, Gradint will re-scan the folder for new files."))
+        self.undraw()
+        self.draw()
     def do_recordFromFile(self,*args):
         if not tkSnack or tkSnack=="MicOnly": return tkMessageBox.showinfo(app.master.title(),localise("Sorry, cannot record from file on this computer because the tkSnack library (python-tksnack) is not installed"))
         msg1 = localise("You can record from an existing recording (i.e. copy parts from it) if you first put the existing recording into the samples folder and then press its Play button.")+"\n\n"
@@ -507,16 +512,15 @@ class RecorderControls:
 
         self.need_reRecord_enabler = 0 # no previously-existing words yet (when we get existing words we 'lock' them and have to unlock by pressing a global 'rerecord' button 1st, just in case)
 
-        Tkinter.Label(self.frame,text=localise("Action of spacebar during recording:")).grid(row=0,column=0,sticky="w")
-        r=Tkinter.Frame(self.frame)
-        r.grid(row=1,column=0,sticky="w")
+        r = Tkinter.Frame(self.frame)
+        r.grid(row=1,sticky="e",columnspan=2)
+        Tkinter.Label(r,text=localise("Action of spacebar during recording")).pack()
+        r=Tkinter.Frame(r) ; r.pack()
         Tkinter.Radiobutton(r, text=localise("move down"), variable=app.scanrow, value="0", indicatoron=1).pack({"side":"left"})
         Tkinter.Radiobutton(r, text=localise("move along"), variable=app.scanrow, value="1", indicatoron=1).pack({"side":"left"})
         Tkinter.Radiobutton(r, text=localise("stop"), variable=app.scanrow, value="2", indicatoron=1).pack({"side":"left"})
 
-        r=Tkinter.Frame(self.frame)
-        r.grid(row=2,column=0,sticky="w")
-        self.grid,self.ourCanvas = setupScrollbar(r,2)
+        self.grid,self.ourCanvas = setupScrollbar(self.frame,2)
         if hasattr(self,"oldCanvasBbox"): del self.oldCanvasBbox # unconditionally reconfigure scrollbar even if bounds are unchanged
         
         curRow = 0 ; prefix2row = {}
@@ -565,15 +569,19 @@ class RecorderControls:
         self.addMoreRow = curRow ; self.maxPrefix = maxPrefix+1
         self.add_addMore_button()
         if curRow<3 and not hadDirectories: self.addMore() # anyway
+
         r=Tkinter.Frame(self.frame)
-        r.grid(row=3,column=0)
-        Tkinter.Button(r,text=localise("Record from file"),command=self.do_recordFromFile).pack(side="left")
-        if got_program("lame"): self.CompressButton = Tkinter.Button(r,text=localise("Compress all recordings"),command=(lambda *args:self.all2mp3_or_zip()))
+        r.grid(row=3,columnspan=2)
+        r2 = Tkinter.Frame(r) ; r2.pack(side="left")
+        Tkinter.Button(r2,text=localise("Advanced"),command=self.do_openInExplorer).pack()
+        Tkinter.Button(r2,text=localise("Record from file"),command=self.do_recordFromFile).pack()
+        if got_program("lame"): self.CompressButton = Tkinter.Button(r,text=localise("Compress all"),command=(lambda *args:self.all2mp3_or_zip())) # was "Compress all recordings" but it takes too much width
         # TODO else can we see if it's possible to get the encoder on the fly, like in the main screen? (would need some restructuring)
         elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = Tkinter.Button(r,text=localise("Zip for email"),command=(lambda *args:self.all2mp3_or_zip()))
         if hasattr(self,"CompressButton"): self.CompressButton.pack(side="left")
-        Tkinter.Button(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack()
-        Tkinter.Label(self.frame,text="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click on synthesized text to edit it.",wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(row=4,column=0) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
+        Tkinter.Button(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack(side="left")
+        
+        Tkinter.Label(self.frame,text="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click on synthesized text to edit it.",wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(row=4,columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
         # (Don't worry about making the text files editable - editable filenames should be enough + easier to browse the result outside Gradint; can include both languages in the filename if you like - hope the users figure this out as we don't want to make the instructions too complex)
 
 def doRecWords(): # called from GUI thread
@@ -583,10 +591,3 @@ def doRecWords(): # called from GUI thread
     try: theRecorderControls
     except: theRecorderControls=RecorderControls()
     theRecorderControls.draw()
-def doRecordedWordsMenu(*args): # called when the 'recorded words' button is pressed
-    if olpc and not explorerCommand: return doRecWords()
-    def openFolder(): app.menu_response="samples"
-    m=Tkinter.Menu(None, tearoff=0, takefocus=1)
-    m.add_command(label=localise("Manage recorded words using Gradint"), command=doRecWords)
-    m.add_command(label=localise("Open the recorded words folder"), command=openFolder)
-    m.tk_popup(app.RecordedWordsButton.winfo_rootx(),app.RecordedWordsButton.winfo_rooty(),entry="0")

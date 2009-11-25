@@ -649,7 +649,7 @@ GUI_translations={
 "Big print":{"zh":u"大号字体","zh2":u"大號字體"},
 "Compressing, please wait":{"zh":u"正在压缩...","zh2":u"正在壓縮..."},
 "All recordings have been compressed to MP3.  Do you also want to make a ZIP file for sending as email?":{"zh":u"所有录音都压缩成为MP3了。 你也想做一个ZIP文件所以能随email附上吗?","zh2":u"所有錄音都壓縮成為MP3了。 你也想做一個ZIP文件所以能隨email附上嗎?"},
-"Compress all recordings":{"zh":u"压缩一切录音","zh2":u"壓縮一切錄音"},
+"Compress all":{"zh":u"压缩一切","zh2":u"壓縮一切"},
 "Play":{"zh":u"演"},
 "Re-record":{"zh":u"从新录音","zh2":u"從新錄音"},
 "(empty)":{"zh":u"(空虚)","zh2":u"(空虛)"},
@@ -657,15 +657,13 @@ GUI_translations={
 "Add more words":{"zh":u"加多词","zh2":u"加多詞"},
 "New folder":{"zh":u"新卷宗"},
 "Stop":{"zh":u"停止"},
-"Action of spacebar during recording:":{"zh":u"空格键在录音的时候的功能:","zh2":u"空格鍵在錄音的時候的功能:"},
+"Action of spacebar during recording":{"zh":u"空格键在录音的时候的功能","zh2":u"空格鍵在錄音的時候的功能"},
 "move down":{"zh":u"进步下面"},
 "move along":{"zh":u"进步右边","zh2":u"進步右邊"},
 "stop":{"zh":u"停止"},
 "(Up)":{"zh":u"(上面)"},
 "Record from %s":{"zh":u"从%s做录音","zh2":u"從%s做錄音"},
 "Record from file":{"zh":u"从文件做录音","zh2":u"從文件做錄音"},
-"Manage recorded words using Gradint":{"zh":u"用这个软件管理录音","zh2":u"用這個軟件管理錄音"},
-"Open the recorded words folder":{"zh":u"打开录音的卷宗","zh2":u"打開錄音的卷宗"},
     }
 
 # scriptVariants optionally maps language abbreviation to default script
