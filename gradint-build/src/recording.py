@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9937 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9938 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -243,9 +243,9 @@ class RecorderControls:
         try: ftext = ensure_unicode(u8strip(open(filename).read().strip(wsp)))
         except IOError: return False
         l = Tkinter.Label(self.grid,text=ftext,wraplength=int(self.ourCanvas.winfo_screenwidth()/(1+len(self.languagesToDraw))))
-        l.grid(row=row,column=col,columnspan=3)
+        l.grid(row=row,column=col,columnspan=2,sticky="w")
         l.bind('<Button-1>',lambda *args:self.startSynthEdit(l,row,col,filename))
-        return True
+        return True # do NOT put it in self.coords2buttons (not to do with space bar stuff etc)
     def startSynthEdit(self,l,row,col,filename):
         if hasattr(self,"renameToCancel"):
           rr,cc = self.renameToCancel
@@ -254,13 +254,13 @@ class RecorderControls:
         editText,editEntry = addTextBox(self.grid,"nopack")
         try: editText.set(ensure_unicode(u8strip(open(filename).read().strip(wsp))))
         except IOError: pass
-        editEntry.grid(row=row,column=col,sticky='we',columnspan=3)
+        editEntry.grid(row=row,column=col,sticky='we',columnspan=2)
         editEntry.bind('<Return>',lambda *args:self.doEdit(editText,editEntry,row,col,filename))
         editEntry.bind('<Escape>',lambda *args:self.cancelEdit(editEntry,row,col,filename))
         self.scrollIntoView(editEntry)
-        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"):
-            self.addLabel(row-1,col+1,localise("(synth'd)"))
-            self.coords2buttons[(row-1,col+1)].is_synth_label = True
+        if hasattr(self.coords2buttons.get((row-1,col),""),"is_synth_label"):
+            self.addLabel(row-1,col,localise("(synth'd)"))
+            self.coords2buttons[(row-1,col)].is_synth_label = True
     def doEdit(self,editText,editEntry,row,col,filename):
         text = editText.get().encode("utf-8").strip(wsp)
         if text: open(filename,"w").write(text+"\n")
@@ -271,10 +271,10 @@ class RecorderControls:
     def cancelEdit(self,editEntry,row,col,filename):
         editEntry.grid_forget()
         labelAdded = self.addSynthLabel(filename,row,col)
-        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"):
-            if labelAdded: self.addLabel(row-1,col+1,localise("(synth'd)"))
-            else: self.addButton(row-1,col+1,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row,col,filename)))
-            self.coords2buttons[(row-1,col+1)].is_synth_label = True
+        if hasattr(self.coords2buttons.get((row-1,col),""),"is_synth_label"):
+            if labelAdded: self.addLabel(row-1,col,localise("(synth'd)"))
+            else: self.addButton(row-1,col,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row,col,filename)))
+            self.coords2buttons[(row-1,col)].is_synth_label = True
     def all2mp3_or_zip(self):
         self.CompressButton["text"] = localise("Compressing, please wait")
         if got_program("lame"): wavToMp3(self.currentDir) # TODO not in the GUI thread !! (but lock our other buttons while it's doing it)
@@ -529,6 +529,7 @@ class RecorderControls:
 
         self.grid,self.ourCanvas = setupScrollbar(self.frame,2)
         if hasattr(self,"oldCanvasBbox"): del self.oldCanvasBbox # unconditionally reconfigure scrollbar even if bounds are unchanged
+        for languageNo in range(len(self.languagesToDraw)): self.grid.grid_columnconfigure(3+3*languageNo,weight=1) # prefer expanding the last col of each language rather than evenly
         
         curRow = 0 ; prefix2row = {}
         maxPrefix = 0 ; self.has_recordFrom_buttons = False
@@ -561,7 +562,7 @@ class RecorderControls:
                     self.addLabel(curRow,0,utext=filename2unicode(prefix))
                     foundTxt = {}
                     for lang in self.languagesToDraw:
-                        if prefix+"_"+lang+dottxt in l: foundTxt[lang]=(self.currentDir+os.sep+prefix+"_"+lang+dottxt,1+3*self.languagesToDraw.index(lang))
+                        if prefix+"_"+lang+dottxt in l: foundTxt[lang]=(self.currentDir+os.sep+prefix+"_"+lang+dottxt,2+3*self.languagesToDraw.index(lang))
                     prefix2row[prefix] = curRow
                     for lang in self.languagesToDraw:
                         self.updateFile(prefix+"_"+lang+dotwav,curRow,self.languagesToDraw.index(lang),state=0,txtExists=(lang in foundTxt))
@@ -578,7 +579,7 @@ class RecorderControls:
         if curRow<3 and not hadDirectories: self.addMore() # anyway
 
         r=Tkinter.Frame(self.frame)
-        r.grid(row=3,columnspan=2)
+        r.grid(columnspan=2)
         r2 = Tkinter.Frame(r) ; r2.pack(side="left")
         Tkinter.Button(r2,text=localise("Advanced"),command=self.do_openInExplorer).pack()
         Tkinter.Button(r2,text=localise("Record from file"),command=self.do_recordFromFile).pack()
@@ -591,7 +592,7 @@ class RecorderControls:
         if hasattr(self,"CompressButton"): self.CompressButton.pack(side="left")
         Tkinter.Button(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack(side="left")
         
-        Tkinter.Label(self.frame,text="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it.",wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(row=4,columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
+        Tkinter.Label(self.frame,text="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it.",wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
         # (Don't worry about making the text files editable - editable filenames should be enough + easier to browse the result outside Gradint; can include both languages in the filename if you like - hope the users figure this out as we don't want to make the instructions too complex)
 
 def doRecWords(): # called from GUI thread
