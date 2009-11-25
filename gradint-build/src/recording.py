@@ -200,7 +200,7 @@ class RecorderControls:
         setup_samplesDir_ifNec()
         self.coords2buttons = {}
         self.syncFlag = False
-        self.always_enable_rerecord = False
+        self.always_enable_rerecord = self.always_enable_synth = False
         self.old_recordFrom_button = None
     def changeDir(self,newDir):
         self.undraw()
@@ -209,6 +209,10 @@ class RecorderControls:
     def global_rerecord(self):
         self.undraw()
         self.always_enable_rerecord = True
+        self.draw()
+    def enable_synth(self):
+        self.undraw()
+        self.always_enable_synth = True
         self.draw()
     def finished(self):
         app.master.title(appTitle)
@@ -368,7 +372,7 @@ class RecorderControls:
             synthFilename = filename[:filename.rfind(extsep)]+dottxt
             if txtExists=="unknown": txtExists=fileExists(synthFilename)
             if txtExists: self.addLabel(row,2+3*languageNo,localise("(synth'd)"))
-            elif get_synth_if_possible(self.languagesToDraw[languageNo],0): self.addButton(row,2+3*languageNo,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row+1,1+3*languageNo,synthFilename)))
+            elif self.always_enable_synth and get_synth_if_possible(self.languagesToDraw[languageNo],0): self.addButton(row,2+3*languageNo,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row+1,1+3*languageNo,synthFilename)))
             else: self.addLabel(row,2+3*languageNo,localise("(empty)"))
             self.coords2buttons[(row,2+3*languageNo)].is_synth_label = True
             self.addButton(row,3+3*languageNo,text=localise("Record"),command=(lambda f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l)))
@@ -578,13 +582,16 @@ class RecorderControls:
         r2 = Tkinter.Frame(r) ; r2.pack(side="left")
         Tkinter.Button(r2,text=localise("Advanced"),command=self.do_openInExplorer).pack()
         Tkinter.Button(r2,text=localise("Record from file"),command=self.do_recordFromFile).pack()
+        r2 = Tkinter.Frame(r) ; r2.pack(side="left")
+        if not self.always_enable_synth: Tkinter.Button(r2,text=localise("Mix computer-voiced and recorded words"),command=self.enable_synth).pack()
+        r = Tkinter.Frame(r2) ; r.pack()
         if got_program("lame"): self.CompressButton = Tkinter.Button(r,text=localise("Compress all"),command=(lambda *args:self.all2mp3_or_zip())) # was "Compress all recordings" but it takes too much width
         # TODO else can we see if it's possible to get the encoder on the fly, like in the main screen? (would need some restructuring)
         elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = Tkinter.Button(r,text=localise("Zip for email"),command=(lambda *args:self.all2mp3_or_zip()))
         if hasattr(self,"CompressButton"): self.CompressButton.pack(side="left")
         Tkinter.Button(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack(side="left")
         
-        Tkinter.Label(self.frame,text="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click on synthesized text to edit it.",wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(row=4,columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
+        Tkinter.Label(self.frame,text="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it.",wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(row=4,columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
         # (Don't worry about making the text files editable - editable filenames should be enough + easier to browse the result outside Gradint; can include both languages in the filename if you like - hope the users figure this out as we don't want to make the instructions too complex)
 
 def doRecWords(): # called from GUI thread
