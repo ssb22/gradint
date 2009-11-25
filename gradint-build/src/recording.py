@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9936 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9937 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -253,7 +253,8 @@ class RecorderControls:
         editEntry.grid(row=row,column=col,sticky='we',columnspan=3)
         editEntry.bind('<Return>',lambda *args:self.doEdit(editText,editEntry,row,col,filename))
         editEntry.bind('<Escape>',lambda *args:self.cancelEdit(editEntry,row,col,filename))
-        editEntry.focus()
+        self.scrollIntoView(editEntry)
+        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"): self.addLabel(row-1,col+1,localise("(synth'd)"))
     def doEdit(self,editText,editEntry,row,col,filename):
         text = editText.get().encode("utf-8").strip(wsp)
         if text: open(filename,"w").write(text+"\n")
