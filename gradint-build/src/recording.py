@@ -310,7 +310,7 @@ class RecorderControls:
             selectAllFunc = selectAll
         class E: pass
         e=E() ; e.widget = renameEntry
-        self.ourCanvas.after(10,lambda *args:(self.scrollIntoView(e.widget),selectAllFunc(e)))
+        self.ourCanvas.after(50,lambda *args:(self.scrollIntoView(e.widget),selectAllFunc(e)))
         renameEntry.bind('<Return>',lambda *args:self.doRename(row,col))
         renameEntry.bind('<Escape>',lambda *args:self.cancelRename(row,col))
     def doRename(self,row,col):
@@ -335,14 +335,16 @@ class RecorderControls:
             else: # not a directory - rename individual files
                 self.doStop() # just in case
                 for lang in self.languagesToDraw:
-                    self.updateFile(unicode2filename(newName+"_"+lang+dotwav),row,self.languagesToDraw.index(lang),0)
+                    updated=False
                     for ext in [dottxt, dotwav, dotmp3]:
                       if fileExists_stat(unicode2filename(self.currentDir+os.sep+origName+"_"+lang+ext)):
                         try: os.rename(unicode2filename(self.currentDir+os.sep+origName+"_"+lang+ext),unicode2filename(self.currentDir+os.sep+newName+"_"+lang+ext))
                         except OSError:
                             tkMessageBox.showinfo(app.master.title(),localise("Could not rename %s to %s") % (origName+"_"+lang+ext,newName+"_"+lang+ext)) # TODO undo any that did succeed first!  + check for destination-already-exists (OS may not catch it)
                             return
-                        self.updateFile(unicode2filename(newName+"_"+lang+ext),row,self.languagesToDraw.index(lang),2) # TODO the 2 should be 1 if and only if we didn't just record it
+                        self.updateFile(unicode2filename(newName+"_"+lang+ext),row,self.languagesToDraw.index(lang),cond(ext==dottxt,0,2)) # TODO the 2 should be 1 if and only if we didn't just record it
+                        updated=True
+                    if not updated: self.updateFile(unicode2filename(newName+"_"+lang+dotwav),row,self.languagesToDraw.index(lang),0)
                 self.addLabel(row,col,newName)
             # TODO what about updating progress.txt with wildcard changes (cld be going too far - we have the move script in utilities)
             origName = None # get any others from the form
@@ -425,8 +427,9 @@ class RecorderControls:
         button.focus()
         self.continueScrollIntoView(button)
     def continueScrollIntoView(self,button):
-        if not button.winfo_rooty() or not button.winfo_height(): return app.after(10,lambda *args:self.continueScrollIntoView(button))
-        if button.winfo_rooty()+button.winfo_height() >= self.ourCanvas.winfo_rooty()+self.ourCanvas.winfo_height():
+        by,bh,cy,ch = button.winfo_rooty(),button.winfo_height(),self.ourCanvas.winfo_rooty(),self.ourCanvas.winfo_height()
+        if not by or not bh or not cy or not ch: return app.after(10,lambda *args:self.continueScrollIntoView(button))
+        if by+bh >= cy+ch-cond(ch>2*bh,bh,0):
             # can't specify pixels, so have to keep advancing until we get it
             self.ourCanvas.yview("scroll","1","units")
             app.after(10,lambda *args:self.continueScrollIntoView(button))
@@ -546,7 +549,17 @@ class RecorderControls:
                  if not flwr in ["zips","utils","advanced utilities"]: # NOT "prompts", that can be browsed
                     newDir = self.currentDir+os.sep+fname
                     self.addButton(curRow,0,text=filename2unicode(fname),command=(lambda f=newDir:self.changeDir(f)))
+                    # TODO if _disabled have an Enable button ?
+                    # if not have a Disable ??
+                    # (NB though the above button will have a column span)
                     curRow += 1
+                    if fileExists(self.currentDir+os.sep+fname+os.sep+longDescriptionName): description=u8strip(open(self.currentDir+os.sep+fname+os.sep+longDescriptionName).read()).strip(wsp)
+                    elif fileExists(self.currentDir+os.sep+fname+os.sep+shortDescriptionName): description=u8strip(open(self.currentDir+os.sep+fname+os.sep+shortDescriptionName).read()).strip(wsp)
+                    else: description=None
+                    if description:
+                        l = Tkinter.Label(self.grid,text="     "+description,wraplength=self.ourCanvas.winfo_screenwidth())
+                        l.grid(row=curRow,column=0,columnspan=1+3*len(self.languagesToDraw),sticky="w")
+                        curRow += 1
                     if not flwr=="prompts": hadDirectories = True
             elif "_" in fname and languageof(fname) in allLangs: # something_lang where lang is a recognised language (don't just take "any _" because some podcasts etc will have _ in them)
               # TODO what if there are variants? (currently languageof won't recognise so will drop to the next case!)

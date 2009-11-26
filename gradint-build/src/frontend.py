@@ -428,16 +428,16 @@ shortDescriptionName = "short-description"+dottxt
 longDescriptionName = "long-description"+dottxt
 class ExtraButton(object):
     def __init__(self,directory):
-        self.shortDescription = open(directory+os.sep+shortDescriptionName).read().strip(wsp)
-        if fileExists(directory+os.sep+longDescriptionName): self.longDescription = open(directory+os.sep+longDescriptionName).read().strip(wsp)
+        self.shortDescription = u8strip(open(directory+os.sep+shortDescriptionName).read()).strip(wsp)
+        if fileExists(directory+os.sep+longDescriptionName): self.longDescription = u8strip(open(directory+os.sep+longDescriptionName).read()).strip(wsp)
         else: self.longDescription = self.shortDescription
         self.directory = directory
     def add(self):
         app.extra_button_callables.append(self) # so we're not lost when deleted from the waiting list
-        self.button = addButton(app.rightPanel,localise("Add ")+self.shortDescription,self,{"fill":"x"})
+        self.button = addButton(app.rightPanel,localise("Add ")+unicode(self.shortDescription,"utf-8"),self,{"fill":"x"})
         self.button["anchor"]="w"
     def __call__(self):
-        if not tkMessageBox.askyesno(app.master.title(),self.longDescription+"\n"+localise("Add this to your collection?")): return
+        if not tkMessageBox.askyesno(app.master.title(),unicode(self.longDescription,"utf-8")+"\n"+localise("Add this to your collection?")): return
         newName = self.directory
         if os.sep in newName: newName=newName[newName.rfind(os.sep)+1:]
         if newName.endswith(exclude_from_scan): newName=newName[:-len(exclude_from_scan)]
@@ -463,7 +463,7 @@ class ExtraButton(object):
         self.button.pack_forget()
         app.extra_button_callables.remove(self)
         if extra_buttons_waiting_list: app.add_extra_button()
-        if tkMessageBox.askyesno(app.master.title(),self.shortDescription+which_collection+"\n"+localise("Do you want to start learning immediately?")): app.makelesson()
+        if tkMessageBox.askyesno(app.master.title(),unicode(self.shortDescription,"utf-8")+which_collection+"\n"+localise("Do you want to start learning immediately?")): app.makelesson()
 
 extra_buttons_waiting_list = []
 def make_extra_buttons_waiting_list():
