@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9938 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9939 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -351,8 +351,9 @@ class RecorderControls:
             row += 1
         if len(newNames)==1 and row<self.addMoreRow: # put cursor on the next one
             if not (row,col) in self.coords2buttons: row += 1 # skip extra row if there are notes
-            origName=self.coords2buttons[(row,col)]["text"]
-            if not isDirectory(unicode2filename(self.currentDir+os.sep+origName)): self.startRename(row,0,origName)
+            if row<self.addMoreRow:
+              origName=self.coords2buttons[(row,col)]["text"]
+              if not isDirectory(unicode2filename(self.currentDir+os.sep+origName)): self.startRename(row,0,origName)
     def cancelRename(self,row,col):
         if hasattr(self,"renameToCancel"): del self.renameToCancel
         origName = self.coords2buttons[(row,col)].origName
@@ -427,6 +428,7 @@ class RecorderControls:
         button.focus()
         self.continueScrollIntoView(button)
     def continueScrollIntoView(self,button):
+        if not hasattr(self,"ourCanvas"): return # closing down?
         by,bh,cy,ch = button.winfo_rooty(),button.winfo_height(),self.ourCanvas.winfo_rooty(),self.ourCanvas.winfo_height()
         if not by or not bh or not cy or not ch: return app.after(10,lambda *args:self.continueScrollIntoView(button))
         if by+bh >= cy+ch-cond(ch>2*bh,bh,0):
