@@ -295,7 +295,7 @@ if macsound:
       sys.path.insert(0,os.getcwd()) ; import _tkinter ; del sys.path[0]
       _tkinter.TK_VERSION = _tkinter.TCL_VERSION = "8.6"
     else: Tk_might_display_wrong_hanzi="10.5"
-  elif sys.version[:5] == "2.5.1": Tk_might_display_wrong_hanzi=">10.5 (not tested)" # TODO Test on OS X 10.6 !!!
+  elif sys.version[:5] > "2.5.1": Tk_might_display_wrong_hanzi=">10.5 (not tested)" # TODO Test on OS X 10.6 !!!
   if Tk_might_display_wrong_hanzi: wrong_hanzi_message = "NB: In Mac OS "+Tk_might_display_wrong_hanzi+", Chinese\ncan display wrongly here." # so they don't panic when it does
 
 # Handle keeping progress file and temp directories etc if we're running from a live CD
