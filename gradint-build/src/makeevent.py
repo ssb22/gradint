@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99391 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.994 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -60,7 +60,9 @@ def fileToEvent(fname,dirBase=None):
     if dirBase: dirBase += os.sep
     orig_fname = fname
     if os.sep in fname: dirBase,fname = dirBase+fname[:fname.rindex(os.sep)+1], fname[fname.rindex(os.sep)+1:]
-    if dirBase+fname in variantFiles: fname=random.choice(variantFiles[dirBase+fname])
+    if dirBase+fname in variantFiles:
+        variantFiles[dirBase+fname]=variantFiles[dirBase+fname][1:]+[variantFiles[dirBase+fname][0]] # cycle through the random order of variants
+        fname=variantFiles[dirBase+fname][0]
     if "_" in fname: lang = languageof(fname)
     else: lang="-unknown-" # so can take a simple wav file, e.g. for endAnnouncement
     if fname.lower().endswith(dottxt) and "_" in fname: fname = "!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+'_'+lang
@@ -75,7 +77,7 @@ def fileToEvent(fname,dirBase=None):
                     e.append(optimise_partial_playing(CompositeEvent(map(lambda x:SampleEvent(partialsDirectory+os.sep+x,useExactLen=True),phrase))))
                     e.append(Event(betweenPhrasePause))
                 e=CompositeEvent(e[:-1]) # omit trailing pause
-            if maxLenOfLesson > 10*60: e.length=math.ceil(e.length) # (TODO slight duplication of logic from SampleEvent c'tor)
+            if not lessonIsTight(): e.length=math.ceil(e.length) # (TODO slight duplication of logic from SampleEvent c'tor)
         elif s: e=SampleEvent(synthCache+os.sep+s) # single file in synth cache
         else: e=synth_event(languageof(fname),textof(fname))
         e.is_prompt=(dirBase==promptsDirectory+os.sep)

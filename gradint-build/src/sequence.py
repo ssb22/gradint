@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99391 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.994 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -40,20 +40,24 @@ def anticipation(promptFile,zhFile,numTimesBefore,promptsData):
     else: anticipatePause = secondPause
     # work out number of repetitions needed.  not sure if this should be configurable somewhere.
     first_repeat_is_unessential = 0
-    if numTimesBefore == 1: numRepeat = 3
-    elif numTimesBefore < 5: numRepeat = 2
+    if not numTimesBefore: # New word.  If there are L2 variants, introduce them all if possible.
+        numVariants = max(3,len(variantFiles.get(samplesDirectory+os.sep+zhFile,[0]))) # TODO really max to 3? or 4? or .. ?
+        if numVariants>1 and lessonIsTight(): numVariants = 1 # hack
+        numRepeats = numVariants + cond(numVariants>=cond(availablePrompts.user_is_advanced,2,3),0,1)
+    elif numTimesBefore == 1: numRepeats = 3
+    elif numTimesBefore < 5: numRepeats = 2
     elif numTimesBefore < 10:
-        numRepeat = random.choice([1,2])
-        if numRepeat==2: first_repeat_is_unessential = 1
-    else: numRepeat = 1
-    if numRepeat==1:
+        numRepeats = random.choice([1,2])
+        if numRepeats==2: first_repeat_is_unessential = 1
+    else: numRepeats = 1
+    if numRepeats==1:
       k,f = synthcache_lookup(zhFile,justQueryCache=1)
       if f and k[0]=="_" and not textof(zhFile) in subst_synth_counters:
         # Hack: an experimental cache entry but only 1 repetition - what do we do?
         c=random.choice([1,2,3])
         if c==1: pass # do nothing
         elif c==2: # have the word twice
-            numRepeat = 2
+            numRepeats = 2
             first_repeat_is_unessential = 1
         elif c==3: subst_synth_counters[textof(zhFile)]=1 # so it uses the cached version
     # Now ready to go
@@ -65,9 +69,9 @@ def anticipation(promptFile,zhFile,numTimesBefore,promptsData):
         theList = theList + map(lambda x:fileToEvent(x,promptsDirectory), availablePrompts.getPromptList("begin",promptsData,languageof(zhFile)))
     if not instrIsPrefix: theList = theList + instructions
     origZhEvent = zhEvent
-    for i in range(numRepeat):
+    for i in range(numRepeats):
         if i:
-            # re-generate zhEvent, in case using cache sporadically or using first_repeat_is_unessential
+            # re-generate zhEvent, in case using variants or cache sporadically or using first_repeat_is_unessential
             zhEvent = filesToEvents(zhFile)
             secondPause = 1+zhEvent.length
         theList.append(Event(anticipatePause))
@@ -135,6 +139,10 @@ def anticipationSequence(promptFile,zhFile,start,to,promptsData,introList):
     return sequence
 
 def glueBefore(num):
+    global is_first_lesson # Hack: if 1st lesson and 1st event, bias for a LONGER delay before repeat so get a chance to put a 2nd new word in the gap.  (But don't do this for other events - compromises flexibility.)
+    if is_first_lesson and num==1 and not is_first_lesson=="hadGlue":
+        is_first_lesson = "hadGlue"
+        return Glue(27,3)
     if num==0: return initialGlue()
     elif num==1: return Glue(15,15)
     elif num==2: return Glue(45,15)

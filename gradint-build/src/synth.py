@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99391 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.994 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -849,7 +849,7 @@ class SynthEvent(Event):
             elif synthesizer.__class__ in [PttsSynth]: self.modifiedText = sort_out_pinyin_3rd_tones(self.modifiedText) # for Lily, and in some cases for Lisheng
         self.language = language
         self.is_prompt = is_prompt ; self.sound = None
-        if soundCollector and maxLenOfLesson<=10*60:
+        if soundCollector and lessonIsTight():
             # non-realtime and a tight-fitting lesson, so it's worth taking time to calculate length more accurately
             self.sound = synthesizer.makefile_cached(language,self.modifiedText) ; synthesizer.finish_makefile()
             length = SampleEvent(self.sound).length

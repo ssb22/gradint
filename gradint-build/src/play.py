@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99391 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.994 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -189,6 +189,8 @@ def soundFileType(file):
     if extsep in file: return file[file.rindex(extsep)+1:].lower()
     else: return "wav"
 
+def lessonIsTight(): return maxLenOfLesson <= 10*60 * min(1.8,max(1,maxNewWords/5.0)) # ?
+
 class SampleEvent(Event):
     def __init__(self,file,useExactLen=False,isTemp=False):
         if use_unicode_filenames: file=ensure_unicode(file)
@@ -196,7 +198,7 @@ class SampleEvent(Event):
         self.exactLen = lengthOfSound(file)
         if isTemp: self.isTemp=1
         approxLen = self.exactLen
-        if maxLenOfLesson > 10*60 and not useExactLen: approxLen = math.ceil(self.exactLen) # (if <=10min in lesson, don't round up to next second because we want a tighter fit)
+        if not lessonIsTight() and not useExactLen: approxLen = math.ceil(self.exactLen) # (if <=10min in lesson, don't round up to next second because we want a tighter fit)
         Event.__init__(self,approxLen)
     def __repr__(self):
         if use_unicode_filenames: return self.file.encode('utf-8')

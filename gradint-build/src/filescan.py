@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99391 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.994 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -62,6 +62,12 @@ def exec_in_a_func(x): # helper function for below (can't be nested in python 2.
    exec x in d
    return d["secondLanguage"],d["firstLanguage"]
 
+def check_has_variants(directory,ls):
+    if directory==promptsDirectory: return True
+    else:
+        for file in ls:
+            if (file+extsep)[:file.rfind(extsep)]==variants_filename: return True
+
 def getLsDic(directory):
     # Helper function for samples and prompts scanning
     # Calls os.listdir, returns dict of filename-without-extension to full filename
@@ -85,12 +91,7 @@ def getLsDic(directory):
         os.remove(directory+os.sep+"settings"+dottxt)
         ls = os.listdir(directory)
     ls.sort() ; lsDic = {}
-    if directory==promptsDirectory: has_variants = True
-    else:
-        has_variants=False
-        for file in ls:
-            if (file+extsep)[:file.rfind(extsep)]==variants_filename:
-                has_variants=True ; break
+    has_variants = check_has_variants(directory,ls)
     for file in ls:
         filelower = file.lower()
         # in lsDic if it's in the list (any extension); =filename if it's an extension we know about; =None if it's a directory (in which case the key is the full filename), ottherwise =""
@@ -125,6 +126,7 @@ def getLsDic(directory):
                 variantFiles[dir_newV] = []
                 if newV in ls: variantFiles[dir_newV].append(newV) # the no-variants name is also a valid option
             variantFiles[dir_newV].append(v)
+        random.shuffle(variantFiles[dir_newV])
     return lsDic
 
 def scanSamples_inner(directory,retVal,doLimit):

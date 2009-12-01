@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99391 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.994 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1151,7 +1151,7 @@ if useTK:
         runInBackground = useTK = 0
         if __name__=="__main__" and not riscos_sound: show_warning("Cannot start the GUI because tkinter package is not installed on this system"+cond(fileExists("/var/lib/dpkg/status")," (try python-tk in Debian)","")+".")
 
-def openDirectory(dir):
+def openDirectory(dir,inGuiThread=0):
     if winCEsound:
         if not dir[0]=="\\": dir=os.getcwd()+cwd_addSep+dir # must be absolute
         ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u"\\Windows\\fexplore",Parameters=u""+dir)))
@@ -1160,7 +1160,10 @@ def openDirectory(dir):
         if winsound or mingw32: cmd="start "+cmd # (not needed on XP but is on Vista)
         elif unix: cmd += "&"
         os.system(cmd)
-    else: waitOnMessage("Don't know how to start the file explorer.  Please open the %s directory (in %s)" % (dir,os.getcwd()))
+    else:
+        msg = "Don't know how to start the file explorer.  Please open the %s directory (in %s)" % (dir,os.getcwd())
+        if inGuiThread: tkMessageBox.showinfo(app.master.title(),msg)
+        else: waitOnMessage(msg)
 
 def sanityCheck(text,language,pauseOnError=0): # text is utf-8; returns error message if any
     if not text: return # always OK empty strings
