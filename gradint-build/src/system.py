@@ -271,15 +271,17 @@ if riscos_sound and hex(int(time.time())).find("0xFFFFFFFF")>-1 and not outputFi
     sys.exit()
 
 # Check for WinCE low memory (unless we're a library module in which case it's probably ok - reader etc)
+# NB on some systems this has been known to false alarm (can't allocate 15M even when there's 70M+ of program memory ??) so set a flag and ask Y/N later when got Tk
 if winCEsound and __name__=="__main__":
-  r=s=0
+  m1=m2=m3=0
   try:
-    r=chr(0)*10000000
-    s=chr(0)*5000000
+    m1=chr(0)*5000000
+    m2=chr(0)*5000000
+    m3=chr(0)*5000000
+    del m1,m2,m3
   except MemoryError:
-    saveProgress=0
-    raw_input("Low memory - gradint may malfunction\nsaveProgress turned off for safety")
-  del s ; del r
+    del m1,m2,m3
+    ceLowMemory=1
 
 # Check for Mac OS Tk problem
 Tk_might_display_wrong_hanzi = wrong_hanzi_message = ""

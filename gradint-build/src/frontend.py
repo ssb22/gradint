@@ -1511,9 +1511,14 @@ def main():
         startTk()
     else: rest_of_main()
 def rest_of_main():
-    global useTK,runInBackground,justSynthesize,waitBeforeStart,traceback,appTitle
+    global useTK,runInBackground,justSynthesize,waitBeforeStart,traceback,appTitle,saveProgress
     exitStatus = 0
+
     try:
+        try: ceLowMemory
+        except NameError: ceLowMemory=0
+        if ceLowMemory and getYN("Low memory! Python may crash. Turn off progress saving for safety?"): saveProgress=0
+        
         if justSynthesize=="-": primitive_synthloop()
         elif justSynthesize and justSynthesize[-1]=='*':
             justSynthesize=justSynthesize[:-1]
