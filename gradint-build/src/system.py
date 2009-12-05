@@ -287,7 +287,7 @@ if winCEsound and __name__=="__main__":
 Tk_might_display_wrong_hanzi = wrong_hanzi_message = ""
 if macsound:
   if sys.version.startswith("2.3.5"): Tk_might_display_wrong_hanzi="10.4"
-  elif sys.version[:5] == "2.5.1": # 10.5 (do NOT say >= because this bundle will NOT work on Python 2.6 in OS X 10.6)
+  elif sys.version[:5] == "2.5.1": # 10.5 (do NOT say >= because this bundle will NOT work on Python 2.6 in OS X 10.6; anyway got 1 report that 10.6 works OK as-is.)
     Tk_might_display_wrong_hanzi="10.5"
     f="/System/Library/Frameworks/Python.framework/Versions/2.5/lib/python2.5/lib-dynload/_tkinter.so"
     if fileExists(f): # we might be able to patch this one up
@@ -298,7 +298,6 @@ if macsound:
       sys.path.insert(0,os.getcwd()) ; import _tkinter ; del sys.path[0]
       _tkinter.TK_VERSION = _tkinter.TCL_VERSION = "8.6"
       Tk_might_display_wrong_hanzi=""
-  elif sys.version[:5] > "2.5.1": Tk_might_display_wrong_hanzi=">10.5 (not tested)" # TODO Test on OS X 10.6 !!!
   if Tk_might_display_wrong_hanzi: wrong_hanzi_message = "NB: In Mac OS "+Tk_might_display_wrong_hanzi+", Chinese\ncan display wrongly here." # so they don't panic when it does
 
 # Handle keeping progress file and temp directories etc if we're running from a live CD
