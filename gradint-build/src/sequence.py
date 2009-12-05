@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.994 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9941 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -41,7 +41,7 @@ def anticipation(promptFile,zhFile,numTimesBefore,promptsData):
     # work out number of repetitions needed.  not sure if this should be configurable somewhere.
     first_repeat_is_unessential = 0
     if not numTimesBefore: # New word.  If there are L2 variants, introduce them all if possible.
-        numVariants = max(3,len(variantFiles.get(samplesDirectory+os.sep+zhFile,[0]))) # TODO really max to 3? or 4? or .. ?
+        numVariants = min(3,len(variantFiles.get(samplesDirectory+os.sep+zhFile,[0]))) # TODO really max to 3? or 4? or .. ?
         if numVariants>1 and lessonIsTight(): numVariants = 1 # hack
         numRepeats = numVariants + cond(numVariants>=cond(availablePrompts.user_is_advanced,2,3),0,1)
     elif numTimesBefore == 1: numRepeats = 3
