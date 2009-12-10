@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9941 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9942 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -67,7 +67,7 @@ def anticipation(promptFile,zhFile,numTimesBefore,promptsData):
     if promptFile==zhFile and not promptFile in singleLinePoems:
         # A multi-line poem with no first-language prompts, so we're using each fragment as a prompt for the next, but the first fragment is its own prompt, which means that 'prompt' is ambiguous.  Say "beginning" to disambiguate it.
         theList = theList + map(lambda x:fileToEvent(x,promptsDirectory), availablePrompts.getPromptList("begin",promptsData,languageof(zhFile)))
-    if not instrIsPrefix: theList = theList + instructions
+    if not instrIsPrefix: theList += instructions
     origZhEvent = zhEvent
     for i in range(numRepeats):
         if i:

@@ -140,6 +140,10 @@
 # Verbal annotations, and -meaning files (see samples README
 # file for details) can also be in .txt files.
 
+# (Note: If you delete the "This is vocab.txt" message
+# on the top line of this file, Gradint's GUI will assume
+# you don't need to be asked if you're sure when editing files)
+
 #The three lines below are to help the Emacs editor.
 #Local Variables:
 #mode: winmgr

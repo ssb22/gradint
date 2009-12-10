@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9941 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9942 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1212,6 +1212,7 @@ def gui_wrapped_main_loop():
             if not app: return # (closed by the close box)
             else: app.todo.set_main_menu = 1
         elif app.menu_response=="edit":
+            if not braveUser and fileExists(vocabFile) and open(vocabFile).readline().find("# This is vocab.txt.")==-1: braveUser=1
             if winCEsound:
                 if braveUser or getYN("You can break things if you don't read what it says and keep to the same format.  Continue?"):
                     braveUser = 1
