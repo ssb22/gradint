@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9943 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9944 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -62,7 +62,7 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
         theISM.nowPlaying = self
         tkSnack.audio.stop() # as we might be still in c'tor and just about to be assigned to replace the previously-playing sound (i.e. it might not have stopped yet), and we don't want to confuse elapsedTime
         self.sound.play(start=curSample)
-        self.startSample = curSample
+        self.startSample = curSample ; self.startTime = time.time()
         self.autostop()
     def autostop(self):
         if not theISM or not theISM.nowPlaying==self or not tkSnack or not tkSnack.audio: return
@@ -77,7 +77,7 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
     def elapsedTime(self):
         try: t=tkSnack.audio.elapsedTime()
         except: t=0.0
-        if t==0.0: t=self.length # if elapsedTime raises exception or returns an exact float 0.0, probably finished
+        if t==0.0: t=time.time()-self.startTime
         return t
     def currentSample(self): return int(self.elapsedTime()*self.sampleRate)+self.startSample
     def currentTime(self): return self.currentSample()*1.0/self.sampleRate
@@ -113,7 +113,7 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
         if theRecorderControls:
             if self.inCtor: # tried to skip off end - DO ensure the GUI resets its controls when that happens, even if it has "protected" itself due to restarting the sample at different position
                 theRecorderControls.current_recordFrom_button = theRecorderControls.old_recordFrom_button
-            theRecorderControls.undoRecordFrom()
+            app.todo.undoRecordFrom=True # we might not be the GUI thread
 
 if not tkSnack:
   if macsound: # might still be able to use Audio Recorder

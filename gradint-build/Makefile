@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9943 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9944 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -71,6 +71,10 @@ gradint.exe: $(Common_Files) gradint.py
 	cat windows0/7zS.sfx windows0/7zip.conf windows0/data.7z > gradint.exe
 	rm -rf windows0
 
+# recorder.exe utility for sending to native friends to ask them to record words
+# e.g. make recorder.exe RecorderL1=ja  if their language is different from zh
+RecorderL1=zh
+RecorderL2=en
 recorder.exe: $(Common_Files) gradint.py
 	rm -rf windows0 ; cp -r windows windows0
 	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
@@ -81,10 +85,14 @@ recorder.exe: $(Common_Files) gradint.py
 	rm -f windows0/gradint/madplay.exe windows0/gradint/sox.exe windows0/gradint/ptts.exe
 	zip -0 windows0/gradint/library.zip gradint.py
 	cp extras/lame.exe extras/zip.exe windows0/gradint/
-	echo $$'@echo off\ncd gradint\ngradint-wrapper.exe recorderMode=1' > windows0/gradint/runme.bat
-	echo 'firstLanguage="zh";secondLanguage="en"' > windows0/gradint/settings.txt
-	cd windows0; zip -9r recorder.zip gradint/ ; cd ..
-	echo '$$AUTORUN$$>gradint\runme.bat' | zip -z windows0/recorder.zip
+	mv windows0/gradint windows0/recorder
+	echo $$'@echo off\ncd recorder\ngradint-wrapper.exe recorderMode=1\nif not exist ..\\recorder.bat copy runme.bat ..\\recorder.bat\nif exist ..\\recorder.exe del ..\\recorder.exe\nexit' > windows0/recorder/runme.bat
+	# (replace the .exe with a .bat in case they try to open it again from desktop and get confused by unzip's "overwrite" prompt)
+	# (NB must say 'start' below for the above del to work)
+	echo 'firstLanguage="$(RecorderL1)";secondLanguage="$(RecorderL2)"' > windows0/recorder/settings.txt
+	$(Unix_To_Dos) windows0/recorder/*.bat windows0/recorder/*.txt
+	cd windows0; zip -9r recorder.zip recorder/ ; cd ..
+	echo '$$AUTORUN$$>start /min recorder\runme.bat' | zip -z windows0/recorder.zip
 	cat yali-voice/unzipsfx.exe windows0/recorder.zip > recorder.exe
 	zip -A recorder.exe
 	rm -rf windows0

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9943 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9944 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -646,6 +646,9 @@ def startTk():
             if hasattr(self.todo,"clear_text_boxes"):
                 self.Text1.set("") ; self.Text2.set("") ; self.Entry1.focus()
                 del self.todo.clear_text_boxes
+            if hasattr(self.todo,"undoRecordFrom"):
+                theRecorderControls.undoRecordFrom()
+                del self.todo.undoRecordFrom
             if hasattr(self.todo,"exit_ASAP"):
                 self.master.destroy()
                 self.pollInterval = 0
@@ -1552,7 +1555,7 @@ def rest_of_main():
         except: tracebackFile=None
         if tracebackFile:
             try:
-                tracebackFile.write(w+"\n")
+                tracebackFile.write(time.asctime()+":\n"+w+"\n")
                 if traceback: traceback.print_exc(None,tracebackFile)
                 tracebackFile.close()
                 if traceback: w += "Details have been written to "+os.getcwd()+os.sep+"last-gradint-error"+extsep+"txt" # do this only if there's a traceback, otherwise little point
