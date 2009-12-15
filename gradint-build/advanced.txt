@@ -554,11 +554,11 @@ userNameFile="username.txt"
 # for multiple students, e.g. for a single-user machine in use by a family).
 # Set it to "" to disable this feature.
 
-import_recordings_from = r"\My Documents"
+import_recordings_from = [r"\My Documents", r"\Storage Card\My Documents", r"\Ramdisk\My Documents"]
 # This is really for Windows Mobile, but can also be adapted
 # for other platforms.  If you leave Recording1.wav, Recording2.wav
-# etc in that directory, Gradint will offer to "import" them
-# when you make a lesson.  Record the second-language words
+# etc in any of the above directories, Gradint will offer to "import"
+# them when you make a lesson.  Record the second-language words
 # into odd-numbered files, and their first-language meanings
 # into even numbered files.
 # This can be useful to catch words with the Notes app on a PocketPC

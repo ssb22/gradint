@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9944 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9945 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -31,30 +31,49 @@ def scanSamples(directory=None):
     # poetry learning)
     retVal = []
     doLabel("Scanning samples")
-    if import_recordings_from:
-        try: l=os.listdir(import_recordings_from)
+    if import_recordings_from: import_recordings()
+    scanSamples_inner(directory,retVal,0)
+    return retVal
+
+class CannotOverwriteExisting(Exception): pass
+def import_recordings(destDir=None):
+    global import_recordings_from
+    if not type(import_recordings_from)==type([]): # legacy settings
+        if import_recordings_from: import_recordings_from=[import_recordings_from]
+        else: import_recordings_from = []
+    numFound=0
+    for checkFirst in [1,0]:
+      if checkFirst:
+        if destDir: curFiles=list2set(os.listdir(destDir))
+        else: continue # no point checking for existing files in a new directory
+      for importDir in import_recordings_from:
+        try: l=os.listdir(importDir)
         except: l=[]
-        destDir = None
         for f in l:
             if (f.lower().endswith(dotwav) or f.lower().endswith(dotmp3)) and f[-5] in "0123456789":
+                if checkFirst:
+                  for lang in [firstLanguage,secondLanguage]:
+                   for ext in [dotwav,dotmp3]:
+                    if f[:f.rfind(extsep)]+"_"+lang+ext in curFiles: raise CannotOverwriteExisting()
+                  continue
                 if not destDir:
-                    if not getYN("Import the recordings that are in "+import_recordings_from+"?"): break
+                    if not getYN("Import the recordings that are in "+importDir+"?"): break
                     prefix=time.strftime("%Y-%m-%d") ; i=0
                     while isDirectory(prefix+cond(i,"_"+str(i),"")): i+=1
                     destDir=directory+os.sep+prefix+cond(i,"_"+str(i),"")
                     try: os.mkdir(directory) # make sure samples directory exists
                     except: pass
                     os.mkdir(destDir)
-                    open(destDir+os.sep+"settings"+dottxt,"w").write("firstLanguage=\""+firstLanguage+"\"\nsecondLanguage=\""+secondLanguage+"\"\n")
-                try: os.rename(import_recordings_from+os.sep+f,destDir+os.sep+f)
+                try: os.rename(importDir+os.sep+f,destDir+os.sep+f)
                 except:
                     try:
                         import shutil
-                        shutil.copy2(import_recordings_from+os.sep+f,destDir+os.sep+f)
-                    except: open(destDir+os.sep+f,"wb").write(import_recordings_from+os.sep+f).read()
-                    os.remove(import_recordings_from+os.sep+f)
-    scanSamples_inner(directory,retVal,0)
-    return retVal
+                        shutil.copy2(importDir+os.sep+f,destDir+os.sep+f)
+                    except: open(destDir+os.sep+f,"wb").write(importDir+os.sep+f).read()
+                    os.remove(importDir+os.sep+f)
+                numFound += 1
+    if numFound: open(destDir+os.sep+"settings"+dottxt,"w").write("firstLanguage=\""+firstLanguage+"\"\nsecondLanguage=\""+secondLanguage+"\"\n")
+    return numFound
 
 def exec_in_a_func(x): # helper function for below (can't be nested in python 2.3)
    # Also be careful of http://bugs.python.org/issue4315 (shadowing globals in an exec) - better do this in a dictionary
@@ -72,12 +91,12 @@ def getLsDic(directory):
     # Helper function for samples and prompts scanning
     # Calls os.listdir, returns dict of filename-without-extension to full filename
     # Puts variants into variantFiles and normalises them
-    # Also sorts out import_recordings (pointless for prompts, but settings.txt shouldn't be found in prompts)
+    # Also sorts out import_recordings output (pointless for prompts, but settings.txt shouldn't be found in prompts)
     if not (directory.find(exclude_from_scan)==-1): return {}
     try: ls = os.listdir(directory)
-    except OSError: return {} # (can run without a 'samples' directory at all if just doing synth)
+    except: return {} # (can run without a 'samples' directory at all if just doing synth)
     if "settings"+dottxt in ls:
-        # Sort out the o/p from import_recordings_from above (and legacy record-with-HDogg.bat if anyone's still using that)
+        # Sort out the o/p from import_recordings (and legacy record-with-HDogg.bat if anyone's still using that)
         oddLanguage,evenLanguage = exec_in_a_func(u8strip(open(directory+os.sep+"settings"+dottxt,"rb").read().replace("\r\n","\n")).strip(wsp))
         if oddLanguage==evenLanguage: oddLanguage,evenLanguage="_"+oddLanguage,"-meaning_"+evenLanguage # if user sets languages the same, assume they want -meaning prompts
         else: oddLanguage,evenLanguage="_"+oddLanguage,"_"+evenLanguage

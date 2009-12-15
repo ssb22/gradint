@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9944 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9945 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -179,7 +179,7 @@ def system(cmd):
     # Don't call os.system for commands like sound playing, because if you do then any Control-C interrupt will go to that rather than to gradint as we want, and it will pop up a large blank console window in Windows GUI-only version
     if riscos_sound or not hasattr(os,"popen"): return os.system(cmd) # no popen
     try: r=os.popen(cmd)
-    except OSError: return os.system(cmd) # too many file descriptors open or something
+    except: return os.system(cmd) # too many file descriptors open or something
     r.read() ; return r.close()
 
 # Event(len) gives a pause of that length

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9944 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9945 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -444,7 +444,7 @@ class ExtraButton(object):
         if not newName: newName="1"
         ls = []
         try: ls = os.listdir(samplesDirectory)
-        except OSError: os.mkdir(samplesDirectory)
+        except: os.mkdir(samplesDirectory)
         name1=newName
         while newName in ls: newName+="1"
         name2=newName
@@ -473,7 +473,7 @@ def make_extra_buttons_waiting_list():
     else: oneUp=os.getcwd()
     for d in [samplesDirectory,oneUp]:
         try: ls = os.listdir(d)
-        except OSError: continue
+        except: continue
         ls.sort()
         for l in ls:
             if l.endswith(exclude_from_scan) and fileExists(d+os.sep+l+os.sep+shortDescriptionName): extra_buttons_waiting_list.append(ExtraButton(d+os.sep+l))

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9944 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9945 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -350,7 +350,7 @@ class RecorderControls:
                 if intor0(o2): newName=o2+"-"+newName
             if isDirectory(unicode2filename(self.currentDir+os.sep+origName)):
                 try: os.rename(unicode2filename(self.currentDir+os.sep+origName),unicode2filename(self.currentDir+os.sep+newName))
-                except OSError:
+                except:
                     tkMessageBox.showinfo(app.master.title(),localise("Could not rename %s to %s") % (origName,newName))
                     return
                 self.addButton(row,col,text=newName,command=(lambda f=self.currentDir+os.sep+newName:self.changeDir(f)))
@@ -361,7 +361,7 @@ class RecorderControls:
                     for ext in [dottxt, dotwav, dotmp3]:
                       if fileExists_stat(unicode2filename(self.currentDir+os.sep+origName+"_"+lang+ext)):
                         try: os.rename(unicode2filename(self.currentDir+os.sep+origName+"_"+lang+ext),unicode2filename(self.currentDir+os.sep+newName+"_"+lang+ext))
-                        except OSError:
+                        except:
                             tkMessageBox.showinfo(app.master.title(),localise("Could not rename %s to %s") % (origName+"_"+lang+ext,newName+"_"+lang+ext)) # TODO undo any that did succeed first!  + check for destination-already-exists (OS may not catch it)
                             return
                         self.updateFile(unicode2filename(newName+"_"+lang+ext),row,self.languagesToDraw.index(lang),cond(ext==dottxt,0,2)) # TODO the 2 should be 1 if and only if we didn't just record it
@@ -393,21 +393,23 @@ class RecorderControls:
             else:
                 self.addLabel(row,3+3*languageNo,"")
                 self.need_reRecord_enabler = not (not tkSnack)
-        else:
+        else: # does not exist
             synthFilename = filename[:filename.rfind(extsep)]+dottxt
             if txtExists=="unknown": txtExists=fileExists(synthFilename)
             if txtExists: self.addLabel(row,2+3*languageNo,localise("(synth'd)"))
             elif self.always_enable_synth and get_synth_if_possible(self.languagesToDraw[languageNo],0): self.addButton(row,2+3*languageNo,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row+1,1+3*languageNo,synthFilename)))
             else: self.addLabel(row,2+3*languageNo,localise("(empty)"))
             self.coords2buttons[(row,2+3*languageNo)].is_synth_label = True
-            self.addButton(row,3+3*languageNo,text=localise("Record"),command=(lambda f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l)))
+            if winCEsound and not tkSnack: self.addLabel(row,3+3*languageNo,"")
+            else: self.addButton(row,3+3*languageNo,text=localise("Record"),command=(lambda f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l)))
     def add_addMore_button(self):
-        self.addButton(self.addMoreRow,0,text=localise("Add more words"),command=(lambda *args:self.addMore()),colspan=cond(self.need_reRecord_enabler,2,4))
+        if winCEsound and not tkSnack: pass # no 'add more words' button on WinCE; use PocketPC record button instead
+        else: self.addButton(self.addMoreRow,0,text=localise("Add more words"),command=(lambda *args:self.addMore()),colspan=cond(self.need_reRecord_enabler,2,4))
         if self.need_reRecord_enabler: self.addButton(self.addMoreRow,2,text=localise("Re-record"),command=(lambda *args:self.global_rerecord()),colspan=2)
         self.addButton(self.addMoreRow,4,text=localise("New folder"),command=(lambda *args:self.newFolder()),colspan=3)
     def del_addMore_button(self):
-        self.coords2buttons[(self.addMoreRow,0)].grid_forget() # old 'add more' button
-        if (self.addMoreRow,3) in self.coords2buttons: self.coords2buttons[(self.addMoreRow,1)].grid_forget() # old 're-record' button
+        if (self.addMoreRow,0) in self.coords2buttons: self.coords2buttons[(self.addMoreRow,0)].grid_forget() # old 'add more' button
+        if (self.addMoreRow,2) in self.coords2buttons: self.coords2buttons[(self.addMoreRow,2)].grid_forget() # old 're-record' button
         self.coords2buttons[(self.addMoreRow,4)].grid_forget() # old 'new folder' button
     def addMore(self):
         self.del_addMore_button()
@@ -421,9 +423,7 @@ class RecorderControls:
             self.addMoreRow += 2 ; self.maxPrefix += 1
         self.add_addMore_button()
     def doRecord(self,filename,row,languageNo,needToUpdatePlayButton=False):
-        if not tkSnack:
-            if winCEsound: return tkMessageBox.showinfo(app.master.title(),localise("Sorry not implemented on PocketPC, but you can use PocketPC's Notes app (record %s to 1st file, %s to 2nd file, %s to 3rd etc) and Gradint can import this.") % (secondLanguage,firstLanguage,secondLanguage))
-            else: return tkMessageBox.showinfo(app.master.title(),localise("Sorry, cannot record on this computer because the tkSnack library (python-tksnack) is not installed."))
+        if not tkSnack: return tkMessageBox.showinfo(app.master.title(),localise("Sorry, cannot record on this computer because the tkSnack library (python-tksnack) is not installed."))
         theISM.startRecording(filename)
         if needToUpdatePlayButton: self.updateFile(filename,row,languageNo,2)
         self.coords2buttons[(row,3+3*languageNo)]["text"]=localise("Stop")
@@ -482,7 +482,7 @@ class RecorderControls:
         while True:
             fname = "folder%d" % count
             try: os.mkdir(unicode2filename(self.currentDir+os.sep+fname))
-            except OSError:
+            except:
                 count += 1 ; continue
             break
         self.del_addMore_button()
@@ -519,6 +519,15 @@ class RecorderControls:
         tkMessageBox.showinfo(app.master.title(),localise("Gradint has opened the current folder for you to work on.  When you press OK, Gradint will re-scan the folder for new files."))
         self.undraw()
         self.draw()
+    def pocketPCrecord(self,*args):
+        # (apparently get 11.025kHz 16-bit mono.  Can set Notes to NOT switch to notes app when holding Recording button, in which case you then need the task manager to actually get into Notes.)
+        if tkMessageBox.askyesno(app.master.title(),localise("Press and hold the PocketPC's Record button to record; release to stop. Record %s to 1st Note, %s to 2nd, %s to 3rd etc. Import all Notes now?") % (secondLanguage,firstLanguage,secondLanguage)):
+          try:
+            if import_recordings(self.currentDir):
+                getLsDic(self.currentDir) # to rename them
+                self.undraw() ; self.draw()
+            else: app.todo.alert="No files found to import. Check this setting: import_recordings_from = "+repr(import_recordings_from)
+          except CannotOverwriteExisting: app.todo.alert="Filenames conflict with those already in this folder. Clear the folder first, or choose another, then press the button again (your recordings have been left in the Notes app)."
     def do_recordFromFile(self,*args):
         if not tkSnack or tkSnack=="MicOnly": return tkMessageBox.showinfo(app.master.title(),localise("Sorry, cannot record from file on this computer because the tkSnack library (python-tksnack) is not installed"))
         msg1 = localise("You can record from an existing recording (i.e. copy parts from it) if you first put the existing recording into the samples folder and then press its Play button.")+"\n\n"
@@ -546,13 +555,15 @@ class RecorderControls:
 
         self.need_reRecord_enabler = 0 # no previously-existing words yet (when we get existing words we 'lock' them and have to unlock by pressing a global 'rerecord' button 1st, just in case)
 
-        r = Tkinter.Frame(self.frame)
-        r.grid(row=1,sticky="e",columnspan=2)
-        Tkinter.Label(r,text=localise("Action of spacebar during recording")).pack()
-        r=Tkinter.Frame(r) ; r.pack()
-        Tkinter.Radiobutton(r, text=localise("move down"), variable=app.scanrow, value="0", indicatoron=1).pack({"side":"left"})
-        Tkinter.Radiobutton(r, text=localise("move along"), variable=app.scanrow, value="1", indicatoron=1).pack({"side":"left"})
-        Tkinter.Radiobutton(r, text=localise("stop"), variable=app.scanrow, value="2", indicatoron=1).pack({"side":"left"})
+        if winCEsound and not tkSnack: Tkinter.Button(self.frame,text=localise("PocketPC record..."),command=self.pocketPCrecord).grid(row=1,columnspan=2)
+        else:
+          r = Tkinter.Frame(self.frame)
+          r.grid(row=1,sticky="e",columnspan=2)
+          Tkinter.Label(r,text=localise("Action of spacebar during recording")).pack()
+          r=Tkinter.Frame(r) ; r.pack()
+          Tkinter.Radiobutton(r, text=localise("move down"), variable=app.scanrow, value="0", indicatoron=1).pack({"side":"left"})
+          Tkinter.Radiobutton(r, text=localise("move along"), variable=app.scanrow, value="1", indicatoron=1).pack({"side":"left"})
+          Tkinter.Radiobutton(r, text=localise("stop"), variable=app.scanrow, value="2", indicatoron=1).pack({"side":"left"})
 
         self.grid,self.ourCanvas = setupScrollbar(self.frame,2)
         if hasattr(self,"oldCanvasBbox"): del self.oldCanvasBbox # unconditionally reconfigure scrollbar even if bounds are unchanged
@@ -613,7 +624,7 @@ class RecorderControls:
                     curRow += 2
                 if languageOverride in self.languagesToDraw and not flwr.endswith(dottxt):
                     self.updateFile(fname,prefix2row[prefix],self.languagesToDraw.index(languageOverride),state=1)
-            elif flwr.endswith(dotwav) or flwr.endswith(dotmp3) and tkSnack and not tkSnack=="MicOnly": # no _ in it but we can still play it for splitting
+            elif (flwr.endswith(dotwav) or flwr.endswith(dotmp3)) and tkSnack and not tkSnack=="MicOnly": # no _ in it but we can still play it for splitting
                 self.addButton(curRow,0,text=(localise("Record from %s") % (filename2unicode(fname),)),command=(lambda r=curRow,f=self.currentDir+os.sep+fname:self.doRecordFrom(f,r)))
                 self.has_recordFrom_buttons = True
                 curRow += 1
@@ -635,7 +646,9 @@ class RecorderControls:
         if hasattr(self,"CompressButton"): self.CompressButton.pack(side="left")
         Tkinter.Button(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack(side="left")
         
-        Tkinter.Label(self.frame,text="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it.",wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
+        if winCEsound and not tkSnack: msg="Click on filenames at left to rename; click synthesized text to edit it"
+        else: msg="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it."
+        Tkinter.Label(self.frame,text=msg,wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
         # (Don't worry about making the text files editable - editable filenames should be enough + easier to browse the result outside Gradint; can include both languages in the filename if you like - hope the users figure this out as we don't want to make the instructions too complex)
 
 def doRecWords(): # called from GUI thread
