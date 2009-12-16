@@ -55,6 +55,7 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
         self.sampleRate = self.sound.info()[1]
         self.length = self.sound.length()*1.0/self.sampleRate
         if not self.length: self.length=lengthOfSound(fileToPlay) # tkSnack bug workaround.  NB don't just set it to 3 because it may be less than that, and user may press Record before the 3secs are up, expecting to record from mic.
+        self.autostop_thread_id = 0
         self.inCtor = 1
         if startNow: self.startPlaying(max(0,int(startTime*self.sampleRate)))
         self.inCtor = 0
@@ -64,16 +65,20 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
         self.sound.play(start=curSample)
         self.startSample = curSample ; self.startTime = time.time()
         self.autostop()
-    def autostop(self):
-        if not theISM or not theISM.nowPlaying==self or not tkSnack or not tkSnack.audio: return
+    def autostop(self,thread_id=None):
+        if thread_id==None:
+            self.autostop_thread_id += 1
+            thread_id=self.autostop_thread_id
+        elif not thread_id==self.autostop_thread_id: return # a stale autostop thread
+        if not theISM or not theISM.nowPlaying==self or not tkSnack or not tkSnack.audio: return # closing down anyway
         elapsedTime = self.elapsedTime()
         if elapsedTime>=self.length-self.startSample*1.0/self.sampleRate: self.close()
         else:
             import thread
-            def stopMe(self):
+            def stopMe(self,thread_id):
                 time.sleep(max(0.5,self.length-self.startSample*1.0/self.sampleRate-elapsedTime))
-                self.autostop()
-            thread.start_new_thread(stopMe,(self,))
+                self.autostop(thread_id)
+            thread.start_new_thread(stopMe,(self,thread_id))
     def elapsedTime(self):
         try: t=tkSnack.audio.elapsedTime()
         except: t=0.0
@@ -500,8 +505,14 @@ class RecorderControls:
         for inc in [-30, -5, 5, 30]:
             if inc<0: text="<"+str(-inc)
             else: text=str(inc)+">"
-            self.addButton(row,col,text=text,command=(lambda i=inc:(self.doStop(),self.protect_currentRecordFrom(),theISM.setInputSource(PlayerInput(filename,True,theISM.currentInputSource.currentTime()+i)),self.restore_currentRecordFrom())))
+            self.addButton(row,col,text=text,command=(lambda i=inc:self.handleSkip(filename,i)))
             col += 1
+    def handleSkip(self,filename,i):
+        self.protect_currentRecordFrom()
+        self.doStop()
+        theISM.setInputSource(PlayerInput(filename,True,theISM.currentInputSource.currentTime()+i))
+        if hasattr(app.todo,"undoRecordFrom"):  del app.todo.undoRecordFrom
+        self.restore_currentRecordFrom()
     def protect_currentRecordFrom(self): self.old_recordFrom_button, self.current_recordFrom_button = self.current_recordFrom_button, None
     def restore_currentRecordFrom(self): self.current_recordFrom_button, self.old_recordFrom_button = self.old_recordFrom_button, None
     def undoRecordFrom(self):
