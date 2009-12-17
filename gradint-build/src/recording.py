@@ -290,7 +290,7 @@ class RecorderControls:
             try: os.remove(filename)
             except: pass
         self.cancelEdit(editEntry,row,col,filename)
-        if row+1 < self.addMoreRow and (row+1,col+1) in self.coords2buttons: self.scrollIntoView(self.coords2buttons[(row+1,col+1)]) # focus the next "synth" button if it exists (TODO do we want to press it as well, like file renaming?)
+        if row+1 < self.addMoreRow and (row+1,col+1) in self.coords2buttons: self.scrollIntoView(self.coords2buttons[(row+1,col+1)]) # focus the next "synth" button if it exists (don't press it as well like file renaming because it might be a variant etc, TODO can we skip variants?)
     def cancelEdit(self,editEntry,row,col,filename):
         editEntry.grid_forget()
         labelAdded = self.addSynthLabel(filename,row,col)
@@ -438,14 +438,14 @@ class RecorderControls:
         self.currentRecording = (filename,row,languageNo)
         self.coords2buttons[(row,3+3*languageNo)]["command"]=(lambda *args:self.doStop())
         if app.scanrow.get()=="2": # "stop"
-          self.coords2buttons[(row,3+3*languageNo)].focus()
+          focusButton(self.coords2buttons[(row,3+3*languageNo)])
         else:
           moved = 0
           if app.scanrow.get()=="1": # move along 1st
             while languageNo+1<len(self.languagesToDraw):
               languageNo += 1
               if (row,3+3*languageNo) in self.coords2buttons:
-                  self.coords2buttons[(row,3+3*languageNo)].focus()
+                  focusButton(self.coords2buttons[(row,3+3*languageNo)])
                   return
             languageNo = 0 # start of the row
           # fall-through - vertical movement
@@ -454,7 +454,7 @@ class RecorderControls:
             if (r,3+3*languageNo) in self.coords2buttons:
                 return self.scrollIntoView(self.coords2buttons[(r,3+3*languageNo)])
     def scrollIntoView(self,button):
-        button.focus()
+        focusButton(button)
         self.continueScrollIntoView(button)
     def continueScrollIntoView(self,button):
         if not hasattr(self,"ourCanvas"): return # closing down?

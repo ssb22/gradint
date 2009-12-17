@@ -56,6 +56,7 @@ if "s60" in sys.argv: # S60 version
 "def renameUser(i,radioButton,parent,cancel=0):",
 "def deleteUser(i):",
 "def setupScrollbar(parent,rowNo):",
+"def focusButton(button):",
 "class ExtraButton(object):",
 "def make_extra_buttons_waiting_list():",
 "def startTk():",

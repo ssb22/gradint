@@ -478,6 +478,17 @@ def make_extra_buttons_waiting_list():
         for l in ls:
             if l.endswith(exclude_from_scan) and fileExists(d+os.sep+l+os.sep+shortDescriptionName): extra_buttons_waiting_list.append(ExtraButton(d+os.sep+l))
 
+def focusButton(button):
+    button.focus()
+    if macsound: # focus() should display the fact on Windows and Linux, but doesn't on OS X so:
+        def flashButton(button,state):
+            try: button.config(state=state)
+            except: pass # maybe not a button
+        for t in range(250,1000,250): # (NB avoid epilepsy's 5-30Hz!)
+          app.after(t,lambda *args:flashButton(button,"active"))
+          app.after(t+150,lambda *args:flashButton(button,"normal"))
+        # (Don't like flashing, but can't make it permanently active as it won't change when the focus does)
+
 def startTk():
     class Application(Tkinter.Frame):
         def __init__(self, master=None):
@@ -617,7 +628,7 @@ def startTk():
                 self.remake_cancel_button(localise("Quit"))
                 if not GUI_omit_statusline: self.Version.pack(fill=Tkinter.X,expand=1)
                 if olpc or self.todo.set_main_menu=="test" or GUI_for_editing_only: self.showtest() # olpc: otherwise will just get a couple of options at the top and a lot of blank space (no way to centre it)
-                else: self.TestButton.focus()
+                else: focusButton(self.TestButton)
                 del self.todo.set_main_menu
                 self.restore_copyright()
             if hasattr(self.todo,"alert"):
@@ -636,7 +647,7 @@ def startTk():
                 del self.todo.thindown
             if hasattr(self.todo,"add_briefinterrupt_button") and runner:
                 self.BriefIntButton = addButton(self.CancelRow,localise("Brief interrupt"),self.briefInterrupt,{"side":"left"}) # on RHS of Cancel = reminescient of the stop and pause controls on a tape recorder
-                self.BriefIntButton.focus()
+                focusButton(self.BriefIntButton)
                 del self.todo.add_briefinterrupt_button
             if hasattr(self.todo,"remove_briefinterrupt_button"):
                 if hasattr(self,"BriefIntButton"):
