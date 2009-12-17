@@ -1,0 +1,30 @@
+--- gradint.py	2009-12-17 16:53:13.000000000 +0000
++++ /tmp/Gradint.app/gradint.py	2009-12-17 17:03:49.000000000 +0000
+@@ -4310,9 +4310,9 @@
+         editEntry.bind('<Return>',lambda *args:self.doEdit(editText,editEntry,row,col,filename))
+         editEntry.bind('<Escape>',lambda *args:self.cancelEdit(editEntry,row,col,filename))
+         self.scrollIntoView(editEntry)
+-        if hasattr(self.coords2buttons.get((row-1,col),""),"is_synth_label"):
+-            self.addLabel(row-1,col,localise("(synth'd)"))
+-            self.coords2buttons[(row-1,col)].is_synth_label = True
++        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"):
++            self.addLabel(row-1,col+1,localise("(synth'd)"))
++            self.coords2buttons[(row-1,col+1)].is_synth_label = True
+     def doEdit(self,editText,editEntry,row,col,filename):
+         text = editText.get().encode("utf-8").strip(wsp)
+         if text: open(filename,"w").write(text+"\n")
+@@ -4324,10 +4324,10 @@
+     def cancelEdit(self,editEntry,row,col,filename):
+         editEntry.grid_forget()
+         labelAdded = self.addSynthLabel(filename,row,col)
+-        if hasattr(self.coords2buttons.get((row-1,col),""),"is_synth_label"):
+-            if labelAdded: self.addLabel(row-1,col,localise("(synth'd)"))
+-            else: self.addButton(row-1,col,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row,col,filename)))
+-            self.coords2buttons[(row-1,col)].is_synth_label = True
++        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"):
++            if labelAdded: self.addLabel(row-1,col+1,localise("(synth'd)"))
++            else: self.addButton(row-1,col+1,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row,col,filename)))
++            self.coords2buttons[(row-1,col+1)].is_synth_label = True
+     def all2mp3_or_zip(self):
+         self.CompressButton["text"] = localise("Compressing, please wait")
+         if got_program("lame"): wavToMp3(self.currentDir) # TODO not in the GUI thread !! (but lock our other buttons while it's doing it)

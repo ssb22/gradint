@@ -26,7 +26,7 @@ class MicInput(InputSource):
         rates = tkSnack.audio.rates()
         for rate in [22050, 16000, 24000, 44100]:
             if rate in rates:
-                self.rate = rate ; break
+                self.rate = rate ; return
         if rates: self.rate = max(rates)
         else: self.rate = None
     def startRec(self,outFile,lastStopRecVal=None):
@@ -221,8 +221,9 @@ class RecorderControls:
         self.renamevar_msg = "Renaming a variant from the GUI is not implemented yet. Please press the Advanced button and do it from the file manager."
     def changeDir(self,newDir):
         self.undraw()
+        oldDir = self.currentDir
         self.currentDir = newDir
-        self.draw()
+        self.draw(oldDir)
     def global_rerecord(self):
         self.undraw()
         self.always_enable_rerecord = True
@@ -279,9 +280,9 @@ class RecorderControls:
         editEntry.bind('<Return>',lambda *args:self.doEdit(editText,editEntry,row,col,filename))
         editEntry.bind('<Escape>',lambda *args:self.cancelEdit(editEntry,row,col,filename))
         self.scrollIntoView(editEntry)
-        if hasattr(self.coords2buttons.get((row-1,col),""),"is_synth_label"):
-            self.addLabel(row-1,col,localise("(synth'd)"))
-            self.coords2buttons[(row-1,col)].is_synth_label = True
+        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"):
+            self.addLabel(row-1,col+1,localise("(synth'd)"))
+            self.coords2buttons[(row-1,col+1)].is_synth_label = True
     def doEdit(self,editText,editEntry,row,col,filename):
         text = editText.get().encode("utf-8").strip(wsp)
         if text: open(filename,"w").write(text+"\n")
@@ -289,13 +290,14 @@ class RecorderControls:
             try: os.remove(filename)
             except: pass
         self.cancelEdit(editEntry,row,col,filename)
+        if row+1 < self.addMoreRow and (row+1,col+1) in self.coords2buttons: self.scrollIntoView(self.coords2buttons[(row+1,col+1)]) # focus the next "synth" button if it exists (TODO do we want to press it as well, like file renaming?)
     def cancelEdit(self,editEntry,row,col,filename):
         editEntry.grid_forget()
         labelAdded = self.addSynthLabel(filename,row,col)
-        if hasattr(self.coords2buttons.get((row-1,col),""),"is_synth_label"):
-            if labelAdded: self.addLabel(row-1,col,localise("(synth'd)"))
-            else: self.addButton(row-1,col,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row,col,filename)))
-            self.coords2buttons[(row-1,col)].is_synth_label = True
+        if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"):
+            if labelAdded: self.addLabel(row-1,col+1,localise("(synth'd)"))
+            else: self.addButton(row-1,col+1,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row,col,filename)))
+            self.coords2buttons[(row-1,col+1)].is_synth_label = True
     def all2mp3_or_zip(self):
         self.CompressButton["text"] = localise("Compressing, please wait")
         if got_program("lame"): wavToMp3(self.currentDir) # TODO not in the GUI thread !! (but lock our other buttons while it's doing it)
@@ -549,9 +551,10 @@ class RecorderControls:
             self.draw()
             msg1 = ""
         self.setSync(tkMessageBox.askyesno(app.master.title(),localise(msg1+"Do you want your next Play operation to be delayed until you also press a Record button?")))
-    def draw(self):
+    def draw(self,dirToHighlight=None):
         self.languagesToDraw = [secondLanguage,firstLanguage] # each lang cn take 3 columns, starting at column 1 (DO need to regenerate this every draw - languages may have changed!)
-        app.master.title(localise("Recordings manager"))
+        if self.currentDir==samplesDirectory: app.master.title(localise("Recordings manager"))
+        else: app.master.title(localise("Recordings manager: ")+(os.sep+self.currentDir)[(os.sep+self.currentDir).rindex(os.sep)+1:])
         if not self.snack_initialized:
             if tkSnack and not tkSnack=="MicOnly":
                 tkSnack.initializeSnack(app)
@@ -584,7 +587,7 @@ class RecorderControls:
         maxPrefix = 0 ; self.has_recordFrom_buttons = False
 
         if not self.currentDir==samplesDirectory:
-            self.addButton(curRow,0,text=localise("(Up)"),command=(lambda f=self.currentDir[:self.currentDir.rindex(os.sep)]:self.changeDir(f)))
+            self.addButton(curRow,0,text=localise("(Up)"),command=(lambda f=self.currentDir[:self.currentDir.rindex(os.sep)]:self.changeDir(f))) # don't auto-focus this, as the user might want to scroll with the arrows (auto-focus only a dir button below, once an "up" is *pressed*)
             curRow += 1
         l = os.listdir(self.currentDir) ; l.sort()
         self.has_variants = check_has_variants(self.currentDir,l)
@@ -601,6 +604,7 @@ class RecorderControls:
                     # TODO if _disabled have an Enable button ?
                     # if not have a Disable ??
                     # (NB though the above button will have a column span)
+                    if self.currentDir+os.sep+fname == dirToHighlight: self.scrollIntoView(self.coords2buttons[(curRow,0)])
                     curRow += 1
                     if fileExists(self.currentDir+os.sep+fname+os.sep+longDescriptionName): description=u8strip(open(self.currentDir+os.sep+fname+os.sep+longDescriptionName).read()).strip(wsp)
                     elif fileExists(self.currentDir+os.sep+fname+os.sep+shortDescriptionName): description=u8strip(open(self.currentDir+os.sep+fname+os.sep+shortDescriptionName).read()).strip(wsp)

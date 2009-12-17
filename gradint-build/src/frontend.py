@@ -175,7 +175,7 @@ def CXVMenu(e): # callback for right-click
 def selectAll(e):
     e.widget.event_generate('<Home>')
     e.widget.event_generate('<Shift-End>')
-def selectAllButNumber(e): # hack for recordings.py - select all but any number at the start
+def selectAllButNumber(e): # hack for recording.py - select all but any number at the start
     e.widget.event_generate('<Home>')
     for i in list(e.widget.theText.get()):
         if "0"<=i<="9": e.widget.event_generate('<Right>')
