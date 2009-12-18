@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9945 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9946 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -127,7 +127,7 @@ def getLsDic(directory):
                 continue
         lsDic[(file+extsep)[:file.find(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
     if has_variants:
-        ls=list2set(ls)
+        ls=list2set(ls) ; newVs = []
         for k,v in lsDic.items():
             # check for _lang_variant.ext and take out the _variant,
             # but keep them in variant_files dict for fileToEvent to put back
@@ -145,7 +145,8 @@ def getLsDic(directory):
                 variantFiles[dir_newV] = []
                 if newV in ls: variantFiles[dir_newV].append(newV) # the no-variants name is also a valid option
             variantFiles[dir_newV].append(v)
-        random.shuffle(variantFiles[dir_newV])
+            newVs.append(dir_newV)
+        for v in newVs: random.shuffle(variantFiles[v])
     return lsDic
 
 def scanSamples_inner(directory,retVal,doLimit):

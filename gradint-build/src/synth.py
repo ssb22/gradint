@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9945 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9946 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -340,7 +340,7 @@ class ESpeakSynth(Synth):
         if pickle and fileExists(espeakTranslitCacheFile):
             try: placeStat,tc = pickle.Unpickler(open(espeakTranslitCacheFile,"rb")).load()
             except: placeStat,tc = (),{}
-            if placeStat==tuple(os.stat(self.place)): self.translitCache = tc # otherwise regenerate it because eSpeak installation has changed
+            if placeStat==tuple(os.stat(self.place)): self.translitCache = tc # otherwise regenerate it because eSpeak installation has changed (TODO if you overwrite an existing _dict file in-place, it might not update the stat() of espeak-data and the cache might not be re-generated when it should; espeak's --compile seems ok though)
         if self.place: self.place=self.place[:self.place.rindex(os.sep)] # drop the \espeak-data, so can be used in --path=
     def _add_lang(self,lang,fname):
         if ("-" in lang and not lang=="zh-yue") or "~" in lang: return # variants and emacs backup files
