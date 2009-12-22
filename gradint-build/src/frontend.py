@@ -1216,7 +1216,8 @@ def gui_wrapped_main_loop():
                 del v
             if emulated_interruptMain: check_for_interrupts()
             time.sleep(0.3)
-        if app.menu_response=="go":
+        menu_response = app.menu_response
+        if menu_response=="go":
             gui_outputTo_start()
             if not soundCollector: app.todo.add_briefinterrupt_button = 1
             try: main_loop()
@@ -1225,7 +1226,7 @@ def gui_wrapped_main_loop():
             gui_outputTo_end()
             if not app: return # (closed by the close box)
             else: app.todo.set_main_menu = 1
-        elif app.menu_response=="edit":
+        elif menu_response=="edit":
             if not braveUser and fileExists(vocabFile) and open(vocabFile).readline().find("# This is vocab.txt.")==-1: braveUser=1
             if winCEsound:
                 if braveUser or getYN("You can break things if you don't read what it says and keep to the same format.  Continue?"):
@@ -1268,16 +1269,16 @@ def gui_wrapped_main_loop():
                         waitOnMessage("Gradint has started "+textEditorName+", and will now quit.\nWhen you have finished editing "+app.fileToEdit+", save it and start gradint again.")
                         return
             else: waitOnMessage("Don't know how to start the text editor.  Please edit %s yourself (in %s)" % (app.fileToEdit,os.getcwd()))
-        elif app.menu_response=="samples":
+        elif menu_response=="samples":
             setup_samplesDir_ifNec()
             openDirectory(samplesDirectory)
-        elif app.menu_response=="samplesCopy":
+        elif menu_response=="samplesCopy":
             for i in app.toOpen:
                 setup_samplesDir_ifNec(i)
                 openDirectory(i)
             del app.toOpen
             waitOnMessage("Gradint has opened both of the recorded words folders, so you can copy things across.")
-        elif app.menu_response=="test":
+        elif menu_response=="test":
             text1 = app.Text1.get().encode('utf-8') ; text2 = app.Text2.get().encode('utf-8')
             if not text1 and not text2: app.todo.alert=u"Before pressing the "+localise("Speak")+u" button, you need to type the text you want to hear into the box."
             else:
@@ -1308,7 +1309,7 @@ def gui_wrapped_main_loop():
                 else:
                     doControl(text2,firstLanguage,app.Text2)
                     doSynth()
-        elif app.menu_response=="get-encoder":
+        elif menu_response=="get-encoder":
           if winsound or mingw32:
             if getYN("Gradint can use Windows Media Encoder to make WMA files, which can be played on most pocket MP3 players and mobiles etc.  Do you want to go to the Microsoft site to install Windows Media Encoder now?"):
               if not startBrowser('http://www.microsoft.com/windows/windowsmedia/forpros/encoder/default.mspx'): app.todo.alert = "There was a problem starting the web browser.  Please install manually (see notes in advanced.txt)."
@@ -1324,15 +1325,16 @@ def gui_wrapped_main_loop():
               app.setLabel("Compiling...")
               if system("""tar -zxvf lame*.tar.gz && cd lame-* && if ./configure && make; then ln -s $(pwd)/frontend/lame ../lame || true; else cd .. ; rm -rf lame*; exit 1; fi"""): app.todo.alert = "Compile failed"
           app.todo.set_main_menu = 1
-        elif (app.menu_response=="add" or app.menu_response=="replace") and not (app.Text1.get() and app.Text2.get()): app.todo.alert="You need to type text in both boxes before adding the word/meaning pair to "+vocabFile
-        elif app.menu_response=="add" and hasattr(app,"vocabList") and (app.Text1.get(),app.Text2.get()) in app.vocabList:
+        elif (menu_response=="add" or menu_response=="replace") and not (app.Text1.get() and app.Text2.get()): app.todo.alert="You need to type text in both boxes before adding the word/meaning pair to "+vocabFile
+        elif menu_response=="add" and hasattr(app,"vocabList") and (app.Text1.get(),app.Text2.get()) in app.vocabList:
             # Trying to add a word that's already there - do we interpret this as a progress adjustment?
             app.set_watch_cursor = 1
+            t1,t2 = app.Text1.get(),app.Text2.get()
+            lang2,lang1=t1.lower(),t2.lower() # because it's .lower()'d in progress.txt
             d = ProgressDatabase(0)
-            lang2,lang1=app.Text1.get().lower(),app.Text2.get().lower() # because it's .lower()'d in progress.txt
             l1find = "!synth:"+lang1.encode('utf-8')+"_"+firstLanguage
             found = 0
-            msg=(u""+localise("%s=%s is already in %s.")) % (app.Text1.get(),app.Text2.get(),vocabFile)
+            msg=(u""+localise("%s=%s is already in %s.")) % (t1,t2,vocabFile)
             for listToCheck in [d.data,d.unavail]:
               if found: break
               for item in listToCheck:
@@ -1355,7 +1357,7 @@ def gui_wrapped_main_loop():
             if not found:
                 app.unset_watch_cursor = 1
                 app.todo.alert=msg+" "+localise("Repeat count is 0, so we cannot reduce it for extra revision.")
-        elif app.menu_response=="add":
+        elif menu_response=="add":
             text1 = app.Text1.get().encode('utf-8') ; text2 = app.Text2.get().encode('utf-8')
             msg=sanityCheck(text1,secondLanguage)
             if msg: app.todo.alert=u""+msg
@@ -1363,11 +1365,14 @@ def gui_wrapped_main_loop():
                 o=appendVocabFileInRightLanguages()
                 o.write(text1+"="+text2+"\n") # was " = " but it slows down parseSynthVocab
                 o.close()
-                if hasattr(app,"vocabList"): app.vocabList.append((app.Text1.get(),app.Text2.get()))
+                if hasattr(app,"vocabList"): app.vocabList.append((ensure_unicode(text1),ensure_unicode(text2)))
                 app.todo.clear_text_boxes=1
-        elif app.menu_response=="delete" or app.menu_response=="replace":
+        elif menu_response=="delete" or menu_response=="replace":
             app.set_watch_cursor = 1
             lang2,lang1 = app.toDelete
+            t1,t2 = app.Text1.get(),app.Text2.get() # take it now in case the following takes a long time and user tries to change
+            if winCEsound: # hack because no watch cursor and can take time
+                app.Text1.set("Please wait") ; app.Text2.set("wait...")
             langs = [secondLanguage,firstLanguage]
             v=u8strip(open(vocabFile,"rb").read()).replace("\r\n","\n").replace("\r","\n")
             o=open(vocabFile,"w") ; found = 0
@@ -1381,28 +1386,28 @@ def gui_wrapped_main_loop():
                 thisLine=map(lambda x:x.strip(wsp),l.split("=",len(langs)-1))
                 if (langs==[secondLanguage,firstLanguage] and thisLine==[lang2.encode('utf-8'),lang1.encode('utf-8')]) or (langs==[firstLanguage,secondLanguage] and thisLine==[lang1.encode('utf-8'),lang2.encode('utf-8')]):
                     # delete this line.  and maybe replace it
-                    if app.menu_response=="replace":
-                        if langs==[secondLanguage,firstLanguage]: o.write(app.Text1.get().encode("utf-8")+"="+app.Text2.get().encode("utf-8")+"\n")
-                        else: o.write(app.Text2.get().encode("utf-8")+"="+app.Text1.get().encode("utf-8")+"\n")
+                    if menu_response=="replace":
+                        if langs==[secondLanguage,firstLanguage]: o.write(t1.encode("utf-8")+"="+t2.encode("utf-8")+"\n")
+                        else: o.write(t2.encode("utf-8")+"="+t1.encode("utf-8")+"\n")
                     found = 1
                 else: o.write(l+"\n")
             o.close()
-            if found and app.menu_response=="replace": # maybe hack progress.txt as well (taken out of the above loop for better failsafe)
+            if found and menu_response=="replace": # maybe hack progress.txt as well (taken out of the above loop for better failsafe)
                 d = ProgressDatabase(0)
                 lang2,lang1=lang2.lower(),lang1.lower() # because it's .lower()'d in progress.txt
                 l1find = "!synth:"+lang1.encode('utf-8')+"_"+firstLanguage
                 for item in d.data:
                     if (item[1]==l1find or (type(item[1])==type([]) and l1find in item[1])) and item[2]=="!synth:"+lang2.encode('utf-8')+"_"+secondLanguage and item[0]:
                         app.unset_watch_cursor = 1
-                        if not getYN(localise("You have repeated %s=%s %d times.  Do you want to pretend you already repeated %s=%s %d times?") % (lang2,lang1,item[0],app.Text2.get(),app.Text1.get(),item[0])):
+                        if not getYN(localise("You have repeated %s=%s %d times.  Do you want to pretend you already repeated %s=%s %d times?") % (lang2,lang1,item[0],t2,t1,item[0])):
                             app.set_watch_cursor = 1 ; break
                         d.data.remove(item)
-                        l1replace = "!synth:"+app.Text2.get().encode('utf-8')+"_"+firstLanguage
+                        l1replace = "!synth:"+t2.encode('utf-8')+"_"+firstLanguage
                         if type(item[1])==type([]):
                             l = item[1]
                             l[l.index(l1find)] = l1replace
                         else: l=l1replace
-                        item = (item[0],l,"!synth:"+app.Text1.get().encode('utf-8')+"_"+secondLanguage)
+                        item = (item[0],l,"!synth:"+t1.encode('utf-8')+"_"+secondLanguage)
                         d.data.append(item)
                         app.set_watch_cursor = 1
                         for i2 in d.unavail:
