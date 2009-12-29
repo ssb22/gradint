@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9946 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9947 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -26,7 +26,7 @@ def play(event):
         t = "%d:%02d:%02d" % time.localtime()[3:6]
     timeout_time = time.time() + 10 # don't loop *forever* if unable to start playing (especially if we're being used in a reminder system etc, it may be best to exit eventually)
     if lessonStartTime and not soundCollector:
-        if hasattr(event,"max_lateness"): timeout_time = min(timeout_time, lessonStartTime + copy_of_runner_events[0][2]+event.max_lateness)
+        if hasattr(event,"max_lateness"): timeout_time = min(timeout_time, lessonStartTime + (copy_of_runner_events[0][2]+event.max_lateness))
         if hasattr(event,"sequenceID") and event.sequenceID in sequenceIDs_to_cancel: timeout_time = 0
     play_error = "firstTime"
     while play_error and time.time()<=timeout_time: # use <= rather than < in case we have only 1sec precision

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9946 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9947 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -11,7 +11,7 @@
 
 # Start of synth.py - drive various speech synthesizers
 
-def quickGuess(letters,lettersPerSec): return max(1,letters*1.0/lettersPerSec,int(0.5+letters*1.0/lettersPerSec)) # the middle item of max() is NOT redundant, because we're not just dealing with integers
+def quickGuess(letters,lettersPerSec): return math.ceil(letters*1.0/lettersPerSec)
 
 class Synth(object):
     # Subclasses need to re-implement these:
@@ -409,7 +409,7 @@ class ESpeakSynth(Synth):
                 elif c==">": inSsml=0
                 elif not inSsml: l += 1
         else: l=len(text)
-        return quickGuess(l,12) # TODO need a better estimate
+        return quickGuess(l,12)+cond(winCEsound,1.3,0) # TODO need a better estimate.  Overhead on 195MHz Vario (baseline?) >1sec (1.3 seems just about ok)
     def can_transliterate(self,lang): return lang in ["zh","zhy"] and not riscos_sound # TODO it's OK on RISC OS if the eSpeak version is recent enough to do --phonout=filename; TODO aliases for zhy (but not usually a problem as can_transliterate is called only for preference)
     def winCE_run(self,parameters,expectedOutputFile,infileToDel=None):
         self.winCE_start(parameters)

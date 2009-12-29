@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9946 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9947 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -174,12 +174,11 @@ def scanSamples_inner(directory,retVal,doLimit):
     for file,withExt in items:
         if not withExt:
             lastFile = None # avoid problems with connecting poetry lines before/after a line that's not in the synth cache or something
-            if withExt==None and not directory+os.sep+file==promptsDirectory: # a directory
+            if withExt==None and (cache_maintenance_mode or not directory+os.sep+file==promptsDirectory): # a directory
                 scanSamples_inner(directory+os.sep+file,retVal,doLimit)
             # else no extension, or not an extension we know about - ignore (DO need this, because one way of temporarily disabling stuff is to rename it to another exension)
-        elif not file.endswith(firstLangSuffix) or firstLanguage==secondLanguage:
-            # not a prompt word and not a directory
-            if doPoetry and not file.endswith(doPoetry): continue # save confusion
+        elif file.find("_")==-1: continue # save confusion (!poetry, !variants etc)
+        elif not file.endswith(firstLangSuffix) or firstLanguage==secondLanguage: # not a prompt word
             # check for second & other languages
             # (there might not be a 1st-language prompt if learning poetry)
             if file.endswith(secLangSuffix): wordSuffix=secLangSuffix
@@ -212,13 +211,14 @@ def scanSamples_inner(directory,retVal,doLimit):
                 else:
                     promptToAdd = prefix+withExt # 1st line is its own prompt
                     singleLinePoems[directory[len(samplesDirectory)+len(os.sep):]+file]=1
+            elif cache_maintenance_mode: promptToAdd = prefix+withExt
             else: continue # can't do anything with this file
             retVal.append((0,promptToAdd,prefix+withExt))
             if explanationFile: filesWithExplanations[prefix+withExt]=explanationFile
             if doLimit: limitedFiles[prefix+withExt]=prefix
             lastFile = [promptFile,withExt]
 
-cache_maintenance_mode=0 # hack so cache-synth.py etc can cache promptless words for use in justSynthesize
+cache_maintenance_mode=0 # hack so cache-synth.py etc can cache promptless words for use in justSynthesize, and words in prompts themselves
 def parseSynthVocab(fname,forGUI=0):
     if not fname: return []
     langs = [secondLanguage,firstLanguage] ; someLangsUnknown = 0 ; maxsplit = 1

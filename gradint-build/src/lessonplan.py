@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9946 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9947 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -23,7 +23,7 @@ class ProgressDatabase(object):
             global is_first_lesson ; is_first_lesson = (not self.data and not self.unavail) # hack
             self.data += self.unavail # because it might have become available again
             self.unavail = mergeProgress(self.data,scanSamples()+parseSynthVocab(vocabFile))
-            doLabel("Transliterating")
+            doLabel("Checking transliterations")
             tList = {}
             for _,l1,l2 in self.data:
                 if not type(l1)==type([]): l1=[l1]
@@ -34,6 +34,7 @@ class ProgressDatabase(object):
                    elif f.find("!synth")==-1: continue # don't need to translit. filenames of wav's etc
                    else: text = textof(f)
                    tList[l][text]=1
+            doLabel("Transliterating")
             for lang,dic in tList.items():
                 s = get_synth_if_possible(lang,0)
                 if s and hasattr(s,"update_translit_cache"): s.update_translit_cache(lang,dic.keys())

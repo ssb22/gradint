@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9946 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9947 (c) 2002-2009 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -58,6 +58,7 @@ gradint.exe: $(Common_Files) gradint.py
 	cd windows0 ; tar -jxf ../windowsGUI/gradint.bgz ; cd ..
 	cp -r $(Common_Files) windows0/gradint/
 	mv windows0/gradint/samples/utils "windows0/gradint/samples/advanced utilities"
+	for N in hanzi-prompts/*.txt; do python -c "open('windows0/gradint/samples/prompts/$$(echo $$N|sed -e s,.*/,,)','w').write('\\xef\\xbb\\xbf'+open('$$N').read())"; done # overwriting the pinyin ones (as will bundle espeak so can translit.)
 	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
 	$(Unix_To_Dos) windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf
 	# add a utf-8 BOM to start of vocab.txt, to ensure Notepad saves it in utf-8
@@ -164,6 +165,7 @@ gradint.tbz: $(Mac_Files)
 	mkdir gradint
 	cp -r $(Mac_Files) gradint
 	mv gradint/samples/utils "gradint/samples/advanced utilities"
+	cp -p hanzi-prompts gradint/samples/prompts/ # overwriting the pinyin ones (as will bundle espeak so can translit.)
 	cd gradint ; mv $(Most_Mac_Files) start-gradint.app/ ; mv start-gradint.app Gradint.app ; cd Gradint.app/Contents/MacOS ; sed -e s/start-gradint/Gradint/g -e s,Gradint.app/Contents,Contents,g < start-gradint > Gradint ; cp Gradint "Gradint 2"; chmod +x Gradint "Gradint 2" ; rm start-gradint ; cd ../../../.. # hide it all inside the app (optional) ("Gradint 2" is for upgrades - see code for details)
 	# tar -c gradint/ | bzip2 -9 > gradint.tbz
 	# use this alternative version if hiding all inside the app:
