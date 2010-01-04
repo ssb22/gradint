@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9947 (c) 2002-2009 Silas S. Brown. GPL v3+.
+# gradint v0.9948 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -158,15 +158,17 @@ def scanSamples_inner(directory,retVal,doLimit):
     if not doLimit: doLimit = limit_filename in lsDic
     doPoetry = poetry_filename in lsDic
     if doPoetry:
-        # check which language the poetry is to be in
-        doPoetry = ""
-        for file,withExt in lsDic.items():
+        # check which language the poetry is to be in (could be L1-to-L2, L2-to-L3, L2-only, or L3-only)
+        def poetry_language():
+         ret = ""
+         for file,withExt in lsDic.items():
           if withExt:
-            if file.endswith(secLangSuffix) and not doPoetry: doPoetry=secLangSuffix
+            if file.endswith(secLangSuffix): ret=secLangSuffix # but stay in the loop
             elif (not file.endswith(firstLangSuffix)):
                 for l in otherLanguages:
-                    if not l in [firstLanguage,secondLanguage] and file.endswith("_"+l):
-                        doPoetry="_"+l; break
+                    if not l in [firstLanguage,secondLanguage] and file.endswith("_"+l): return "_"+l
+         return ret
+        doPoetry = poetry_language()
     prefix = directory[len(samplesDirectory)+cond(samplesDirectory,len(os.sep),0):] # the directory relative to samplesDirectory
     if prefix: prefix += os.sep
     lastFile = None # for doPoetry
@@ -178,9 +180,7 @@ def scanSamples_inner(directory,retVal,doLimit):
                 scanSamples_inner(directory+os.sep+file,retVal,doLimit)
             # else no extension, or not an extension we know about - ignore (DO need this, because one way of temporarily disabling stuff is to rename it to another exension)
         elif file.find("_")==-1: continue # save confusion (!poetry, !variants etc)
-        elif not file.endswith(firstLangSuffix) or firstLanguage==secondLanguage: # not a prompt word
-            # check for second & other languages
-            # (there might not be a 1st-language prompt if learning poetry)
+        elif (doPoetry and file.endswith(doPoetry)) or (not doPoetry and (not file.endswith(firstLangSuffix) or firstLanguage==secondLanguage)): # not a prompt word
             if file.endswith(secLangSuffix): wordSuffix=secLangSuffix
             else:
                 wordSuffix=None

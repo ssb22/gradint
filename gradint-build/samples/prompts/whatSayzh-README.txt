@@ -1,1 +1,0 @@
-whatSay_zh.txt is set to zen5me5shuo1 - should actually be "zen3me5 shuo1" but Yali voice doesn't sound too good with "zen3me5"; "zen5me5" is closer.  Several Chinese said "shen2me5 shuo1" is wrong (used in previous Gradint versions).
