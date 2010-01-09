@@ -372,9 +372,6 @@ class SoundCollector(object):
     def tell(self):
         # How many seconds have we had?  (2 because 16-bit)
         return 1.0*self.theLen/self.rate/2
-    def writeBytes(self,bytes):
-        try: self.o.write(bytes)
-        except IOError: outfile_write_error()
     def addSilence(self,seconds):
         if seconds > beepThreshold: return self.addBeeps(seconds)
         self.silences.append(seconds)
@@ -382,12 +379,19 @@ class SoundCollector(object):
         sampleNo = int(0.5+seconds*self.rate)
         if not sampleNo: sampleNo=1 # so don't lock on rounding errors
         byteNo = sampleNo*2 # since 16-bit
-        self.writeBytes("\0"*byteNo)
+        outfile_writeBytes(self.o,"\0"*byteNo)
         self.theLen += byteNo
     def addFile(self,file,length):
-        data = soundfile_to_data(file,self.soxParams())
-        self.writeBytes(data)
-        self.theLen += len(data)
+        fileType=soundFileType(file)
+        if fileType=="mp3": file,fileType = theMp3FileCache.decode_mp3_to_tmpfile(file),"wav" # in case the system needs madplay rather than sox
+        if riscos_sound:
+            os.system("sox -t %s \"%s\" %s tmp0" % (fileType,file,self.soxParams()))
+            handle=open("tmp0","rb")
+        elif winsound or mingw32: handle = os.popen(("sox -t %s - %s - < \"%s\"" % (fileType,self.soxParams(),file)),"rb")
+        else: handle = os.popen(("cat \"%s\" | sox -t %s - %s -" % (file,fileType,self.soxParams())),"rb")
+        self.theLen += outfile_writeFile(self.o,handle)
+        if riscos_sound:
+            handle.close() ; os.unlink("tmp0")
     def addBeeps(self,gap):
         global beepType ; beepType = 0
         while gap > betweenBeeps+0.05:
@@ -397,7 +401,7 @@ class SoundCollector(object):
                 os.system(beepCmd() % (self.soxParams(),"tmp0"))
                 data=open("tmp0","rb").read() ; os.unlink("tmp0")
             else: data=os.popen((beepCmd() % (self.soxParams(),"-")),"rb").read()
-            self.writeBytes(data)
+            outfile_writeBytes(self.o,data)
             self.theLen += len(data)
             self.addSilence(betweenBeeps/2.0)
             gap -= (self.tell()-t1)
@@ -413,9 +417,20 @@ class SoundCollector(object):
                 break
             else: ttl += self.silences[i]
         if not app: show_info("Lengths of silences: %s (total %s)\n" % (self.silences,ttl))
-        if not outputFile=="-":
-            try: self.o.close()
-            except IOError: outfile_write_error()
+        if not outputFile=="-": outfile_close(self.o)
+def outfile_writeBytes(o,bytes):
+    try: o.write(bytes)
+    except IOError: outfile_write_error()
+def outfile_close(o):
+    try: o.close()
+    except IOError: outfile_write_error()
+def outfile_writeFile(o,handle):
+    data,theLen = 1,0
+    while data:
+        data = handle.read(102400)
+        outfile_writeBytes(o,data)
+        theLen += len(data)
+    return theLen
 def outfile_write_error(): raise IOError("Error writing to outputFile: either you are missing an encoder for "+out_type+", or the disk is full or something.")
 
 def intor0(v):
@@ -450,15 +465,6 @@ def beepCmd():
   if beepType==len(beepCmds): beepType=0
   return r
 
-def soundfile_to_data(file,soxParams):
-    fileType=soundFileType(file)
-    if fileType=="mp3": file,fileType = theMp3FileCache.decode_mp3_to_tmpfile(file),"wav" # in case the system needs madplay rather than sox
-    if riscos_sound:
-        os.system("sox -t %s \"%s\" %s tmp0" % (fileType,file,dest_samplerate,soxParams))
-        data=open("tmp0","rb").read() ; os.unlink("tmp0") ; return data
-    elif winsound or mingw32: return os.popen(("sox -t %s - %s - < \"%s\"" % (fileType,soxParams,file)),"rb").read()
-    else: return os.popen(("cat \"%s\" | sox -t %s - %s -" % (file,fileType,soxParams)),"rb").read()
-
 # -----------------------------------------------------
 
 # A sound collector for our .sh shell-script format:
@@ -473,7 +479,7 @@ class ShSoundCollector(object):
 if echo "$0"|grep / >/dev/null; then export S="$0"; else export S=$(which "$0"); fi
 export P="-t raw %s -s -r 44100 -c 1"
 tail -1 "$S" | bash\nexit\n""" % (sox_16bit,) # S=script P=params for sox (ignore endian issues because the wav header it generates below will specify the same as its natural endian-ness)
-        self.o.write(start)
+        outfile_writeBytes(self.o,start)
         self.bytesWritten = len(start) # need to keep a count because it might be stdout
         self.commands.append("sox $P - -t wav - </dev/null 2>/dev/null") # get the wav header with unspecified length
     def tell(self): return self.seconds
@@ -500,11 +506,10 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,) # S=script P=params for sox (ignor
         self.seconds += length
         if not file in self.file2command:
             if fileType=="mp3": fileData,fileType = decode_mp3(file),"wav" # because remote sox may not be able to do it
-            elif compress_SH and unix: fileData=os.popen("cat \""+file+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null","rb").read() # 8-bit if possible (but don't change sample rate, as we might not have floating point)
-            else: fileData = open(file,"rb").read()
-            offset, length = self.bytesWritten, len(fileData)
-            self.o.write(fileData)
-            self.bytesWritten += len(fileData)
+            elif compress_SH and unix: handle=os.popen("cat \""+file+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null","rb") # 8-bit if possible (but don't change sample rate, as we might not have floating point)
+            else: handle = open(file,"rb")
+            offset, length = self.bytesWritten, outfile_writeFile(self.o,handle)
+            self.bytesWritten += length
             # dd is more efficient when copying large chunks - try to align to 1k
             first_few_bytes = min(length,(1024-(offset%1024))%1024)
             cmd = dd_command(offset,first_few_bytes)
@@ -522,12 +527,12 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,) # S=script P=params for sox (ignor
             self.commands.append("C %d" % self.lastProgress)
     def finished(self):
         if outputFile_appendSilence: self.addSilence(outputFile_appendSilence)
-        self.o.write("\n") # so "tail" has a start of a line
+        outfile_writeBytes(self.o,"\n") # so "tail" has a start of a line
         self.commands.append("C 100;echo 1>&2;exit")
-        for c in self.commands: self.o.write(c+"\n")
-        self.o.write("tail -%d \"$S\" | bash\n" % (len(self.commands)+1))
+        for c in self.commands: outfile_writeBytes(self.o,c+"\n")
+        outfile_writeBytes(self.o,"tail -%d \"$S\" | bash\n" % (len(self.commands)+1))
         if not write_to_stdout:
-            self.o.close()
+            outfile_close(self.o)
             if unix: os.system("chmod +x \"%s\"" % (outputFile,))
 def dd_command(offset,length):
     if not length: return []
