@@ -24,7 +24,7 @@ def play(event):
             if not app: doLabel("Emergency brief interrupt: %d" % (emergency_lessonHold_to-time.time()))
             time.sleep(1)
         t = "%d:%02d:%02d" % time.localtime()[3:6]
-    timeout_time = time.time() + 10 # don't loop *forever* if unable to start playing (especially if we're being used in a reminder system etc, it may be best to exit eventually)
+    timeout_time = time.time() + max(10,event.length/3) # don't loop *forever* if unable to start playing (especially if we're being used in a reminder system etc, it may be best to exit eventually)
     if lessonStartTime and not soundCollector:
         if hasattr(event,"max_lateness"): timeout_time = min(timeout_time, lessonStartTime + (copy_of_runner_events[0][2]+event.max_lateness))
         if hasattr(event,"sequenceID") and event.sequenceID in sequenceIDs_to_cancel: timeout_time = 0

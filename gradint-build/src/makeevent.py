@@ -230,8 +230,6 @@ if partialsDirectory:
             try: files = os.listdir(partialsDirectory+os.sep+l+os.sep+v)
             except: files = []
             if files: dirsToStat.append((partialsDirectory+os.sep+l+os.sep+v,os.stat(partialsDirectory+os.sep+l+os.sep+v)))
-            def byReverseLength(a,b): return len(b)-len(a)
-            files.sort(byReverseLength) # important if there are some files covering multiple syllables
             def addFile(f):
                 global flags
                 if riscos_sound and "." in f: f=f.replace(".",extsep) # in case made filelist on another system
@@ -262,6 +260,8 @@ if partialsDirectory:
                 elif not "-" in f or f.find('-m')>-1: mid.append(f)
                 elif f.find('-e')>-1 or f.find('-f')>-1: end.append(f) # 'end' or 'finish'
             for f in files: addFile(f)
+            def byReverseLength(a,b): return len(b)-len(a)
+            start.sort(byReverseLength) ; mid.sort(byReverseLength) ; end.sort(byReverseLength) # important if there are some files covering multiple syllables (and do it to start,mid,end not to files initially, so as to catch files within audiodata.dat also)
             def toDict(l): # make the list of filenames into a dict of short-key -> [(long-key, filename) list].  short-key is the shortest possible key.
                 if not l: return {}
                 l2 = [] ; kLen = len(l[0])
