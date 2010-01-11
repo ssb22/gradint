@@ -767,7 +767,7 @@ class GeneralFileSynth(Synth):
     def makefile(self,lang,text):
         for l,c,f in extra_speech_tofile:
             if l==lang:
-                os.system(c % shell_escape(text))
+                if os.system(c % shell_escape(text)): raise Exception("Your extra_speech_tofile command failed")
                 fname = os.tempnam()+extsep+soundFileType(f)
                 if unix: os.system('mv "'+f+'" "'+fname+'"') # because os.rename() can throw an exception if renaming cross-device on some systems
                 else: os.rename(f,fname)
