@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9948 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9949 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -243,16 +243,18 @@ if partialsDirectory:
                     ff=open(partialsDirectory+os.sep+f,"rb")
                     amend = []
                     while True:
+                        fftell = ff.tell()
                         char = ff.read(1)
                         if not "0"<=char<="9": break
-                        size,fname = (char+ff.readline()).strip(wsp).split(None,1)
+                        size,fname = (char+ff.readline(256)).strip(wsp).split(None,1)
+                        try: size=int(size)
+                        except: break # binary just happened to start with "0"-"9"
                         addFile(fname)
-                        size=int(size)
                         amend.append(l+os.sep+v+os.sep+fname)
                         audioDataPartials[l+os.sep+v+os.sep+fname] = (f,offset,size)
                         offset += size
-                    for k in amend: audioDataPartials[k]=(audioDataPartials[k][0],audioDataPartials[k][1]+ff.tell()-1,audioDataPartials[k][2])
-                    del ff, amend, offset
+                    for k in amend: audioDataPartials[k]=(audioDataPartials[k][0],audioDataPartials[k][1]+fftell,audioDataPartials[k][2])
+                    del ff,amend,offset
                 if partials_raw_mode:
                     if not f.endswith(extsep+"raw"): return
                 elif not f.endswith(dotwav) or f.endswith(dotmp3): return
