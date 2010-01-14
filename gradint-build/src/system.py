@@ -69,13 +69,16 @@ wsp = '\t\n\x0b\x0c\r ' # whitespace characters - ALWAYS use .strip(wsp) not .st
 
 warnings_printed = [] ; app = None
 def show_warning(w):
-    if not app and not appuifw: sys.stderr.write(w+"\n")
+    if not app and not appuifw:
+        if winCEsound and len(w)>100: w=w[:100]+"..." # otherwise can hang winCEsound's console (e.g. a long "assuming that" message from justSynthesize)
+        sys.stderr.write(w+"\n")
     warnings_printed.append(w+"\n")
 
 def show_info(i,always_stderr=False):
     # == sys.stderr.write(i) with no \n and no error if closed (+ redirect to app or appuifw if exists)
     if (app or appuifw) and not always_stderr: doLabel(i)
     else:
+        if winCEsound and len(i)>101: i=i[:100]+"..."+i[-1] # otherwise can hang winCEsound's console (e.g. a long "Not in cache" message)
         try: sys.stderr.write(i.encode('utf-8'))
         except IOError: pass
 
