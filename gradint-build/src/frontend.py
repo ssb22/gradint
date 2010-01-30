@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9949 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.995 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -185,14 +185,22 @@ def addTextBox(row,wide=0):
     entry = Tkinter.Entry(row,textvariable=text)
     if winsound or mingw32 or cygwin or macsound: entry.bind('<Button-3>',CXVMenu)
     if macsound: entry.bind('<Control-Button-1>',CXVMenu)
-    if winCEsound: # this is awkward
+    if winCEsound: # Try to detect long clicks. This is awkward. time.time is probably 1sec resolution so will get false +ves if go by that only.
         def timeStamp(entry): entry.buttonPressTime=time.time()
         entry.bind('<ButtonPress-1>',lambda e:timeStamp(entry))
+        global lastDblclkAdvisory,lastDblclk
+        lastDblclkAdvisory=lastDblclk=0
         def pasteInstructions(t):
             if t>=0.5: # they probably want tap-and-hold, which we don't do properly
+                global lastDblclkAdvisory
+                if t<2 and (lastDblclkAdvisory>time.time()-30 or lastDblclk>time.time()-90): return # reduce repeated false +ves
+                lastDblclkAdvisory=time.time()
                 app.todo.alert="Double-click in the box if you want to replace it with the clipboard contents"
+        def doPaste(text,entry):
+            text.set(entry.selection_get(selection="CLIPBOARD"))
+            global lastDblclk ; lastDblclk=time.time()
         entry.bind('<ButtonRelease-1>',lambda e:pasteInstructions(time.time()-getattr(entry,"buttonPressTime",time.time())))
-        entry.bind('<Double-Button-1>',lambda e:text.set(entry.selection_get(selection="CLIPBOARD")))
+        entry.bind('<Double-Button-1>',lambda e:doPaste(text,entry))
     else:
         # Tkinter bug workaround (some versions): event_generate from within a key event handler can be unreliable, so the Ctrl-A handler delays selectAll by 10ms:
         entry.bind(cond(macsound,'<Command-a>','<Control-a>'),(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
@@ -358,7 +366,7 @@ def updateUserRow(fromMainMenu=0):
         r=Tkinter.Frame(row) ; r.grid(row=i+1,column=0,columnspan=4)
         text,entry = addTextBox(r)
         if not fromMainMenu: entry.focus() # because user has just pressed the "add other students" button, or has just added a name and may want to add another
-        l=lambda *args:(wrapped_set_userName(i,text.get()),updateUserRow())
+        l=lambda *args:(wrapped_set_userName(i,asUnicode(text.get())),updateUserRow())
         addButton(r,localise("Add new name"),l)
         entry.bind('<Return>',l)
         if not i: Tkinter.Label(row,text="The first name should be that of the\nEXISTING user (i.e. YOUR name).").grid(row=i+2,column=0,columnspan=4)
@@ -368,7 +376,7 @@ def updateUserRow(fromMainMenu=0):
 def renameUser(i,radioButton,parent,cancel=0):
     if hasattr(radioButton,"in_renaming"):
         del radioButton.in_renaming
-        n=radioButton.renameText.get()
+        n=asUnicode(radioButton.renameText.get())
         if cancel: pass
         elif not n.strip(wsp) and len(lastUserNames)>1: tkMessageBox.showinfo(app.master.title(),"You can't have blank user names unless there is only one user.  Keeping the original name instead.")
         else:
@@ -407,6 +415,12 @@ def deleteUser(i):
             d=d2
     select_userNumber(0) ; app.userNo.set(0) # save confusion
     updateUserRow()
+
+def asUnicode(x):
+    # Some localised versions of Windows e.g. German will return Latin1 instead of Unicode from Tkinter entry.get()
+    if type(x)==type(u""): return x
+    try: return x.decode("utf-8")
+    except: return x.decode("iso-8859-1") # TODO can we get what it actually IS? (on German WinXP, sys.getdefaultencoding==ascii and locale==C but Tkinter still returns Latin1)
 
 def setupScrollbar(parent,rowNo):
     s = Tkinter.Scrollbar(parent)
@@ -705,12 +719,12 @@ def startTk():
                 del self.needVocablist
                 self.ListBox.delete(0) # the Loading...
                 self.lastText1=1 # so continues below
-            text1,text2 = self.Text1.get(),self.Text2.get()
+            text1,text2 = asUnicode(self.Text1.get()),asUnicode(self.Text2.get())
             if text1==self.lastText1 and text2==self.lastText2: return
             for control,current,restoreTo in self.toRestore:
-                if not control.get()==current:
+                if not asUnicode(control.get())==current:
                     self.toRestore = [] ; break
-            if text1 or text2: self.Cancel["text"] = localise("Clear test boxes")
+            if text1 or text2: self.Cancel["text"] = localise("Clear input boxes")
             else: self.Cancel["text"] = localise(cond(olpc or GUI_for_editing_only,"Quit","Back to main menu"))
             h = hanzi_only(text1)
             if Tk_might_display_wrong_hanzi and not self.Label1["text"].endswith(wrong_hanzi_message) and (h or hanzi_only(text2)): self.Label1["text"]+=("\n"+wrong_hanzi_message)
@@ -758,9 +772,9 @@ def startTk():
             self.lastText1 = 1 # ensure different so cache-management options get updated
         def restoreText(self,*args):
             for control,current,restoreTo in self.toRestore:
-                if control.get()==current: control.set(restoreTo)
+                if asUnicode(control.get())==current: control.set(restoreTo)
             self.toRestore = []
-        def stripText(self,*args): self.Text1.set(fix_commas(hanzi_and_punc(self.Text1.get())))
+        def stripText(self,*args): self.Text1.set(fix_commas(hanzi_and_punc(asUnicode(self.Text1.get()))))
         def thin_down_for_lesson(self):
             if hasattr(self,"OutputRow"): self.OutputRow.pack_forget()
             if hasattr(self,"CopyFromButton"):
@@ -917,8 +931,8 @@ def startTk():
             else: self.updateLanguageLabels()
         def changeLanguages(self,*args):
             global firstLanguage,secondLanguage
-            firstLanguage1=self.L1Text.get().encode('utf-8')
-            secondLanguage1=self.L2Text.get().encode('utf-8')
+            firstLanguage1=asUnicode(self.L1Text.get()).encode('utf-8')
+            secondLanguage1=asUnicode(self.L2Text.get()).encode('utf-8')
             if (firstLanguage,secondLanguage) == (firstLanguage1,secondLanguage1): # they didn't change anything
                 langs = ESpeakSynth().describe_supported_languages()
                 msg = (localise("To change languages, edit the boxes that say '%s' and '%s', then press the '%s' button.") % (firstLanguage,secondLanguage,localise("Change languages")))+"\n\n"+localise("Recorded words may be in ANY languages, and you may choose your own abbreviations for them.  However if you want to use the computer voice for anything then please use standard abbreviations.")
@@ -968,7 +982,7 @@ def startTk():
             sel = self.ListBox.curselection()
             l2,l1 = self.ListBox.get(int(sel[0])).split('=',1)
             self.toDelete = l2,l1
-            if (self.Text1.get(),self.Text2.get()) == (l2,l1):
+            if (asUnicode(self.Text1.get()),asUnicode(self.Text2.get())) == (l2,l1):
                 if tkMessageBox.askyesno(self.master.title(),localise("You have not changed the test boxes.  Do you want to delete %s?") % (l2+"="+l1,)):
                     self.menu_response="delete"
             else: self.menu_response="replace"
@@ -980,14 +994,14 @@ def startTk():
             # currently adds Unicode values to the text, and shows as a dialogue
             # (for use when trying to diagnose people's copy/paste problems)
             setTo = []
-            for c in self.Text1.get(): setTo.append(c+"["+hex(ord(c))[2:]+"]")
+            for c in asUnicode(self.Text1.get()): setTo.append(c+"["+hex(ord(c))[2:]+"]")
             setTo=u"".join(setTo)
             self.Text1.set(setTo) ; self.todo.alert = setTo
         def addText(self,*args):
             self.zap_newlines()
             self.menu_response="add"
         def zap_newlines(self): # in case someone pastes in text that contains newlines, better not keep them when adding to vocab
-            text1,text2 = self.Text1.get(),self.Text2.get()
+            text1,text2 = asUnicode(self.Text1.get()),asUnicode(self.Text2.get())
             t1,t2 = text1.replace("\n"," ").replace("\r","").strip(wsp), text2.replace("\n"," ").replace("\r","").strip(wsp)
             if not t1==text1: self.Text1.set(t1)
             if not t2==text2: self.Text2.set(t2)
@@ -998,7 +1012,7 @@ def startTk():
         def setLabel(self,t): self.todo.set_label = t
         def cancel(self,*args):
             if hasattr(self,"ListBox"): # it MIGHT be a 'clear' button
-                text1,text2 = self.Text1.get(),self.Text2.get()
+                text1,text2 = asUnicode(self.Text1.get()),asUnicode(self.Text2.get())
                 if text1 or text2:
                     self.Text1.set("") ; self.Text2.set("")
                     if self.ListBox.curselection(): self.ListBox.selection_clear(int(self.ListBox.curselection()[0]))
@@ -1036,8 +1050,9 @@ def startTk():
         thread.start_new_thread(processing_thread,())
         appThread(Application)
 
-def hanzi_only(unitext): return u"".join(filter(lambda x:0x3000<=ord(x)<0xa700 or ord(x)>=0x10000, list(unitext)))
-def hanzi_and_punc(unitext): return u"".join(filter(lambda x:0x3000<=ord(x)<0xa700 or ord(x)>=0x10000 or x in '.,?;":\'()[]!0123456789-', list(remove_tone_numbers(fix_compatibility(unitext)))))
+def hanzi_only(unitext): return u"".join(filter(lambda x:0x3000<ord(x)<0xa700 or ord(x)>=0x10000, list(unitext)))
+def hanzi_and_punc(unitext): return u"".join(filter(lambda x:0x3000<ord(x)<0xa700 or ord(x)>=0x10000 or x in '.,?;":\'()[]!0123456789-', list(remove_tone_numbers(fix_compatibility(unitext)))))
+# (exclusion of 3000 in above is deliberate, otherwise get problems with hanzi spaces being taken out by fix-compat+strip hence a non-functional 'delete non-hanzi' button appears)
 def guiVocabList(parsedVocab):
     # This needs to be fast.  Have tried writing interatively rather than filter and map, and assume stuff is NOT already unicode (so just decode rather than call ensure_unicode) + now assuming no !synth: (but can still run with .txt etc)
     sl2,fl2 = "_"+secondLanguage,"_"+firstLanguage
@@ -1279,7 +1294,7 @@ def gui_wrapped_main_loop():
             del app.toOpen
             waitOnMessage("Gradint has opened both of the recorded words folders, so you can copy things across.")
         elif menu_response=="test":
-            text1 = app.Text1.get().encode('utf-8') ; text2 = app.Text2.get().encode('utf-8')
+            text1 = asUnicode(app.Text1.get()).encode('utf-8') ; text2 = asUnicode(app.Text2.get()).encode('utf-8')
             if not text1 and not text2: app.todo.alert=u"Before pressing the "+localise("Speak")+u" button, you need to type the text you want to hear into the box."
             else:
               msg=sanityCheck(text1,secondLanguage)
@@ -1289,7 +1304,7 @@ def gui_wrapped_main_loop():
                 global justSynthesize ; justSynthesize = ""
                 def doControl(text,lang,control):
                     global justSynthesize
-                    restoreTo = control.get()
+                    restoreTo = asUnicode(control.get())
                     if text:
                         if can_be_synthesized("!synth:"+text+"_"+lang): justSynthesize += ("#"+lang+" "+text)
                         else: app.todo.alert="Cannot find a synthesizer that can say '"+text+"' in language '"+lang+"' on this system"
@@ -1326,10 +1341,10 @@ def gui_wrapped_main_loop():
               if system("""tar -zxvf lame*.tar.gz && cd lame-* && if ./configure && make; then ln -s $(pwd)/frontend/lame ../lame || true; else cd .. ; rm -rf lame*; exit 1; fi"""): app.todo.alert = "Compile failed"
           app.todo.set_main_menu = 1
         elif (menu_response=="add" or menu_response=="replace") and not (app.Text1.get() and app.Text2.get()): app.todo.alert="You need to type text in both boxes before adding the word/meaning pair to "+vocabFile
-        elif menu_response=="add" and hasattr(app,"vocabList") and (app.Text1.get(),app.Text2.get()) in app.vocabList:
+        elif menu_response=="add" and hasattr(app,"vocabList") and (asUnicode(app.Text1.get()),asUnicode(app.Text2.get())) in app.vocabList:
             # Trying to add a word that's already there - do we interpret this as a progress adjustment?
             app.set_watch_cursor = 1
-            t1,t2 = app.Text1.get(),app.Text2.get()
+            t1,t2 = asUnicode(app.Text1.get()),asUnicode(app.Text2.get())
             lang2,lang1=t1.lower(),t2.lower() # because it's .lower()'d in progress.txt
             d = ProgressDatabase(0)
             l1find = "!synth:"+lang1.encode('utf-8')+"_"+firstLanguage
@@ -1358,7 +1373,7 @@ def gui_wrapped_main_loop():
                 app.unset_watch_cursor = 1
                 app.todo.alert=msg+" "+localise("Repeat count is 0, so we cannot reduce it for extra revision.")
         elif menu_response=="add":
-            text1 = app.Text1.get().encode('utf-8') ; text2 = app.Text2.get().encode('utf-8')
+            text1 = asUnicode(app.Text1.get()).encode('utf-8') ; text2 = asUnicode(app.Text2.get()).encode('utf-8')
             msg=sanityCheck(text1,secondLanguage)
             if msg: app.todo.alert=u""+msg
             else:
@@ -1370,7 +1385,7 @@ def gui_wrapped_main_loop():
         elif menu_response=="delete" or menu_response=="replace":
             app.set_watch_cursor = 1
             lang2,lang1 = app.toDelete
-            t1,t2 = app.Text1.get(),app.Text2.get() # take it now in case the following takes a long time and user tries to change
+            t1,t2 = asUnicode(app.Text1.get()),asUnicode(app.Text2.get()) # take it now in case the following takes a long time and user tries to change
             if winCEsound: # hack because no watch cursor and can take time
                 app.Text1.set("Please wait") ; app.Text2.set("wait...")
             langs = [secondLanguage,firstLanguage]

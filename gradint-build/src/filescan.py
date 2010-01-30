@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9949 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.995 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -80,7 +80,6 @@ def exec_in_a_func(x): # helper function for below (can't be nested in python 2.
    d={"firstLanguage":firstLanguage,"secondLanguage":secondLanguage}
    exec x in d
    return d["secondLanguage"],d["firstLanguage"]
-
 def check_has_variants(directory,ls):
     if directory==promptsDirectory: return True
     else:

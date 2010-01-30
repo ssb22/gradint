@@ -618,7 +618,7 @@ GUI_translations={
 "new words in":{"zh":u"新词, 用","zh2":u"新詞, 用"},
 "mins":{"zh":u"分钟","zh2":u"分鐘"},
 "Start lesson":{"zh":u"开始课","zh2":u"開始課"},
-"Clear test boxes":{"zh":u"扫清输入地方","zh2":u"掃清輸入地方"},
+"Clear input boxes":{"zh":u"扫清输入地方","zh2":u"掃清輸入地方"},
 "Quit":{"zh":u"放弃","zh2":u"放棄"},
 "Back to main menu":{"zh":u"回去主要项目表","zh2":u"回去主要項目表"},
 "Delete non-hanzi":{"zh":u"除字非汉字","zh2":u"除字非漢字"},

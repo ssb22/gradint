@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9949 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.995 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -99,16 +99,24 @@ class ProgressDatabase(object):
                     open(progressFileBackup,'wb').write(open(progressFile,'rb').read())
                 except IOError: pass # maybe progressFile not made yet
             progressFileBackup = None
-        if compress_progress_file: f=os.popen('gzip -9 > "'+progressFile+'"','w')
-        else: f = open(progressFile,'w')
-        f.write(progressFileHeader)
-        f.write("firstLanguage=\"%s\"\nsecondLanguage=\"%s\"\n# otherLanguages=%s\n" % (firstLanguage,secondLanguage,otherLanguages)) # Note: they're declared "global" above (and otherLanguages commented out here for now, since may add to it in advanced.txt) (Note also save_binary below.)
-        if self.didScan: f.write("# collection=%d done=%d left=%d lessonsLeft=%d\n" % (len(self.data),len(data),len(self.data)-len(data),(len(self.data)-len(data)+maxNewWords-1)/maxNewWords))
-        prettyPrintLongList(f,"self.data",data)
-        f.write("self.promptsData=") ; pprint.PrettyPrinter(indent=2,width=60,stream=f).pprint(self.promptsData)
-        prettyPrintLongList(f,"self.unavail",self.unavail)
-        f.close()
-        self.save_binary(data)
+        while True:
+          try:
+            if compress_progress_file: f=os.popen('gzip -9 > "'+progressFile+'"','w')
+            else: f = open(progressFile,'w')
+            f.write(progressFileHeader)
+            f.write("firstLanguage=\"%s\"\nsecondLanguage=\"%s\"\n# otherLanguages=%s\n" % (firstLanguage,secondLanguage,otherLanguages)) # Note: they're declared "global" above (and otherLanguages commented out here for now, since may add to it in advanced.txt) (Note also save_binary below.)
+            if self.didScan: f.write("# collection=%d done=%d left=%d lessonsLeft=%d\n" % (len(self.data),len(data),len(self.data)-len(data),(len(self.data)-len(data)+maxNewWords-1)/maxNewWords))
+            prettyPrintLongList(f,"self.data",data)
+            f.write("self.promptsData=") ; pprint.PrettyPrinter(indent=2,width=60,stream=f).pprint(self.promptsData)
+            prettyPrintLongList(f,"self.unavail",self.unavail)
+            f.close()
+            self.save_binary(data)
+          except IOError: # This can happen for example on some PocketPC devices if you reconnect the power during progress save (which is likely if you return the device to the charger when lesson finished)
+            if app or appuifw:
+              if getYN("I/O fault when saving progress. Retry?"): continue
+              # TODO else try to restore the backup?
+            else: raise
+          break
         if not partial: self.saved_completely = 1
         if not app and not appuifw: show_info("done\n")
     def save_binary(self,data): # save a pickled version if possible (no error if not)

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9949 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.995 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -284,7 +284,7 @@ class RecorderControls:
             self.addLabel(row-1,col+1,localise("(synth'd)"))
             self.coords2buttons[(row-1,col+1)].is_synth_label = True
     def doEdit(self,editText,editEntry,row,col,filename):
-        text = editText.get().encode("utf-8").strip(wsp)
+        text = asUnicode(editText.get()).encode("utf-8").strip(wsp)
         if text: open(filename,"w").write(text+"\n")
         else:
             try: os.remove(filename)
@@ -342,7 +342,7 @@ class RecorderControls:
     def doRename(self,row,col):
         if hasattr(self,"renameToCancel"): del self.renameToCancel
         origName = self.coords2buttons[(row,col)].origName
-        newNames = filter(lambda x:x,self.coords2buttons[(row,col)].theText.get().split("\n")) # multiline paste, ignore blank lines
+        newNames = filter(lambda x:x,asUnicode(self.coords2buttons[(row,col)].theText.get()).split("\n")) # multiline paste, ignore blank lines
         for newName in newNames:
             if not origName: # extra lines - need to get their origNames
                 if row==self.addMoreRow: self.addMore()
