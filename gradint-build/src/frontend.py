@@ -416,11 +416,11 @@ def deleteUser(i):
     select_userNumber(0) ; app.userNo.set(0) # save confusion
     updateUserRow()
 
-def asUnicode(x):
-    # Some localised versions of Windows e.g. German will return Latin1 instead of Unicode from Tkinter entry.get()
-    if type(x)==type(u""): return x
-    try: return x.decode("utf-8")
-    except: return x.decode("iso-8859-1") # TODO can we get what it actually IS? (on German WinXP, sys.getdefaultencoding==ascii and locale==C but Tkinter still returns Latin1)
+def asUnicode(x): # for handling the return value of Tkinter entry.get()
+    try: return u""+x # original behaviour
+    except: # some localised versions of Windows e.g. German will return Latin1 instead of Unicode, so try interpreting it as utf-8 and Latin-1
+        try: return x.decode("utf-8")
+        except: return x.decode("iso-8859-1") # TODO can we get what it actually IS? (on German WinXP, sys.getdefaultencoding==ascii and locale==C but Tkinter still returns Latin1)
 
 def setupScrollbar(parent,rowNo):
     s = Tkinter.Scrollbar(parent)
