@@ -325,7 +325,7 @@ def rough_guess_mp3_length(fname):
     bitrate = br_tab[ord(head[i+2])>>4][column]
     if bitrate==0: bitrate=48 # reasonable guess for speech
     return filelen(fname)*8.0/(bitrate*1000)
-  except IndexError: raise Exception("Invalid MP3 header in file "+fname)
+  except IndexError: raise Exception("Invalid MP3 header in file "+repr(fname))
 
 def filelen(fname):
     try: fileLen=os.stat(fname).st_size
