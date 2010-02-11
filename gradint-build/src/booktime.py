@@ -257,11 +257,11 @@ class Lesson(object):
         # if an event of importance I has a max lateness of M, then all previous events with importance <I have to cap their max lateness to M+(intervening gaps) so as not to make it late.
         # (sorts events as a side-effect)
         self.events.sort() ; self.events.reverse()
-        latenessCap = {} ; lastStart = 0
+        latenessCap = {} ; nextStart = 0
         for t,event in self.events:
-            if lastStart:
-                for k in latenessCap.keys(): latenessCap[k] += (lastStart-(t+event.length)) # the gap
-            lastStart = t
+            if nextStart:
+                for k in latenessCap.keys(): latenessCap[k] += (nextStart-(t+event.length)) # the gap
+            nextStart = t
             if not hasattr(event,"importance"): continue # (wasn't added via addSequence, probably not a normal lesson)
             event.max_lateness=min(event.max_lateness,latenessCap.get(event.importance,maxLenOfLesson))
             for i in range(event.importance): latenessCap[i]=min(latenessCap.get(i,maxLenOfLesson),event.max_lateness)

@@ -36,8 +36,7 @@ def play(event):
         if not teacherMode or (event.makesSenseToLog() and getYN("NOW say "+maybe_unicode(str(event))+"\nComputer say it instead?")): play_error = event.play()
         else: play_error = 0
     if not play_error and logFile and event.makesSenseToLog(): logFileHandle.write(t+" "+str(event)+"\n")
-    if play_error and hasattr(event,"wordToCancel") and event.wordToCancel:
-        # Probably max_lateness exceeded, and the event is not unessential.  Need to do something about this.
+    if play_error and hasattr(event,"wordToCancel") and event.wordToCancel: # probably max_lateness exceeded, and we have something to cancel
         cancelledFiles.append(event.wordToCancel)
         if hasattr(event,"sequenceID"): sequenceIDs_to_cancel[event.sequenceID]=True
     del copy_of_runner_events[0]
