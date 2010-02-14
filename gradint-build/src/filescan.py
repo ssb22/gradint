@@ -86,6 +86,8 @@ def check_has_variants(directory,ls):
         for file in ls:
             if (file+extsep)[:file.rfind(extsep)]==variants_filename: return True
 
+# TODO can we make it so samples like ".wav.mp3" (lame's default o/p naming convention) work?  They already work if !variants is set and it's lang_zh_variant, because the .wav is then interpreted as part of the variant name.  Otherwise .wav is interpreted as part of the language name so file will be ignored.
+
 def getLsDic(directory):
     # Helper function for samples and prompts scanning
     # Calls os.listdir, returns dict of filename-without-extension to full filename
@@ -115,7 +117,7 @@ def getLsDic(directory):
         # in lsDic if it's in the list (any extension); =filename if it's an extension we know about; =None if it's a directory (in which case the key is the full filename), ottherwise =""
         if has_variants and file.find("_",file.find("_")+1)>-1: languageOverride=file[file.find("_")+1:file.find("_",file.find("_")+1)]
         else: languageOverride=None
-        if filelower.endswith(dottxt) and (file+extsep)[:file.find(extsep)] in lsDic: continue # don't let a .txt override a recording if both exist
+        if filelower.endswith(dottxt) and (file+extsep)[:file.rfind(extsep)] in lsDic: continue # don't let a .txt override a recording if both exist
         if (filelower.endswith(dottxt) and file.find("_")>-1 and can_be_synthesized(file,directory,languageOverride)) or filelower.endswith(dotwav) or filelower.endswith(dotmp3): val = file
         else:
             val = ""
@@ -124,7 +126,7 @@ def getLsDic(directory):
                 lsDic[file]=None # a directory: store full name even if it has extsep in it.  Note however that we don't check isDirectory() if it's .wav etc as that would take too long.  (however some dirnames can contain dots)
                 # (+ NB need to store the directories specifically due to cases like course/ and course.pdf which may otherwise result in 2 traversals of "course" if we check isDirectory on 'extension is either none or unknown')
                 continue
-        lsDic[(file+extsep)[:file.find(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
+        lsDic[(file+extsep)[:file.rfind(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
     if has_variants:
         ls=list2set(ls) ; newVs = []
         for k,v in lsDic.items():
@@ -136,7 +138,7 @@ def getLsDic(directory):
             penult_ = v.rfind("_",0,last_)
             if penult_==-1: continue
             del lsDic[k]
-            newK,newV = k[:k.rfind("_")], v[:v.rfind("_")]+v[v.find(extsep):]
+            newK,newV = k[:k.rfind("_")], v[:v.rfind("_")]+v[v.rfind(extsep):]
             if not newK in lsDic: lsDic[newK] = newV
             else: newV = lsDic[newK] # variants of different file types? better store them all under one (fileToEvent will sort out).  (Testing if the txt can be synth'd has already been done above)
             dir_newV = directory+os.sep+newV
@@ -206,10 +208,10 @@ def scanSamples_inner(directory,retVal,doLimit):
                 # poetry without first-language prompts
                 if lastFile:
                     promptToAdd = prefix+lastFile[-1]
-                    if directory[len(samplesDirectory)+len(os.sep):]+lastFile[-1] in singleLinePoems: del singleLinePoems[directory[len(samplesDirectory)+len(os.sep):]+lastFile[-1]]
+                    if promptToAdd in singleLinePoems: del singleLinePoems[promptToAdd]
                 else:
                     promptToAdd = prefix+withExt # 1st line is its own prompt
-                    singleLinePoems[directory[len(samplesDirectory)+len(os.sep):]+file]=1
+                    singleLinePoems[promptToAdd]=1
             elif cache_maintenance_mode: promptToAdd = prefix+withExt
             else: continue # can't do anything with this file
             retVal.append((0,promptToAdd,prefix+withExt))
