@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.995 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9951 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -375,7 +375,7 @@ class AvailablePrompts(object):
         # and finally,
         if not language==secondLanguage and not prefix==language and not prefix=="meaningis": r=self.getPromptList(language,promptsData,language)+r # yes, before - works better than after
         return r
-# availablePrompts = AvailablePrompts() # do NOT construct here - if a warning is printed (e.g. can't find a synth) then it might go to the wrong place if GUI has not yet started.  Constructor moved to main_loop().
+# availablePrompts = AvailablePrompts() # do NOT construct here - if a warning is printed (e.g. can't find a synth) then it might go to the wrong place if GUI has not yet started.  Constructor moved to lesson_loop().
 
 def introductions(zhFile,progressData):
     toIntroduce = []

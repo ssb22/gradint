@@ -10,8 +10,7 @@ move gradint "%HOMEDRIVE%%HOMEPATH%\gradint"
 if errorlevel 1 goto copy
 goto tryZh
 :copy
-mkdir "%HOMEDRIVE%%HOMEPATH%\gradint"
-xcopy gradint "%HOMEDRIVE%%HOMEPATH%\gradint" /S
+xcopy /I gradint "%HOMEDRIVE%%HOMEPATH%\gradint" /S
 :tryZh
 if not exist "%USERPROFILE%\¡¸¿ªÊ¼¡¹²Ëµ¥" goto nextBit
 rem Detected Chinese(Simplified) Windows with PRC legacy locale
@@ -37,21 +36,21 @@ rem copy all program files, even the ones that have never been changed, in case 
 tskill gradint-wrapper 2>nul
 taskkill /f /im gradint-wrapper.exe 2>nul >nul
 cd gradint
+rem support bundles
+for /D %%g in (*_disabled) do xcopy /I %%g "%HOMEDRIVE%%HOMEPATH%\gradint\%%g" /S
 rem support users who install yali BEFORE gradint
 rem (don't worry about trying move and catching problems with Vista etc - just use copy)
 if not exist "%HOMEDRIVE%%HOMEPATH%\gradint\settings.txt" copy settings.txt "%HOMEDRIVE%%HOMEPATH%\gradint"
 if not exist "%HOMEDRIVE%%HOMEPATH%\gradint\advanced.txt" copy advanced.txt "%HOMEDRIVE%%HOMEPATH%\gradint"
 if not exist "%HOMEDRIVE%%HOMEPATH%\gradint\vocab.txt" copy vocab.txt "%HOMEDRIVE%%HOMEPATH%\gradint"
 if exist "%HOMEDRIVE%%HOMEPATH%\gradint\samples" goto gotSamples
-mkdir "%HOMEDRIVE%%HOMEPATH%\gradint\samples"
-xcopy samples "%HOMEDRIVE%%HOMEPATH%\gradint\samples" /S
+xcopy /I samples "%HOMEDRIVE%%HOMEPATH%\gradint\samples" /S
 goto afterGotSamples
 :gotSamples
 rem Update the previously-buggy whatSay_zh.txt prompt
 if exist "%HOMEDRIVE%%HOMEPATH%\gradint\samples\prompts\whatSay_zh.txt" copy /Y samples\prompts\whatSay_zh.txt "%HOMEDRIVE%%HOMEPATH%\gradint\samples\prompts"
 :afterGotSamples
-mkdir "%HOMEDRIVE%%HOMEPATH%\gradint\tcl" >nul 2>nul
-xcopy /D /Y /S tcl "%HOMEDRIVE%%HOMEPATH%\gradint\tcl"
+xcopy /I /D /Y /S tcl "%HOMEDRIVE%%HOMEPATH%\gradint\tcl"
 copy /Y library.zip "%HOMEDRIVE%%HOMEPATH%\gradint"
 copy /Y datetime.pyd "%HOMEDRIVE%%HOMEPATH%\gradint"
 copy /Y gradint-wrapper.exe "%HOMEDRIVE%%HOMEPATH%\gradint"
@@ -66,8 +65,7 @@ copy /Y unicodedata.pyd "%HOMEDRIVE%%HOMEPATH%\gradint"
 copy /Y zlib.pyd "%HOMEDRIVE%%HOMEPATH%\gradint"
 copy /Y w9xpopen.exe "%HOMEDRIVE%%HOMEPATH%\gradint"
 copy /Y winsound.pyd "%HOMEDRIVE%%HOMEPATH%\gradint"
-mkdir "%HOMEDRIVE%%HOMEPATH%\gradint\espeak" >nul 2>nul
-xcopy /D /Y /S espeak "%HOMEDRIVE%%HOMEPATH%\gradint\espeak"
+xcopy /I /D /Y /S espeak "%HOMEDRIVE%%HOMEPATH%\gradint\espeak"
 copy /Y sox.exe "%HOMEDRIVE%%HOMEPATH%\gradint"
 cd ..
 

@@ -578,14 +578,24 @@ import_recordings_from = [r"\My Documents", r"\Storage Card\My Documents", r"\Ra
 # a file add-to-vocab.txt in that directory, with the contents (you'd better
 # include a SET LANGUAGE command).  (You don't have to do this; you could
 # just have sampled words and/or words in .txt files.)
-# 3.  Create a file short-description.txt for each section.  This should be
+# 3.  If any files are to be added to the student's prompts directory, these
+# can be placed in an add-to-prompts subdirectory of each section (useful if
+# the student already has a gradint installation and you're adding more presets).
+# Similarly, if any language abbreviations are to be added to the student's
+# otherLanguages and possible_otherLanguages variables, these can be listed
+# in a file called add-to-languages.txt (separated by spaces) in each section.
+# 4.  Create a file short-description.txt for each section.  This should be
 # very short because it will be displayed on a button in the GUI.
-# 4. Optionally create long-description.txt for some sections.  This will be
+# 5. Optionally create long-description.txt for some sections.  This will be
 # displayed in a yes/no box asking the user to confirm their addition.
-# 5. Put all those _disabled directories into the user's samplesDirectory (or
+# 6. Put all those _disabled directories into the user's samplesDirectory (or
 # drag into the recorded words folder and restart gradint).  You can also
 # put them in the directory above, to avoid confusing any users who open
 # "recorded words".
+# (If you're a developer and have downloaded the Gradint build environment,
+# you can make a version of Gradint's installation files that bundles your
+# presets, by placing the _disabled directories into Gradint's build
+# directory before typing "make".)
 
 max_extra_buttons = 12
 # - this setting limits the number of "add pre-made collection" buttons that

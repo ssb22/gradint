@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.995 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9951 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -203,7 +203,7 @@ for d in dir():
   if not d in dir1 and eval(d): # (ignore unrecognised options that evaluate false - these might be an OLD unused option with a newer gradint rather than vice versa)
     show_warning("Warning: Unrecognised option in config files: "+d)
 del dir1
-GUI_translations_old.update(GUI_translations) ; GUI_translations = GUI_translations_old # in case more have been added since advance.txt last update
+GUI_translations_old.update(GUI_translations) ; GUI_translations = GUI_translations_old # in case more have been added since advanced.txt last update
 
 def cond(a,b,c):
     if a: return b

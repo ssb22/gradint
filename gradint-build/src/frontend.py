@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.995 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9951 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -473,6 +473,21 @@ class ExtraButton(object):
             o.write("# ----- END "+self.shortDescription+" ---\n")
             if hasattr(app,"vocabList"): del app.vocabList # so re-reads
             os.remove(newName+os.sep+"add-to-vocab"+dottxt)
+        if fileExists(newName+os.sep+"add-to-languages"+dottxt):
+            changed = 0
+            for lang in u8strip(open(newName+os.sep+"add-to-languages"+dottxt,"rb").read()).strip(wsp).split():
+                if not lang in [firstLanguage,secondLanguage]+otherLanguages:
+                    otherLanguages.append(lang) ; changed = 1
+                if not lang in possible_otherLanguages:
+                    possible_otherLanguages.append(lang) ; changed = 1
+            if changed: updateSettingsFile("advanced"+dottxt,{"otherLanguages":otherLanguages,"possible_otherLanguages":possible_otherLanguages})
+            os.remove(newName+os.sep+"add-to-languages"+dottxt)
+        promptsAdd = newName+os.sep+"add-to-prompts"
+        if isDirectory(promptsAdd):
+            for f in os.listdir(promptsAdd):
+                if fileExists_stat(promptsDirectory+os.sep+f): os.remove(promptsAdd+os.sep+f)
+                else: os.rename(promptsAdd+os.sep+f, promptsDirectory+os.sep+f)
+            os.rmdir(promptsAdd)
         if not name1==name2: which_collection += "\n(NB you already had a "+name1+" so the new one was called "+name2+" - you might want to sort this out.)"
         self.button.pack_forget()
         app.extra_button_callables.remove(self)
@@ -1224,12 +1239,12 @@ def checkAge(fname,message):
     days = int((time.time()-os.stat(fname)[8])/3600/24)
     if days>=5 and (days%5)==0: waitOnMessage(message % days)
 
-def gui_wrapped_main_loop():
+def gui_event_loop():
     app.todo.set_main_menu = 1 ; braveUser = 0
     if (orig_onceperday&2) and not need1adayMessage: check_for_slacking() # when running every day + 1st run of today
     while app:
         while not hasattr(app,"menu_response"):
-            if warnings_printed: waitOnMessage("") # If running gui_wrapped_main_loop, better put any warnings in a separate dialogue now, rather than waiting for user to get one via 'make lesson' or some other method
+            if warnings_printed: waitOnMessage("") # If running gui_event_loop, better put any warnings in a separate dialogue now, rather than waiting for user to get one via 'make lesson' or some other method
             if hasattr(app,"needVocablist") and not hasattr(app,"vocabList"):
                 v = guiVocabList(parseSynthVocab(vocabFile,1)) # (in non-GUI thread because can take a while when large)
                 if app: app.vocabList = v # check again because there's a race condition if close the app while parseSynthVocab is running
@@ -1241,7 +1256,7 @@ def gui_wrapped_main_loop():
         if menu_response=="go":
             gui_outputTo_start()
             if not soundCollector: app.todo.add_briefinterrupt_button = 1
-            try: main_loop()
+            try: lesson_loop()
             except KeyboardInterrupt: pass # probably pressed Cancel Lesson while it was still being made (i.e. before handleInterrupt)
             if app and not soundCollector: app.todo.remove_briefinterrupt_button = 1 # (not app if it's closed by the close box)
             gui_outputTo_end()
@@ -1564,10 +1579,10 @@ def rest_of_main():
         elif justSynthesize and justSynthesize[-1]=='*':
             justSynthesize=justSynthesize[:-1]
             waitBeforeStart = 0
-            just_synthesize() ; main_loop()
+            just_synthesize() ; lesson_loop()
         elif justSynthesize: just_synthesize()
-        elif app and waitBeforeStart: gui_wrapped_main_loop()
-        else: main_loop()
+        elif app and waitBeforeStart: gui_event_loop()
+        else: lesson_loop()
     except SystemExit: pass
     except KeyboardInterrupt: pass
     except PromptException:

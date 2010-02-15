@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.995 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9951 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -52,7 +52,7 @@ def doOneLesson(dbase):
 
 if loadLesson==-1: loadLesson=(fileExists(saveLesson) and time.localtime(os.stat(saveLesson).st_mtime)[:3]==time.localtime()[:3])
 
-def main_loop():
+def lesson_loop():
   global app,availablePrompts,teacherMode
   if ask_teacherMode and not soundCollector and waitBeforeStart: teacherMode=getYN("Use teacher assistant mode? (say 'no' for self-study)")
   try:
