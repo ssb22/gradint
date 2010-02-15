@@ -37,7 +37,7 @@ generating = {}
 def maybe_cache(s,directory):
     if not s: return # in case poetry has some 2nd-language only
     if '!synth:' in s and "_" in s: textToSynth, langToSynth = gradint.textof(s),gradint.languageof(s)
-    elif s.endswith(gradint.extsep+"txt"): textToSynth, langToSynth = gradint.u8strip(open(directory+os.sep+s).read()).strip(), gradint.languageof(s,directory==gradint.promptsDirectory)
+    elif s.endswith(gradint.extsep+"txt"): textToSynth, langToSynth = gradint.readText(directory+os.sep+s), gradint.languageof(s,directory==gradint.promptsDirectory)
     else: return
     if not langToSynth in langs: return # we're not caching that language
     if synth_fileExists((textToSynth+"_"+langToSynth+gradint.dotwav).lower()) or synth_fileExists((textToSynth+"_"+langToSynth+gradint.dotmp3).lower()): return # it's already been done

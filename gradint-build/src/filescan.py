@@ -131,7 +131,7 @@ def getLsDic(directory):
         ls=list2set(ls) ; newVs = []
         for k,v in lsDic.items():
             # check for _lang_variant.ext and take out the _variant,
-            # but keep them in variant_files dict for fileToEvent to put back
+            # but keep them in variantFiles dict for fileToEvent to put back
             if not v or (not directory==promptsDirectory and v.find("_explain_")>-1): continue # don't get confused by that
             last_ = v.rfind("_")
             if last_==-1: continue
@@ -140,7 +140,15 @@ def getLsDic(directory):
             del lsDic[k]
             newK,newV = k[:k.rfind("_")], v[:v.rfind("_")]+v[v.rfind(extsep):]
             if not newK in lsDic: lsDic[newK] = newV
-            else: newV = lsDic[newK] # variants of different file types? better store them all under one (fileToEvent will sort out).  (Testing if the txt can be synth'd has already been done above)
+            else: # variants of different file types? better store them all under one (fileToEvent will sort out).  (Testing if the txt can be synth'd has already been done above)
+                if v.endswith(dottxt) and not lsDic[newK].endswith(dottxt): # if any variants are .txt then we'd better ensure the key is, so transliterate etc finds it. So move the key over to the .txt one.
+                    old_dirV = directory+os.sep+lsDic[newK]
+                    d = variantFiles[old_dirV]
+                    del variantFiles[old_dirV]
+                    lsDic[newK] = newV
+                    variantFiles[directory+os.sep+newV] = d
+                    lsDic[newK] = newV # just add to the previous key
+                else: newV = lsDic[newK]
             dir_newV = directory+os.sep+newV
             if not dir_newV in variantFiles:
                 variantFiles[dir_newV] = []

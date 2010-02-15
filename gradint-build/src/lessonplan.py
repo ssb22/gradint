@@ -20,14 +20,18 @@ class ProgressDatabase(object):
             if self.data and not fromString: self.save_binary(self.data) # even before starting, to save time if they press Cancel and then try loading again without futher progressFile changes
         self.oldPromptsData = self.promptsData.copy() # in case have to save partial (see below)
         if alsoScan:
-            global is_first_lesson ; is_first_lesson = (not self.data and not self.unavail) # hack
-            self.data += self.unavail # because it might have become available again
-            self.unavail = mergeProgress(self.data,scanSamples()+parseSynthVocab(vocabFile))
+          global is_first_lesson ; is_first_lesson = (not self.data and not self.unavail) # hack
+          self.data += self.unavail # because it might have become available again
+          self.unavail = mergeProgress(self.data,scanSamples()+parseSynthVocab(vocabFile))
+          if not cache_maintenance_mode:
             doLabel("Checking transliterations")
             tList = {}
             for _,l1,l2 in self.data:
                 if not type(l1)==type([]): l1=[l1]
-                for f in l1+[l2]:
+                for ff in l1+[l2]:
+                 if samplesDirectory+os.sep+ff in variantFiles: variantList=map(lambda x:(ff+os.sep)[:ff.rfind(os.sep)]+os.sep+x,variantFiles[samplesDirectory+os.sep+ff])
+                 else: variantList = [ff]
+                 for f in variantList:
                    l=languageof(f)
                    if not l in tList: tList[l]={}
                    if f.lower().endswith(dottxt): text=u8strip(open(samplesDirectory+os.sep+f,"rb").read()).strip(wsp)

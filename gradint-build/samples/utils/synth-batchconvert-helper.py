@@ -75,7 +75,7 @@ del fname2txt # now 'generating' maps (txt,lang) to 1 or filename
 
 def getTxtLang(s):
     if '!synth:' in s and "_" in s: return gradint.textof(s).decode('utf-8'),gradint.languageof(s)
-    elif s.endswith(gradint.extsep+"txt"): return gradint.u8strip(open(gradint.samplesDirectory+os.sep+s).read()).strip().decode('utf-8'), gradint.languageof(s)
+    elif s.endswith(gradint.extsep+"txt"): return gradint.readText(s).decode('utf-8'), gradint.languageof(s)
     else: return None,None
 
 def decache(s):
@@ -90,6 +90,8 @@ def decache(s):
             try: os.remove(gradint.synthCache+os.sep+s+ext)
             except: pass
 
+samples = gradint.scanSamples() # MUST call before sporadic so variantFiles is populated
+
 if sporadic:
   if delete_old: print "Checking for old words to remove"
   else: print "Sporadic mode: Checking for old words to avoid"
@@ -102,7 +104,7 @@ if sporadic:
 
 count = 0
 
-def maybe_cache(s,directory):
+def maybe_cache(s):
     textToSynth,langToSynth = getTxtLang(s)
     if not textToSynth: return
     if not langToSynth==languageToCache: return
@@ -128,10 +130,10 @@ def maybe_cache(s,directory):
     count += 1
 
 print "Checking for new ones"
-for _,s1,s2 in gradint.scanSamples()+gradint.parseSynthVocab("vocab.txt"):
-    if type(s1)==type([]): [maybe_cache(i,gradint.samplesDirectory) for i in s1]
-    else: maybe_cache(s1,gradint.samplesDirectory)
-    maybe_cache(s2,gradint.samplesDirectory)
+for _,s1,s2 in samples+gradint.parseSynthVocab("vocab.txt"):
+    if type(s1)==type([]): [maybe_cache(i) for i in s1]
+    else: maybe_cache(s1)
+    maybe_cache(s2)
 
 if count: print "Now convert the files in "+newStuff+" and re-run this script.\nYou might also want to adjust the volume if appropriate, e.g. mp3gain -r -d 6 -c *.mp3"
 else: print "No extra files needed to be made."

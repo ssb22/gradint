@@ -1059,7 +1059,6 @@ def guiVocabList(parsedVocab):
     sl3,fl3 = sl2+dottxt, fl2+dottxt # txt files
     # (sample files are omitted from the list)
     sl2Len,fl2Len = -len(sl2),-len(fl2)
-    def readText(l): return u8strip(open(samplesDirectory+cond(samplesDirectory,os.sep,"")+l,"rb").read()).strip(wsp) # see utils/transliterate.py (running guiVocabList on txt files from scanSamples)
     ret = []
     for a,b,c in parsedVocab:
         if c.endswith(sl2): c=c[:sl2Len]
@@ -1071,6 +1070,13 @@ def guiVocabList(parsedVocab):
         else: continue
         ret.append((unicode(c,"utf-8"),unicode(b,"utf-8")))
     return ret
+def readText(l): # see utils/transliterate.py (running guiVocabList on txt files from scanSamples)
+    l = samplesDirectory+os.sep+l
+    if l in variantFiles: # oops. just read the 1st .txt variant
+        if os.sep in l: lp=(l+os.sep)[:l.rfind(os.sep)]+os.sep
+        else: lp = ""
+        l = lp + filter(lambda x:x.endswith(dottxt),variantFiles[l])[0]
+    return u8strip(open(l,"rb").read()).strip(wsp)
 
 def singular(number,s):
   s=localise(s)

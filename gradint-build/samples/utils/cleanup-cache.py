@@ -24,7 +24,7 @@ try: del unused[gradint.transTbl[:gradint.transTbl.rfind(gradint.extsep)]]
 except KeyError: pass
 def mark_as_used(s,directory):
     if s and '!synth:' in s and "_" in s: textToSynth, langToSynth = gradint.textof(s),gradint.languageof(s)
-    elif s and s.endswith(gradint.extsep+"txt"): textToSynth, langToSynth = gradint.u8strip(open(directory+os.sep+s).read()).strip(), gradint.languageof(s,directory==gradint.promptsDirectory)
+    elif s and s.endswith(gradint.extsep+"txt"): textToSynth, langToSynth = gradint.readText(directory+os.sep+s), gradint.languageof(s,directory==gradint.promptsDirectory)
     else: return
     k=(textToSynth+"_"+langToSynth).lower()
     k=trans.get(k,k)
