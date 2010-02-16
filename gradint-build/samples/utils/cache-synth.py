@@ -14,7 +14,7 @@ langs = sys.argv[1:] ; testMode = False
 if langs and langs[0]=='--test':
     langs = langs[1:] ; testMode = True
 if not langs:
-    sys.stderr.write("Please run with a language abbreviation (or a list of them separated by spaces) on the command line.  See comments at the start of this script for details.\n")
+    sys.stderr.write("Please put a language abbreviation (or a list of them separated by spaces) on the command line.  See comments at the start of this script for details.\n")
     sys.exit()
 sys.argv = []
 import gradint

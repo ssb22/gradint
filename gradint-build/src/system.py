@@ -174,7 +174,7 @@ if not fileExists(configFiles[0]):
         # try up 1 more level (in case gradint.py has been hidden in start-gradint.app directory on Mac OS)
         s=s[:s.rfind(os.sep)]
         os.chdir(s)
-  if not fileExists(configFiles[0]) and (os.sep in sys.argv[0] or (os.sep=='\\' and '/' in sys.argv[0])):
+  if not fileExists(configFiles[0]) and sys.argv and (os.sep in sys.argv[0] or (os.sep=='\\' and '/' in sys.argv[0])):
     # try the sys.argv[0] directory, in case THAT works
     if os.sep=="\\" and '/' in sys.argv[0] and fileExists(sys.argv[0].replace('/','\\')): sys.argv[0]=sys.argv[0].replace('/','\\') # hack for some Windows Python builds accepting / in command line but reporting os.sep as \
     os.chdir(oldDir)

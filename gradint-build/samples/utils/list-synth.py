@@ -29,7 +29,7 @@ outFilename = "cache-list"
 import sys,os,time
 lang = sys.argv[1:]
 if not lang:
-    sys.stderr.write("Please run with a language abbreviation on the command line.  See comments at the start of this script for details.\n")
+    sys.stderr.write("Please put a language abbreviation on the command line.  See comments at the start of this script for details.\n")
     sys.exit()
 lang=lang[0]
 sys.argv = []

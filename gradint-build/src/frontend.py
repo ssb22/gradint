@@ -1090,7 +1090,9 @@ def readText(l): # see utils/transliterate.py (running guiVocabList on txt files
     if l in variantFiles: # oops. just read the 1st .txt variant
         if os.sep in l: lp=(l+os.sep)[:l.rfind(os.sep)]+os.sep
         else: lp = ""
-        l = lp + filter(lambda x:x.endswith(dottxt),variantFiles[l])[0]
+        varList = filter(lambda x:x.endswith(dottxt),variantFiles[l])
+        varList.sort() # so at least it consistently returns the same one.  TODO utils/ cache-synth.py list-synth.py synth-batchconvert-helper.py all use readText() now, can we get them to cache the other variants too?
+        l = lp + varList[0]
     return u8strip(open(l,"rb").read()).strip(wsp)
 
 def singular(number,s):
