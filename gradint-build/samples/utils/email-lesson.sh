@@ -3,9 +3,9 @@
 # email-lesson.sh: a script that can help you to
 # automatically distribute daily Gradint lessons
 # to students using a web server with reminder
-# emails.  Version 1.1125
+# emails.  Version 1.1126
 
-# (C) 2007-2009 Silas S. Brown, License: GPL
+# (C) 2007-2010 Silas S. Brown, License: GPL
 
 export DEFAULT_SUBJECT_LINE="Vocabulary practice (automatic message from gradint)"
 export DEFAULT_FORGOT_YESTERDAY="You forgot your lesson yesterday.
@@ -55,6 +55,7 @@ if test "a$1" == "a--run"; then
   # (note: sleeping odd numbers of seconds so we can tell where it is if it gets stuck in one of these loops)
   export Users="$(echo user.*)"
   cd ..
+  unset NeedRunMirror
   for U in $Users; do
     . email_lesson_users/config
     if ! test "a$GLOBAL_GRADINT_OPTIONS" == a; then export GLOBAL_GRADINT_OPTIONS="$GLOBAL_GRADINT_OPTIONS ;"; fi
@@ -65,8 +66,7 @@ if test "a$1" == "a--run"; then
     export NEW_LESSON="$DEFAULT_NEW_LESSON"
     export EXPLAIN_FORGOT="$DEFAULT_EXPLAIN_FORGOT"
     export AUTO_MESSAGE="$DEFAULT_AUTO_MESSAGE"
-    unset Extra_Mailprog_Params1
-    unset Extra_Mailprog_Params2
+    unset Extra_Mailprog_Params1 Extra_Mailprog_Params2 GRADINT_OPTIONS
     export Use_M3U=no
     export FILE_TYPE=mp3
     . email_lesson_users/$U/profile
@@ -169,13 +169,7 @@ do echo "mail sending failed; retrying in 62 seconds"; sleep 62; done; fi
         rm $OUTDIR/$U-$CurDate.*
       fi
     fi
-    if ! test "a$PUBLIC_HTML_MIRROR_COMMAND" == a; then
-      while ! $PUBLIC_HTML_MIRROR_COMMAND; do
-        echo "PUBLIC_HTML_MIRROR_COMMAND failed; retrying in 79 seconds"
-        echo As subject | $MailProg -s "PUBLIC_HTML_MIRROR_COMMAND failed, will retry" $ADMIN_EMAIL || true # ignore errors
-        sleep 79
-      done
-    fi
+    export NeedRunMirror=1
     if ! test -e email_lesson_users/$U/progress.bak; then touch email_lesson_users/$U/progress.bak; fi # so rollback works after 1st lesson
     while ! $MailProg -s "$SUBJECT_LINE" $STUDENT_EMAIL "$Extra_Mailprog_Params1" "$Extra_Mailprog_Params2" <<EOF
 $NEW_LESSON
@@ -193,8 +187,15 @@ do echo "mail sending failed; retrying in 65 seconds"; sleep 65; done
     if ! test "a$AdminNote" == a; then
       while ! echo "$AdminNote"|$MailProg -s gradint-user-ran-out $ADMIN_EMAIL; do echo "Mail sending failed; retrying in 67 seconds"; sleep 67; done
     fi
-  done
-  rm $TMPDIR/._email_lesson_logs
+  done # end of per-user loop
+  if test "a$NeedRunMirror" == "a1" && ! test "a$PUBLIC_HTML_MIRROR_COMMAND" == a; then
+    while ! $PUBLIC_HTML_MIRROR_COMMAND; do
+      echo "PUBLIC_HTML_MIRROR_COMMAND failed; retrying in 79 seconds"
+      echo As subject | $MailProg -s "PUBLIC_HTML_MIRROR_COMMAND failed, will retry" $ADMIN_EMAIL || true # ignore errors
+      sleep 79
+    done
+  fi
+  rm -f $TMPDIR/._email_lesson_logs
   if ! test a$MasterPid == a; then
     kill $MasterPid
     kill $(ps axwww|grep $TMPDIR/__gradint_ctrl|sed -e 's/^ *//' -e 's/ .*//') 2>/dev/null
@@ -236,7 +237,7 @@ export CAT_LOGS_COMMAND="false" # Please change this to a command that cats the
 
 export PUBLIC_HTML_EXTRA_SSH_OPTIONS="" # if set and PUBLIC_HTML is on a remote host, these options will be added to all ssh and scp commands to that host - use this for things like specifying an alternative identity file with -i
 
-export PUBLIC_HTML_MIRROR_COMMAND="" # if set, will be run after any new lesson is written to PUBLIC_HTML.
+export PUBLIC_HTML_MIRROR_COMMAND="" # if set, will be run after any new lessons are written to PUBLIC_HTML.
 # This is for unusual setups where PUBLIC_HTML is not the real public_html directory but some command can be run to mirror its contents to the real one (perhaps on a remote server that cannot take passwordless SSH from here; of course you'd need to set up an alternative way of getting the files across and the log entries back).
 # Note: Do not add >/dev/null or similar redirects to PUBLIC_HTML_MIRROR_COMMAND as some versions of bash will give an error.
 
@@ -269,7 +270,7 @@ while true; do
   if ! test "a$Alias" == a; then ln -s $ID "$Alias"; fi
   cd $ID
   cat > profile <<EOF
-# You need to edit this:
+# You need to edit the settings in this file.
 export STUDENT_EMAIL=student@example.org  # change to student's email address
 export GRADINT_OPTIONS="" # extra gradint command-line options, for example to
                           # specify a different first and second language
@@ -296,6 +297,12 @@ export Use_M3U=no # if yes, sends a .m3u link to the student
 # lesson until there are no more left.  Note however that
 # touching rollback will overwrite podcasts-to-send with the
 # previous version (podcasts-to-send.old).
+
+# IMPORTANT: If the script is not using your normal email address,
+# ensure the student knows how to check the junk / spam folder for them
+# and mark the address as safe (e.g. Hotmail junk "Mark as Safe").
+# If you have to move to a different server, you may need to warn all
+# students that the lessons will now come from a different address.
 
 # Optional settings for customising the text of the message:
 export SUBJECT_LINE="$DEFAULT_SUBJECT_LINE"
