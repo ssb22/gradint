@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9951 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9952 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -112,7 +112,9 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0):
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
     lang = languageof(fname)
-    if fname.lower().endswith(dottxt): fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+"_"+lang # there *will* be a _ otherwise languageof would have failed
+    if fname.lower().endswith(dottxt):
+        try: fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+"_"+lang # there *will* be a _ otherwise languageof would have failed
+        except IOError: return 0,0 # probably trying to synthcache_lookup a file with variants without first choosing a variant (e.g. in anticipation() to check for sporadic cache entries in old words) - just ignore this
     text = textof(fname)
     useSporadic = -1 # undecided (no point accumulating counters for potentially-unbounded input)
     if justQueryCache: useSporadic=1
