@@ -934,6 +934,14 @@ def eventList_repr(el):
         elif not e.__class__==Event: r.append(fname(str(e)))
     return " ".join(r)
 
+def abspath_from_start(p): # for just_synthesize to check for paths relative to the original starting directory if this is different from the gradint directory (see system.py)
+    d=os.getcwd()
+    os.chdir(starting_directory)
+    try: r=os.path.abspath(p)
+    except: r="" # library problems on Windows?
+    os.chdir(d)
+    return r
+
 def just_synthesize(callSanityCheck=0):
     # Handle the justSynthesize setting (see advanced.txt)
     global startAnnouncement,endAnnouncement,logFile,synth_partials_cache
@@ -952,6 +960,7 @@ def just_synthesize(callSanityCheck=0):
       for line in justSynthesize.split("#"):
         line = line.strip(wsp) ; l = line.split(None,1)
         if extsep in line and fileExists(line): event = fileToEvent(line,"")
+        elif extsep in line and fileExists(abspath_from_start(line)): event = fileToEvent(abspath_from_start(line),"")
         elif line=='R':
             repeatMode=1 ; continue
         elif len(l)==1:

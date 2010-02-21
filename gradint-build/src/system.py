@@ -165,8 +165,8 @@ def u8strip(d):
 GUI_translations_old = GUI_translations
 configFiles = map(lambda x:x+dottxt,["advanced","settings"]) # MUST have settings last so can have per-user override of scriptVariants
 if not hasattr(sys,"argv"): sys.argv=" " # some Symbian versions
+starting_directory = os.getcwd()
 if not fileExists(configFiles[0]):
-  oldDir=os.getcwd()
   if macsound and "_" in os.environ:
     s=os.environ["_"] ; s=s[:s.rfind(os.sep)]
     os.chdir(s)
@@ -177,7 +177,7 @@ if not fileExists(configFiles[0]):
   if not fileExists(configFiles[0]) and sys.argv and (os.sep in sys.argv[0] or (os.sep=='\\' and '/' in sys.argv[0])):
     # try the sys.argv[0] directory, in case THAT works
     if os.sep=="\\" and '/' in sys.argv[0] and fileExists(sys.argv[0].replace('/','\\')): sys.argv[0]=sys.argv[0].replace('/','\\') # hack for some Windows Python builds accepting / in command line but reporting os.sep as \
-    os.chdir(oldDir)
+    os.chdir(starting_directory)
     os.chdir(sys.argv[0][:sys.argv[0].rfind(os.sep)])
   if not fileExists(configFiles[0]):
     # Finally, try the module pathname, in case some other Python program has imported us without changing directory.  Apparently we need to get this from an exception.
@@ -186,7 +186,7 @@ if not fileExists(configFiles[0]):
       tbObj = sys.exc_info()[2]
       while tbObj and hasattr(tbObj,"tb_next") and tbObj.tb_next: tbObj=tbObj.tb_next
       if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and os.sep in tbObj.tb_frame.f_code.co_filename:
-        os.chdir(oldDir)
+        os.chdir(starting_directory)
         try: os.chdir(tbObj.tb_frame.f_code.co_filename[:tbObj.tb_frame.f_code.co_filename.rfind(os.sep)])
         except: pass
 
