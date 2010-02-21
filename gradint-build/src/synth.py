@@ -650,6 +650,12 @@ def remove_tone_numbers(utext): # for hanzi_and_punc to take out numbers that ca
         i+=1
     return utext
 def preprocess_chinese_numbers(utext):
+    # Hack for reading years digit by digit:
+    for year in ["nian2",u"\u5e74"]: # TODO also " nian2" to catch that? what of multiple spaces?
+        while utext.find(year)>=4 and 1200 < intor0(utext[utext.find(year)-4:utext.find(year)]) < 2300: # TODO is that range right?
+            yrStart = utext.find(year)-4
+            utext = utext[:yrStart] + " ".join(list(utext[yrStart:yrStart+4]))+" "+utext[yrStart+4:]
+    # End of hack for reading years
     i=0
     while i<len(utext):
         if "0"<=utext[i]<="9" and not ("1"<=utext[i]<="5" and i and "a"<=utext[i-1].lower()<="z" and (i==len(utext)-1 or not "0"<=utext[i+1]<="9")): # number that isn't a tone digit
@@ -835,6 +841,7 @@ class SynthEvent(Event):
         if language=="en" and not self.text[-1] in ";.!?-" and not (';' in self.text and ';' in self.text[self.text.index(';')+1:]): self.modifiedText += ';' # prosody hack (some synths sound a bit too much like 'disjointed strict commands' without this)
         elif language=="zh":
             # normalise pinyin
+            # (note - this code is NOT used for partials synth, only for passing to espeak etc.  see elsewhere for partials synth)
             self.modifiedText = pinyin_uColon_to_V(self.modifiedText) # includes .lower()
             # and put space between every syllable of w, if it's one word only (the Lily voice seems to stand a better chance of getting it right that way, and occasionally other voices do too, e.g. "chang2yuan3" in at least some versions of eSpeak, not to mention Loquendo Lisheng
             self.modifiedText = self.modifiedText.replace("-"," ") # for Lily, Lisheng etc.  NB replace hyphen with space not with "", otherwise can get problems with phrases like "wang4en1-fu4yi4"
