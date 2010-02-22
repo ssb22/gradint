@@ -1593,7 +1593,7 @@ def rest_of_main():
     except:
         w="\nSomething has gone wrong with my program.\nThis is not your fault.\nPlease let me know what it says.\nThanks.  Silas\n"
         w += str(sys.exc_info()[0])
-        if not sys.exc_info()[1]==None: w += (": "+str(sys.exc_info()[1]))
+        if sys.exc_info()[1]: w += (": "+str(sys.exc_info()[1]))
         tbObj = sys.exc_info()[2]
         while tbObj and hasattr(tbObj,"tb_next") and tbObj.tb_next: tbObj=tbObj.tb_next
         if tbObj and hasattr(tbObj,"tb_lineno"): w += (" at line "+str(tbObj.tb_lineno))

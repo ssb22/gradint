@@ -175,8 +175,12 @@ elif not winsound: # ok if mingw32, appuifw etc (unzip_and_delete will warn)
         if fileExists(f): unzip_and_delete(f,ignore_fail=1) # ignore the error exit status from unzip, which will be because of extra bytes at the beginning
 
 # Filename / Unicode translation - need some safety across filesystems.  synthCache(+utils) could be done this way also rather than having TRANS.TBL (however I'm not sure it would save that much code)
-non_normal_filenames = {}
+non_normal_filenames = {} ; using_unicode_filenames=0
 def filename2unicode(f):
+    if type(f)==type(u""):
+        global using_unicode_filenames
+        using_unicode_filenames = 1
+        return f
     def u8_or_raw(s):
         try: return unicode(s,"utf-8")
         except UnicodeDecodeError: return unicode(s,"latin1") # (actually should try the local codepage on Windows for correct display, but at least this stops a crash)
@@ -200,6 +204,7 @@ def filename2unicode(f):
     if filter(lambda x:ord(x)>=128, list(u)): non_normal_filenames[u] = f # make at least some attempt to keep the old one for GUI rename()s etc, TODO this might not always cope with directories in the path being non-normal, so let's hope they don't set that up manually and then expect the GUI to cope with it
     return u
 def unicode2filename(u):
+    if using_unicode_filenames: return u
     if u in non_normal_filenames: return non_normal_filenames[u]
     f=u.encode("unicode_escape").replace("\\u","_u")
     for unsafe_char in "?+*<=": f=f.replace(unsafe_char,"_u%04x" % ord(unsafe_char))
