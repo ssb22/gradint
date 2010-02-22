@@ -207,7 +207,7 @@ def unicode2filename(u):
 
 synth_partials_voices = {} # lang -> list of voices, each being a tuple of (directory,startDict,midDict,endDict,flags); see comments below for the dictionary format
 partials_cache_file="partials-cache"+extsep+"bin"
-if partialsDirectory:
+if partialsDirectory and isDirectory(partialsDirectory):
   dirsToStat = []
   if pickle and fileExists(partials_cache_file):
     try: partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat = pickle.Unpickler(open(partials_cache_file,"rb")).load()
@@ -217,9 +217,8 @@ if partialsDirectory:
         dirsToStat=[] ; break
   if not dirsToStat: # need to re-scan
     if riscos_sound or winCEsound: show_info("Scanning partials... ")
-    try: partials_langs = os.listdir(partialsDirectory)
-    except: partials_langs = []
-    if partials_langs: dirsToStat.append((partialsDirectory,os.stat(partialsDirectory)))
+    partials_langs = os.listdir(partialsDirectory)
+    dirsToStat.append((partialsDirectory,os.stat(partialsDirectory)))
     audioDataPartials = {}
     partials_raw_mode = "header"+dotwav in partials_langs
     for l in partials_langs:

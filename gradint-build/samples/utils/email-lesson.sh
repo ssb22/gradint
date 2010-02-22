@@ -3,7 +3,7 @@
 # email-lesson.sh: a script that can help you to
 # automatically distribute daily Gradint lessons
 # to students using a web server with reminder
-# emails.  Version 1.1126
+# emails.  Version 1.1127
 
 # (C) 2007-2010 Silas S. Brown, License: GPL
 
@@ -69,6 +69,11 @@ if test "a$1" == "a--run"; then
     unset Extra_Mailprog_Params1 Extra_Mailprog_Params2 GRADINT_OPTIONS
     export Use_M3U=no
     export FILE_TYPE=mp3
+    if grep $'\r' email_lesson_users/$U/profile >/dev/null; then
+      # Oops, someone edited profile in a DOS line-endings editor (e.g. Wenlin on WINE for CJK stuff).  DOS line endings can mess up Extra_Mailprog_Params settings.
+      cat email_lesson_users/$U/profile | tr -d $'\r' > email_lesson_users/$U/profile.removeCR
+      mv email_lesson_users/$U/profile.removeCR email_lesson_users/$U/profile
+    fi
     . email_lesson_users/$U/profile
     if test $Use_M3U == yes; then export FILE_TYPE_2=m3u
     else export FILE_TYPE_2=$FILE_TYPE; fi
