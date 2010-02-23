@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9952 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9953 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -126,6 +126,7 @@ def getLsDic(directory):
                 lsDic[file]=None # a directory: store full name even if it has extsep in it.  Note however that we don't check isDirectory() if it's .wav etc as that would take too long.  (however some dirnames can contain dots)
                 # (+ NB need to store the directories specifically due to cases like course/ and course.pdf which may otherwise result in 2 traversals of "course" if we check isDirectory on 'extension is either none or unknown')
                 continue
+            elif (file+extsep)[:file.rfind(extsep)] in lsDic: continue # don't let a .txt~ or other unknown extension override a .txt
         lsDic[(file+extsep)[:file.rfind(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
     if has_variants:
         ls=list2set(ls) ; newVs = []
