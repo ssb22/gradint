@@ -942,7 +942,7 @@ def abspath_from_start(p): # for just_synthesize to check for paths relative to 
     os.chdir(d)
     return r
 
-def just_synthesize(callSanityCheck=0):
+def just_synthesize(callSanityCheck=0,lastLang_override=None):
     # Handle the justSynthesize setting (see advanced.txt)
     global startAnnouncement,endAnnouncement,logFile,synth_partials_cache
     synth_partials_cache = {} # to stop 'memory leak' when running from the GUI
@@ -956,7 +956,12 @@ def just_synthesize(callSanityCheck=0):
       repeatMode = 0
       less = Lesson()
       lastStartTime = lastEndTime = lastWasDelay = 0
-      lastLanguage = secondLanguage
+      if lastLang_override: lastLanguage = lastLang_override
+      else: lastLanguage = secondLanguage
+      def checkCanSynth(fname):
+          ret=can_be_synthesized(fname)
+          if ret: return fileToEvent(fname)
+          else: show_warning("Can't say %s in %s" % (repr(text),repr(lang))) # previous warnings should have said why (e.g. partials-only language)
       for line in justSynthesize.split("#"):
         line = line.strip(wsp) ; l = line.split(None,1)
         if extsep in line and fileExists(line): event = fileToEvent(line,"")
@@ -969,8 +974,9 @@ def just_synthesize(callSanityCheck=0):
             if delayVal==None:
                 # no float value; assume it's a single word to synth in secondLanguage or whatever was the last language used
                 if not appuifw: show_warning("Assuming that %s is a word to synthesize in language '%s'" % (repr(l[0]),lastLanguage))
-                event = fileToEvent("!synth:"+l[0]+"_"+lastLanguage)
                 if callSanityCheck and sanityCheck(l[0],lastLanguage,1): return
+                event = checkCanSynth("!synth:"+l[0]+"_"+lastLanguage)
+                if not event: continue # couldn't synth
                 called_synth = 1
             else:
                 lastWasDelay = 1
@@ -984,16 +990,17 @@ def just_synthesize(callSanityCheck=0):
                 fname = "!synth:"+text+"_"+lang
                 if not can_be_synthesized(fname):
                     if lang in [firstLanguage,secondLanguage]+otherLanguages:
-                        show_warning("Can't say %s in %s" % (repr(text),repr(lang))) # previous warnings should have said why (e.g. partials-only language)
+                        show_warning("Can't say %s in %s" % (repr(text),repr(lang)))
                         lastLanguage=lang ; continue
                     # otherwise, user might have omitted lang by mistake
                     show_warning("Assuming that %s was meant to be synthesized in language '%s'" % (repr(line),lastLanguage))
-                    event = fileToEvent("!synth:"+line+"_"+lastLanguage)
                     if callSanityCheck and sanityCheck(line,lastLanguage,1): return
+                    event = checkCanSynth("!synth:"+line+"_"+lastLanguage)
                 else:
-                    event = fileToEvent(fname)
                     if callSanityCheck and sanityCheck(text,lang,1): return
+                    event = checkCanSynth(fname)
                     lastLanguage = lang
+                if not event: continue
                 called_synth = 1
         else: continue # len(l)==0: ignore empty strings between #s
         event.addToEvents(less.events,lastEndTime)

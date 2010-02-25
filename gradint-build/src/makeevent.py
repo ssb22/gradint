@@ -162,7 +162,7 @@ def can_be_synthesized(fname,dirBase=None,lang=None):
     else: return get_synth_if_possible(lang) # and this time print the warning
 def stripPuncEtc(text):
     # For sending text to synth_from_partials.  Removes spaces and punctuation from text, and returns a list of the text split into phrases.
-    for t in " -'\"": text=text.replace(t,"")
+    for t in " -_'\"()[]": text=text.replace(t,"")
     for t in ".!?:;": text=text.replace(t,",")
     return filter(lambda x:x,text.split(","))
 
@@ -344,8 +344,15 @@ def synth_from_partials(text,lang,voice=None,isStart=1):
         if k: # matched a syllable or so - can we do the rest?
             if text==k: return [v] # finished.  (Comment out this line to use *only* 'end' sounds at the end.)
             rest = synth_from_partials(text[len(k):],lang,voice,0)
-            if rest: return [v]+rest
-            else: return None # (could leave this out and carry on searching, but it's unlikely)
+            if rest==None: return None # (could ignore this match and carry on searching, but it's unlikely)
+            else: return [v]+rest
+    # Got to a character we cannot synth - probably best to fall back to a non-partials synth, but try to keep going if that's not possible
+    if not get_synth_if_possible(lang,0):
+        global warned_missing_chars
+        if not warned_missing_chars: show_warning("Warning: Partials synth is IGNORING unrecognised characters in the input, because there is no fallback synth")
+        warned_missing_chars=1
+        return synth_from_partials(text[1:],lang,voice)
+warned_missing_chars=0
 
 def optimise_partial_playing(ce):
     # ce is a CompositeEvent of SampleEvents.  See if we can change it to a ShellEvent that plays all partial-samples in a single command - this helps with continuity on some low-end platforms.

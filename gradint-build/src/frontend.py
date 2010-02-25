@@ -69,6 +69,7 @@ def getYN(msg,defaultIfEof="n"):
         return 0
 
 def primitive_synthloop():
+    lang = None
     while True:
         global justSynthesize,warnings_printed
         if appuifw:
@@ -79,7 +80,8 @@ def primitive_synthloop():
             try: justSynthesize=raw_input(cond(winCEsound and warnings_printed,"(see warnings under this window) Say:","Say: ")) # (WinCE uses an input box so need to repeat the warnings if any - but can't because prompt is size-limited, so need to say move the window.)
             except EOFError: break
             if (winCEsound or riscos_sound) and not justSynthesize: break # because no way to send EOF (and we won't be taking i/p from a file)
-        if justSynthesize: lang = just_synthesize(callSanityCheck=(appuifw or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty()))
+        oldLang = lang
+        if justSynthesize: lang = just_synthesize(appuifw or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty(),lang)
         # and see if it transliterates:
         if justSynthesize and lang and not "#" in justSynthesize:
             if justSynthesize.startswith(lang+" "):
@@ -96,6 +98,7 @@ def primitive_synthloop():
                 appuifw.app.body = t
             # else they'll have already been printed
             warnings_printed = []
+        if not lang: lang=oldLang
 
 def startBrowser(url): # true if success
   try: import webbrowser
