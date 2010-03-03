@@ -309,7 +309,7 @@ def shell_escape(text):
     if unix: text=text.replace("$","\\$").replace("`","\\`").replace("!","! ")
     return '"'+text+'"'
 
-espeakTranslitCacheFile = "espeak-translit-cache.bin" # TODO to advanced.txt?
+espeakTranslitCacheFile = "espeak-translit-cache"+extsep+"bin" # TODO to advanced.txt?
 class ESpeakSynth(Synth):
     def __init__(self):
         Synth.__init__(self)
