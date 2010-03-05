@@ -41,7 +41,8 @@ def moveFiles(srcDir,destDir):
             if isDir:
                 moveFiles(srcDir+"\\"+f, destDir+"\\"+f)
                 continue
-        os.rename(srcDir+"\\"+f,destDir+"\\"+f)
+        if os.path.exists(destDir+"\\"+f): os.remove(srcDir+"\\"+f)
+        else: os.rename(srcDir+"\\"+f,destDir+"\\"+f)
     os.rmdir(srcDir)
 
 try: l=os.listdir(os.getcwd()+"\\espeak-data")

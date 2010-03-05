@@ -101,7 +101,7 @@ recorder.exe: $(Common_Files) gradint.py
 gradint.cab: $(Common_Files) gradint.py
 	make cleanup
 	rm -rf PocketPC0 ; cp -r PocketPC PocketPC0
-	cd PocketPC0 && tar -jxf espeak.bgz && tar -jxf tkinter.bgz && rm espeak.bgz tkinter.bgz && cd ..
+	cd PocketPC0 && tar -jxf espeak.bgz && tar -jxf tkinter.bgz && rm espeak.bgz tkinter.bgz pocketpc-cab && cd ..
 	cp -r gradint.py $(Common_Files) PocketPC0/gradint
 	# if using partials, must combine them for CAB:
 	for Dir in PocketPC0/gradint/partials/*/*; do if cd $$Dir; then if wc -c *.raw | grep -v total$$ | sed -e 's/^ *//' > audiodata.dat ; then cat *.raw >> audiodata.dat ; rm *.raw; else rm -f audiodata.dat; fi; cd ../../../../..; else true; fi; done
@@ -119,7 +119,7 @@ gradint.cab: $(Common_Files) gradint.py
 	# + fclose(f_trans) at end of main() in speak.cpp
 	# + python -c 'd=open("speak","rb").read().replace("/temp/wcetrace.log","/notexist/tracelog") ; open("speak","wb").write(d)'
 	cd PocketPC0 && find . -type f | sort -f | grep -v /mb | grep -v /files.list | sed -e 's,./\(.*\)$$,\1 /\1,' -e 's,/\([^/]*\)/\([^/]*\)$$,/\1,' -e 's, /[^/]*.py$$, /,' -e 's/Program Files/Program~Files/g' > files.list && cd ..
-	cd PocketPC0 && export PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH" && pocketpc-cab -p "" -a "Gradint $$(head gradint/gradint.py | grep program_name | sed -e 's/.*t v/v/' -e 's/(c).*//')" files.list ../gradint.cab && cd ..
+	cd PocketPC0 && export PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH" && ../PocketPC/pocketpc-cab -p "" -a "Gradint $$(head gradint/gradint.py | grep program_name | sed -e 's/.*t v/v/' -e 's/(c).*//')" files.list ../gradint.cab && cd ..
 	# (need pocketpc-cab and lcab binaries for that to work)
 	test -e gradint.cab # pocketpc-cab can fail silently if we add too many files, so check the output exists
 	rm -rf PocketPC0
