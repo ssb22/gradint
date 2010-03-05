@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9953 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9954 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -246,7 +246,9 @@ class RecorderControls:
         theISM.setInputSource(None)
     def addButton(self,row,col,text,command,colspan=None):
         if (row,col) in self.coords2buttons: self.coords2buttons[(row,col)].grid_forget()
-        self.coords2buttons[(row,col)] = Tkinter.Button(self.grid,text=text,command=command)
+        b = makeButton(self.grid,text=text,command=command)
+        b.bind('<FocusIn>',lambda *args:self.scrollIntoView(b))
+        self.coords2buttons[(row,col)] = b
         if not colspan:
             if not col: colspan=1+3*len(self.languagesToDraw)
             else: colspan = 1
@@ -279,7 +281,7 @@ class RecorderControls:
         editEntry.grid(row=row,column=col,sticky='we',columnspan=2)
         editEntry.bind('<Return>',lambda *args:self.doEdit(editText,editEntry,row,col,filename))
         editEntry.bind('<Escape>',lambda *args:self.cancelEdit(editEntry,row,col,filename))
-        self.scrollIntoView(editEntry)
+        focusButton(editEntry)
         if hasattr(self.coords2buttons.get((row-1,col+1),""),"is_synth_label"):
             self.addLabel(row-1,col+1,localise("(synth'd)"))
             self.coords2buttons[(row-1,col+1)].is_synth_label = True
@@ -290,7 +292,7 @@ class RecorderControls:
             try: os.remove(filename)
             except: pass
         self.cancelEdit(editEntry,row,col,filename)
-        if row+1 < self.addMoreRow and (row+1,col+1) in self.coords2buttons: self.scrollIntoView(self.coords2buttons[(row+1,col+1)]) # focus the next "synth" button if it exists (don't press it as well like file renaming because it might be a variant etc, TODO can we skip variants?)
+        if row+1 < self.addMoreRow and (row+1,col+1) in self.coords2buttons: focusButton(self.coords2buttons[(row+1,col+1)]) # focus the next "synth" button if it exists (don't press it as well like file renaming because it might be a variant etc, TODO can we skip variants?)
     def cancelEdit(self,editEntry,row,col,filename):
         editEntry.grid_forget()
         labelAdded = self.addSynthLabel(filename,row,col)
@@ -336,7 +338,7 @@ class RecorderControls:
             selectAllFunc = selectAll
         class E: pass
         e=E() ; e.widget = renameEntry
-        self.ourCanvas.after(50,lambda *args:(self.scrollIntoView(e.widget),selectAllFunc(e)))
+        self.ourCanvas.after(50,lambda *args:(focusButton(e.widget),selectAllFunc(e)))
         renameEntry.bind('<Return>',lambda *args:self.doRename(row,col))
         renameEntry.bind('<Escape>',lambda *args:self.cancelRename(row,col))
     def doRename(self,row,col):
@@ -360,7 +362,7 @@ class RecorderControls:
                 except:
                     tkMessageBox.showinfo(app.master.title(),localise("Could not rename %s to %s") % (origName,newName))
                     return
-                self.addButton(row,col,text=newName,command=(lambda f=self.currentDir+os.sep+newName:self.changeDir(f)))
+                self.addButton(row,col,text=newName,command=(lambda e=None,f=self.currentDir+os.sep+newName:self.changeDir(f)))
             else: # not a directory - rename individual files
                 self.doStop() # just in case
                 for lang in self.languagesToDraw:
@@ -386,17 +388,17 @@ class RecorderControls:
     def cancelRename(self,row,col):
         if hasattr(self,"renameToCancel"): del self.renameToCancel
         origName = self.coords2buttons[(row,col)].origName
-        if isDirectory(unicode2filename(self.currentDir+os.sep+origName)): self.addButton(row,col,text=origName,command=(lambda f=ensure_unicode(self.currentDir+os.sep+origName).encode('utf-8'):self.changeDir(f)))
+        if isDirectory(unicode2filename(self.currentDir+os.sep+origName)): self.addButton(row,col,text=origName,command=(lambda e=None,f=ensure_unicode(self.currentDir+os.sep+origName).encode('utf-8'):self.changeDir(f)))
         else: self.addLabel(row,col,origName)
     def updateFile(self,filename,row,languageNo,state,txtExists="unknown"): # state: 0 not exist, 1 already existed, 2 we just created it
         if not os.sep in filename: filename = self.currentDir+os.sep+filename
         recFilename = filename
         if recFilename.lower().endswith(dotmp3): recFilename=recFilename[:-len(dotmp3)]+dotwav # always record in WAV; can compress to MP3 after
         if state: # exists
-            if not tkSnack or tkSnack=="MicOnly": self.addButton(row,2+3*languageNo,text="Play",command=(lambda f=filename:(self.doStop(),SampleEvent(f).play())))  # but if got full tkSnack, might as well use setInputSource instead to be consistent with the non-_ version:
-            else: self.addButton(row,2+3*languageNo,text=localise("Play"),command=(lambda f=filename:(self.doStop(),theISM.setInputSource(PlayerInput(f,not self.syncFlag)))))
+            if not tkSnack or tkSnack=="MicOnly": self.addButton(row,2+3*languageNo,text="Play",command=(lambda e=None,f=filename:(self.doStop(),SampleEvent(f).play())))  # but if got full tkSnack, might as well use setInputSource instead to be consistent with the non-_ version:
+            else: self.addButton(row,2+3*languageNo,text=localise("Play"),command=(lambda e=None,f=filename:(self.doStop(),theISM.setInputSource(PlayerInput(f,not self.syncFlag)))))
             if tkSnack and (state==2 or self.always_enable_rerecord):
-                self.addButton(row,3+3*languageNo,text=localise("Re-record"),command=(lambda f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l,needToUpdatePlayButton=(not filename==recFilename))))
+                self.addButton(row,3+3*languageNo,text=localise("Re-record"),command=(lambda e=None,f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l,needToUpdatePlayButton=(not filename==recFilename))))
             else:
                 self.addLabel(row,3+3*languageNo,"")
                 self.need_reRecord_enabler = not (not tkSnack)
@@ -408,7 +410,7 @@ class RecorderControls:
             else: self.addLabel(row,2+3*languageNo,localise("(empty)"))
             self.coords2buttons[(row,2+3*languageNo)].is_synth_label = True
             if winCEsound and not tkSnack: self.addLabel(row,3+3*languageNo,"")
-            else: self.addButton(row,3+3*languageNo,text=localise("Record"),command=(lambda f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l)))
+            else: self.addButton(row,3+3*languageNo,text=localise("Record"),command=(lambda e=None,f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l)))
     def add_addMore_button(self):
         if winCEsound and not tkSnack: pass # no 'add more words' button on WinCE; use PocketPC record button instead
         else: self.addButton(self.addMoreRow,0,text=localise("Add more words"),command=(lambda *args:self.addMore()),colspan=cond(self.need_reRecord_enabler,2,4))
@@ -452,18 +454,20 @@ class RecorderControls:
           for r in [row+1,row+2]:
             if r==self.addMoreRow: self.addMore()
             if (r,3+3*languageNo) in self.coords2buttons:
-                return self.scrollIntoView(self.coords2buttons[(r,3+3*languageNo)])
+                return focusButton(self.coords2buttons[(r,3+3*languageNo)])
     def scrollIntoView(self,button):
-        focusButton(button)
+        self.scrollingIntoView = button
         self.continueScrollIntoView(button)
     def continueScrollIntoView(self,button):
+        # TODO this logic should be separated from this class and used for the multiple-students scrollbar also (along with the FocusIn binding above)
+        if not self.scrollingIntoView==button: return # some other button took over
         if not hasattr(self,"ourCanvas"): return # closing down?
         by,bh,cy,ch = button.winfo_rooty(),button.winfo_height(),self.ourCanvas.winfo_rooty(),self.ourCanvas.winfo_height()
-        if not by or not bh or not cy or not ch: return app.after(10,lambda *args:self.continueScrollIntoView(button))
-        if by+bh >= cy+ch-cond(ch>2*bh,bh,0):
-            # can't specify pixels, so have to keep advancing until we get it
-            self.ourCanvas.yview("scroll","1","units")
-            app.after(10,lambda *args:self.continueScrollIntoView(button))
+        if not by or not bh or not cy or not ch: pass # wait a bit longer
+        if by+bh >= cy+ch-cond(ch>2*bh,bh,0): self.ourCanvas.yview("scroll","1","units") # can't specify pixels, so have to keep advancing until we get it
+        elif by < cy: self.ourCanvas.yview("scroll","-1","units")
+        else: return # done
+        app.after(10,lambda *args:self.continueScrollIntoView(button))
     def doStop(self):
         theISM.stopRecording()
         self.updateForStopOrChange()
@@ -507,7 +511,7 @@ class RecorderControls:
         for inc in [-30, -5, 5, 30]:
             if inc<0: text="<"+str(-inc)
             else: text=str(inc)+">"
-            self.addButton(row,col,text=text,command=(lambda i=inc:self.handleSkip(filename,i)))
+            self.addButton(row,col,text=text,command=(lambda e=None,i=inc:self.handleSkip(filename,i)))
             col += 1
     def handleSkip(self,filename,i):
         self.protect_currentRecordFrom()
@@ -551,10 +555,10 @@ class RecorderControls:
             self.draw()
             msg1 = ""
         self.setSync(tkMessageBox.askyesno(app.master.title(),localise(msg1+"Do you want your next Play operation to be delayed until you also press a Record button?")))
-    def draw(self,dirToHighlight=None):
+    def draw(self,dirToHighlight=1): # 1 is used as a "not exist" token
         self.languagesToDraw = [secondLanguage,firstLanguage] # each lang cn take 3 columns, starting at column 1 (DO need to regenerate this every draw - languages may have changed!)
         if self.currentDir==samplesDirectory: app.master.title(localise("Recordings manager"))
-        else: app.master.title(localise("Recordings manager: ")+(os.sep+self.currentDir)[(os.sep+self.currentDir).rindex(os.sep)+1:])
+        else: app.master.title(localise("Recordings manager: ")+filename2unicode((os.sep+self.currentDir)[(os.sep+self.currentDir).rindex(os.sep)+1:]))
         if not self.snack_initialized:
             if tkSnack and not tkSnack=="MicOnly":
                 tkSnack.initializeSnack(app)
@@ -569,16 +573,18 @@ class RecorderControls:
 
         self.need_reRecord_enabler = 0 # no previously-existing words yet (when we get existing words we 'lock' them and have to unlock by pressing a global 'rerecord' button 1st, just in case)
 
-        if winCEsound and not tkSnack: Tkinter.Button(self.frame,text=localise("PocketPC record..."),command=self.pocketPCrecord).grid(row=1,columnspan=2)
+        if winCEsound and not tkSnack: makeButton(self.frame,text=localise("PocketPC record..."),command=self.pocketPCrecord).grid(row=1,columnspan=2)
         else:
           r = Tkinter.Frame(self.frame)
           r.grid(row=1,sticky="e",columnspan=2)
           Tkinter.Label(r,text=localise("Action of spacebar during recording")).pack()
           r=Tkinter.Frame(r) ; r.pack()
-          Tkinter.Radiobutton(r, text=localise("move down"), variable=app.scanrow, value="0", indicatoron=1).pack({"side":"left"})
-          Tkinter.Radiobutton(r, text=localise("move along"), variable=app.scanrow, value="1", indicatoron=1).pack({"side":"left"})
-          Tkinter.Radiobutton(r, text=localise("stop"), variable=app.scanrow, value="2", indicatoron=1).pack({"side":"left"})
-
+          for button in [
+              Tkinter.Radiobutton(r, text=localise("move down"), variable=app.scanrow, value="0", indicatoron=1),
+              Tkinter.Radiobutton(r, text=localise("move along"), variable=app.scanrow, value="1", indicatoron=1),
+              Tkinter.Radiobutton(r, text=localise("stop"), variable=app.scanrow, value="2", indicatoron=1)]:
+              bindUpDown(button,True)
+              button.pack({"side":"left"})
         self.grid,self.ourCanvas = setupScrollbar(self.frame,2)
         if hasattr(self,"oldCanvasBbox"): del self.oldCanvasBbox # unconditionally reconfigure scrollbar even if bounds are unchanged
         for languageNo in range(len(self.languagesToDraw)): self.grid.grid_columnconfigure(3+3*languageNo,weight=1) # prefer expanding the last col of each language rather than evenly
@@ -587,9 +593,19 @@ class RecorderControls:
         maxPrefix = 0 ; self.has_recordFrom_buttons = False
 
         if not self.currentDir==samplesDirectory:
-            self.addButton(curRow,0,text=localise("(Up)"),command=(lambda f=self.currentDir[:self.currentDir.rindex(os.sep)]:self.changeDir(f))) # don't auto-focus this, as the user might want to scroll with the arrows (auto-focus only a dir button below, once an "up" is *pressed*)
+            self.addButton(curRow,0,text=localise("(Up)"),command=(lambda e=None,f=self.currentDir[:self.currentDir.rindex(os.sep)]:self.changeDir(f)))
             curRow += 1
-        l = os.listdir(self.currentDir) ; l.sort()
+        l = os.listdir(self.currentDir)
+        def cmpfunc(a,b): # sort alphabetically but ensure L2 comes before L1 for tab order
+            if "_" in a and "_" in b and a[:a.rindex("_")]==b[:b.rindex("_")]: # the same apart from language? (TODO this won't work with variants)
+                if languageof(a)==secondLanguage: a='1'
+                elif languageof(a)==firstLanguage: a='2'
+                if languageof(b)==secondLanguage: b='1'
+                elif languageof(b)==firstLanguage: b='2'
+            if a>b: return 1
+            elif b>a: return -1
+            else: return 0
+        l.sort(cmpfunc)
         self.has_variants = check_has_variants(self.currentDir,l)
         allLangs = list2set([firstLanguage,secondLanguage]+possible_otherLanguages+otherLanguages)
         hadDirectories = False
@@ -600,11 +616,13 @@ class RecorderControls:
             if isDirectory(self.currentDir+os.sep+fname):
                  if not flwr in ["zips","utils","advanced utilities"]: # NOT "prompts", that can be browsed
                     newDir = self.currentDir+os.sep+fname
-                    self.addButton(curRow,0,text=filename2unicode(fname),command=(lambda f=newDir:self.changeDir(f)))
+                    self.addButton(curRow,0,text=filename2unicode(fname),command=(lambda e=None,f=newDir:self.changeDir(f)))
                     # TODO if _disabled have an Enable button ?
                     # if not have a Disable ??
                     # (NB though the above button will have a column span)
-                    if self.currentDir+os.sep+fname == dirToHighlight: self.scrollIntoView(self.coords2buttons[(curRow,0)])
+                    if self.currentDir+os.sep+fname == dirToHighlight:
+                        focusButton(self.coords2buttons[(curRow,0)])
+                        dirToHighlight = None # done
                     curRow += 1
                     if fileExists(self.currentDir+os.sep+fname+os.sep+longDescriptionName): description=u8strip(open(self.currentDir+os.sep+fname+os.sep+longDescriptionName).read()).strip(wsp)
                     elif fileExists(self.currentDir+os.sep+fname+os.sep+shortDescriptionName): description=u8strip(open(self.currentDir+os.sep+fname+os.sep+shortDescriptionName).read()).strip(wsp)
@@ -633,33 +651,37 @@ class RecorderControls:
                         if prefix+"_"+lang+dottxt in l: foundTxt[lang]=(self.currentDir+os.sep+prefix+"_"+lang+dottxt,2+3*self.languagesToDraw.index(lang))
                     prefix2row[prefix] = curRow
                     for lang in self.languagesToDraw:
-                        self.updateFile(prefix+"_"+lang+dotwav,curRow,self.languagesToDraw.index(lang),state=0,txtExists=(lang in foundTxt))
+                        if lang==languageOverride: # do it here to preserve tab order
+                            self.updateFile(fname,curRow,self.languagesToDraw.index(lang),state=1)
+                            languageOverride=None # so not done again
+                        else: self.updateFile(prefix+"_"+lang+dotwav,curRow,self.languagesToDraw.index(lang),state=0,txtExists=(lang in foundTxt))
                         Tkinter.Label(self.grid,text=" "+localise(lang)+": ").grid(row=curRow,column=1+3*self.languagesToDraw.index(lang))
                     for filename,col in foundTxt.values(): self.addSynthLabel(filename,curRow+1,col)
                     curRow += 2
                 if languageOverride in self.languagesToDraw and not flwr.endswith(dottxt):
                     self.updateFile(fname,prefix2row[prefix],self.languagesToDraw.index(languageOverride),state=1)
             elif (flwr.endswith(dotwav) or flwr.endswith(dotmp3)) and tkSnack and not tkSnack=="MicOnly": # no _ in it but we can still play it for splitting
-                self.addButton(curRow,0,text=(localise("Record from %s") % (filename2unicode(fname),)),command=(lambda r=curRow,f=self.currentDir+os.sep+fname:self.doRecordFrom(f,r)))
+                self.addButton(curRow,0,text=(localise("Record from %s") % (filename2unicode(fname),)),command=(lambda e=None,r=curRow,f=self.currentDir+os.sep+fname:self.doRecordFrom(f,r)))
                 self.has_recordFrom_buttons = True
                 curRow += 1
         self.addMoreRow = curRow ; self.maxPrefix = maxPrefix+1
         self.add_addMore_button()
         if curRow<3 and not hadDirectories: self.addMore() # anyway
+        if not dirToHighlight==None: focusButton(self.coords2buttons[(0,0)]) # didn't find it, so focus the first one
 
         r=Tkinter.Frame(self.frame)
         r.grid(columnspan=2)
         r2 = Tkinter.Frame(r) ; r2.pack(side="left")
-        Tkinter.Button(r2,text=localise("Advanced"),command=self.do_openInExplorer).pack()
-        Tkinter.Button(r2,text=localise("Record from file"),command=self.do_recordFromFile).pack()
+        makeButton(r2,text=localise("Advanced"),command=self.do_openInExplorer).pack()
+        makeButton(r2,text=localise("Record from file"),command=self.do_recordFromFile).pack()
         r2 = Tkinter.Frame(r) ; r2.pack(side="left")
-        if not self.always_enable_synth: Tkinter.Button(r2,text=localise("Mix with computer voice"),command=self.enable_synth).pack()
+        if not self.always_enable_synth: makeButton(r2,text=localise("Mix with computer voice"),command=self.enable_synth).pack()
         r = Tkinter.Frame(r2) ; r.pack()
-        if got_program("lame"): self.CompressButton = Tkinter.Button(r,text=localise("Compress all"),command=(lambda *args:self.all2mp3_or_zip())) # was "Compress all recordings" but it takes too much width
+        if got_program("lame"): self.CompressButton = makeButton(r,text=localise("Compress all"),command=(lambda *args:self.all2mp3_or_zip())) # was "Compress all recordings" but it takes too much width
         # TODO else can we see if it's possible to get the encoder on the fly, like in the main screen? (would need some restructuring)
-        elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = Tkinter.Button(r,text=localise("Zip for email"),command=(lambda *args:self.all2mp3_or_zip()))
+        elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = makeButton(r,text=localise("Zip for email"),command=(lambda *args:self.all2mp3_or_zip()))
         if hasattr(self,"CompressButton"): self.CompressButton.pack(side="left")
-        Tkinter.Button(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack(side="left")
+        makeButton(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack(side="left")
         
         if winCEsound and not tkSnack: msg="Click on filenames at left to rename; click synthesized text to edit it"
         else: msg="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it."

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9953 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9954 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -150,12 +150,16 @@ def addStatus(widget,status,mouseOnly=0):
     if not mouseOnly:
         widget.bind('<FocusIn>',lambda *args:app.set_statusline(status))
         widget.bind('<FocusOut>',app.restore_statusline)
-def addButton(parent,text,command,packing=None,status=None):
+def makeButton(parent,text,command):
     button = Tkinter.Button(parent)
     button["text"] = text
     button["command"] = command
     button.bind('<Return>',command) # so can Tab through them
     button.bind('<ButtonRelease-3>', app.wrongMouseButton)
+    bindUpDown(button,True)
+    return button
+def addButton(parent,text,command,packing=None,status=None):
+    button = makeButton(parent,text,command)
     if status: addStatus(button,status)
     if packing=="nopack": pass
     elif packing: button.pack(packing)
@@ -207,12 +211,21 @@ def addTextBox(row,wide=0):
     else:
         # Tkinter bug workaround (some versions): event_generate from within a key event handler can be unreliable, so the Ctrl-A handler delays selectAll by 10ms:
         entry.bind(cond(macsound,'<Command-a>','<Control-a>'),(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
+    bindUpDown(entry,False)
     if wide=="nopack": pass
     elif wide:
         if winCEsound or olpc: entry["width"]=1 # so it will squash down rather than push off-screen any controls to the right (but DON'T do this on other platforms, where we want the window to expand in that case, e.g. when there are cache controls)
         entry.pack(side="left",fill=Tkinter.X,expand=1)
     else: entry.pack({"side":"left"})
     return text,entry
+def bindUpDown(o,alsoLeftRight=False): # bind the up and down arrows to do shift-tab and tab (may be easier for some users, especially on devices where tab is awkward)
+    tab=(lambda e:e.widget.after(10,lambda e=e:e.widget.event_generate('<Tab>')))
+    shTab=(lambda e:e.widget.after(10,lambda e=e:e.widget.event_generate('<Shift-Tab>')))
+    o.bind('<Up>',shTab)
+    o.bind('<Down>',tab)
+    if alsoLeftRight:
+        o.bind('<Left>',shTab)
+        o.bind('<Right>',tab)
 def addLabelledBox(row,wide=0,status=None):
     label = addLabel(row,"") # will set contents later
     text,entry = addTextBox(row,wide)
@@ -249,6 +262,7 @@ def make_output_row(parent):
     rightrow = addRightRow(row) # to show beginners this row probably isn't the most important thing despite being in a convenient place, we'll right-align
     def addFiletypeButton(fileType):
         t = Tkinter.Radiobutton(rightrow, text=" "+fileType.upper()+" ", variable=app.outputTo, value=fileType, indicatoron=0)
+        bindUpDown(t,True)
         addStatus(t,"Select this to save a lesson or\na phrase to a%s %s file" % (cond(fileType[0] in "AEFHILMNORSX","n",""),fileType))
         t.pack({"side":"left"})
     if winsound or mingw32: got_windows_encoder = fileExists(programFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs")
@@ -257,6 +271,7 @@ def make_output_row(parent):
     Tkinter.Label(rightrow,text=localise("To")+":").pack({"side":"left"})
     t=Tkinter.Radiobutton(rightrow, text=" "+localise("Speaker")+" ", variable=app.outputTo, value="", indicatoron=0)
     addStatus(t,"Select this to send all sounds to\nthe speaker, not to files on disk")
+    bindUpDown(t,True)
     t.pack({"side":"left"})
     if got_program("lame"): addFiletypeButton("mp3")
     if got_windows_encoder: addFiletypeButton("wma")
@@ -352,19 +367,17 @@ def updateUserRow(fromMainMenu=0):
     row.widgetsToDel.append(r) ; row=r
     if winCEsound: row.pack()
     else: row.pack(padx=10,pady=10)
-    if len(names)>4: # better have a scrollbar
-        row, c = setupScrollbar(row,1)
-        c.after(cond(winCEsound,1500,300),lambda *args:c.config(scrollregion=c.bbox(Tkinter.ALL),width=c.bbox(Tkinter.ALL)[2],height=min(c["height"],c.winfo_screenheight()/2,c.bbox(Tkinter.ALL)[3]))) # hacky (would be better if it could auto shrink on resize)
+    if len(names)>4: row, c = setupScrollbar(row,1) # better have a scrollbar (will configure it after the loop below)
     for i in range(len(names)):
       if names[i].strip(wsp):
         r=Tkinter.Radiobutton(row, text=names[i], variable=app.userNo, value=str(i), takefocus=0)
         r.grid(row=i+1,column=0,sticky="w")
         r["command"]=lambda i=i,*args: select_userNumber(i)
-        r2=Tkinter.Radiobutton(row, text="Select", variable=app.userNo, value=str(i), indicatoron=0)
+        r2=Tkinter.Radiobutton(row, text="Select", variable=app.userNo, value=str(i), indicatoron=0) ; bindUpDown(r2,True)
         r2.grid(row=i+1,column=1,sticky="e")
         r2["command"]=lambda i=i,*args: select_userNumber(i)
-        addButton(row,"Rename",lambda i=i,r=r,row=row,*args:renameUser(i,r,row),"nopack").grid(row=i+1,column=2,sticky="e")
-        addButton(row,"Delete",lambda i=i,*args:deleteUser(i),"nopack").grid(row=i+1,column=3,sticky="e")
+        addButton(row,"Rename",lambda e=None,i=i,r=r,row=row:renameUser(i,r,row),"nopack").grid(row=i+1,column=2,sticky="e")
+        addButton(row,"Delete",lambda e=None,i=i:deleteUser(i),"nopack").grid(row=i+1,column=3,sticky="e")
       else:
         r=Tkinter.Frame(row) ; r.grid(row=i+1,column=0,columnspan=4)
         text,entry = addTextBox(r)
@@ -375,6 +388,7 @@ def updateUserRow(fromMainMenu=0):
         if not i: Tkinter.Label(row,text="The first name should be that of the\nEXISTING user (i.e. YOUR name).").grid(row=i+2,column=0,columnspan=4)
       if hasattr(row,"widgetsToDel"): row.widgetsToDel.append(r)
       if not names[i]: break
+    if len(names)>4: c.after(cond(winCEsound,1500,300),lambda *args:c.config(scrollregion=c.bbox(Tkinter.ALL),width=c.bbox(Tkinter.ALL)[2],height=min(c["height"],c.winfo_screenheight()/2,c.bbox(Tkinter.ALL)[3]))) # hacky (would be better if it could auto shrink on resize)
   else: row.widgetsToDel.append(addButton(row,localise("Family mode (multiple user)"),lambda *args:(set_userName(0,""),updateUserRow())))
 def renameUser(i,radioButton,parent,cancel=0):
     if hasattr(radioButton,"in_renaming"):
@@ -426,18 +440,12 @@ def asUnicode(x): # for handling the return value of Tkinter entry.get()
         except: return x.decode("iso-8859-1") # TODO can we get what it actually IS? (on German WinXP, sys.getdefaultencoding==ascii and locale==C but Tkinter still returns Latin1)
 
 def setupScrollbar(parent,rowNo):
-    s = Tkinter.Scrollbar(parent)
+    s = Tkinter.Scrollbar(parent,takefocus=0)
     s.grid(row=rowNo,column=cond(winCEsound or olpc,0,1),sticky="ns"+cond(winCEsound or olpc,"w","e"))
     c=Tkinter.Canvas(parent,bd=0,width=200,height=100,yscrollcommand=s.set)
     c.grid(row=rowNo,column=cond(winCEsound or olpc,1,0),sticky="nsw")
     s.config(command=c.yview)
     scrolledFrame=Tkinter.Frame(c) ; c.create_window(0,0,window=scrolledFrame,anchor="nw")
-    for w in [parent,c,s]:
-        w.bind("<Button-5>",(lambda *args:c.yview("scroll","1","units")))
-        w.bind("<Down>",(lambda *args:c.yview("scroll","1","units")))
-        w.bind("<Button-4>",(lambda *args:c.yview("scroll","-1","units")))
-        w.bind("<Up>",(lambda *args:c.yview("scroll","-1","units")))
-    parent.focus() # TODO how to make sure it gets these events after the focus has changed?
     return scrolledFrame, c
 
 # GUI presets buttons:
@@ -453,7 +461,7 @@ class ExtraButton(object):
         app.extra_button_callables.append(self) # so we're not lost when deleted from the waiting list
         self.button = addButton(app.rightPanel,localise("Add ")+unicode(self.shortDescription,"utf-8"),self,{"fill":"x"})
         self.button["anchor"]="w"
-    def __call__(self):
+    def __call__(self,*args):
         if not tkMessageBox.askyesno(app.master.title(),unicode(self.longDescription,"utf-8")+"\n"+localise("Add this to your collection?")): return
         newName = self.directory
         if os.sep in newName: newName=newName[newName.rfind(os.sep)+1:]
@@ -890,7 +898,7 @@ def startTk():
             self.ChangeButton = addButton(self.CancelRow,"",self.changeItem,{"side":"left"},status="Press to alter or to delete\nthe currently-selected word in the list") ; self.ChangeButton.pack_forget() # don't display it until select a list item
             self.updateLanguageLabels()
             self.LessonRow.pack() ; self.CancelRow.pack()
-            self.ListBox = Tkinter.Listbox(self.leftPanel)
+            self.ListBox = Tkinter.Listbox(self.leftPanel, takefocus=0) # TODO takefocus=0 for now. bindUpDown?  but up/down/left/right also need to work IN the listbox, this could be tricky.  Also need to populate the input boxes when on the list box.
             self.ListBox.bind('<ButtonRelease-1>', self.getListItem)
             self.ListBox.bind('<ButtonRelease-3>', self.wrongMouseButton)
             addStatus(self.ListBox,"This is your collection of computer-voiced words.\nClick to hear, change or remove an item.")
