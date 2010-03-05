@@ -224,15 +224,15 @@ class RecorderControls:
         oldDir = self.currentDir
         self.currentDir = newDir
         self.draw(oldDir)
-    def global_rerecord(self):
+    def global_rerecord(self,*args):
         self.undraw()
         self.always_enable_rerecord = True
         self.draw()
-    def enable_synth(self):
+    def enable_synth(self,*args):
         self.undraw()
         self.always_enable_synth = True
         self.draw()
-    def finished(self):
+    def finished(self,*args):
         app.master.title(appTitle)
         self.undraw()
         del app.scanrow
@@ -300,7 +300,7 @@ class RecorderControls:
             if labelAdded: self.addLabel(row-1,col+1,localise("(synth'd)"))
             else: self.addButton(row-1,col+1,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row,col,filename)))
             self.coords2buttons[(row-1,col+1)].is_synth_label = True
-    def all2mp3_or_zip(self):
+    def all2mp3_or_zip(self,*args):
         self.CompressButton["text"] = localise("Compressing, please wait")
         if got_program("lame"): wavToMp3(self.currentDir) # TODO not in the GUI thread !! (but lock our other buttons while it's doing it)
         if got_program("zip") and (explorerCommand or winCEsound) and (not got_program("lame") or tkMessageBox.askyesno(app.master.title(),localise("All recordings have been compressed to MP3.  Do you also want to make a ZIP file for sending as email?"))):
@@ -420,7 +420,7 @@ class RecorderControls:
         if (self.addMoreRow,0) in self.coords2buttons: self.coords2buttons[(self.addMoreRow,0)].grid_forget() # old 'add more' button
         if (self.addMoreRow,2) in self.coords2buttons: self.coords2buttons[(self.addMoreRow,2)].grid_forget() # old 're-record' button
         self.coords2buttons[(self.addMoreRow,4)].grid_forget() # old 'new folder' button
-    def addMore(self):
+    def addMore(self,*args):
         self.del_addMore_button()
         for r in range(5):
             if self.maxPrefix<=99: prefix = "word%02d" % self.maxPrefix
@@ -464,11 +464,13 @@ class RecorderControls:
         if not hasattr(self,"ourCanvas"): return # closing down?
         by,bh,cy,ch = button.winfo_rooty(),button.winfo_height(),self.ourCanvas.winfo_rooty(),self.ourCanvas.winfo_height()
         if not by or not bh or not cy or not ch: pass # wait a bit longer
-        if by+bh >= cy+ch-cond(ch>2*bh,bh,0): self.ourCanvas.yview("scroll","1","units") # can't specify pixels, so have to keep advancing until we get it
+        if by+bh >= cy+ch-cond(ch>2*bh,bh,0):
+            self.ourCanvas.yview("scroll","1","units") # can't specify pixels, so have to keep advancing until we get it
+            if by+bh<=cy+ch: return # make this the last one - don't loop consuming CPU on bottom of list
         elif by < cy: self.ourCanvas.yview("scroll","-1","units")
         else: return # done
         app.after(10,lambda *args:self.continueScrollIntoView(button))
-    def doStop(self):
+    def doStop(self,*args):
         theISM.stopRecording()
         self.updateForStopOrChange()
     def updateForStopOrChange(self):
@@ -488,7 +490,7 @@ class RecorderControls:
         if hasattr(self,"currentRecording") and not theISM.currentOutfile: self.doStop() # ensure GUI updates the recording button after player auto-stop (for want of a better place to put it)
         app.after(cond(winCEsound,3000,600),lambda *args:self.reconfigure_scrollbar())
     def setSync(self,syncFlag): self.syncFlag = syncFlag
-    def newFolder(self):
+    def newFolder(self,*args):
         count=0
         while True:
             fname = "folder%d" % count
