@@ -669,8 +669,10 @@ class RecorderControls:
         self.addMoreRow = curRow ; self.maxPrefix = maxPrefix+1
         self.add_addMore_button()
         if curRow<3 and not hadDirectories: self.addMore() # anyway
-        if not dirToHighlight==None: focusButton(self.coords2buttons[(0,0)]) # didn't find it, so focus the first one
-
+        if not dirToHighlight==None: # didn't find it, so focus the first one
+            b = self.coords2buttons.get((0,2),None)
+            if not b: b = self.coords2buttons.get((0,0),None)
+            if b: b.focus() # don't focusButton in this case - no Mac flashing
         r=Tkinter.Frame(self.frame)
         r.grid(columnspan=2)
         r2 = Tkinter.Frame(r) ; r2.pack(side="left")
