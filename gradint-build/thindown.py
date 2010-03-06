@@ -28,26 +28,24 @@ if "s60" in sys.argv: # S60 version
 "if gotSox and unix:",
 "class SoundCollector(object):",
 "def lame_endian_parameters():",
-"def soundfile_to_data(file,soxParams):",
 # TODO SH sound collector will have problem with indentation due to """..""" strings
 "def decode_mp3(file):",
 "class Mp3FileCache(object):",
 "if outputFile:",
 "class InputSourceManager(object):",
 "def wavToMp3(directory):",
-"def makeMp3Zips(baseDir,outDir,zipNo,direc=None):",
+"def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):",
 "class RecorderControls:",
 "def doRecWords():",
 "if app:","elif app:",
 "def addStatus(widget,status,mouseOnly=0):",
-"def removeStatus(widget):",
 "def addButton(parent,text,command,packing=None,status=None):",
 "def addLabel(row,label):",
 "def CXVMenu(e):",
 "def selectAll(e):",
 "def selectAllButNumber(e):",
 "def addTextBox(row,wide=0):",
-"def addLabelledBox(row,wide=0):",
+"def addLabelledBox(row,wide=0,status=None):",
 "def addRow(parent,wide=0):",
 "def addRightRow(widerow):",
 "def make_output_row(parent):",
@@ -57,13 +55,14 @@ if "s60" in sys.argv: # S60 version
 "def deleteUser(i):",
 "def setupScrollbar(parent,rowNo):",
 "def focusButton(button):",
+"def bindUpDown(o,alsoLeftRight=False):",
 "class ExtraButton(object):",
 "def make_extra_buttons_waiting_list():",
 "def startTk():",
 "def guiVocabList(parsedVocab):",
 "def synchronizeListbox(listbox,masterList):",
 "if useTK:",
-"def openDirectory(dir):",
+"def openDirectory(dir,inGuiThread=0):",
 "if winCEsound:",
 "def check_for_slacking():",
 "def gui_outputTo_end():",
@@ -73,6 +72,7 @@ else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = -1
 lCount = -1
+omitted = {}
 for l in sys.stdin.xreadlines():
   lCount += 1
   if lCount==2: print "\n# NOTE: this version has been automatically TRIMMED for "+version+" (some non-"+version+" code taken out)\n"
@@ -84,7 +84,11 @@ for l in sys.stdin.xreadlines():
       indentLevel = i ; break
   if indentLevel<0 or indentLevel==len(l) or (revertToIndent>=0 and indentLevel>revertToIndent): continue
   revertToIndent = -1
-  if (l+"#")[:l.find("#")].strip() in to_omit:
-    print (l+"#")[:l.find("#")]+" pass # trimmed"
+  code = (l+"#")[:l.find("#")].strip()
+  if code in to_omit:
+    print code+" pass # trimmed"
     revertToIndent = indentLevel
+    omitted[code]=1
   else: print l
+for o in to_omit:
+  if not o in omitted: sys.stderr.write("Warning: line not matched: "+o+"\n")
