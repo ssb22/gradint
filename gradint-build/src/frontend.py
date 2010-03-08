@@ -1567,8 +1567,8 @@ def main():
     global useTK,runInBackground,justSynthesize,waitBeforeStart,traceback,appTitle
     if useTK and runInBackground and not (winsound or mingw32) and hasattr(os,"fork") and not "gradint_no_fork" in os.environ:
         if os.fork(): sys.exit()
-        os.setsid() # decouple
-        sys.stdin.close() ; sys.stdout.close() ; sys.stderr.close() # for cron (??? doesn't work?) ('at' OK)
+        os.setsid() ; os.setpgrp()
+        sys.stdin.close() ; sys.stdout.close() ; sys.stderr.close()
         class Sink(file):
             def __init__(self): pass
             def write(self,*args): pass

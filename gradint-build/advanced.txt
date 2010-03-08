@@ -700,7 +700,7 @@ recorderMode = 0
 runInBackground = 0
 
 # Set the following to 0 if you don't want to use the Tk GUI
-# (it's only used if you have Tk anyway) :
+# even if it is present on the system
 
 useTK = 1
 
