@@ -607,7 +607,7 @@ if outputFile:
     assert gotSox or out_type=="sh", "Cannot have (non-SH) outputFile when 'sox' is not available on the system"
     if out_type=="sh": soundCollector,sample_table_hack = ShSoundCollector(), 1
     else: soundCollector = SoundCollector()
-    waitBeforeStart = runInBackground = 0
+    waitBeforeStart = 0
     if unix and out_type in ["ogg","mp3"] and os.uname()[4].startswith("arm"): show_warning("Note: On armel, compile lame or oggenc with -fno-finite-math-only, or use lame -b 64 (or higher).  See http://martinwguy.co.uk/martin/debian/no-finite-math-only")
 if not (soundCollector and out_type=="sh"): compress_SH = False # regardless of its initial setting (because it's used outside ShSoundCollector)
 def collector_time(): return soundCollector.tell()

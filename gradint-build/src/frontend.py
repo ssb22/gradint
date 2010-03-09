@@ -1153,7 +1153,6 @@ def synchronizeListbox(listbox,masterList):
         i += 1 ; li -= 1
 
 # Tk stuff (must be done outside of main() so the imported modules are globally visible)
-if soundCollector or justSynthesize or appuifw or not (winsound or winCEsound or mingw32 or macsound or riscos_sound or cygwin or "DISPLAY" in os.environ): useTK = runInBackground = 0
 if useTK:
     # Find editor and file-manager commands for the GUI to use
     textEditorName="Edit" ; textEditorWaits=0
@@ -1208,10 +1207,10 @@ if useTK:
                 signal.signal(signal.SIGINT,raise_int)
             except: pass
     except RuntimeError:
-        runInBackground = useTK = 0
+        useTK = 0
         if __name__=="__main__": show_warning("Cannot start the GUI due to a Tk error")
     except ImportError:
-        runInBackground = useTK = 0
+        useTK = 0
         if __name__=="__main__" and not riscos_sound: show_warning("Cannot start the GUI because tkinter package is not installed on this system"+cond(fileExists("/var/lib/dpkg/status")," (try python-tk in Debian)","")+".")
 
 def openDirectory(dir,inGuiThread=0):
@@ -1564,23 +1563,13 @@ def gui_outputTo_end():
         if not no_output: openDirectory(gui_output_directory)
 
 def main():
-    global useTK,runInBackground,justSynthesize,waitBeforeStart,traceback,appTitle
-    if useTK and runInBackground and not (winsound or mingw32) and hasattr(os,"fork") and not "gradint_no_fork" in os.environ:
-        if os.fork(): sys.exit()
-        os.setsid() ; os.setpgrp()
-        sys.stdin.close() ; sys.stdout.close() ; sys.stderr.close()
-        class Sink(file):
-            def __init__(self): pass
-            def write(self,*args): pass
-        sys.stdout = sys.stderr = Sink()
-        # emacs still not ok with this; even double-fork doesn't help
-    else: runInBackground = 0
+    global useTK,justSynthesize,waitBeforeStart,traceback,appTitle
     if useTK:
         if justSynthesize and not justSynthesize[-1]=='*': appTitle=cond('#' in justSynthesize,"Gradint","Reader") # not "language lesson"
         startTk()
     else: rest_of_main()
 def rest_of_main():
-    global useTK,runInBackground,justSynthesize,waitBeforeStart,traceback,appTitle,saveProgress
+    global useTK,justSynthesize,waitBeforeStart,traceback,appTitle,saveProgress
     exitStatus = 0
 
     try:
