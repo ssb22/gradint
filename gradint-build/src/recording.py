@@ -338,7 +338,7 @@ class RecorderControls:
             selectAllFunc = selectAll
         class E: pass
         e=E() ; e.widget = renameEntry
-        self.ourCanvas.after(50,lambda *args:(focusButton(e.widget),selectAllFunc(e)))
+        self.ourCanvas.after(50,lambda *args:(e.widget.focus(),self.scrollIntoView(e.widget),selectAllFunc(e)))
         renameEntry.bind('<Return>',lambda *args:self.doRename(row,col))
         renameEntry.bind('<Escape>',lambda *args:self.cancelRename(row,col))
     def doRename(self,row,col):

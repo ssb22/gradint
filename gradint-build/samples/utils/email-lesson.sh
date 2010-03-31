@@ -133,9 +133,13 @@ do echo "mail sending failed; retrying in 62 seconds"; sleep 62; done; fi
     unset Send_Podcast_Instead
     if test -s email_lesson_users/$U/podcasts-to-send; then
       export Send_Podcast_Instead="$(head -1 email_lesson_users/$U/podcasts-to-send)"
-      tail -$(echo $(cat email_lesson_users/$U/podcasts-to-send|wc -l)-1|bc) email_lesson_users/$U/podcasts-to-send > email_lesson_users/$U/podcasts-to-send2
+      export NumLines=$(echo $(cat email_lesson_users/$U/podcasts-to-send|wc -l)-1|bc)
+      tail -$NumLines email_lesson_users/$U/podcasts-to-send > email_lesson_users/$U/podcasts-to-send2
       mv email_lesson_users/$U/podcasts-to-send email_lesson_users/$U/podcasts-to-send.old
       mv email_lesson_users/$U/podcasts-to-send2 email_lesson_users/$U/podcasts-to-send
+      if test $NumLines == 0; then
+        echo $U | $MailProg -s Warning:email-lesson-run-out-of-podcasts $ADMIN_EMAIL
+      fi
     else rm -f email_lesson_users/$U/podcasts-to-send.old # won't be a rollback after this
     fi
     if test $ENCODE_ON_REMOTE_HOST == 1; then
