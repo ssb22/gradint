@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9954 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9955 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -65,23 +65,16 @@ def lesson_loop():
         dbase = ProgressDatabase()
         if not dbase.data:
             msg = "There are no words to put in the lesson."
-            if app:
+            if app or appuifw:
                 drop_to_synthloop = False
                 msg = localise(msg)
-                if hasattr(app,"TestButton"): msg += ("\n"+(localise("Please press \"%s\" first.") % localise("Manage word list")))
+                if app and hasattr(app,"TestButton"): msg += ("\n"+(localise("Please press \"%s\" first.") % localise("Manage word list")))
                 else: msg += ("\n"+localise("Please add some words first."))
             else:
                 drop_to_synthloop = (partials_langs or get_synth_if_possible("en",0) or viable_synths) # the get_synth_if_possible call here is basically to ensure viable_synths is populated
-                if appuifw: msg += " Please read the instructions on the website, which tell you how to add words."+cond(drop_to_synthloop," Dropping back to justSynthesize loop.","")
-                else: msg += "\nPlease read the instructions on the website\nwhich tell you how to add words.\n"+cond(drop_to_synthloop,"Dropping back to justSynthesize loop.\n","")
+                msg += "\nPlease read the instructions on the website\nwhich tell you how to add words.\n"+cond(drop_to_synthloop,"Dropping back to justSynthesize loop.\n","")
             if drop_to_synthloop:
-                if appuifw:
-                    t=appuifw.Text()
-                    t.add(u""+msg)
-                    appuifw.app.body = t
-                else:
-                    clearScreen()
-                    show_info(msg)
+                clearScreen() ; show_info(msg)
                 primitive_synthloop()
             else: waitOnMessage(msg)
             return

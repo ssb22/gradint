@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9954 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9955 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -26,12 +26,7 @@ def waitOnMessage(msg):
     else: msg2=msg
     if appuifw:
         t=appuifw.Text() ; t.add(u"".join(warnings_printed)+msg) ; appuifw.app.body = t # in case won't fit in the query()  (and don't use note() because it doesn't wait)
-        if appuifw.query(u"".join(warnings_printed)+msg,'query'): return
-        t=appuifw.Text()
-        t.add(u"You pressed Cancel in a message dialogue. Dropping back to justSynthesize loop.")
-        appuifw.app.body = t
-        primitive_synthloop()
-        sys.exit()
+        appuifw.query(u"".join(warnings_printed)+msg,'query')
     elif app:
         if not (winsound or winCEsound or mingw32 or cygwin): show_info(msg2+"\n\nWaiting for you to press OK on the message box... ",True) # in case terminal is in front
         app.todo.alert = "".join(warnings_printed)+msg
@@ -1251,6 +1246,90 @@ def checkAge(fname,message):
     days = int((time.time()-os.stat(fname)[8])/3600/24)
     if days>=5 and (days%5)==0: waitOnMessage(message % days)
 
+def s60_addVocab():
+    label1,label2 = u""+localise("Word in %s") % localise(secondLanguage),u""+localise("Meaning in %s") % localise(firstLanguage)
+    result = appuifw.multi_query(label1,label2) # unfortunately multi_query can't take default items (and sometimes no T9!), but Form is too awkward (can't see T9 mode + requires 2-button save via Options) and non-multi query would be even more modal
+    if not result: return # cancelled
+    l2,l1 = result # guaranteed to both be populated
+    while sanityCheck(l2.encode('utf-8'),secondLanguage,1):
+        l2=appuifw.query(label1,"text",u"")
+        if not l2: return # cancelled
+    # TODO detect duplicates like Tk GUI does?
+    appendVocabFileInRightLanguages().write((l2+"="+l1+"\n").encode("utf-8"))
+def s60_runLesson():
+    global maxLenOfLesson
+    ml = appuifw.query(u"Max number of minutes","number",int(maxLenOfLesson/60))
+    if not ml: return
+    maxLenOfLesson = int(float(ml)*60)
+    lesson_loop()
+def s60_viewVocab():
+    global justSynthesize
+    doLabel("Reading your vocab list, please wait...")
+    vList = map(lambda (l2,l1):l2+u"="+l1, guiVocabList(parseSynthVocab(vocabFile,1)))
+    if not vList: return waitOnMessage("Your synthesized vocab file is empty. (You can add recorded words via file manager.)")
+    while True:
+      appuifw.app.body = None
+      sel = appuifw.selection_list(vList,search_field=1)
+      if sel==None: return
+      l2,l1 = vList[sel].split("=",1)
+      action = appuifw.popup_menu([u"Speak (just "+secondLanguage+")",u"Speak ("+secondLanguage+" and "+firstLanguage+")",u"Change "+secondLanguage,u"Change "+firstLanguage,u"Delete item",u"Cancel"], vList[sel])
+      if action==0 or action==1:
+        doLabel("Speaking...")
+        justSynthesize = secondLanguage+" "+l2.encode('utf-8')
+        if action==1: justSynthesize += ("#"+firstLanguage+" "+l1.encode('utf-8'))
+        just_synthesize()
+        justSynthesize = ""
+      elif action==5: pass
+      else:
+          if action==4 and not getYN(u"Are you sure you want to delete "+vList[sel]+"?"): continue
+          oldL1,oldL2 = l1,l2
+          if action==2:
+              first=1
+              while first or (l2 and sanityCheck(l2.encode('utf-8'),secondLanguage,1)):
+                  first=0 ; l2=appuifw.query(u""+secondLanguage,"text",l2)
+              if not l2: continue
+          elif action==3:
+              l1 = appuifw.query(u""+firstLanguage,"text",l1)
+              if not l1: continue
+          doLabel("Processing")
+          delOrReplace(oldL2,oldL1,l2,l1,cond(action==4,"delete","replace"))
+          if action==4:
+              del vList[sel]
+              if not vList: return # empty
+          else: vList[sel] = l2+"="+l1
+
+def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
+    langs = [secondLanguage,firstLanguage]
+    v=u8strip(open(vocabFile,"rb").read()).replace("\r\n","\n").replace("\r","\n")
+    o=open(vocabFile,"w") ; found = 0
+    if last_u8strip_found_BOM: o.write('\xef\xbb\xbf') # re-write it
+    v=v.split("\n")
+    if v and not v[-1]: v=v[:-1] # don't add an extra blank line at end
+    for l in v:
+        l2=l.lower()
+        if l2.startswith("set language ") or l2.startswith("set languages "):
+            langs=l.split()[2:] ; o.write(l+"\n") ; continue
+        thisLine=map(lambda x:x.strip(wsp),l.split("=",len(langs)-1))
+        if (langs==[secondLanguage,firstLanguage] and thisLine==[L2toDel.encode('utf-8'),L1toDel.encode('utf-8')]) or (langs==[firstLanguage,secondLanguage] and thisLine==[L1toDel.encode('utf-8'),L2toDel.encode('utf-8')]):
+            # delete this line.  and maybe replace it
+            if action=="replace":
+                if langs==[secondLanguage,firstLanguage]: o.write(newL2.encode("utf-8")+"="+newL1.encode("utf-8")+"\n")
+                else: o.write(newL1.encode("utf-8")+"="+newL2.encode("utf-8")+"\n")
+                found = 1
+        else: o.write(l+"\n")
+    o.close()
+    return found
+
+def s60_main_menu():
+  while True:
+    appuifw.app.body = None
+    choice = appuifw.popup_menu([u"Just speak a word",u"Add word to my vocab",u"Make lesson from vocab",u"View/change vocab",u"Quit"], u"Choose an action:")
+    if choice==0: primitive_synthloop()
+    elif choice==1: s60_addVocab()
+    elif choice==2: s60_runLesson()
+    elif choice==3: s60_viewVocab()
+    elif choice==4: break
+
 def gui_event_loop():
     app.todo.set_main_menu = 1 ; braveUser = 0
     if (orig_onceperday&2) and not need1adayMessage: check_for_slacking() # when running every day + 1st run of today
@@ -1421,25 +1500,7 @@ def gui_event_loop():
             t1,t2 = asUnicode(app.Text1.get()),asUnicode(app.Text2.get()) # take it now in case the following takes a long time and user tries to change
             if winCEsound: # hack because no watch cursor and can take time
                 app.Text1.set("Please wait") ; app.Text2.set("wait...")
-            langs = [secondLanguage,firstLanguage]
-            v=u8strip(open(vocabFile,"rb").read()).replace("\r\n","\n").replace("\r","\n")
-            o=open(vocabFile,"w") ; found = 0
-            if last_u8strip_found_BOM: o.write('\xef\xbb\xbf') # re-write it
-            v=v.split("\n")
-            if v and not v[-1]: v=v[:-1] # don't add an extra blank line at end
-            for l in v:
-                l2=l.lower()
-                if l2.startswith("set language ") or l2.startswith("set languages "):
-                    langs=l.split()[2:] ; o.write(l+"\n") ; continue
-                thisLine=map(lambda x:x.strip(wsp),l.split("=",len(langs)-1))
-                if (langs==[secondLanguage,firstLanguage] and thisLine==[lang2.encode('utf-8'),lang1.encode('utf-8')]) or (langs==[firstLanguage,secondLanguage] and thisLine==[lang1.encode('utf-8'),lang2.encode('utf-8')]):
-                    # delete this line.  and maybe replace it
-                    if menu_response=="replace":
-                        if langs==[secondLanguage,firstLanguage]: o.write(t1.encode("utf-8")+"="+t2.encode("utf-8")+"\n")
-                        else: o.write(t2.encode("utf-8")+"="+t1.encode("utf-8")+"\n")
-                    found = 1
-                else: o.write(l+"\n")
-            o.close()
+            found = delOrReplace(lang2,lang1,t1,t2,menu_response)
             if found and menu_response=="replace": # maybe hack progress.txt as well (taken out of the above loop for better failsafe)
                 d = ProgressDatabase(0)
                 lang2,lang1=lang2.lower(),lang1.lower() # because it's .lower()'d in progress.txt
@@ -1584,6 +1645,7 @@ def rest_of_main():
             just_synthesize() ; lesson_loop()
         elif justSynthesize: just_synthesize()
         elif app and waitBeforeStart: gui_event_loop()
+        elif appuifw: s60_main_menu()
         else: lesson_loop()
     except SystemExit: pass
     except KeyboardInterrupt: pass
