@@ -1247,7 +1247,8 @@ def checkAge(fname,message):
     if days>=5 and (days%5)==0: waitOnMessage(message % days)
 
 def s60_addVocab():
-    label1,label2 = u""+localise("Word in %s") % localise(secondLanguage),u""+localise("Meaning in %s") % localise(firstLanguage)
+  label1,label2 = u""+localise("Word in %s") % localise(secondLanguage),u""+localise("Meaning in %s") % localise(firstLanguage)
+  while True:
     result = appuifw.multi_query(label1,label2) # unfortunately multi_query can't take default items (and sometimes no T9!), but Form is too awkward (can't see T9 mode + requires 2-button save via Options) and non-multi query would be even more modal
     if not result: return # cancelled
     l2,l1 = result # guaranteed to both be populated
@@ -1255,6 +1256,7 @@ def s60_addVocab():
         l2=appuifw.query(label1,"text",u"")
         if not l2: return # cancelled
     # TODO detect duplicates like Tk GUI does?
+    appuifw.note(u"Added "+l2+"="+l1,"conf")
     appendVocabFileInRightLanguages().write((l2+"="+l1+"\n").encode("utf-8"))
 def s60_runLesson():
     global maxLenOfLesson
