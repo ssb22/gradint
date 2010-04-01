@@ -993,7 +993,7 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
                         show_warning("Can't say %s in %s" % (repr(text),repr(lang)))
                         lastLanguage=lang ; continue
                     # otherwise, user might have omitted lang by mistake
-                    show_warning("Assuming that %s was meant to be synthesized in language '%s'" % (repr(line),lastLanguage))
+                    show_warning("Assuming %s was meant to be synthesized in language '%s'" % (cond("#" in justSynthesize or len(repr(line))<10,"that '"+repr(line)+"'","this line"),lastLanguage))
                     if callSanityCheck and sanityCheck(line,lastLanguage,1): return
                     event = checkCanSynth("!synth:"+line+"_"+lastLanguage)
                 else:
