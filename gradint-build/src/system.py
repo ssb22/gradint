@@ -76,11 +76,11 @@ def show_warning(w):
 
 def show_info(i,always_stderr=False):
     # == sys.stderr.write(i) with no \n and no error if closed (+ redirect to app or appuifw if exists)
-    if (app or appuifw) and not always_stderr: doLabel(i)
-    else:
-        if winCEsound and len(i)>101: i=i[:100]+"..."+i[-1] # otherwise can hang winCEsound's console (e.g. a long "Not in cache" message)
-        try: sys.stderr.write(i.encode('utf-8'))
-        except IOError: pass
+    if (app or appuifw) and not always_stderr: return doLabel(i)
+    if not always_stderr and hasattr(sys.stderr,"isatty") and not sys.stderr.isatty(): return # be quiet if o/p is being captured by cron etc
+    if winCEsound and len(i)>101: i=i[:100]+"..."+i[-1] # otherwise can hang winCEsound's console (e.g. a long "Not in cache" message)
+    try: sys.stderr.write(i.encode('utf-8'))
+    except IOError: pass
 
 # For pre-2.3 versions of Python (e.g. 2.2 on Symbian S60 and Mac OS 10.3):
 try: True

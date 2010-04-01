@@ -351,7 +351,7 @@ class SoundCollector(object):
         if out_type=="raw" and write_to_stdout: self.o=sys.stdout
         elif out_type=="ogg": self.o=os.popen("oggenc -o \"%s\" -r -C 1 -q 0 -" % (cond(write_to_stdout,"-",outputFile),),"wb") # oggenc assumes little-endian, which is what we're going to give it
         elif out_type=="aac": self.o=os.popen("faac -b 32 -P%s -C 1 -o \"%s\" -" % (cond(big_endian,""," -X"),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that faac on big-endian needs the -X removed when we're giving it little-endian.  It SHOULD if the compile is endian-dependent.)
-        elif out_type=="mp3": self.o=os.popen("lame -r%s -m m --vbr-new -V 9 - \"%s\"" % (lame_endian_parameters(),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that old versions of lame won't complain about the --vbr-new switch.  And some very old hardware players may insist on MPEG-1 rather than MPEG-2, which would need different parameters)
+        elif out_type=="mp3": self.o=os.popen("lame -r%s%s -m m --vbr-new -V 9 - \"%s\"" % (lame_endian_parameters(),lame_quiet(),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that old versions of lame won't complain about the --vbr-new switch.  And some very old hardware players may insist on MPEG-1 rather than MPEG-2, which would need different parameters)
         # Older versions of gradint used BladeEnc, with these settings: "BladeEnc -br 48 -mono -rawmono STDIN \"%s\"", but lame gives much smaller files (e.g. 3.1M instead of 11M) - it handles the silences more efficiently for a start).
         # Typical file sizes for a 30-minute lesson: OGG 2.7M, MP3 3.1M, MP2 3.4M, AAC 3.7M (all +/- at least 0.1M), WAV 152M
         # (mp2 could possibly be made a bit smaller by decreasing the -5, but don't make it as low as -10)
@@ -453,6 +453,10 @@ def lame_endian_parameters():
   # otherwise fall-through to older lame behaviour:
   if big_endian: return "" # TODO are we sure we don't need -x on lame 3.97 PPC as well?
   else: return " -x"
+
+def lame_quiet():
+    if hasattr(sys.stderr,"isatty") and not sys.stderr.isatty(): return " --quiet"
+    else: return ""
 
 betweenBeeps = 5.0
 beepType = 0
