@@ -1322,15 +1322,71 @@ def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
     o.close()
     return found
 
+def s60_recordWord():
+ while True:
+  l2 = s60_recordFile(secondLanguage)
+  if not l2: return
+  l1 = None
+  while not l1:
+    if getYN("Record "+firstLanguage+" too? (else computer voice)"): l1 = s60_recordFile(firstLanguage)
+    else:
+       l1txt = appuifw.query(u""+firstLanguage+" text:","text")
+       if l1txt:
+          l1 = "newfile_"+firstLanguage+dottxt
+          open(l1,"w").write(l1txt.encode("utf-8"))
+    if not l1 and getYN("Discard the "+secondLanguage+" recording?"):
+       os.remove(l2) ; break
+  if not l1: continue
+  ls = list2set(os.listdir(samplesDirectory))
+  def inLs(prefix):
+    for ext in [dotwav,dotmp3,dottxt]:
+      for l in [firstLanguage,secondLanguage]:
+        if prefix+"_"+l+ext in ls: return 1
+  c = 1
+  while inLs("%02d" % c): c += 1
+  origPrefix = prefix = u""+("%02d" % c)
+  while True:
+    prefix = appuifw.query(u"Filename:","text",prefix)
+    if not prefix: # pressed cancel ??
+      if getYN("Discard this recording?"):
+        os.remove(l1) ; os.remove(l2) ; return
+      else:
+        prefix = origPrefix ; continue
+    if not inLs(prefix) or getYN("File exists.  overwrite?"): break
+  if samplesDirectory: prefix=samplesDirectory+os.sep+prefix
+  os.rename(l1,prefix+l1[l1.index("_"):])
+  os.rename(l2,prefix+l2[l2.index("_"):])
+  if not getYN("Record another?"): break
+def s60_recordFile(language):
+ fname = "newfile_"+language+dotwav
+ while True:
+  S=audio.Sound.open(os.getcwd()+os.sep+fname)
+  def forgetS():
+    S.close()
+    try: os.remove(fname)
+    except: pass
+  if not getYN("Press OK to record "+language+" word"): return forgetS()
+  S.record()
+  ret = getYN("Press OK to stop") ; S.stop()
+  if not ret:
+    forgetS() ; continue
+  S.play()
+  ret = getYN("Are you happy with this?")
+  S.stop() ; S.close()
+  if not ret:
+    os.remove(fname) ; continue
+  return fname
+
 def s60_main_menu():
   while True:
     appuifw.app.body = None
-    choice = appuifw.popup_menu([u"Just speak a word",u"Add word to my vocab",u"Make lesson from vocab",u"View/change vocab",u"Quit"], u"Choose an action:")
+    choice = appuifw.popup_menu([u"Just speak a word",u"Add word to my vocab",u"Make lesson from vocab",u"View/change vocab",u"Record word(s) using mic",u"Quit"], u"Choose an action:")
     if choice==0: primitive_synthloop()
     elif choice==1: s60_addVocab()
     elif choice==2: s60_runLesson()
     elif choice==3: s60_viewVocab()
-    elif choice==4: break
+    elif choice==4: s60_recordWord()
+    elif choice==5: break
 
 def gui_event_loop():
     app.todo.set_main_menu = 1 ; braveUser = 0
