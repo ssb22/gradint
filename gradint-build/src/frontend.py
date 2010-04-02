@@ -26,13 +26,12 @@ def waitOnMessage(msg):
     else: msg2=msg
     if appuifw:
         t=appuifw.Text() ; t.add(u"".join(warnings_printed)+msg) ; appuifw.app.body = t # in case won't fit in the query()  (and don't use note() because it doesn't wait)
-        appuifw.query(u"".join(warnings_printed)+msg,'query')
+        appuifw.query(u""+msg,'query')
     elif app:
         if not (winsound or winCEsound or mingw32 or cygwin): show_info(msg2+"\n\nWaiting for you to press OK on the message box... ",True) # in case terminal is in front
         app.todo.alert = "".join(warnings_printed)+msg
         while hasattr(app.todo,"alert"): time.sleep(0.5)
         if not (winsound or winCEsound or mingw32 or cygwin): show_info("OK\n",True)
-        warnings_printed = []
     else:
         if clearScreen(): msg2 = "This is "+program_name.replace("(c)","\n(c)")+"\n\n"+msg2 # clear screen is less confusing for beginners, but NB it may not happen if warnings etc
         show_info(msg2+"\n\n"+cond(winCEsound,"Press OK to continue\n","Press Enter to continue\n"))
@@ -41,6 +40,7 @@ def waitOnMessage(msg):
             raw_input(cond(winCEsound,"See message under this window.","")) # (WinCE uses boxes for raw_input so may need to repeat the message - but can't because the prompt is size-limited, so need to say look under the window)
             clearScreen() # less confusing for beginners
         except EOFError: show_info("EOF on input - continuing\n")
+    warnings_printed = []
 
 def getYN(msg,defaultIfEof="n"):
     if appuifw:
@@ -68,6 +68,7 @@ def primitive_synthloop():
     while True:
         global justSynthesize,warnings_printed
         if appuifw:
+            if not justSynthesize: justSynthesize=""
             justSynthesize=appuifw.query(u"Say:","text",u""+justSynthesize)
             if justSynthesize: justSynthesize=justSynthesize.encode("utf-8")
             else: break
@@ -1268,7 +1269,7 @@ def s60_viewVocab():
     global justSynthesize
     doLabel("Reading your vocab list, please wait...")
     vList = map(lambda (l2,l1):l2+u"="+l1, guiVocabList(parseSynthVocab(vocabFile,1)))
-    if not vList: return waitOnMessage("Your synthesized vocab file is empty. (You can add recorded words via file manager.)")
+    if not vList: return waitOnMessage("Your computer-voiced vocab list is empty.")
     while True:
       appuifw.app.body = None
       sel = appuifw.selection_list(vList,search_field=1)
@@ -1379,14 +1380,16 @@ def s60_recordFile(language):
 
 def s60_main_menu():
   while True:
-    appuifw.app.body = None
-    choice = appuifw.popup_menu([u"Just speak a word",u"Add word to my vocab",u"Make lesson from vocab",u"View/change vocab",u"Record word(s) using mic",u"Quit"], u"Choose an action:")
+    appuifw.app.body = None # NOT text saying version no etc - has distracting blinking cursor
+    choice = appuifw.popup_menu([u"Just speak a word",u"Add word to my vocab",u"Make lesson from vocab",u"View/change vocab",u"Record word(s) with mic",u"Quit"],u"Choose an action:")
+    # (selection_list can be better than popup_menu(l,u"Choose an action:") if over 5 items, but may need further trimming the width of each item)
+    # (the Quit item can go however - can cancel the menu instead.  Or keep it & don't mind it being off-screen c.f. in-vocab-list popup.)
     if choice==0: primitive_synthloop()
     elif choice==1: s60_addVocab()
     elif choice==2: s60_runLesson()
     elif choice==3: s60_viewVocab()
     elif choice==4: s60_recordWord()
-    elif choice==5: break
+    else: break
 
 def gui_event_loop():
     app.todo.set_main_menu = 1 ; braveUser = 0

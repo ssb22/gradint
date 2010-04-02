@@ -24,7 +24,7 @@ try: import appuifw # Symbian S60's GUI module
 except: appuifw = 0
 if appuifw:
     appuifw.app.body = appuifw.Text()
-    appuifw.app.body.add(u""+program_name+"\n\nLoading, please wait...\n(Do NOT press OK or Cancel yet!)\n")
+    appuifw.app.body.add(u""+program_name.replace("(c)","\n(c)")+"\n\nLoading, please wait...\n(Do NOT press OK or Cancel yet!)\n")
     import audio
     appuifw.app.title = u""+appTitle
     appuifw.app.screen='large' # lose Python banner
