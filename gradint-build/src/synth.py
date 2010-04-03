@@ -973,7 +973,7 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
             except ValueError: delayVal = None
             if delayVal==None:
                 # no float value; assume it's a single word to synth in secondLanguage or whatever was the last language used
-                if not appuifw: show_warning("Assuming that %s is a word to synthesize in language '%s'" % (repr(l[0]),lastLanguage))
+                show_warning("Assuming that %s is a word to synthesize in language '%s'" % (repr(l[0]),lastLanguage))
                 if callSanityCheck and sanityCheck(l[0],lastLanguage,1): return
                 event = checkCanSynth("!synth:"+l[0]+"_"+lastLanguage)
                 if not event: continue # couldn't synth
