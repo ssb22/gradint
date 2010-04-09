@@ -26,18 +26,23 @@ class ProgressDatabase(object):
           if not cache_maintenance_mode:
             doLabel("Checking transliterations")
             tList = {}
+            def addVs(ff,dirBase):
+                if dirBase+os.sep+ff in variantFiles:
+                   if os.sep in ff: ffp=ff[:ff.rfind(os.sep)]+os.sep
+                   else: ffp=""
+                   variantList=map(lambda x:ffp+x,variantFiles[dirBase+os.sep+ff])
+                else: variantList = [ff]
+                for f in variantList:
+                  l=languageof(f)
+                  if not l in tList: tList[l]={}
+                  if f.lower().endswith(dottxt): text=u8strip(open(dirBase+os.sep+f,"rb").read()).strip(wsp)
+                  elif f.find("!synth")==-1: continue # don't need to translit. filenames of wav's etc
+                  else: text = textof(f)
+                  tList[l][text]=1
+            for ff in availablePrompts.lsDic.values(): addVs(ff,promptsDirectory)
             for _,l1,l2 in self.data:
                 if not type(l1)==type([]): l1=[l1]
-                for ff in l1+[l2]:
-                 if samplesDirectory+os.sep+ff in variantFiles: variantList=map(lambda x:(ff+os.sep)[:ff.rfind(os.sep)]+os.sep+x,variantFiles[samplesDirectory+os.sep+ff])
-                 else: variantList = [ff]
-                 for f in variantList:
-                   l=languageof(f)
-                   if not l in tList: tList[l]={}
-                   if f.lower().endswith(dottxt): text=u8strip(open(samplesDirectory+os.sep+f,"rb").read()).strip(wsp)
-                   elif f.find("!synth")==-1: continue # don't need to translit. filenames of wav's etc
-                   else: text = textof(f)
-                   tList[l][text]=1
+                for ff in l1+[l2]: addVs(ff,samplesDirectory)
             doLabel("Transliterating")
             for lang,dic in tList.items():
                 s = get_synth_if_possible(lang,0)
@@ -133,12 +138,12 @@ class ProgressDatabase(object):
     def savePartial(self,filesNotPlayed):
         curPD,curDat = self.promptsData, self.data[:] # in case want to save a more complete one later
         self.promptsData = self.oldPromptsData # partial recovery of prompts not implemented
-        
-        filesNotPlayed = list2set(filesNotPlayed)
         if hasattr(self,"previous_filesNotPlayed"):
-            for k in filesNotPlayed.keys():
-                if k not in self.previous_filesNotPlayed: del filesNotPlayed[k] # cumulative effects if managed to play it last time but not this time (and both lessons incomplete)
-        self.previous_filesNotPlayed = filesNotPlayed
+            i=0
+            while i<len(filesNotPlayed):
+                if filesNotPlayed[i] in self.previous_filesNotPlayed: i+=1
+                else: del filesNotPlayed[i] # cumulative effects if managed to play it last time but not this time (and both lessons incomplete)
+        self.previous_filesNotPlayed = filesNotPlayed = list2set(filesNotPlayed)
         if not filesNotPlayed:
             # actually done everything on overlaps
             self.promptsData=curPD
