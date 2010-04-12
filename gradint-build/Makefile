@@ -40,7 +40,7 @@ SETUP=src/top.py src/defaults.py src/system.py
 ENDING=src/frontend.py
 SOURCES=$(SETUP) $(CODE) $(ENDING)
 
-gradint.py: $(SOURCES)
+gradint.py: $(SOURCES) cleanup
 	chmod +w gradint.py 2>/dev/null || true
 	cat $(SOURCES) > gradint.py
 	chmod a-w gradint.py
@@ -99,7 +99,6 @@ recorder.exe: $(Common_Files) gradint.py
 	rm -rf windows0
 
 gradint.cab: $(Common_Files) gradint.py
-	make cleanup
 	rm -rf PocketPC0 ; cp -r PocketPC PocketPC0
 	cd PocketPC0 && tar -jxf espeak.bgz && tar -jxf tkinter.bgz && rm espeak.bgz tkinter.bgz pocketpc-cab && cd ..
 	cp -r gradint.py $(Common_Files) PocketPC0/gradint
@@ -226,7 +225,6 @@ CD: $(Mac_Files) gradint.zip
 	echo;echo;echo "Made CD directory.  Can add gradint/samples, gradint/vocab.txt, gradint/espeak for Windows, gradint/espeak-.. for OSX, sox Win/Mac binaries, oggenc or whatever for Windows, etc."
 
 cleanup:
-	rm -f `find . -type f -name '*~' -o -name '*.pyc'`
-	rm -f src/defaults.py
+	rm -f `find . -type f -name '*~' -o -name '*.pyc' -o -name DEADJOE`
 clean: cleanup
-	rm -f gradint.py $(All_Versions)
+	rm -f gradint.py $(All_Versions) src/defaults.py
