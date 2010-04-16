@@ -254,7 +254,7 @@ class RecorderControls:
             def set(*args):
                 def clear(*args): del app.justGotFocusIn
                 app.justGotFocusIn = 1
-                app.after(300, clear)
+                app.after(1, clear) # (that delay is quite short, but it shouldn't execute until after the current chain of FocusIn events finishes)
             app.bind('<FocusIn>',set)
         self.coords2buttons[(row,col)] = b
         if not colspan:
