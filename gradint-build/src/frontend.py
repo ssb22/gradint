@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9955 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9956 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1259,6 +1259,13 @@ def s60_addVocab():
     # TODO detect duplicates like Tk GUI does?
     appuifw.note(u"Added "+l2+"="+l1,"conf")
     appendVocabFileInRightLanguages().write((l2+"="+l1+"\n").encode("utf-8"))
+def s60_changeLang():
+    global firstLanguage,secondLanguage
+    result = appuifw.multi_query(u""+localise("Your first language")+" (e.g. "+firstLanguage+")",u""+localise("second")+" (e.g. "+secondLanguage+")")
+    if not result: return # cancelled
+    l1,l2 = result
+    firstLanguage,secondLanguage = l1.encode('utf-8').lower(),l2.encode('utf-8').lower()
+    updateSettingsFile(settingsFile,{"firstLanguage":firstLanguage,"secondLanguage":secondLanguage})
 def s60_runLesson():
     global maxLenOfLesson
     ml = appuifw.query(u"Max number of minutes","number",int(maxLenOfLesson/60))
@@ -1324,12 +1331,14 @@ def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
     return found
 
 def s60_recordWord():
+ if secondLanguage==firstLanguage: l1Suffix, l1Display = firstLanguage+"-meaning_"+firstLanguage, "meaning"
+ else: l1Suffix, l1Display = firstLanguage, firstLanguage
  while True:
   l2 = s60_recordFile(secondLanguage)
   if not l2: return
   l1 = None
   while not l1:
-    if getYN("Record "+firstLanguage+" too? (else computer voice)"): l1 = s60_recordFile(firstLanguage)
+    if (not maybeCanSynth(firstLanguage)) or getYN("Record "+l1Display+" too? (else computer voice)"): l1 = s60_recordFile(l1Suffix) # (TODO what if maybeCanSynth(secondLanguage) but not first, and we want to combine 2nd-lang synth with 1st-lang recorded? low priority as if recording will prob want to rec L2)
     else:
        l1txt = appuifw.query(u""+firstLanguage+" text:","text")
        if l1txt:
@@ -1378,17 +1387,24 @@ def s60_recordFile(language):
     os.remove(fname) ; continue
   return fname
 
+def maybeCanSynth(lang): return lang in partials_langs or get_synth_if_possible(lang,0) or synthCache
 def s60_main_menu():
   while True:
     appuifw.app.body = None # NOT text saying version no etc - has distracting blinking cursor
-    choice = appuifw.popup_menu([u"Just speak a word",u"Add word to my vocab",u"Make lesson from vocab",u"View/change vocab",u"Record word(s) with mic",u"Quit"],u"Choose an action:")
-    # (selection_list can be better than popup_menu(l,u"Choose an action:") if over 5 items, but may need further trimming the width of each item)
-    # (the Quit item can go however - can cancel the menu instead.  Or keep it & don't mind it being off-screen c.f. in-vocab-list popup.)
-    if choice==0: primitive_synthloop()
-    elif choice==1: s60_addVocab()
-    elif choice==2: s60_runLesson()
-    elif choice==3: s60_viewVocab()
-    elif choice==4: s60_recordWord()
+    menu=[]
+    if maybeCanSynth(secondLanguage):
+        menu.append((u"Just speak a word",primitive_synthloop))
+        doVocab = maybeCanSynth(firstLanguage)
+        if doVocab: menu.append((u"Add word to my vocab",s60_addVocab))
+        menu.append((u"Make lesson from vocab",s60_runLesson))
+        if doVocab: menu.append((u"View/change vocab",s60_viewVocab))
+    else: menu.append((u"Make lesson",s60_runLesson))
+    menu += [(u"Record word(s) with mic",s60_recordWord),(u"Change languages",s60_changeLang)]
+    if len(menu)<5: menu.append((u"Quit",None)) # see comment below
+    choice = appuifw.popup_menu(map (lambda x:x[0], menu),u"Choose an action:") # (selection_list can be better than popup_menu(l,u"Choose an action:") if over 5 items, but may need further trimming the width of each item) (the Quit item can go however - can cancel the menu instead.  Or keep it & don't mind it being off-screen c.f. in-vocab-list popup.)
+    try: function = menu[choice][1]
+    except: break
+    if function: function()
     else: break
 
 def gui_event_loop():

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9955 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9956 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -248,6 +248,14 @@ class RecorderControls:
         if (row,col) in self.coords2buttons: self.coords2buttons[(row,col)].grid_forget()
         b = makeButton(self.grid,text=text,command=command)
         b.bind('<FocusIn>',lambda *args:self.scrollIntoView(b))
+        if not hasattr(app,"gotFocusInHandler"):
+            # (see scrollIntoView method's use of justGotFocusIn)
+            app.gotFocusInHandler=1
+            def set(*args):
+                def clear(*args): del app.justGotFocusIn
+                app.justGotFocusIn = 1
+                app.after(300, clear)
+            app.bind('<FocusIn>',set)
         self.coords2buttons[(row,col)] = b
         if not colspan:
             if not col: colspan=1+3*len(self.languagesToDraw)
@@ -428,9 +436,10 @@ class RecorderControls:
             self.addLabel(self.addMoreRow,0,utext=prefix)
             for lang in self.languagesToDraw:
                 self.updateFile(unicode2filename(prefix+"_"+lang+dotwav),self.addMoreRow,self.languagesToDraw.index(lang),state=0)
-                Tkinter.Label(self.grid,text=" "+localise(lang)+": ").grid(row=self.addMoreRow,column=1+3*self.languagesToDraw.index(lang))
+                self.gridLabel(lang,self.addMoreRow)
             self.addMoreRow += 2 ; self.maxPrefix += 1
         self.add_addMore_button()
+    def gridLabel(self,lang,row): Tkinter.Label(self.grid,text=" "+localise(cond(lang.find("-meaning_")>-1,"meaning",lang))+": ").grid(row=row,column=1+3*self.languagesToDraw.index(lang))
     def doRecord(self,filename,row,languageNo,needToUpdatePlayButton=False):
         if not tkSnack: return tkMessageBox.showinfo(app.master.title(),localise("Sorry, cannot record on this computer because the tkSnack library (python-tksnack) is not installed."))
         theISM.startRecording(filename)
@@ -456,6 +465,7 @@ class RecorderControls:
             if (r,3+3*languageNo) in self.coords2buttons:
                 return focusButton(self.coords2buttons[(r,3+3*languageNo)])
     def scrollIntoView(self,button):
+        if hasattr(app,"justGotFocusIn"): return # ignore double <FocusIn> event - allows switch out of app and back in again w/out scrolling back to the keyboard-focused button
         self.scrollingIntoView = button
         self.continueScrollIntoView(button)
     def continueScrollIntoView(self,button):
@@ -464,7 +474,7 @@ class RecorderControls:
         if not hasattr(self,"ourCanvas"): return # closing down?
         by,bh,cy,ch = button.winfo_rooty(),button.winfo_height(),self.ourCanvas.winfo_rooty(),self.ourCanvas.winfo_height()
         if not by or not bh or not cy or not ch: pass # wait a bit longer
-        if by+bh >= cy+ch-cond(ch>2*bh,bh,0):
+        elif by+bh >= cy+ch-cond(ch>2*bh,bh,0):
             self.ourCanvas.yview("scroll","1","units") # can't specify pixels, so have to keep advancing until we get it
             if by+bh<=cy+ch: return # make this the last one - don't loop consuming CPU on bottom of list
         elif by < cy: self.ourCanvas.yview("scroll","-1","units")
@@ -540,7 +550,9 @@ class RecorderControls:
         self.draw()
     def pocketPCrecord(self,*args):
         # (apparently get 11.025kHz 16-bit mono.  Can set Notes to NOT switch to notes app when holding Recording button, in which case you then need the task manager to actually get into Notes.)
-        if tkMessageBox.askyesno(app.master.title(),localise("Press and hold the PocketPC's Record button to record; release to stop. Record %s to 1st Note, %s to 2nd, %s to 3rd etc. Import all Notes now?") % (secondLanguage,firstLanguage,secondLanguage)):
+        if firstLanguage==secondLanguage: tup=("word","meaning","word")
+        else: tup=(secondLanguage,firstLanguage,secondLanguage)
+        if tkMessageBox.askyesno(app.master.title(),localise("Press and hold the PocketPC's Record button to record; release to stop. Record %s to 1st Note, %s to 2nd, %s to 3rd etc. Import all Notes now?") % tup):
           try:
             if import_recordings(self.currentDir):
                 getLsDic(self.currentDir) # to rename them
@@ -558,7 +570,8 @@ class RecorderControls:
             msg1 = ""
         self.setSync(tkMessageBox.askyesno(app.master.title(),localise(msg1+"Do you want your next Play operation to be delayed until you also press a Record button?")))
     def draw(self,dirToHighlight=1): # 1 is used as a "not exist" token
-        self.languagesToDraw = [secondLanguage,firstLanguage] # each lang cn take 3 columns, starting at column 1 (DO need to regenerate this every draw - languages may have changed!)
+        if secondLanguage==firstLanguage: self.languagesToDraw = [secondLanguage, firstLanguage+"-meaning_"+firstLanguage]
+        else: self.languagesToDraw = [secondLanguage,firstLanguage] # each lang cn take 3 columns, starting at column 1 (DO need to regenerate this every draw - languages may have changed!)
         if self.currentDir==samplesDirectory: app.master.title(localise("Recordings manager"))
         else: app.master.title(localise("Recordings manager: ")+filename2unicode((os.sep+self.currentDir)[(os.sep+self.currentDir).rindex(os.sep)+1:]))
         if not self.snack_initialized:
@@ -612,8 +625,9 @@ class RecorderControls:
         allLangs = list2set([firstLanguage,secondLanguage]+possible_otherLanguages+otherLanguages)
         hadDirectories = False
         for fname in l:
-            flwr = fname.lower()
-            if self.has_variants and fname.find("_",fname.find("_")+1)>-1 and not fname.find("_explain_")>-1: languageOverride=fname[fname.find("_")+1:fname.find("_",fname.find("_")+1)]
+            flwr = fname.lower() ; isMeaning=0
+            if firstLanguage==secondLanguage and firstLanguage+"-meaning_"+secondLanguage in fname: isMeaning,languageOverride = True, firstLanguage+"-meaning_"+secondLanguage # hack for re-loading a dir of word+meaning in same language.  TODO hope not combining -meaning_ with variants
+            elif self.has_variants and fname.find("_",fname.find("_")+1)>-1 and not fname.find("_explain_")>-1: languageOverride=fname[fname.find("_")+1:fname.find("_",fname.find("_")+1)]
             else: languageOverride=None
             if isDirectory(self.currentDir+os.sep+fname):
                  if not flwr in ["zips","utils","advanced utilities"]: # NOT "prompts", that can be browsed
@@ -636,7 +650,9 @@ class RecorderControls:
                     if not flwr=="prompts": hadDirectories = True
             elif "_" in fname and (languageOverride in allLangs or languageof(fname) in allLangs): # something_lang where lang is a recognised language (don't just take "any _" because some podcasts etc will have _ in them)
               # TODO what about letting them record _explain_ files etc from the GUI (can be done but have to manually enter the _zh_explain bit), + toggling !poetry etc?
-              if languageOverride: prefix=fname[:fname.index("_")]+" ("+(fname+extsep)[fname.find("_",fname.find("_")+1)+1:fname.rfind(extsep)]+")"
+              if languageOverride:
+                  prefix=fname[:fname.index("_")]
+                  if not isMeaning: prefix += (" ("+(fname+extsep)[fname.find("_",fname.find("_")+1)+1:fname.rfind(extsep)]+")")
               else:
                   prefix=fname[:fname.rindex("_")]
                   languageOverride = languageof(fname)
@@ -657,7 +673,7 @@ class RecorderControls:
                             self.updateFile(fname,curRow,self.languagesToDraw.index(lang),state=1)
                             languageOverride=None # so not done again
                         else: self.updateFile(prefix+"_"+lang+dotwav,curRow,self.languagesToDraw.index(lang),state=0,txtExists=(lang in foundTxt))
-                        Tkinter.Label(self.grid,text=" "+localise(lang)+": ").grid(row=curRow,column=1+3*self.languagesToDraw.index(lang))
+                        self.gridLabel(lang,curRow)
                     for filename,col in foundTxt.values(): self.addSynthLabel(filename,curRow+1,col)
                     curRow += 2
                 if languageOverride in self.languagesToDraw and not flwr.endswith(dottxt):
