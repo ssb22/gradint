@@ -298,11 +298,11 @@ else: partials_langs,partials_raw_mode = [],None
 
 def synth_from_partials(text,lang,voice=None,isStart=1):
     text=text.strip(wsp) # so whitespace between words is ignored on the recursive call
-    if lang=="zh": # hack for Mandarin - higher tone 5 after a tone 3
+    if lang=="zh": # hack for Mandarin - higher tone 5 after a tone 3 (and ma5 after 4 or 5 also)
         lastNum = None
         for i in range(len(text)):
             if text[i] in "123456":
-                if text[i]=="5" and lastNum=="3":
+                if text[i]=="5" and (lastNum=="3" or (lastNum>"3" and i>2 and text[i-2:i+1]=="ma5")): # (TODO ne5 also? but only if followed by some form of question mark, and that might have been dropped)
                     # see if we got a "tone 6" (higher tone 5)
                     # don't worry too much if we haven't
                     r=synth_from_partials(text[:i]+"6"+text[i+1:],lang,voice,isStart)

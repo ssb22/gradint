@@ -483,7 +483,8 @@ partialsDirectory = "partials"
 # You may want to do a similar thing to raise the pitch of tone 5
 # (the "neutral tone" or qingshen) - if you save the higher-pitched
 # versions as tone 6, Gradint will use these when a tone 5 follows a
-# tone 3.
+# tone 3, or when ma5 follows tone 3, 4 or 5.
+# (Lowering/shortening/softening tone 1 may work better than raising tone 5)
 
 # Note: On Windows/Mac, Gradint can have trouble concatenating the partials
 # quickly enough even if they are in WAV format.  You can create a file
