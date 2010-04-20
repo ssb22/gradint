@@ -45,9 +45,10 @@ def play(event):
         if not lessonStartTime: lessonStartTime = time.time() # the actual time of the FIRST event (don't set it before as there may be delays).  (we're setting this at the END of the 1st event - the extra margin should be ok, and can help with start-of-lesson problems with slow disks.)
         if finishTime and time.time() >= emergency_lessonHold_to: doLabel("%s (finish %s)" % (time.strftime("%H:%M",time.localtime(time.time())),time.strftime("%H:%M",time.localtime(finishTime)))) # was %I:%M but don't like leading '0' in PM times.  2nd condition added because might press 'brief interrupt' while playing.
 def doLabel(labelText):
+    labelText = ensure_unicode(labelText)
     if app: app.setLabel(labelText)
     elif appuifw:
-        t=appuifw.Text() ; t.add(u""+labelText)
+        t=appuifw.Text() ; t.add(labelText)
         appuifw.app.body = t
     elif not (riscos_sound or winCEsound): # (we don't have a way of updating a clock or progress indicator on those)
         global doLabelLastLen
