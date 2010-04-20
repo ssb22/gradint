@@ -22,7 +22,7 @@ Extra_Data=partials *_disabled [^g]*.exe
 # Unix_To_Dos=unix2dos -k -o -q # (keep date, run quietly)
 Unix_To_Dos=unix2dos # (-k -o -q are not recognised on all systems)
 
-All_Versions=gradint-build.bgz gradint.exe gradint.sh gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip
+All_Versions=gradint-build.bgz gradint.exe gradint.command gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip
 # dropping gradint-noGUI.exe and GUI.exe for now - probably don't need that separation anymore
 
 SHELL=/bin/bash
@@ -171,9 +171,9 @@ gradint.tbz: $(Mac_Files)
 	cd gradint ; tar -c Gradint.app | bzip2 -9 > ../gradint.tbz; cd ..
 	rm -rf gradint
 
-gradint.sh: gradint.tbz
+gradint.command: gradint.tbz
 	# Someone reported not being able to see Gradint.app after double-clicking on the tbz in her Safari downloads window.  It probably just unpacked to the downloads folder and didn't show it.  So let's make a wraper script which forces it to the desktop.
-	cat mac/install.sh gradint.tbz > gradint.sh
+	cat mac/install.sh gradint.tbz > gradint.command
 
 gradint.bgz: $(Linux_Files)
 	mkdir gradint
