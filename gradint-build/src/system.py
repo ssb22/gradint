@@ -410,9 +410,12 @@ elif macsound:
     if os.getcwd().endswith("/Gradint 2.app") and fileExists_stat("../Gradint.app"):
        for toKeep in "vocab.txt settings.txt advanced.txt".split():
           if fileExists_stat(toKeep) and fileExists_stat("../Gradint.app/"+toKeep): os.remove(toKeep)
-       os.chdir("..")
-       os.system('cp -fpr Gradint\\ 2.app/* Gradint.app/ ; rm -rf "Gradint 2.app" ; "$(pwd)/Gradint.app/Contents/MacOS/Gradint"') # NOT '&' (can go wrong on quit)
+       os.system('cp -fpr * ../Gradint.app/')
+       open("deleteme","w")
+       os.system('open ../Gradint.app')
        sys.exit(0)
+    elif fileExists_stat("../Gradint 2.app/deleteme"):
+       import thread ; thread.start_new_thread(lambda *x:(time.sleep(2),os.system('rm -rf "../Gradint 2.app"')),())
 
 def got_program(prog):
     # Test to see if the program 'prog' is on the system, as portable as possible.  NB some Unix 'which' output an error to stdout instead of stderr, so check the result exists.
