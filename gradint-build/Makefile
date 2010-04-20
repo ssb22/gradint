@@ -22,7 +22,7 @@ Extra_Data=partials *_disabled [^g]*.exe
 # Unix_To_Dos=unix2dos -k -o -q # (keep date, run quietly)
 Unix_To_Dos=unix2dos # (-k -o -q are not recognised on all systems)
 
-All_Versions=gradint-build.bgz gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip
+All_Versions=gradint-build.bgz gradint.exe gradint.sh gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip
 # dropping gradint-noGUI.exe and GUI.exe for now - probably don't need that separation anymore
 
 SHELL=/bin/bash
@@ -31,7 +31,7 @@ EData := $(shell for N in $(Extra_Data); do if test -e $$N; then echo $$N; fi; d
 
 Common_Files=vocab.txt settings.txt advanced.txt samples $(EData)
 Most_Mac_Files=$(Common_Files) gradint.py
-Mac_Files=$(Most_Mac_Files) mac/*
+Mac_Files=$(Most_Mac_Files) mac/start-gradint.app
 Linux_Files=$(Common_Files) gradint.py INSTALL.txt
 Riscos_Files=$(Common_Files) gradint.py
 
@@ -171,6 +171,10 @@ gradint.tbz: $(Mac_Files)
 	cd gradint ; tar -c Gradint.app | bzip2 -9 > ../gradint.tbz; cd ..
 	rm -rf gradint
 
+gradint.sh: gradint.tbz
+	# Someone reported not being able to see Gradint.app after double-clicking on the tbz in her Safari downloads window.  It probably just unpacked to the downloads folder and didn't show it.  So let's make a wraper script which forces it to the desktop.
+	cat mac/install.sh gradint.tbz > gradint.sh
+
 gradint.bgz: $(Linux_Files)
 	mkdir gradint
 	cp -r $(Linux_Files) gradint
@@ -227,4 +231,4 @@ CD: $(Mac_Files) gradint.zip
 cleanup:
 	rm -f `find . -type f -name '*~' -o -name '*.pyc' -o -name DEADJOE`
 clean: cleanup
-	rm -f gradint.py $(All_Versions) src/defaults.py
+	rm -f gradint.py $(All_Versions) src/defaults.py gradint.tbz
