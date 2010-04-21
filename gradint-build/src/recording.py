@@ -247,6 +247,8 @@ class RecorderControls:
     def addButton(self,row,col,text,command,colspan=None):
         if (row,col) in self.coords2buttons: self.coords2buttons[(row,col)].grid_forget()
         b = makeButton(self.grid,text=text,command=command)
+        b.bind('<Button-4>',lambda *args:self.ourCanvas.yview("scroll","-1","units"))
+        b.bind('<Button-5>',lambda *args:self.ourCanvas.yview("scroll","1","units"))
         b.bind('<FocusIn>',lambda *args:self.scrollIntoView(b))
         if not hasattr(app,"gotFocusInHandler"):
             # (see scrollIntoView method's use of justGotFocusIn)
@@ -715,3 +717,61 @@ def doRecWords(): # called from GUI thread
     try: theRecorderControls
     except: theRecorderControls=RecorderControls()
     theRecorderControls.draw()
+
+# Functions for recording on S60 phones:
+def s60_recordWord():
+ if secondLanguage==firstLanguage: l1Suffix, l1Display = firstLanguage+"-meaning_"+firstLanguage, "meaning"
+ else: l1Suffix, l1Display = firstLanguage, firstLanguage
+ while True:
+  l2 = s60_recordFile(secondLanguage)
+  if not l2: return
+  l1 = None
+  while not l1:
+    if (not maybeCanSynth(firstLanguage)) or getYN("Record "+l1Display+" too? (else computer voice)"): l1 = s60_recordFile(l1Suffix) # (TODO what if maybeCanSynth(secondLanguage) but not first, and we want to combine 2nd-lang synth with 1st-lang recorded? low priority as if recording will prob want to rec L2)
+    else:
+       l1txt = appuifw.query(u""+firstLanguage+" text:","text")
+       if l1txt:
+          l1 = "newfile_"+firstLanguage+dottxt
+          open(l1,"w").write(l1txt.encode("utf-8"))
+    if not l1 and getYN("Discard the "+secondLanguage+" recording?"):
+       os.remove(l2) ; break
+  if not l1: continue
+  ls = list2set(os.listdir(samplesDirectory))
+  def inLs(prefix):
+    for ext in [dotwav,dotmp3,dottxt]:
+      for l in [firstLanguage,secondLanguage]:
+        if prefix+"_"+l+ext in ls: return 1
+  c = 1
+  while inLs("%02d" % c): c += 1
+  origPrefix = prefix = u""+("%02d" % c)
+  while True:
+    prefix = appuifw.query(u"Filename:","text",prefix)
+    if not prefix: # pressed cancel ??
+      if getYN("Discard this recording?"):
+        os.remove(l1) ; os.remove(l2) ; return
+      else:
+        prefix = origPrefix ; continue
+    if not inLs(prefix) or getYN("File exists.  overwrite?"): break
+  if samplesDirectory: prefix=samplesDirectory+os.sep+prefix
+  os.rename(l1,prefix+l1[l1.index("_"):])
+  os.rename(l2,prefix+l2[l2.index("_"):])
+  if not getYN("Record another?"): break
+def s60_recordFile(language):
+ fname = "newfile_"+language+dotwav
+ while True:
+  S=audio.Sound.open(os.getcwd()+os.sep+fname)
+  def forgetS():
+    S.close()
+    try: os.remove(fname)
+    except: pass
+  if not getYN("Press OK to record "+language+" word"): return forgetS()
+  S.record()
+  ret = getYN("Press OK to stop") ; S.stop()
+  if not ret:
+    forgetS() ; continue
+  S.play()
+  ret = getYN("Are you happy with this?")
+  S.stop() ; S.close()
+  if not ret:
+    os.remove(fname) ; continue
+  return fname

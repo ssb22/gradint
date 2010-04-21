@@ -35,7 +35,7 @@ Mac_Files=$(Most_Mac_Files) mac/start-gradint.app
 Linux_Files=$(Common_Files) gradint.py INSTALL.txt
 Riscos_Files=$(Common_Files) gradint.py
 
-CODE=src/lessonplan.py src/sequence.py src/loop.py src/booktime.py src/play.py src/synth.py src/makeevent.py src/filescan.py src/recording.py
+CODE=src/lessonplan.py src/sequence.py src/loop.py src/booktime.py src/play.py src/synth.py src/makeevent.py src/filescan.py src/recording.py src/users.py
 SETUP=src/top.py src/defaults.py src/system.py
 ENDING=src/frontend.py
 SOURCES=$(SETUP) $(CODE) $(ENDING)
