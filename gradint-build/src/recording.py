@@ -247,14 +247,14 @@ class RecorderControls:
     def addButton(self,row,col,text,command,colspan=None):
         if (row,col) in self.coords2buttons: self.coords2buttons[(row,col)].grid_forget()
         b = makeButton(self.grid,text=text,command=command)
-        b.bind('<Button-4>',lambda *args:self.ourCanvas.yview("scroll","-1","units"))
-        b.bind('<Button-5>',lambda *args:self.ourCanvas.yview("scroll","1","units"))
         b.bind('<FocusIn>',lambda *args:self.scrollIntoView(b))
         if not hasattr(app,"gotFocusInHandler"):
             # (see scrollIntoView method's use of justGotFocusIn)
             app.gotFocusInHandler=1
             def set(*args):
-                def clear(*args): del app.justGotFocusIn
+                def clear(*args):
+                    try: del app.justGotFocusIn
+                    except: pass
                 app.justGotFocusIn = 1
                 app.after(1, clear) # (that delay is quite short, but it shouldn't execute until after the current chain of FocusIn events finishes)
             app.bind('<FocusIn>',set)

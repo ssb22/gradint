@@ -29,7 +29,7 @@ SHELL=/bin/bash
 
 EData := $(shell for N in $(Extra_Data); do if test -e $$N; then echo $$N; fi; done)
 
-SevenZip=PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH" `(which 7z || which 7za || which 7zr) 2>/dev/null` -y
+SevenZip = `(export PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH" ; which 7z || which 7za || which 7zr) 2>/dev/null` -y
 
 Common_Files=vocab.txt settings.txt advanced.txt samples $(EData)
 Most_Mac_Files=$(Common_Files) gradint.py
