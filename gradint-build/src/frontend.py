@@ -314,7 +314,7 @@ def setupScrollbar(parent,rowNo):
     # Mousewheel binding.  TODO the following bind_all assumes only one scrolledFrame on screen at once (redirect all mousewheel events to the frame; necessary as otherwise they'll go to buttons etc)
     scrolledFrame.bind_all('<Button-4>',lambda *args:c.yview("scroll","-1","units"))
     scrolledFrame.bind_all('<Button-5>',lambda *args:c.yview("scroll","1","units"))
-    # DON'T bind <MouseWheel> on Windows - it crashes our version of Tk when the event occurs (at least in WINE) whether it's bind_all or bind to the widget with input focus (and anything else is ineffective)
+    # DON'T bind <MouseWheel> on Windows - our version of Tk will segfault when it occurs. See http://mail.python.org/pipermail/python-bugs-list/2005-May/028768.html but we can't patch our library.zip's Tkinter anymore (TODO can we use newer Tk DLLs and ensure setup.bat updates them?)
     return scrolledFrame, c
 
 # GUI presets buttons:
