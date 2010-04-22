@@ -222,9 +222,6 @@ def bindUpDown(o,alsoLeftRight=False): # bind the up and down arrows to do shift
     if alsoLeftRight:
         o.bind('<Left>',shTab)
         o.bind('<Right>',tab)
-    # and pass mousewheel events to the parent (TODO this needs to be done to labels etc also)
-    o.bind('<Button-4>',lambda *args:o.master.event_generate('<Button-4>'))
-    o.bind('<Button-5>',lambda *args:o.master.event_generate('<Button-5>'))
 def addLabelledBox(row,wide=0,status=None):
     label = addLabel(row,"") # will set contents later
     text,entry = addTextBox(row,wide)
@@ -314,8 +311,10 @@ def setupScrollbar(parent,rowNo):
     c.grid(row=rowNo,column=cond(winCEsound or olpc,1,0),sticky="nsw")
     s.config(command=c.yview)
     scrolledFrame=Tkinter.Frame(c) ; c.create_window(0,0,window=scrolledFrame,anchor="nw")
-    scrolledFrame.bind('<Button-4>',lambda *args:c.yview("scroll","-1","units"))
-    scrolledFrame.bind('<Button-5>',lambda *args:c.yview("scroll","1","units"))
+    # Mousewheel binding.  TODO the following bind_all assumes only one scrolledFrame on screen at once (redirect all mousewheel events to the frame; necessary as otherwise they'll go to buttons etc)
+    scrolledFrame.bind_all('<Button-4>',lambda *args:c.yview("scroll","-1","units"))
+    scrolledFrame.bind_all('<Button-5>',lambda *args:c.yview("scroll","1","units"))
+    # DON'T bind <MouseWheel> on Windows - it crashes our version of Tk when the event occurs (at least in WINE) whether it's bind_all or bind to the widget with input focus (and anything else is ineffective)
     return scrolledFrame, c
 
 # GUI presets buttons:

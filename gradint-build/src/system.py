@@ -87,6 +87,7 @@ def show_info(i,always_stderr=False):
 try: True
 except: exec("True = 1 ; False = 0")
 # TODO make sure to avoid writing "string1 in string2" without thinking - if string1 is multiple characters it won't work on pre-2.3
+# TODO check all lambda functions for Python2.2 compatibility
 # (TODO: GUI_translations, if not set in advanced.txt, won't work properly on pre-2.3 - it'll take them as Latin-1)
 # (TODO: and if it *IS* set in advanced.txt, will 2.2's exec() correctly exec a unicode string?)
 
