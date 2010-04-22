@@ -22,12 +22,14 @@ Extra_Data=partials *_disabled [^g]*.exe
 # Unix_To_Dos=unix2dos -k -o -q # (keep date, run quietly)
 Unix_To_Dos=unix2dos # (-k -o -q are not recognised on all systems)
 
-All_Versions=gradint-build.bgz gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip
+All_Versions=gradint-build.7z gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip
 # dropping gradint-noGUI.exe and GUI.exe for now - probably don't need that separation anymore
 
 SHELL=/bin/bash
 
 EData := $(shell for N in $(Extra_Data); do if test -e $$N; then echo $$N; fi; done)
+
+SevenZip=PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH" `(which 7z || which 7za || which 7zr) 2>/dev/null` -y
 
 Common_Files=vocab.txt settings.txt advanced.txt samples $(EData)
 Most_Mac_Files=$(Common_Files) gradint.py
@@ -53,9 +55,9 @@ src/defaults.py: settings.txt advanced.txt Makefile
 
 gradint.exe: $(Common_Files) gradint.py
 	rm -rf windows0 ; cp -r windows windows0
-	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
-	cd windows0/gradint ; tar -jxf ../espeak-windows.bgz ; rm ../espeak-windows.bgz ; cd ../.. # bundled copy of eSpeak that unpacks in espeak/
-	cd windows0 ; tar -jxf ../windowsGUI/gradint.bgz ; cd ..
+	cd windows0 && $(SevenZip) x gradint.7z && rm gradint.7z && cd ..
+	cd windows0/gradint && $(SevenZip) x ../espeak-windows.7z && rm ../espeak-windows.7z && cd ../.. # bundled copy of eSpeak that unpacks in espeak/
+	cd windows0 && $(SevenZip) x ../windowsGUI/gradint.7z && cd ..
 	cp -r $(Common_Files) windows0/gradint/
 	mv windows0/gradint/samples/utils "windows0/gradint/samples/advanced utilities"
 	for N in hanzi-prompts/*.txt; do python -c "open('windows0/gradint/samples/prompts/$$(echo $$N|sed -e s,.*/,,)','w').write('\\xef\\xbb\\xbf'+open('$$N').read())"; done # overwriting the pinyin ones (as will bundle espeak so can translit.)
@@ -68,7 +70,7 @@ gradint.exe: $(Common_Files) gradint.py
 	# shortcuts: Don't use .lnk files, they are far too horrible (even if you put %HOMEDRIVE%%HOMEPATH% in the shortcut, it still stores the original location, and you can't reliably create them on the client without delving rediculously deep into Windows programming).  Perhaps could use .url files, but we just use small batch files.  Prepend a common header to each one.  (NB it won't work to try to force the sort order by calling things _uninstall, ~uninstall, etc, unless you want Z_uninstall, Z_advanced etc)
 	cd windows0/shortcuts ; mv header.bat bat_header ; for N in *.bat ../startup/*.bat; do if ! test "$$N" == uninstall.bat; then cat bat_header "$$N" > n ; mv n "$$N"; fi; done ; rm bat_header ; cd ../..
 	# now run 7zip (look in a few extra places for it, and give it its full path in argv[0])
-	cd windows0 ; export PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH"; `(which 7z || which 7za || which 7zr) 2>/dev/null` a -y data.7z setup.bat gradint shortcuts startup ; cd ..
+	cd windows0 ; $(SevenZip) a data.7z setup.bat gradint shortcuts startup ; cd ..
 	cat windows0/7zS.sfx windows0/7zip.conf windows0/data.7z > gradint.exe
 	rm -rf windows0
 
@@ -78,9 +80,9 @@ RecorderL1=zh
 RecorderL2=en
 recorder.exe: $(Common_Files) gradint.py
 	rm -rf windows0 ; cp -r windows windows0
-	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
-	rm windows0/espeak-windows.bgz
-	cd windows0 ; tar -jxf ../windowsGUI/gradint.bgz ; cd ..
+	cd windows0 && $(SevenZip) x gradint.7z && rm gradint.7z && cd ..
+	rm windows0/espeak-windows.7z
+	cd windows0 && $(SevenZip) x ../windowsGUI/gradint.7z && cd ..
 	cp -r $(Common_Files) windows0/gradint/
 	rm -rf windows0/gradint/samples/utils windows0/gradint/samples/prompts windows0/gradint/samples/README.txt
 	rm -f windows0/gradint/madplay.exe windows0/gradint/sox.exe windows0/gradint/ptts.exe
@@ -100,7 +102,7 @@ recorder.exe: $(Common_Files) gradint.py
 
 gradint.cab: $(Common_Files) gradint.py
 	rm -rf PocketPC0 ; cp -r PocketPC PocketPC0
-	cd PocketPC0 && tar -jxf espeak.bgz && tar -jxf tkinter.bgz && rm espeak.bgz tkinter.bgz pocketpc-cab && cd ..
+	cd PocketPC0 && $(SevenZip) x espeak.7z && $(SevenZip) x tkinter.7z && rm espeak.7z tkinter.7z pocketpc-cab && cd ..
 	cp -r gradint.py $(Common_Files) PocketPC0/gradint
 	# if using partials, must combine them for CAB:
 	for Dir in PocketPC0/gradint/partials/*/*; do if cd $$Dir; then if wc -c *.raw | grep -v total$$ | sed -e 's/^ *//' > audiodata.dat ; then cat *.raw >> audiodata.dat ; rm *.raw; else rm -f audiodata.dat; fi; cd ../../../../..; else true; fi; done
@@ -109,7 +111,7 @@ gradint.cab: $(Common_Files) gradint.py
 	$(Unix_To_Dos) PocketPC0/gradint/*.txt
 	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
 	# PocketPC/espeak-data contains the altered phon* files in case the eSpeak version is slightly different, but we should be able to re-use the dictionaries etc
-	tar -jxvf windows/espeak-windows.bgz && mv PocketPC0/espeak-data/* espeak/espeak-data && rmdir PocketPC0/espeak-data && mv espeak/espeak-data PocketPC0 && rm -rf espeak
+	$(SevenZip) x windows/espeak-windows.7z && mv PocketPC0/espeak-data/* espeak/espeak-data && rmdir PocketPC0/espeak-data && mv espeak/espeak-data PocketPC0 && rm -rf espeak
 	# Problem: we MUST have everything in ONE directory if it is to go on the storage card, otherwise it will go on the internal disk (which is a shame because the uninstall won't track where we really put things) (and no putting a file at top-level of device does not work)
 	cd PocketPC0 && mv bin Progra* espeak-data gradint && cd ..
 	# espeak compile instructions are at
@@ -136,8 +138,8 @@ gradintcab.zip: gradint.cab
 
 gradint-noGUI.exe: $(Common_Files) gradint.py
 	rm -rf windows0 ; cp -r windows windows0
-	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
-	cd windows0/gradint ; tar -jxf ../espeak-windows.bgz ; rm ../espeak-windows.bgz ; cd ../.. # bundled copy of eSpeak that unpacks in espeak/
+	cd windows0 && $(SevenZip) x gradint.7z && rm gradint.bgz && cd ..
+	cd windows0/gradint && $(SevenZip) x ../espeak-windows.bgz && rm ../espeak-windows.bgz && cd ../.. # bundled copy of eSpeak that unpacks in espeak/
 	cp -r $(Common_Files) windows0/gradint/
 	mv windows0/gradint/samples/utils "windows0/gradint/samples/advanced utilities"
 	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
@@ -147,16 +149,16 @@ gradint-noGUI.exe: $(Common_Files) gradint.py
 	# shortcuts: Don't use .lnk files, they are far too horrible (even if you put %HOMEDRIVE%%HOMEPATH% in the shortcut, it still stores the original location, and you can't reliably create them on the client without delving rediculously deep into Windows programming).  Perhaps could use .url files, but we just use small batch files.  Prepend a common header to each one.  (NB it won't work to try to force the sort order by calling things _uninstall, ~uninstall, etc, unless you want Z_uninstall, Z_advanced etc)
 	cd windows0/shortcuts ; mv header.bat bat_header ; for N in *.bat ../startup/*.bat; do if ! test "$$N" == uninstall.bat; then cat bat_header "$$N" > n ; mv n "$$N"; fi; done ; rm bat_header ; cd ../..
 	# now run 7zip (look in a few extra places for it, and give it its full path in argv[0])
-	cd windows0 ; export PATH=/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH; `(which 7z || which 7za || which 7zr) 2>/dev/null` a -y data.7z setup.bat gradint shortcuts startup ; cd ..
+	cd windows0 ; $(SevenZip) a data.7z setup.bat gradint shortcuts startup ; cd ..
 	cat windows0/7zS.sfx windows0/7zip.conf windows0/data.7z > gradint-noGUI.exe
 	rm -rf windows0
 
 GUI.exe: gradint.py
 	rm -rf windows0 ; cp -r windowsGUI windows0
-	cd windows0 ; tar -jxf gradint.bgz ; rm gradint.bgz ; cd ..
+	cd windows0 && $(SevenZip) x gradint.bgz && rm gradint.bgz && cd ..
 	$(Unix_To_Dos) windows0/7zip.conf
 	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
-	cd windows0 ; export PATH=/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH; `(which 7z || which 7za || which 7zr) 2>/dev/null` a -y data.7z setup.bat gradint ; cd ..
+	cd windows0 ; $(SevenZip) a data.7z setup.bat gradint ; cd ..
 	cat windows/7zS.sfx windows0/7zip.conf windows0/data.7z > GUI.exe
 	rm -rf windows0
 
@@ -208,19 +210,19 @@ publish: $(All_Versions)
 	~/homepage/update
 	ssh -i ~/.srcf/keyfile st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c '. build-sync.sh'"
 
-gradint-build.bgz:
+gradint-build.7z:
 	mkdir ../gradint-build00
 	cp -r * ../gradint-build00
 	mv ../gradint-build00 gradint
 	cd gradint; for N in *.py src/*.py Makefile; do if ! test $$N == src/top.py && ! test $$N == gradint.py; then (echo "# This file is part of the source code of";grep "^program_name" src/top.py|sed -e 's/[^"]*"//' -e 's/"//' -e 's/^/# /';grep "^#    " src/top.py;cat $$N) > $$N-new; mv $$N-new $$N; fi; done; cd ..
 	cd gradint ; make clean ; rm -rf extras ; cd ..
-	tar -jcf gradint-build.bgz gradint/
+	$(SevenZip) a gradint-build.7z gradint/
 	rm -rf gradint
 
 # "make CD" to make a CD/ directory with all versions, for a live CD
 CD: $(Mac_Files) gradint.zip
 	rm -rf CD ; mkdir CD
-	cd CD && tar -jxf ../windows/gradint.bgz && tar -jxf ../windowsGUI/gradint.bgz && cd ..
+	cd CD && $(SevenZip) x ../windows/gradint.7z && $(SevenZip) x ../windowsGUI/gradint.7z && cd ..
 	cp -r $(Mac_Files) CD/gradint
 	cp windows/setup.bat CD
 	cp -r windows/shortcuts windows/startup CD/gradint/
