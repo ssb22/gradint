@@ -135,6 +135,7 @@ def deleteUser(i):
     numUsers=len(lastUserNames)
     for fileOrDir in user0+(userNameFile,):
         d=addUserToFname(fileOrDir,i)
+        if not d: continue # ??
         if isDirectory(d):
             while True:
                 try: import shutil

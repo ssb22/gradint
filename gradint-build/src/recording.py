@@ -609,7 +609,7 @@ class RecorderControls:
         curRow = 0 ; prefix2row = {}
         maxPrefix = 0 ; self.has_recordFrom_buttons = False
 
-        if not self.currentDir==samplesDirectory:
+        if not self.currentDir==samplesDirectory and os.sep in self.currentDir:
             self.addButton(curRow,0,text=localise("(Up)"),command=(lambda e=None,f=self.currentDir[:self.currentDir.rindex(os.sep)]:self.changeDir(f)))
             curRow += 1
         l = os.listdir(self.currentDir)
