@@ -27,17 +27,18 @@ class ProgressDatabase(object):
             doLabel("Checking transliterations")
             tList = {}
             def addVs(ff,dirBase):
-                if dirBase+os.sep+ff in variantFiles:
-                   if os.sep in ff: ffp=ff[:ff.rfind(os.sep)]+os.sep
-                   else: ffp=""
-                   variantList=map(lambda x:ffp+x,variantFiles[dirBase+os.sep+ff])
+                if dirBase: dirBase += os.sep
+                if dirBase+ff in variantFiles:
+                   if os.sep in ff: ffpath=ff[:ff.rfind(os.sep)+1]
+                   else: ffpath=""
+                   variantList=map(lambda x:ffpath+x,variantFiles[dirBase+ff])
                 else: variantList = [ff]
+                l=languageof(ff)
                 for f in variantList:
-                  l=languageof(f)
-                  if not l in tList: tList[l]={}
-                  if f.lower().endswith(dottxt): text=u8strip(open(dirBase+os.sep+f,"rb").read()).strip(wsp)
+                  if f.lower().endswith(dottxt): text=u8strip(open(dirBase+f,"rb").read()).strip(wsp)
                   elif f.find("!synth")==-1: continue # don't need to translit. filenames of wav's etc
                   else: text = textof(f)
+                  if not l in tList: tList[l]={}
                   tList[l][text]=1
             for ff in availablePrompts.lsDic.values(): addVs(ff,promptsDirectory)
             for _,l1,l2 in self.data:

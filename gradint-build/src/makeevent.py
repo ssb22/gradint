@@ -107,13 +107,13 @@ if synthCache and transTbl in synthCache_contents:
 def textof(fname): return fname[fname.find('!synth:')+7:fname.rfind('_')]
 last_partials_transliteration = None
 synth_partials_cache = {}
-def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0):
+def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=None):
     # if justQueryCache (used by the GUI), return value is (synthCache_transtbl key, result if any).  If key starts with _, we got a sporadic one.
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
-    lang = languageof(fname)
+    if not lang: lang = languageof(fname)
     if fname.lower().endswith(dottxt):
-        try: fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+"_"+lang # there *will* be a _ otherwise languageof would have failed
+        try: fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+"_"+lang
         except IOError: return 0,0 # probably trying to synthcache_lookup a file with variants without first choosing a variant (e.g. in anticipation() to check for sporadic cache entries in old words) - just ignore this
     text = textof(fname)
     useSporadic = -1 # undecided (no point accumulating counters for potentially-unbounded input)
@@ -158,7 +158,7 @@ def can_be_synthesized(fname,dirBase=None,lang=None):
     if dirBase: dirBase += os.sep
     if not lang: lang = languageof(fname)
     if get_synth_if_possible(lang,0): return True
-    elif synthcache_lookup(fname,dirBase,1): return True
+    elif synthcache_lookup(fname,dirBase,1,lang=lang): return True
     else: return get_synth_if_possible(lang) # and this time print the warning
 def stripPuncEtc(text):
     # For sending text to synth_from_partials.  Removes spaces and punctuation from text, and returns a list of the text split into phrases.
