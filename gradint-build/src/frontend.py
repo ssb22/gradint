@@ -698,6 +698,11 @@ def startTk():
             self.master.option_add('*font',self.bigPrintFont)
             self.Version["font"]=self.Label["font"]=self.bigPrintFont
             del self.bigPrintFont # (TODO do we want an option to undo it?  or would that take too much of the big print real-estate.)
+            if self.rightPanel: # oops, need to re-construct it
+                global extra_buttons_waiting_list
+                extra_buttons_waiting_list = []
+                make_extra_buttons_waiting_list()
+                self.rightPanel = None
             self.check_window_position()
             self.todo.set_main_menu = 1
         def check_window_position(self,*args): # called when likely to be large print and filling the screen
