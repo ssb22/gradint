@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9956 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9957 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -672,13 +672,17 @@ def read_chinese_number(num):
     nums=num.split(".")
     if len(nums)==1: # normal number
         columns=("yi4 qian1 bai3 shi2 wan4 qian1 bai3 shi2".split()+[""])
+        has_wan = not ("00000000"+num)[-8:-4]=="0000"
         if len(num)>len(columns) or (num and num[0]=="0"): return "".join([digits[ord(d)-ord("0")] for d in num]) # far too many digits, or something starting with 0 - read one at a time
         r=[]
         for d,c,i in zip(list(num),columns[-len(num):],range(len(num))):
             if d=="0":
-                if c and not (r and r[-1]=="ling2"): r.append("ling2") # else nothing
-            elif d=="1" and c=="shi2" and i==0: r.append(c)
+                if c=="wan4" and has_wan: r.append(c)
+                elif c and not (r and r[-1]=="ling2"): r.append("ling2")
+                # else nothing
+            elif d=="1" and c=="shi2" and (i==0 or (r and r[-1]=="ling2")): r.append(c) # 10, 1010
             else: r.append(digits[ord(d)-ord("0")]+c)
+        if len(r)>1 and r[-1]=="ling2": del r[-1] # e.g. 100
         return "".join(r)
     elif len(nums)==2: # read digits after the point one at a time
         rVal = [read_chinese_number(nums[0]),"dian3"]

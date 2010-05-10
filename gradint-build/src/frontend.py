@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9956 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9957 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1108,9 +1108,12 @@ def sanityCheck(text,language,pauseOnError=0): # text is utf-8; returns error me
         if ret: waitOnMessage(ret)
         return ret
     if language=="zh":
+        allDigits = True
         for t in text:
             if ord(t)>127: return # got hanzi or tone marks
             if t in "12345": return # got tone numbers
+            if t not in "0123456789. ": allDigits = False
+        if allDigits: return
         return "Pinyin needs tones.  Please go back and add tone numbers to "+text+"."+cond(startBrowser("http://www.pristine.com.tw/lexicon.php?query="+fix_pinyin(text,[]).replace("1","1 ").replace("2","2 ").replace("3","3 ").replace("4","4 ").replace("5"," ").replace("  "," ").strip(wsp).replace(" ","+"))," Gradint has pointed your web browser at an online dictionary that might help.","")
 
 def check_for_slacking():
