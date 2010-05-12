@@ -1346,12 +1346,14 @@ def gui_event_loop():
                 while not fileExists(programFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs"): time.sleep(1)
           else:
             if getYN("Do you really want to download and compile the LAME MP3 encoder? (this may take a while)"):
-              app.setLabel("Downloading...")
+              app.setLabel("Downloading...") ; worked=0
               while True:
-                if not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi; if ! test -e lame*.tar.gz; then if ! $Curl "$($Curl "http://sourceforge.net/project/showfiles.php?group_id=290&package_id=309"|grep tar.gz|head -1|sed -e 's/.*http:/http:/' -e 's/.tar.gz.*/.tar.gz/')" > lame.tar.gz; then rm -f lame.tar.gz; exit 1; fi; fi"""): break
+                if not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi; if ! test -e lame*.tar.gz; then if ! $Curl "$($Curl "http://sourceforge.net/project/showfiles.php?group_id=290&package_id=309"|grep tar.gz|head -1|sed -e 's,href="/,href="http://sourceforge.net/,' -e 's/.*http:/http:/' -e 's/.tar.gz.*/.tar.gz/')" > lame.tar.gz; then rm -f lame.tar.gz; exit 1; fi; fi"""):
+                  worked=1 ; break
                 if not getYN("Download failed.  Try again?"): break
-              app.setLabel("Compiling...")
-              if system("""tar -zxvf lame*.tar.gz && cd lame-* && if ./configure && make; then ln -s $(pwd)/frontend/lame ../lame || true; else cd .. ; rm -rf lame*; exit 1; fi"""): app.todo.alert = "Compile failed"
+              if worked:
+                app.setLabel("Compiling...")
+                if system("""tar -zxvf lame*.tar.gz && cd lame-* && if ./configure && make; then ln -s $(pwd)/frontend/lame ../lame || true; else cd .. ; rm -rf lame*; exit 1; fi"""): app.todo.alert = "Compile failed"
           app.todo.set_main_menu = 1
         elif (menu_response=="add" or menu_response=="replace") and not (app.Text1.get() and app.Text2.get()): app.todo.alert="You need to type text in both boxes before adding the word/meaning pair to "+vocabFile
         elif menu_response=="add" and hasattr(app,"vocabList") and (asUnicode(app.Text1.get()),asUnicode(app.Text2.get())) in app.vocabList:
