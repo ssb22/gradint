@@ -1203,10 +1203,10 @@ def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
         thisLine=map(lambda x:x.strip(wsp),l.split("=",len(langs)-1))
         if (langs==[secondLanguage,firstLanguage] and thisLine==[L2toDel.encode('utf-8'),L1toDel.encode('utf-8')]) or (langs==[firstLanguage,secondLanguage] and thisLine==[L1toDel.encode('utf-8'),L2toDel.encode('utf-8')]):
             # delete this line.  and maybe replace it
+            found = 1
             if action=="replace":
                 if langs==[secondLanguage,firstLanguage]: o.write(newL2.encode("utf-8")+"="+newL1.encode("utf-8")+"\n")
                 else: o.write(newL1.encode("utf-8")+"="+newL2.encode("utf-8")+"\n")
-                found = 1
         else: o.write(l+"\n")
     o.close()
     return found
