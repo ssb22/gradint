@@ -97,7 +97,7 @@ except: struct=0
 if struct and struct.pack("h",1)[0]=='\x00': big_endian = 1
 else: big_endian = 0
 
-# Handle OS's with different extension separators e.g. RISC
+# RISC OS has a different extension separator because "." is used as a directory separator (from the original 1982 BBC Micro DFS with 1-character directories)
 if hasattr(os,'extsep'): extsep = os.extsep
 elif riscos_sound: extsep = "/"
 else: extsep = "."
