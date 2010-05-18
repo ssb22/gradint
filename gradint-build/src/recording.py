@@ -144,7 +144,7 @@ if not tkSnack:
                 MacStopRecording()
                 os.rename(MacRecordingFile,self.fileToWrite)
         tkSnack = "MicOnly"
-  elif unix and isDirectory("/dev/snd") and got_program("arecord"): # no tkSnack, but can record via ALSA
+  elif unix and useTK and isDirectory("/dev/snd") and got_program("arecord"): # no tkSnack, but can record via ALSA (but no point doing the tests if not useTK)
     del MicInput
     class MicInput(InputSource):
         def startRec(self,outFile,lastStopRecVal=0.5):
