@@ -565,6 +565,7 @@ def decode_mp3(file):
         os.chdir(oldDir)
         # fix length (especially if it's mpg123)
         wavLen = len(d)-8 ; datLen = wavLen-36 # assumes no other chunks
+        if datLen<0: raise IOError("decode_mp3 got bad wav") # better than ValueError for the chr() in the following line
         return d[:4] + chr(wavLen&0xFF)+chr((wavLen>>8)&0xFF)+chr((wavLen>>16)&0xFF)+chr(wavLen>>24) + d[8:40] + chr(datLen&0xFF)+chr((datLen>>8)&0xFF)+chr((datLen>>16)&0xFF)+chr(datLen>>24) + d[44:]
     elif unix:
         if gotSox:

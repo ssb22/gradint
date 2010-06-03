@@ -3,7 +3,7 @@
 # email-lesson.sh: a script that can help you to
 # automatically distribute daily Gradint lessons
 # to students using a web server with reminder
-# emails.  Version 1.1127
+# emails.  Version 1.1128
 
 # (C) 2007-2010 Silas S. Brown, License: GPL
 
@@ -75,7 +75,7 @@ if test "a$1" == "a--run"; then
       mv email_lesson_users/$U/profile.removeCR email_lesson_users/$U/profile
     fi
     . email_lesson_users/$U/profile
-    if test $Use_M3U == yes; then export FILE_TYPE_2=m3u
+    if test "a$Use_M3U" == ayes; then export FILE_TYPE_2=m3u
     else export FILE_TYPE_2=$FILE_TYPE; fi
     if echo "$MailProg" | grep ssh >/dev/null; then
       # ssh discards a level of quoting, so we need to be more careful
@@ -84,7 +84,7 @@ if test "a$1" == "a--run"; then
       export Extra_Mailprog_Params2="\"$Extra_Mailprog_Params2\""
     fi
     if test -e email_lesson_users/$U/lastdate; then
-      if test $(cat email_lesson_users/$U/lastdate) == $(date +%Y%m%d); then
+      if test "$(cat email_lesson_users/$U/lastdate)" == "$(date +%Y%m%d)"; then
         # still on same day - do nothing with this user this time
 	continue
       fi
@@ -142,7 +142,7 @@ do echo "mail sending failed; retrying in 62 seconds"; sleep 62; done; fi
       fi
     else rm -f email_lesson_users/$U/podcasts-to-send.old # won't be a rollback after this
     fi
-    if test $ENCODE_ON_REMOTE_HOST == 1; then
+    if test "$ENCODE_ON_REMOTE_HOST" == 1; then
       export ToSleep=123
       while ! if test "a$Send_Podcast_Instead" == a; then
         python gradint.py "$USER_GRADINT_OPTIONS '-.sh'" </dev/null 2>$TMPDIR/__stderr | ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo $PUBLIC_HTML|sed -e 's/:.*//') "mkdir -p $REMOTE_WORKING_DIR; cd $REMOTE_WORKING_DIR; cat > __gradint.sh;chmod +x __gradint.sh;PATH=$SOX_PATH ./__gradint.sh|$ENCODING_COMMAND $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$CurDate.$FILE_TYPE;rm -f __gradint.sh";
@@ -156,10 +156,10 @@ do echo "mail sending failed; retrying in 62 seconds"; sleep 62; done; fi
         sleep $ToSleep ; export ToSleep=$(echo $ToSleep*1.5|bc) # (increasing-time retries)
       done
       rm $TMPDIR/__stderr
-      if test $Use_M3U == yes; then
+      if test "a$Use_M3U" == ayes; then
         while ! ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo $PUBLIC_HTML|sed -e 's/:.*//') "echo $OUTSIDE_LOCATION/$U-$CurDate.$FILE_TYPE > $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$CurDate.m3u"; do sleep 63; done
       fi
-    else
+    else # not ENCODE_ON_REMOTE_HOST
       if ! test "a$Send_Podcast_Instead" == a; then
         (cd email_lesson_users/$U ; cat "$Send_Podcast_Instead") > "$OUTDIR/$U-$CurDate.$FILE_TYPE"
       elif ! python gradint.py "$USER_GRADINT_OPTIONS '$OUTDIR/$U-$CurDate.$FILE_TYPE'" </dev/null; then
@@ -167,7 +167,7 @@ do echo "mail sending failed; retrying in 62 seconds"; sleep 62; done; fi
         echo "Failed on $U, check output " | $MailProg -s gradint-failed $ADMIN_EMAIL
         continue
       fi
-      if test $Use_M3U == yes; then
+      if test "a$Use_M3U" == ayes; then
         echo $OUTSIDE_LOCATION/$U-$CurDate.$FILE_TYPE > $OUTDIR/$U-$CurDate.m3u
       fi
       if echo $PUBLIC_HTML | grep : >/dev/null; then

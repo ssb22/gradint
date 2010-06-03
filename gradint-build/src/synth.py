@@ -897,6 +897,7 @@ class SynthEvent(Event):
                 except IOError:
                     time.sleep(1) ; continue
                 return e.play()
+            raise IOError("IOError after 10 tries")
         else:
             assert (not soundCollector) and hasattr(self.synthesizer,"play"),"Should have called will_be_played before playing offline"
             return self.synthesizer.play(self.language,self.modifiedText)
