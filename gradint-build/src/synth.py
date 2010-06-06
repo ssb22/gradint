@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9957 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9958 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -148,33 +148,36 @@ class PttsSynth(Synth):
         if self.offlineOnly: return SampleEvent(self.makefile_cached(lang,text)).play()
         if lang in sapiVoices:
             d=os.getcwd()
-            ret=self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text))
+            ret=self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),speed=sapiSpeeds.get(lang,None))
             os.chdir(d) ; return ret
         elif lang=='en':
-            p=os.popen(self.program+toNull,"w")
+            p=os.popen(self.program+self.speedParam(sapiSpeeds.get(lang,None))+toNull,"w")
             p.write(text+"\n")
             return p.close()
         elif lang=='zh':
             d=os.getcwd()
-            ret=self.sapi_unicode("VW Lily",self.preparePinyinPhrase(text))
+            ret=self.sapi_unicode("VW Lily",self.preparePinyinPhrase(text),speed=sapiSpeeds.get(lang,None))
             self.restore_lily_dict()
             os.chdir(d) ; return ret
-    def sapi_unicode(self,voice,unicode_string,toFile=None,rate=None):
+    def sapi_unicode(self,voice,unicode_string,toFile=None,sampleRate=None,speed=None):
         # Speaks unicode_string in 'voice'.  toFile (if present) must be something that was returned by tempnam.  May change the current directory.
         unifile=os.tempnam() ; open(unifile,"wb").write(codecs.utf_16_encode(unicode_string)[0])
         if not toFile: extra=""
         else:
             extra=' -w '+changeToDirOf(toFile,1)+' -c 1'
-            if rate: extra += (' -s '+str(rate))
-        ret=system(self.program+' -u '+changeToDirOf(unifile,1)+' -voice "'+voice+'"'+extra+toNull) # (both changeToDirOf will give same directory because both from tempnam)
+            if sampleRate: extra += (' -s '+str(sampleRate))
+        ret=system(self.program+' -u '+changeToDirOf(unifile,1)+' -voice "'+voice+'"'+extra+self.speedParam(speed)+toNull) # (both changeToDirOf will give same directory because both from tempnam)
         os.unlink(unifile) ; return ret
+    def speedParam(self,speed):
+        if speed: return " -r "+str(speed)
+        else: return ""
     def makefile(self,lang,text):
         fname = os.tempnam()+dotwav
         oldcwd=os.getcwd()
-        if lang in sapiVoices: self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),fname,sapiVoices[lang][1])
-        elif lang=="en": os.popen(self.program+' -c 1 -w '+changeToDirOf(fname,1)+toNull,"w").write(text+"\n") # (can specify mono but can't specify sample rate if it wasn't mentioned in sapiVoices - might make en synth-cache bigger than necessary but otherwise no great problem)
+        if lang in sapiVoices: self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),fname,sapiVoices[lang][1],speed=sapiSpeeds.get(lang,None))
+        elif lang=="en": os.popen(self.program+speed+' -c 1 -w '+changeToDirOf(fname,1)+self.speedParam(sapiSpeeds.get(lang,None))+toNull,"w").write(text+"\n") # (can specify mono but can't specify sample rate if it wasn't mentioned in sapiVoices - might make en synth-cache bigger than necessary but otherwise no great problem)
         elif lang=='zh':
-            self.sapi_unicode("VW Lily",self.preparePinyinPhrase(text),fname,16000)
+            self.sapi_unicode("VW Lily",self.preparePinyinPhrase(text),fname,16000,speed=sapiSpeeds.get(lang,None))
             self.restore_lily_dict()
         os.chdir(oldcwd)
         d = sapi_sox_bug_workaround(open(fname,"rb").read()); open(fname,"wb").write(d)

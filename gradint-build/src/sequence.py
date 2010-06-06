@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9957 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9958 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -14,8 +14,9 @@
 def randomInstruction(numTimesBefore,promptsData,language):
     if not numTimesBefore: return (availablePrompts.getPromptList("repeatAfterMe",promptsData,language),0)
     if numTimesBefore==1: return (availablePrompts.getPromptList("sayAgain",promptsData,language),1)
-    if language==secondLanguage and ((dbase.veryExperienced() and numTimesBefore>=reallyKnownThreshold) or (meaningTestThreshold and numTimesBefore>meaningTestThreshold and not random.choice([1,2,3])==1)):
-        return (None,1) # no instruction needed
+    if (dbase.veryExperienced() and numTimesBefore>=reallyKnownThreshold) or (meaningTestThreshold and numTimesBefore>meaningTestThreshold and not random.choice([1,2,3])==1):
+        if language==secondLanguage: return (None,1) # no instruction needed
+        else: return (availablePrompts.getPromptList(language,promptsData,language),1) # just need the language name
     r = availablePrompts.getRandomPromptList(promptsData,language)
     # horrible hack: whatSay goes after the 1st-language
     # word; others go before

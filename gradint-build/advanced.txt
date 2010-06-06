@@ -271,7 +271,7 @@ sapiVoices = {
 # Here you can set extra SAPI 5 voices.  The default voice
 # will be used for English unless overridden here.  If you
 # have Neospeech Lily then that will be used for Chinese unless
-# overridden here.  (Although Lily is not always accurate.)
+# overridden here (although Lily is not always accurate).
 # Add them in this format but without the # at the beginning:
     # "language abbrev" : ("full voice name", rate),
 # For example, if you have "ScanSoft Mei-Ling_Full_22kHz"
@@ -290,6 +290,13 @@ sapiVoices = {
 # Note: if you set an "en" voice here, and eSpeak is also
 # on the system, remember to reduce the priority of eSpeak
 # in synth_priorities above.
+}
+
+sapiSpeeds = {
+# Here you can change the speeds of SAPI voices.  Speed ranges from
+# -10 (slowest) to +10 (fastest).  For example, to slow down the
+# English SAPI voice and speed up the Chinese, you can have
+# "en": -5, "zh": +3   (but without the # at the beginning)
 }
 
 # Another thing you can do is to selectively override the
