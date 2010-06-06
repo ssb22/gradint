@@ -83,9 +83,8 @@ def decache(s):
     if not textToSynth: return
     textToSynth="_"+textToSynth # sporadic mode
     generating[(textToSynth.lower(),langToSynth)]=1 # don't re-generate it
-    textToSynth=textToSynth.encode('utf-8')
-    s=textToSynth.lower()+"_"+langToSynth
-    if delete_old and langToSynth==languageToCache and gradint.fileExists_stat(gradint.synthCache+os.sep+s+gradint.dottxt):
+    s=textToSynth.lower().encode('utf-8')+"_"+langToSynth
+    if delete_old and langToSynth==languageToCache:
         for ext in [gradint.dottxt,gradint.dotwav,gradint.dotmp3]:
             try: os.remove(gradint.synthCache+os.sep+s+ext)
             except: pass
@@ -117,8 +116,8 @@ def maybe_cache(s):
     if generating.has_key(k):
         if not generating[k]==1: # a file already exists
             # don't use os.rename - can get problems cross-device
-            open(gradint.synthCache+os.sep+textToSynth.encode('utf-8')+'_'+langToSynth+generating[k][generating[k].rindex(gradint.extsep):],"wb").write(open(generating[k],"rb").read())
-            #open(gradint.synthCache+os.sep+textToSynth.encode('utf-8')+'_'+langToSynth+gradint.dottxt,"wb").write(open(generating[k][:generating[k].rindex(gradint.extsep)]+gradint.dottxt,"rb").read())
+            open(gradint.synthCache+os.sep+textToSynth.lower().encode('utf-8')+'_'+langToSynth+generating[k][generating[k].rindex(gradint.extsep):],"wb").write(open(generating[k],"rb").read())
+            #open(gradint.synthCache+os.sep+textToSynth.lower().encode('utf-8')+'_'+langToSynth+gradint.dottxt,"wb").write(open(generating[k][:generating[k].rindex(gradint.extsep)]+gradint.dottxt,"rb").read())
             os.remove(generating[k])
             os.remove(generating[k][:generating[k].rindex(gradint.extsep)]+gradint.dottxt)
             generating[k]=1
