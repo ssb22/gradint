@@ -106,12 +106,12 @@ dotwav = extsep+"wav" ; dotmp3 = extsep+"mp3" ; dottxt = extsep+"txt"
 cwd_addSep = os.sep
 if os.getcwd()[-1]==os.sep: cwd_addSep = ""
 
+def list2dict(l):
+  d = {}
+  for i in l: d[i]=True
+  return d
 try: list2set = set
-except NameError:
-  def list2set(l):
-    d = {}
-    for i in l: d[i]=True
-    return d
+except NameError: list2set = list2dict
 
 # settings.txt and advanced.txt
 # (done here before the variables start to be used in

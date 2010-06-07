@@ -94,7 +94,7 @@ if synthCache:
     for i in synthCache_contents:
         if i.upper()==transTbl: # in case it's a different case
             transTbl=i ; break
-    synthCache_contents = list2set(synthCache_contents)
+    synthCache_contents = list2dict(synthCache_contents) # NOT 2set, as the GUI can delete things from it
     if riscos_sound: show_info("done\n")
 synthCache_transtbl = {}
 if synthCache and transTbl in synthCache_contents:
