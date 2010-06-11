@@ -1,5 +1,21 @@
 # Gradint wrapper script for PocketPC
 
+# shortcut
+try:
+  if "Storage Card" in os.getcwd():
+    os.rename(os.getcwd()+"\\gradint-card.lnk","\\Windows\\Start Menu\\Programs\\Gradint.lnk")
+    os.remove(os.getcwd()+"\\gradint-internal.lnk")
+  else:
+    os.rename(os.getcwd()+"\\gradint-internal.lnk","\\Windows\\Start Menu\\Programs\\Gradint.lnk")
+    os.remove(os.getcwd()+"\\gradint-card.lnk")
+except: pass
+if not os.path.exists("\\Windows\\Start Menu\\Programs\\Gradint.lnk"):
+  raw_input("Failed to write to \\Windows")
+  raw_input("is Application Lock on? Remove and try again.")
+  raise SystemExit
+  # http://www.mobilejaw.com/articles/2009/09/removing-application-lock-on-windows-mobile-standard-devices/
+  # -> http://www.mobilejaw.com/content/2009/09/MobileJaw-ClearSecurity-MobiControl.cab
+
 # Pre-compile - helps when the device is short of RAM,
 # since compiling and running at the same time
 # can take more RAM than doing it separately.
@@ -16,16 +32,6 @@ if a:
   except IOError: raw_input("Compile error")
   try: os.remove(f) # leave the .pyc only
   except: pass
-
-# shortcut
-try:
-  if "Storage Card" in os.getcwd():
-    os.rename(os.getcwd()+"\\gradint-card.lnk","\\Windows\\Start Menu\\Programs\\Gradint.lnk")
-    os.remove(os.getcwd()+"\\gradint-internal.lnk")
-  else:
-    os.rename(os.getcwd()+"\\gradint-internal.lnk","\\Windows\\Start Menu\\Programs\\Gradint.lnk")
-    os.remove(os.getcwd()+"\\gradint-card.lnk")
-except: pass
 
 def moveFiles(srcDir,destDir):
     try: os.mkdir(destDir)
@@ -58,10 +64,14 @@ if l:
     print "Installing TkInter..."
     try: moveFiles("\\Storage Card\\Windows","\\Windows")
     except: pass
-    if "Storage Card" in os.getcwd(): moveFiles(os.getcwd()+"\\Program Files","\\Storage Card\\Program Files")
-    else: moveFiles(os.getcwd()+"\\Program Files","\\Program Files")
-    # need to restart Python
-    raw_input("Setup successful - now run Gradint")
+    try:
+      if "Storage Card" in os.getcwd(): moveFiles(os.getcwd()+"\\Program Files","\\Storage Card\\Program Files")
+      else: moveFiles(os.getcwd()+"\\Program Files","\\Program Files")
+      # need to restart Python
+      raw_input("Setup successful - now run Gradint")
+    except:
+      raw_input("Failed to move Program Files")
+      raw_input("Please do it manually in Explorer")
     raise SystemExit
 
 # can now run

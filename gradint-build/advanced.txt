@@ -684,6 +684,8 @@ GUI_translations={
 "(Up)":{"zh":u"(上面)"},
 "Record from %s":{"zh":u"从%s做录音","zh2":u"從%s做錄音"},
 "Record from file":{"zh":u"从文件做录音","zh2":u"從文件做錄音"},
+"It has been %d days since your last Gradint lesson.  Please try to have one every day.":{"zh":u"你没做Gradint的课%d天了。请试试天天做。","zh2":u"你沒做Gradint的課%d天了。請試試天天做。"},
+"It has been %d days since you installed Gradint and you haven't had a lesson yet.  Please try to have one every day.":{"zh":u"%d天前安装了Gradint但还没做课。请试试天天做。","zh2":u"%d天前安裝了Gradint但還沒做課。請試試天天做。"},
     }
 
 # scriptVariants optionally maps language abbreviation to default script
