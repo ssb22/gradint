@@ -1,16 +1,21 @@
-# Gradint wrapper script for PocketPC
+# Gradint wrapper script for Windows Mobile
+
+import os, py_compile, sys
 
 # shortcut
+progs="\\Windows\\Start Menu\\Programs"
+if not os.path.isdir(progs): progs="\\Windows\\Start Menu" # WM-Standard has no Programs subdir
 try:
   if "Storage Card" in os.getcwd():
-    os.rename(os.getcwd()+"\\gradint-card.lnk","\\Windows\\Start Menu\\Programs\\Gradint.lnk")
+    os.rename(os.getcwd()+"\\gradint-card.lnk",progs+"\\Gradint.lnk")
     os.remove(os.getcwd()+"\\gradint-internal.lnk")
   else:
-    os.rename(os.getcwd()+"\\gradint-internal.lnk","\\Windows\\Start Menu\\Programs\\Gradint.lnk")
+    os.rename(os.getcwd()+"\\gradint-internal.lnk",progs+"\\Gradint.lnk")
     os.remove(os.getcwd()+"\\gradint-card.lnk")
 except: pass
-if not os.path.exists("\\Windows\\Start Menu\\Programs\\Gradint.lnk"):
-  raw_input("Failed to write to \\Windows")
+if not os.path.exists(progs+"\\Gradint.lnk"):
+  # TODO will it really get HERE if Application Lock is on?
+  raw_input("Failed to write to "+progs)
   raw_input("is Application Lock on? Remove and try again.")
   raise SystemExit
   # http://www.mobilejaw.com/articles/2009/09/removing-application-lock-on-windows-mobile-standard-devices/
@@ -20,7 +25,6 @@ if not os.path.exists("\\Windows\\Start Menu\\Programs\\Gradint.lnk"):
 # since compiling and running at the same time
 # can take more RAM than doing it separately.
 
-import os, py_compile, sys
 f=os.getcwd()+os.sep+"gradint.py"
 a=0
 try: a=open(f)
@@ -72,6 +76,7 @@ if l:
     except:
       raw_input("Failed to move Program Files")
       raw_input("Please do it manually in Explorer")
+      raw_input("or remove Application Lock if on")
     raise SystemExit
 
 # can now run
