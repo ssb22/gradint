@@ -670,8 +670,8 @@ class RecorderControls:
                     for lang in self.languagesToDraw:
                         if prefix+"_"+lang+dottxt in l: foundTxt[lang]=(self.currentDir+os.sep+prefix+"_"+lang+dottxt,2+3*self.languagesToDraw.index(lang))
                     prefix2row[prefix] = curRow
-                    for lang in self.languagesToDraw:
-                        if lang==languageOverride: # do it here to preserve tab order
+                    for lang in self.languagesToDraw: # preserve tab order
+                        if lang==languageOverride and not flwr.endswith(dottxt):
                             self.updateFile(fname,curRow,self.languagesToDraw.index(lang),state=1)
                             languageOverride=None # so not done again
                         else: self.updateFile(prefix+"_"+lang+dotwav,curRow,self.languagesToDraw.index(lang),state=0,txtExists=(lang in foundTxt))
