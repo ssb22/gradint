@@ -51,7 +51,7 @@ if appuifw:
     appuifw.app.menu=[(u"Brief interrupt",s60_briefInt),(u"Cancel lesson",s60_interrupt)]
     appuifw.app.exit_key_handler = s60_interrupt
 
-winCEsound = msvcrt = None
+winCEsound = msvcrt = WMstandard = None
 if winsound:
     try: import msvcrt
     except: msvcrt = None # missing
@@ -60,6 +60,8 @@ if winsound:
         import ctypes # if that fails (pre-2.5, pre-Windows Mobile 2003) then we can't do much
         import ctypes.wintypes as wintypes
         class ShellExecuteInfo(ctypes.Structure): _fields_ = [("cbSize",wintypes.DWORD),("fMask",wintypes.ULONG),("hwnd",wintypes.HWND),("Verb",ctypes.c_wchar_p),("File",ctypes.c_wchar_p),("Parameters",ctypes.c_wchar_p),("Directory",ctypes.c_wchar_p),("nShow",ctypes.c_int),("hInstApp",wintypes.HINSTANCE),("IDList",ctypes.c_void_p),("Class",ctypes.c_wchar_p),("hkeyClass",wintypes.HKEY),("dwHotKey",wintypes.DWORD),("hIconOrMonitor",wintypes.HANDLE),("hProcess",wintypes.HANDLE)]
+        try: ctypes.cdll.commdlg
+        except: WMstandard = True
 
 if macsound and __name__=="__main__": os.system("clear 1>&2") # so warnings etc start with a clear terminal (1>&2 just in case using stdout for something else)
 if riscos_sound: sys.stderr.write("Loading Gradint...\n") # in case it takes a while

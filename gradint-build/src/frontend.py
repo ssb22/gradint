@@ -97,6 +97,7 @@ def primitive_synthloop():
         if not lang: lang=oldLang
 
 def startBrowser(url): # true if success
+  if winCEsound: return None # user might be paying per byte! + difficult to switch back if no Alt-Tab program
   try: import webbrowser
   except: webbrowser=0
   if webbrowser:
@@ -188,7 +189,22 @@ def addTextBox(row,wide=0):
     entry = Tkinter.Entry(row,textvariable=text)
     if winsound or mingw32 or cygwin or macsound: entry.bind('<Button-3>',CXVMenu)
     if macsound: entry.bind('<Control-Button-1>',CXVMenu)
-    if winCEsound: # Try to detect long clicks. This is awkward. time.time is probably 1sec resolution so will get false +ves if go by that only.
+    if winCEsound:
+      if WMstandard: # non-numeric inputs no good on WMstandard Tkinter
+        def doRawInput(text,entry):
+            app.input_to_set = text
+            app.menu_response="input"
+        entry.bind('<Return>',lambda e:doRawInput(text,entry))
+        if wide: # put help in 1st wide textbox
+          global had_doRawInput
+          try: had_doRawInput
+          except:
+            had_doRawInput=1
+            text.set("(Push OK to type A-Z)")
+            class E: pass
+            e=E() ; e.widget = entry
+            entry.after(10,lambda *args:selectAll(e))
+      else: # PocketPC: try to detect long clicks. This is awkward. time.time is probably 1sec resolution so will get false +ves if go by that only.
         def timeStamp(entry): entry.buttonPressTime=time.time()
         entry.bind('<ButtonPress-1>',lambda e:timeStamp(entry))
         global lastDblclkAdvisory,lastDblclk
@@ -204,9 +220,8 @@ def addTextBox(row,wide=0):
             global lastDblclk ; lastDblclk=time.time()
         entry.bind('<ButtonRelease-1>',lambda e:pasteInstructions(time.time()-getattr(entry,"buttonPressTime",time.time())))
         entry.bind('<Double-Button-1>',lambda e:doPaste(text,entry))
-    else:
-        # Tkinter bug workaround (some versions): event_generate from within a key event handler can be unreliable, so the Ctrl-A handler delays selectAll by 10ms:
-        entry.bind(cond(macsound,'<Command-a>','<Control-a>'),(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
+    # Tkinter bug workaround (some versions): event_generate from within a key event handler can be unreliable, so the Ctrl-A handler delays selectAll by 10ms:
+    entry.bind(cond(macsound,'<Command-a>','<Control-a>'),(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
     bindUpDown(entry,False)
     if wide=="nopack": pass
     elif wide:
@@ -398,6 +413,8 @@ def focusButton(button):
           app.after(t+150,lambda *args:flashButton(button,"normal"))
         # (Don't like flashing, but can't make it permanently active as it won't change when the focus does)
 
+if WMstandard: GUI_omit_statusline = 1 # unlikely to be room (and can disrupt nav)
+
 def startTk():
     class Application(Tkinter.Frame):
         def __init__(self, master=None):
@@ -408,6 +425,7 @@ def startTk():
             make_extra_buttons_waiting_list()
             if olpc: self.master.option_add('*font',cond(extra_buttons_waiting_list,'Helvetica 9','Helvetica 14'))
             elif macsound and Tkinter.TkVersion>=8.6: self.master.option_add('*font','System 13') # ok with magnification.  Note >13 causes square buttons.  (Including this line causes "Big print" to work)
+            elif WMstandard: self.master.option_add('*font','Helvetica 7') # TODO on ALL WMstandard devices?
             if winsound or cygwin or macsound: self.master.resizable(1,0) # resizable in X direction but not Y (latter doesn't make sense, see below).  (Don't do this on X11 because on some distros it results in loss of automatic expansion as we pack more widgets.)
             self.extra_button_callables = []
             self.pack(fill=Tkinter.BOTH,expand=1)
@@ -569,6 +587,9 @@ def startTk():
             if hasattr(self.todo,"undoRecordFrom"):
                 theRecorderControls.undoRecordFrom()
                 del self.todo.undoRecordFrom
+            if hasattr(self.todo,"input_response"): # WMstandard
+                self.input_to_set.set(self.todo.input_response)
+                del self.todo.input_response,self.input_to_set
             if hasattr(self.todo,"exit_ASAP"):
                 self.master.destroy()
                 self.pollInterval = 0
@@ -747,10 +768,11 @@ def startTk():
             self.TestEtcCol = addRow(self.row1) # effectively adding a column to the end of the row, for "Speak" and any other buttons to do with 2nd-language text (although be careful not to add too many due to tabbing)
             self.TestTextButton = addButton(self.TestEtcCol,"",self.testText,status="Use this button to check how the\ncomputer will pronounce words before you add them") # will set text in updateLanguageLabels
             self.Label2,self.Text2,self.Entry2 = addLabelledBox(self.row2,True)
-            self.Entry1.bind('<Return>',self.testText)
-            self.Entry1.bind('<F5>',self.debugText)
-            self.Entry2.bind('<Return>',self.addText)
-            for e in [self.Entry1,self.Entry2]: addStatus(e,"Enter a word or phrase to add or to test\nor to search your existing collection",mouseOnly=1)
+            if not WMstandard:
+              self.Entry1.bind('<Return>',self.testText)
+              self.Entry1.bind('<F5>',self.debugText)
+              self.Entry2.bind('<Return>',self.addText)
+              for e in [self.Entry1,self.Entry2]: addStatus(e,"Enter a word or phrase to add or to test\nor to search your existing collection",mouseOnly=1)
             self.AddButton = addButton(self.row2,"",self.addText,status="Adds the pair to your vocabulary collection\nor adds extra revision if it's already there") # will set text in updateLanguageLabels
             self.L1Label,self.L1Text,self.L1Entry = addLabelledBox(self.row3,status="The abbreviation of your\nfirst (i.e. native) language")
             self.L2Label,self.L2Text,self.L2Entry = addLabelledBox(self.row3,status="The abbreviation of the other\nlanguage that you learn most")
@@ -865,7 +887,7 @@ def startTk():
             self.AddButton["text"] = localise("Add to %s") % gui_vocabFile_name
             self.ChangeLanguageButton["text"] = localise("Change languages")
             self.ChangeButton["text"] = localise("Change or delete item")
-            if hasattr(self,"EditVocabButton"): self.EditVocabButton["text"] = localise(textEditorName)+" "+gui_vocabFile_name
+            if hasattr(self,"EditVocabButton"): self.EditVocabButton["text"] = cond(WMstandard,gui_vocabFile_name,localise(textEditorName)+" "+gui_vocabFile_name) # (save as much space as possible on WMstandard by omitting the "Edit " verb)
             if hasattr(self,"RecordedWordsButton"): self.RecordedWordsButton["text"] = localise("Recorded words")
         def wrongMouseButton(self,*args): self.todo.alert="Please use the OTHER mouse button when clicking on list and button controls." # Simulating it is awkward.  And we might as well teach them something.
         def getListItem(self,*args):
@@ -1245,7 +1267,9 @@ def gui_event_loop():
             if emulated_interruptMain: check_for_interrupts()
             time.sleep(0.3)
         menu_response = app.menu_response
-        if menu_response=="go":
+        if menu_response=="input": # WMstandard
+            app.todo.input_response=raw_input()
+        elif menu_response=="go":
             gui_outputTo_start()
             if not soundCollector: app.todo.add_briefinterrupt_button = 1
             try: lesson_loop()
