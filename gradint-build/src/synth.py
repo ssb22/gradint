@@ -473,7 +473,8 @@ class ESpeakSynth(Synth):
             if type(t)==type([]):
                 indexList.append(len(retList))
                 retList.append(None) # result not filled in yet
-                write_to_espeak.append(fix_commas(pinyin_uColon_to_V(t[0])).replace(split_token," ")) # NB fix_compatibility has already been done (as has preprocess_chinese_numbers), by simpleZhTransliterator above
+                write_to_espeak.append(fix_commas(pinyin_uColon_to_V(t[0].replace("-","/"))).replace(split_token," ")) # NB fix_compatibility has already been done (as has preprocess_chinese_numbers), by simpleZhTransliterator above
+                # (replacing - with / because espeak zh voice treats / as a silent word separator but - is ignored; - is used as a word separator in MeiLing etc.  so if you want to write the hanzi for wei2ren2 but you want it to be wei4+ren2, you can hack in this way.  TODO document?)
             else: retList.append(t)
         else: retList.append(None)
       if keepIndexList: self.lastIndexList = indexList
