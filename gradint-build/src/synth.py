@@ -768,15 +768,18 @@ class GeneralSynth(Synth):
 class GeneralFileSynth(Synth):
     def __init__(self):
         Synth.__init__(self)
-        self.approx_lettersPerSec = {}
+        self.letters = {} ; self.duration = {}
     def supports_language(self,lang):
         for l,c,f in extra_speech_tofile:
             if l==lang: return 1
         return 0
     def works_on_this_platform(self): return extra_speech_tofile
     def guess_length(self,lang,text):
-        if not lang in self.approx_lettersPerSec: self.approx_lettersPerSec[lang]=len(text)/SampleEvent(self.makefile_cached(lang,text)).length
-        return quickGuess(len(text),self.approx_lettersPerSec[lang]) # (doing it this way so don't synth the whole list)
+        if not lang in self.letters: self.letters[lang]=self.duration[lang]=0
+        if self.letters[lang]<25:
+            self.letters[lang] += len(text)
+            self.duration[lang] += SampleEvent(self.makefile_cached(lang,text)).exactLen
+        return quickGuess(len(text),self.letters[lang]/self.duration[lang]) # (doing it this way so don't synth the whole list, but do make sure got a big enough sample)
     # (note: above works only because finish_makefile() is not necessary in this class)
     def makefile(self,lang,text):
         for l,c,f in extra_speech_tofile:
