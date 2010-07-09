@@ -394,6 +394,7 @@ class ESpeakSynth(Synth):
                     return True
             return False
         else: # not windows or cygwin
+            if macsound and not got_qtplay: return False # Rosetta required (TODO need to check espeak separately in case they've compiled it x86)
             self.program="speak"
             if riscos_sound: return True # we've already confirmed <eSpeak$dir> works in the constructor
             import commands

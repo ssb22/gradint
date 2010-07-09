@@ -96,17 +96,22 @@ elif unix and hasattr(os,"popen"):
     if not fileExists(cond(cygwin,madplay_program+".exe",madplay_program)): madplay_program=0 # in case of a Unix 'which' returning error on stdout
 if madplay_program and not winsound and not mingw32: madplay_program='"'+madplay_program+'"' # in case there's spaces etc in the path
 
-playProgram = mpg123 = None ; sox_effect=""
+playProgram = mpg123 = "" ; sox_effect=""
 sox_8bit, sox_16bit = "-b", "-w"
 # Older sox versions (e.g. the one bundled with Windows Gradint) recognise -b and -w only; sox v14+ recognises both that and -1/-2; newer versions recognise only -1/-2.  We check for newer versions if unix.  (TODO riscos / other?)
 soundVolume_dB = math.log(soundVolume)*(-6/math.log(0.5))
 if unix:
-  sox_formats=os.popen("sox --help 2>&1").read().lower()
+  if macsound: got_qtplay = 1 # should be bundled
+  sox_formats=os.popen("sox --help 2>&1").read() # NOT .lower() yet
   if sox_formats.lower().startswith("sox: sox v") and '1'<=sox_formats[10]<='9' and int(sox_formats[10:sox_formats.index('.')])>=14: sox_8bit, sox_16bit = "-1", "-2" # see comment above
-  if sox_formats.find("wav")>-1: gotSox=1
+  if sox_formats.lower().find("wav")>-1: gotSox=1
   else:
     gotSox=0
-    if got_program("sox"): show_warning("SOX found, but it can't handle WAV files. Ubuntu users please install libsox-fmt-all.")
+    if got_program("sox"):
+      if macsound and sox_formats.find("Rosetta")>-1:
+        show_warning(sox_formats.replace("sox.","sox and espeak.")+" Otherwise expect problems!") # (TODO need to check espeak separately in case they've compiled it x86, see in synth.py)
+        got_qtplay = 0
+      else: show_warning("SOX found, but it can't handle WAV files. Ubuntu users please install libsox-fmt-all.")
 else: gotSox = got_program("sox")
 if winsound or mingw32:
     # in winsound can use PlaySound() but better not use it for LONGER sounds - find a playProgram anyway for those (see self.length condition in play() method below)
@@ -246,7 +251,7 @@ class SampleEvent(Event):
                     ctypes.cdll.coredll.sndPlaySoundW(u""+fname,1) # 0=sync 1=async
                     time.sleep(self.exactLen) # if async.  Async seems to be better at avoiding crashes on some handhelds.
             except RuntimeError: return 1
-        elif macsound: return system("qtplay \"%s\"" % (self.file,))
+        elif macsound and got_qtplay: return system("qtplay \"%s\"" % (self.file,))
         elif riscos_sound:
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (TODO find a RISC OS program that can play the MP3s directly?)
             else: file=self.file
@@ -290,7 +295,7 @@ class SampleEvent(Event):
             if fileType=="mp3" and not playProgram=="mplayer": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
             else: file=self.file
             return system(playProgram+' "'+file+'"')
-        else: show_warning("Don't know how to play \""+file+'" on this system')
+        else: show_warning("Don't know how to play \""+self.file+'" on this system')
 
 br_tab=[(0 , 0 , 0 , 0 , 0),
 (32 , 32 , 32 , 32 , 8),
