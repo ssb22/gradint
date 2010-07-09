@@ -49,15 +49,14 @@ except: pass
 
 sys.argv = []
 import gradint
-gradint.cache_maintenance_mode = 1
 assert gradint.synthCache, "need a synthCache for this to work"
+gradint.cache_maintenance_mode = 1
 try: trans = open(gradint.synthCache+os.sep+gradint.transTbl).read().replace("\n"," ")+" "
 except: trans = ""
+scld=gradint.list2dict(os.listdir(gradint.synthCache))
 def synth_fileExists(f):
-    try:
-        open(gradint.synthCache+os.sep+f)
-        return 1
-    except: return (" "+f+" ") in trans
+    if f in scld: return True
+    else: return (" "+f+" ") in trans
 
 # Check for previous newStuff .txt's, and any results from them
 generating = {}
@@ -86,15 +85,17 @@ def decache(s):
     s=textToSynth.lower().encode('utf-8')+"_"+langToSynth
     if delete_old and langToSynth==languageToCache:
         for ext in [gradint.dottxt,gradint.dotwav,gradint.dotmp3]:
-            try: os.remove(gradint.synthCache+os.sep+s+ext)
-            except: pass
+            if s+ext in scld:
+                os.remove(gradint.synthCache+os.sep+s+ext)
+                del scld[s+ext]
 
 samples = gradint.scanSamples() # MUST call before sporadic so variantFiles is populated
 
 if sporadic:
+  pd = gradint.ProgressDatabase()
   if delete_old: print "Checking for old words to remove"
   else: print "Sporadic mode: Checking for old words to avoid"
-  for t,prompt,target in gradint.ProgressDatabase().data:
+  for t,prompt,target in pd.data:
     if t>=gradint.reallyKnownThreshold:
         if type(prompt)==type([]):
             for p in prompt: decache(p)
@@ -116,7 +117,9 @@ def maybe_cache(s):
     if generating.has_key(k):
         if not generating[k]==1: # a file already exists
             # don't use os.rename - can get problems cross-device
-            open(gradint.synthCache+os.sep+textToSynth.lower().encode('utf-8')+'_'+langToSynth+generating[k][generating[k].rindex(gradint.extsep):],"wb").write(open(generating[k],"rb").read())
+            fname = textToSynth.lower().encode('utf-8')+'_'+langToSynth+generating[k][generating[k].rindex(gradint.extsep):]
+            open(gradint.synthCache+os.sep+fname,"wb").write(open(generating[k],"rb").read())
+            scld[fname] = 1
             #open(gradint.synthCache+os.sep+textToSynth.lower().encode('utf-8')+'_'+langToSynth+gradint.dottxt,"wb").write(open(generating[k][:generating[k].rindex(gradint.extsep)]+gradint.dottxt,"rb").read())
             os.remove(generating[k])
             os.remove(generating[k][:generating[k].rindex(gradint.extsep)]+gradint.dottxt)
@@ -129,7 +132,7 @@ def maybe_cache(s):
     count += 1
 
 print "Checking for new ones"
-for _,s1,s2 in samples+gradint.parseSynthVocab("vocab.txt"):
+for _,s1,s2 in samples+gradint.parseSynthVocab(gradint.vocabFile):
     if type(s1)==type([]): [maybe_cache(i) for i in s1]
     else: maybe_cache(s1)
     maybe_cache(s2)

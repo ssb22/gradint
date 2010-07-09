@@ -63,7 +63,9 @@ class ProgressDatabase(object):
     def _load_from_text(self,fromString=0):
         if fromString: expr=fromString
         elif fileExists(progressFile):
-            if compress_progress_file or (unix and got_program("gzip")): expr = os.popen('gzip -fdc "'+progressFile+'"',"rb").read()
+            if compress_progress_file or (unix and got_program("gzip")):
+                if paranoid_file_management: open(progressFile) # ensure ready
+                expr = os.popen('gzip -fdc "'+progressFile+'"',"rb").read()
             else: expr = open(progressFile,"rb").read()
         else: expr = None
         if expr:
