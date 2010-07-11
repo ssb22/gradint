@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9958 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9959 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -109,7 +109,9 @@ if unix:
     gotSox=0
     if got_program("sox"):
       if macsound and sox_formats.find("Rosetta")>-1:
-        show_warning(sox_formats.replace("sox.","sox and espeak.")+" Otherwise expect problems!") # (TODO need to check espeak separately in case they've compiled it x86, see in synth.py)
+        try: u""+sox_formats
+        except: sox_formats="Please install Rosetta (from the Mac OS X optional CD) to run sox." # just in case there are encoding problems with localisation
+        show_warning(sox_formats.replace("sox.","some of the utilities Gradint uses.")+" Otherwise expect problems!") # (TODO need to check espeak separately in case they've compiled it x86, see in synth.py)
         got_qtplay = 0
       else: show_warning("SOX found, but it can't handle WAV files. Ubuntu users please install libsox-fmt-all.")
 else: gotSox = got_program("sox")

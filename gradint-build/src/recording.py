@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9958 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9959 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -340,7 +340,7 @@ class RecorderControls:
         renameEntry.grid(row=row,column=col,sticky='we')
         number=filename
         if number.startswith("word"): number=number[4:]
-        if number and "0"<=number[0]<="9":
+        if number and ("0"<=number[0]<="9" or (len(number)>=2 and number[0]=="_" and "0"<=number[1]<="9")): # the format of addMore method
             renameText.set(number)
             selectAllFunc = selectAllButNumber
         else:
@@ -434,7 +434,7 @@ class RecorderControls:
         self.del_addMore_button()
         for r in range(5):
             if self.maxPrefix<=99: prefix = "word%02d" % self.maxPrefix
-            else: prefix = "word_%04d" % self.maxPrefix
+            else: prefix = "word_%04d" % self.maxPrefix # if changing this, change startRename and selectAllButNumber also, AND the code that works out maxPrefix (and NB legacy collections).  TODO use of _ may not suit variants if in same dir.
             self.addLabel(self.addMoreRow,0,utext=prefix)
             for lang in self.languagesToDraw:
                 self.updateFile(unicode2filename(prefix+"_"+lang+dotwav),self.addMoreRow,self.languagesToDraw.index(lang),state=0)
@@ -658,11 +658,17 @@ class RecorderControls:
               else:
                   prefix=fname[:fname.rindex("_")]
                   languageOverride = languageof(fname)
+              
               wprefix = prefix
-              if wprefix.startswith("word"): wprefix=wprefix[4:] # ditch any "word" before the integer
-              try: iprefix = int(wprefix)
+              for ww in ["word_","word","_"]:
+                if wprefix.startswith(ww):
+                  wprefix=wprefix[len(ww):] ; break
+              ii=0
+              while ii<len(wprefix) and "0"<=wprefix[ii]<="9": ii += 1
+              try: iprefix = int(wprefix[:ii])
               except: iprefix = -1
               if iprefix>maxPrefix: maxPrefix=iprefix # max existing numerical prefix
+              
               if (flwr.endswith(dotwav) or flwr.endswith(dotmp3) or flwr.endswith(dottxt)): # even if not languageOverride in self.languagesToDraw e.g. for prompts - helps setting up gradint in a language it doesn't have prompts for (creates blank rows for the prefixes that other languages use). TODO do we want to add 'and languageOverride in self.languagesToDraw' if NOT in prompts?
                 if not prefix in prefix2row:
                     self.addLabel(curRow,0,utext=filename2unicode(prefix))
