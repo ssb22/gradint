@@ -14,6 +14,8 @@
 settingsFile = "settings"+dottxt
 user0 = (samplesDirectory,vocabFile,progressFile,progressFileBackup,pickledProgressFile,settingsFile)
 
+forceRadio = cond(macsound and sys.version_info >= (2,6),1,0) # OS X 10.6 doesn't display indicatoron=0 very well
+
 def addUserToFname(fname,userNo):
   if not userNo or not fname: return fname
   elif os.sep in fname: return fname+"-user"+str(userNo)
@@ -89,9 +91,10 @@ def updateUserRow(fromMainMenu=0):
         r=Tkinter.Radiobutton(row, text=names[i], variable=app.userNo, value=str(i), takefocus=0)
         r.grid(row=i+1,column=0,sticky="w")
         r["command"]=lambda i=i,*args: select_userNumber(i)
-        r2=Tkinter.Radiobutton(row, text="Select", variable=app.userNo, value=str(i), indicatoron=0) ; bindUpDown(r2,True)
-        r2.grid(row=i+1,column=1,sticky="e")
-        r2["command"]=lambda i=i,*args: select_userNumber(i)
+        if not forceRadio:
+           r2=Tkinter.Radiobutton(row, text="Select", variable=app.userNo, value=str(i), indicatoron=0) ; bindUpDown(r2,True)
+           r2.grid(row=i+1,column=1,sticky="e")
+           r2["command"]=lambda i=i,*args: select_userNumber(i)
         addButton(row,"Rename",lambda e=None,i=i,r=r,row=row:renameUser(i,r,row),"nopack").grid(row=i+1,column=2,sticky="e")
         addButton(row,"Delete",lambda e=None,i=i:deleteUser(i),"nopack").grid(row=i+1,column=3,sticky="e")
       else:

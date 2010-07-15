@@ -262,25 +262,28 @@ def make_output_row(parent):
         if not hasattr(app,"scriptVariant"): app.scriptVariant = Tkinter.StringVar(app)
         count = 0
         for variant in GUI_translations["@variants-"+firstLanguage]:
-            Tkinter.Radiobutton(row, text=u" "+variant+u" ", variable=app.scriptVariant, value=str(count), indicatoron=0).pack({"side":"left"})
+            Tkinter.Radiobutton(row, text=u" "+variant+u" ", variable=app.scriptVariant, value=str(count), indicatoron=forceRadio).pack({"side":"left"})
             count += 1
         app.scriptVariant.set(str(scriptVariants.get(firstLanguage,0)))
     if not gotSox: return row # can't do any file output without sox
-    if not hasattr(app,"outputTo"): app.outputTo = Tkinter.StringVar(app) # NB app not parent (as parent is no longer app)
+    if not hasattr(app,"outputTo"):
+        app.outputTo = Tkinter.StringVar(app) # NB app not parent (as parent is no longer app)
+        app.outputTo.set("0") # not "" or get tri-state boxes on OS X 10.6
     if not row:
         row = Tkinter.Frame(parent)
         row.pack(fill=Tkinter.X,expand=1)
     rightrow = addRightRow(row) # to show beginners this row probably isn't the most important thing despite being in a convenient place, we'll right-align
     def addFiletypeButton(fileType):
-        t = Tkinter.Radiobutton(rightrow, text=" "+fileType.upper()+" ", variable=app.outputTo, value=fileType, indicatoron=0)
+        ftu = fileType.upper()
+        t = Tkinter.Radiobutton(rightrow, text=" "+ftu+" ", variable=app.outputTo, value=fileType, indicatoron=forceRadio)
         bindUpDown(t,True)
-        addStatus(t,"Select this to save a lesson or\na phrase to a%s %s file" % (cond(fileType[0] in "AEFHILMNORSX","n",""),fileType))
+        addStatus(t,"Select this to save a lesson or\na phrase to a%s %s file" % (cond(ftu[0] in "AEFHILMNORSX","n",""),ftu))
         t.pack({"side":"left"})
     if winsound or mingw32: got_windows_encoder = fileExists(programFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs")
     elif cygwin: got_windows_encoder = fileExists(programFiles+"/Windows Media Components/Encoder/WMCmd.vbs")
     else: got_windows_encoder = 0
     Tkinter.Label(rightrow,text=localise("To")+":").pack({"side":"left"})
-    t=Tkinter.Radiobutton(rightrow, text=" "+localise("Speaker")+" ", variable=app.outputTo, value="", indicatoron=0)
+    t=Tkinter.Radiobutton(rightrow, text=" "+localise("Speaker")+" ", variable=app.outputTo, value="0", indicatoron=forceRadio) # (must be value="0" not value="" for OS X 10.6 otherwise the other buttons become tri-state)
     addStatus(t,"Select this to send all sounds to\nthe speaker, not to files on disk")
     bindUpDown(t,True)
     t.pack({"side":"left"})
@@ -513,12 +516,14 @@ def startTk():
               else: v=0
               if not v==scriptVariants.get(firstLanguage,0): self.setVariant(v)
             if hasattr(self,"outputTo"):
+              outTo = self.outputTo.get()
+              if outTo=="0": outTo=""
               if hasattr(self,"TestTextButton"):
-                if self.outputTo.get(): self.TestTextButton["text"]=localise("To")+" "+self.outputTo.get().upper()
+                if outTo: self.TestTextButton["text"]=localise("To")+" "+outTo.upper()
                 else: self.TestTextButton["text"]=localise("Speak")
                 # used to be called "Test" instead of "Speak", but some people didn't understand that THEY'RE doing the testing (not the computer)
               if hasattr(self,"MakeLessonButton"):
-                if self.outputTo.get(): self.MakeLessonButton["text"]=localise("Make")+" "+self.outputTo.get().upper()
+                if outTo: self.MakeLessonButton["text"]=localise("Make")+" "+outTo.upper()
                 else: self.MakeLessonButton["text"]=localise("Start lesson") # less confusing for beginners than "Make lesson", if someone else has set up the words
             if hasattr(self,"BriefIntButton"):
                 if emergency_lessonHold_to < time.time(): t=localise("Brief interrupt")
@@ -1496,7 +1501,7 @@ def transliterates_differently(text,lang):
 
 gui_output_counter = 1
 def gui_outputTo_start():
-    if hasattr(app,"outputTo") and app.outputTo.get():
+    if hasattr(app,"outputTo") and app.outputTo.get() and not app.outputTo.get()=="0":
         global outputFile ; outputFile=None
         try: os.mkdir(gui_output_directory)
         except: pass
