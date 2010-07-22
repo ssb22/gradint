@@ -161,6 +161,7 @@ GUI.exe: gradint.py
 gradint.tbz: $(Mac_Files)
 	mkdir gradint
 	cp -r $(Mac_Files) gradint
+	chmod +x gradint/start-gradint.app/sox gradint/start-gradint.app/qtplay # just in case it lost its x attribute
 	mv gradint/samples/utils "gradint/samples/advanced utilities"
 	cp -p hanzi-prompts/* gradint/samples/prompts/ # overwriting the pinyin ones (as will bundle espeak so can translit.)
 	cd gradint ; mv $(Most_Mac_Files) start-gradint.app/ ; mv start-gradint.app Gradint.app ; cd Gradint.app/Contents/MacOS ; sed -e s/start-gradint/Gradint/g -e s,Gradint.app/Contents,Contents,g < start-gradint > Gradint ; cp Gradint "Gradint 2"; chmod +x Gradint "Gradint 2" ; rm start-gradint ; cd ../../../.. # hide it all inside the app (optional) ("Gradint 2" is for upgrades - see code for details)
