@@ -275,7 +275,7 @@ def make_output_row(parent):
     rightrow = addRightRow(row) # to show beginners this row probably isn't the most important thing despite being in a convenient place, we'll right-align
     def addFiletypeButton(fileType):
         ftu = fileType.upper()
-        t = Tkinter.Radiobutton(rightrow, text=" "+ftu+" ", variable=app.outputTo, value=fileType, indicatoron=forceRadio)
+        t = Tkinter.Radiobutton(rightrow, text=cond(forceRadio,""," ")+ftu+" ", variable=app.outputTo, value=fileType, indicatoron=forceRadio)
         bindUpDown(t,True)
         addStatus(t,"Select this to save a lesson or\na phrase to a%s %s file" % (cond(ftu[0] in "AEFHILMNORSX","n",""),ftu))
         t.pack({"side":"left"})
@@ -283,7 +283,7 @@ def make_output_row(parent):
     elif cygwin: got_windows_encoder = fileExists(programFiles+"/Windows Media Components/Encoder/WMCmd.vbs")
     else: got_windows_encoder = 0
     Tkinter.Label(rightrow,text=localise("To")+":").pack({"side":"left"})
-    t=Tkinter.Radiobutton(rightrow, text=" "+localise("Speaker")+" ", variable=app.outputTo, value="0", indicatoron=forceRadio) # (must be value="0" not value="" for OS X 10.6 otherwise the other buttons become tri-state)
+    t=Tkinter.Radiobutton(rightrow, text=cond(forceRadio,""," ")+localise("Speaker")+" ", variable=app.outputTo, value="0", indicatoron=forceRadio) # (must be value="0" not value="" for OS X 10.6 otherwise the other buttons become tri-state)
     addStatus(t,"Select this to send all sounds to\nthe speaker, not to files on disk")
     bindUpDown(t,True)
     t.pack({"side":"left"})
