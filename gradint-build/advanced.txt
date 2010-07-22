@@ -686,6 +686,12 @@ GUI_translations={
 "Record from file":{"zh":u"从文件做录音","zh2":u"從文件做錄音"},
 "It has been %d days since your last Gradint lesson.  Please try to have one every day.":{"zh":u"你没做Gradint的课%d天了。请试试天天做。","zh2":u"你沒做Gradint的課%d天了。請試試天天做。"},
 "It has been %d days since you installed Gradint and you haven't had a lesson yet.  Please try to have one every day.":{"zh":u"%d天前安装了Gradint但还没做课。请试试天天做。","zh2":u"%d天前安裝了Gradint但還沒做課。請試試天天做。"},
+"Error: maximum number of new words must be an integer":{"zh":u"误差: 新词界限不是整数","zh2":u"誤差: 新詞界限不是整數"},
+"Error: minutes must be a number":{"zh":u"误差: 分钟界限不是号码","zh2":"誤差: 分鐘界限不是號碼"},
+"%s new words is a lot to remember at once.  Reduce to 5?":{"zh":u"一天记得%s新词是很多。我减少到5好吗?","zh2":"一天記得%s新詞是很多。我減少到5好嗎?"},
+"More than 30 minutes is rarely more helpful.  Reduce to 30?":{"zh":u"超过30分钟很少有帮助。我减少到30好吗?","zh2":"超過30分鐘很少有幫助。我減少到30好嗎?"},
+"Less than 20 minutes can be a rush.  Increase to 20?":{"zh":u"缺乏20分钟可以太赶紧了。我增长到20好吗?","zh2":"缺乏20分鐘可以太趕緊了。我增長到20好嗎?"},
+"Proceed anyway?":{"zh":u"反正继续?","zh2":"反正繼續"},
     }
 
 # scriptVariants optionally maps language abbreviation to default script

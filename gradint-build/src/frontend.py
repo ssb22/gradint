@@ -738,11 +738,24 @@ def startTk():
             if hasattr(self,"userNo"): select_userNumber(intor0(self.userNo.get())) # in case some race condition stopped that from taking effect before (e.g. WinCE)
             try:  numWords=int(self.NumWords.get())
             except:
-                self.todo.alert = "Error: maximum number of new words must be an integer" ; return
+                self.todo.alert = localise("Error: maximum number of new words must be an integer") ; return
             try:  mins=float(self.Minutes.get())
             except:
-                self.todo.alert = "Error: minutes must be a number" ; return
-            if (numWords>10 and not tkMessageBox.askyesno(self.master.title(),str(numWords)+" new words is rather a lot for one lesson.  Are you sure?")) or (mins>30 and not tkMessageBox.askyesno(self.master.title(),"More than 30 minutes is rarely more helpful.  Are you sure?")) or (mins<20 and not tkMessageBox.askyesno(self.master.title(),"Less than 20 minutes can be a rush.  Are you sure?")): return
+                self.todo.alert = localise("Error: minutes must be a number") ; return
+            problem=0 # following message boxes have to be resistant to "I'm just going to click 'yes' without reading it" users who subsequently complain that Gradint is ineffective.  Make the 'yes' option put them back into the parameters, and provide an extra 'proceed anyway' on 'no'.
+            if numWords>=10:
+                if tkMessageBox.askyesno(self.master.title(),localise("%s new words is a lot to remember at once.  Reduce to 5?") % (str(numWords),)):
+                    numWords=5 ; self.NumWords.set("5")
+                else: problem=1
+            if mins>30:
+                if tkMessageBox.askyesno(self.master.title(),localise("More than 30 minutes is rarely more helpful.  Reduce to 30?")):
+                  mins=30;self.Minutes.set("30")
+                else: problem=1
+            if mins<20:
+                if tkMessageBox.askyesno(self.master.title(),localise("Less than 20 minutes can be a rush.  Increase to 20?")):
+                  mins=20;self.Minutes.set("20")
+                else: problem=1
+            if problem and not tkMessageBox.askyesno(self.master.title(),localise("Proceed anyway?")): return
             global maxNewWords,maxLenOfLesson
             d={}
             if not maxNewWords==numWords: d["maxNewWords"]=maxNewWords=numWords

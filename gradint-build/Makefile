@@ -175,12 +175,14 @@ gradint-installer.command: gradint.tbz
 	# (except by making a dmg file, which you need to be on a Mac to do)
 	# (however, if you ARE on a mac you could still "make gradint.dmg" and send it to whoever's having problems)
 	cat mac/install.sh gradint.tbz > gradint-installer.command
+	chmod +x gradint-installer.command
 gradint.dmg: gradint-installer.command
 	if test -d /Volumes/Gradint; then diskutil eject /Volumes/Gradint; fi
 	if test -e gradint.dmg; then rm gradint.dmg; fi
 	hdiutil create -megabytes $$(echo $$(du -h gradint-installer.command | sed -e 's/\..*//')+1|bc) -fs HFS+ -volname Gradint gradint
 	open gradint.dmg
 	while ! cp gradint-installer.command /Volumes/Gradint/; do echo Retrying ; sleep 1 ; done # 'open' might delay
+	chmod +x /Volumes/Gradint/gradint-installer.command
 	diskutil eject /Volumes/Gradint
 
 gradint.bgz: $(Linux_Files)

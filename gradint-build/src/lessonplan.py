@@ -53,7 +53,9 @@ class ProgressDatabase(object):
         if pickledProgressFile and fileExists(pickledProgressFile):
             if pickle and not (fileExists(progressFile) and os.stat(progressFile)[8] > os.stat(pickledProgressFile)[8]): # we can unpickle the binary version, and text version has not been manually updated since it, so do this
                 global firstLanguage, secondLanguage, otherLanguages
-                if compress_progress_file or (unix and got_program("gzip")): f = os.popen('gzip -fdc "'+pickledProgressFile+'"',"rb")
+                if compress_progress_file or (unix and got_program("gzip")):
+                    if paranoid_file_management: open(pickledProgressFile) # ensure ready
+                    f = os.popen('gzip -fdc "'+pickledProgressFile+'"',"rb")
                 else: f=open(pickledProgressFile,"rb")
                 try: thingsToSet, tup = pickle.Unpickler(f).load()
                 except: return False # probably moved to a different Python version or something
