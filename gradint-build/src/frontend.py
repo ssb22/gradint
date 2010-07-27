@@ -892,7 +892,10 @@ def startTk():
             # TODO things like "To" and "Speaker" need updating dynamically with localise() as well, otherwise will be localised only on restart (unless the old or new lang has variants, in which case it will be repainted anyway above)
             self.Label1["text"] = (localise("Word in %s") % localise(secondLanguage))+":"
             if winsound or mingw32 or cygwin: self.Label1["text"] += "\n(" + localise("press Control-V to paste")+")"
-            elif macsound: self.Label1["text"] += "\n("+localise("press Apple-V to paste")+")"
+            elif macsound:
+                l = localise("press Apple-V to paste")
+                if not Tk_might_display_wrong_hanzi: l=(u""+l).replace("Apple",u"\u2318") # not sure how well this works in earlier versions
+                self.Label1["text"] += "\n("+l+")"
             self.Label2["text"] = (localise("Meaning in %s") % localise(firstLanguage))+":"
             self.L1Text.set(firstLanguage)
             self.L2Text.set(secondLanguage)
