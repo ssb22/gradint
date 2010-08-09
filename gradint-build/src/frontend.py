@@ -1393,7 +1393,7 @@ def gui_event_loop():
             if getYN("Do you really want to download and compile the LAME MP3 encoder? (this may take a while)"):
               app.setLabel("Downloading...") ; worked=0
               while True:
-                if not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi; if ! test -e lame*.tar.gz; then if ! $Curl "$($Curl "$($Curl "http://sourceforge.net/project/showfiles.php?group_id=290&package_id=309"|grep tar.gz|head -1|sed -e 's,href="/,href="http://sourceforge.net/,' -e 's/.*http:/http:/' -e 's/.tar.gz.*/.tar.gz/')"|grep downloads.sourceforge|head -1|sed -e 's/.*http/http/' -e 's/tar.gz.*/tar.gz/')" > lame.tar.gz; then rm -f lame.tar.gz; exit 1; fi; fi"""):
+                if not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi; if ! test -e lame*.tar.gz; then if ! $Curl "$($Curl "$($Curl "http://sourceforge.net/project/showfiles.php?group_id=290&package_id=309"|grep tar.gz|head -1|sed -e 's,href="/,href="http://sourceforge.net/,' -e 's/.*http:/http:/' -e 's/.tar.gz.*/.tar.gz/')"|grep downloads.sourceforge|head -1|sed -e 's/.*http/http/' -e 's/tar.gz.*/tar.gz/' -e 's,.*/projects,http://sourceforge.net/projects,')" > lame.tar.gz; then rm -f lame.tar.gz; exit 1; fi; fi"""):
                   worked=1 ; break
                 if not getYN("Download failed.  Try again?"): break
               if worked:
