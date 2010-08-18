@@ -199,7 +199,7 @@ gradint.zip: $(Riscos_Files) riscos.zip
 	zip -9 -r gradint.zip \!gradint/* # update with gradint sources
 	rm -rf \!gradint
 
-publish: $(All_Versions)
+publish0: $(All_Versions)
 	mv $(All_Versions) ~/public_html/gradint/
 	cp vocab.txt advanced.txt ~/public_html/gradint/
 	cp samples/README.txt ~/public_html/gradint/samples-readme.txt
@@ -208,6 +208,14 @@ publish: $(All_Versions)
 	make clean
 	~/homepage/update
 	ssh -i ~/.srcf/keyfile st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c '. build-sync.sh'"
+
+publish:
+	# do it from /tmp so as to avoid confusing HomeSync if ssh'ing in from a PWF Mac
+	rm -rf /tmp/ssb22/gradint0
+	mkdir -p /tmp/ssb22/gradint0
+	cp -r * /tmp/ssb22/gradint0
+	pushd /tmp/ssb22/gradint0 && make publish0 && popd
+	rm -rf /tmp/ssb22/gradint0
 
 gradint-build.7z:
 	mkdir ../gradint-build00
