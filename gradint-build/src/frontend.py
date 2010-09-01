@@ -1093,7 +1093,7 @@ if useTK:
         if "KDE_FULL_SESSION" is os.environ and got_program("kfmclient"):
             # looks like we're in a KDE session and can use the kfmclient command
             textEditorCommand=explorerCommand="kfmclient exec"
-        elif got_program("gnome-open"):
+        elif not olpc and got_program("gnome-open"):
             textEditorCommand=explorerCommand="gnome-open"
         elif got_program("rox"):
             # rox is available - try using that to open directories
