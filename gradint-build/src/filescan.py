@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9959 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.996 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -268,20 +268,23 @@ def parseSynthVocab(fname,forGUI=0):
         # (maxsplit means you can use '=' signs in the last language, e.g. if using SSML with eSpeak)
         if someLangsUnknown: langsAndWords = filter(lambda x:x[0] in allLangs, langsAndWords)
         # Work out what we'll use for the prompt.  It could be firstLanguage, or it could be one of the other languages if we see it twice (e.g. if 2nd language is listed twice then the second one will be the prompt for 2nd-language-to-2nd-language learning), or it could be the only language if we're simply listing words for cache maintenance
-        prompt = None
         if firstLanguage==secondLanguage: langsAlreadySeen = {}
         else: langsAlreadySeen = {firstLanguage:True}
-        i=onePastPromptIndex=0
-        while i<len(langsAndWords):
-            lang,word = langsAndWords[i] ; i += 1
-            isReminder = cache_maintenance_mode and len(langsAndWords)==1 and not doPoetry
-            if (lang in langsAlreadySeen or isReminder) and (lang in getsynth_cache or can_be_synthesized("!synth:"+word+"_"+lang)): # (check cache because most of the time it'll be there and we don't need to go through all the text processing in can_be_synthesized)
-                if not word: continue
-                elif word[0] in wsp or word[-1] in wsp: word=word.strip(wsp) # avoid call if unnecessary
-                prompt = strCount+word+"_"+lang
-                if not isReminder: onePastPromptIndex=i
-                break
-            langsAlreadySeen[lang]=True
+        def findPrompt():
+            i=0
+            while i<len(langsAndWords):
+                lang,word = langsAndWords[i] ; i += 1
+                isReminder = cache_maintenance_mode and len(langsAndWords)==1 and not doPoetry
+                if (lang in langsAlreadySeen or isReminder) and (lang in getsynth_cache or can_be_synthesized("!synth:"+word+"_"+lang)): # (check cache because most of the time it'll be there and we don't need to go through all the text processing in can_be_synthesized)
+                    if not word: continue
+                    elif word[0] in wsp or word[-1] in wsp: word=word.strip(wsp) # avoid call if unnecessary
+                    return strCount+word+"_"+lang, cond(isReminder,0,i)
+                langsAlreadySeen[lang]=True
+            return None,0
+        prompt,onePastPromptIndex = findPrompt()
+        if not prompt and len(langsAndWords)>1: # 1st language prompt not found; try 2nd language to 3rd language
+            langsAlreadySeen = {secondLanguage:True}
+            prompt,onePastPromptIndex = findPrompt()
         prompt_L1only = prompt # before we possibly change it into a list etc.  (Actually not necessarily L1 see above, but usually is)
         if doPoetry:
             if prompt and lastPromptAndWord:

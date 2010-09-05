@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9959 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.996 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -166,13 +166,13 @@ def stripPuncEtc(text):
     for t in ".!?:;": text=text.replace(t,",")
     return filter(lambda x:x,text.split(","))
 
-if riscos_sound:
-    if fileExists("yali-voice/exe") or fileExists(samplesDirectory+".yali-voice/exe") or fileExists(os.getcwd()[:os.getcwd().rindex(".")]+".yali-voice/exe"): show_warning("RISC OS users: Please rename the file yali-voice/exe to yali-voice/zip and unpack it into the gradint directory.")
-elif not winsound: # ok if mingw32, appuifw etc (unzip_and_delete will warn)
-    # check for yali-voice.exe
-    for d in [os.getcwd()+cwd_addSep,".."+os.sep,samplesDirectory+os.sep]:
-        f=d+"yali-voice.exe"
-        if fileExists(f): unzip_and_delete(f,ignore_fail=1) # ignore the error exit status from unzip, which will be because of extra bytes at the beginning
+for zipToCheck in ["yali-voice","cameron-voice"]:
+    if riscos_sound:
+        if fileExists(zipToCheck+"/exe") or fileExists(samplesDirectory+"."+zipToCheck+"/exe") or fileExists(os.getcwd()[:os.getcwd().rindex(".")]+"."+zipToCheck+"/exe"): show_warning("RISC OS users: Please rename the file "+zipToCheck+"/exe to "+zipToCheck+"/zip and unpack it into the gradint directory.")
+    elif not winsound: # ok if mingw32, appuifw etc (unzip_and_delete will warn)
+        for d in [os.getcwd()+cwd_addSep,".."+os.sep,samplesDirectory+os.sep]:
+            f=d+zipToCheck+".exe"
+            if fileExists(f): unzip_and_delete(f,ignore_fail=1) # ignore the error exit status from unzip, which will be because of extra bytes at the beginning
 
 # Filename / Unicode translation - need some safety across filesystems.  synthCache(+utils) could be done this way also rather than having TRANS.TBL (however I'm not sure it would save that much code)
 non_normal_filenames = {} ; using_unicode_filenames=0
@@ -212,10 +212,14 @@ def unicode2filename(u):
 
 synth_partials_voices = {} # lang -> list of voices, each being a tuple of (directory,startDict,midDict,endDict,flags); see comments below for the dictionary format
 partials_cache_file="partials-cache"+extsep+"bin"
+partials_language_aliases = {}
 if partialsDirectory and isDirectory(partialsDirectory):
   dirsToStat = []
   if pickle and fileExists(partials_cache_file):
-    try: partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat = pickle.Unpickler(open(partials_cache_file,"rb")).load()
+    try:
+        partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat,ela,partials_language_aliases = pickle.Unpickler(open(partials_cache_file,"rb")).load()
+        if not ela==espeak_language_aliases: dirsToStat=[]
+        del ela
     except: dirsToStat = []
     for d,result in dirsToStat:
       if not tuple(os.stat(d))==result:
@@ -287,16 +291,24 @@ if partialsDirectory and isDirectory(partialsDirectory):
                 return l
             thisLangVoices.append((v,toDict(start),toDict(mid),toDict(end),flags))
         synth_partials_voices[l] = thisLangVoices
+        if l in espeak_language_aliases: partials_language_aliases[espeak_language_aliases[l]]=l
     if riscos_sound or winCEsound: show_info("done\n")
     if pickle:
-      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat))
-      except: pass # ignore write errors as it's only a cache
+      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat,espeak_language_aliases,partials_language_aliases))
+      except IOError: pass # ignore write errors as it's only a cache
+      except OSError: pass
   if partials_raw_mode:
     (wtype,wrate,wchannels,wframes,wbits) = sndhdr.what(partialsDirectory+os.sep+"header"+dotwav)
     partials_raw_0bytes = int(betweenPhrasePause*wrate)*wchannels*(wbits/8)
 else: partials_langs,partials_raw_mode = [],None
 
+def partials_langname(lang):
+    lang = espeak_language_aliases.get(lang,lang)
+    lang = partials_language_aliases.get(lang,lang)
+    return lang
+
 def synth_from_partials(text,lang,voice=None,isStart=1):
+    lang = partials_langname(lang)
     text=text.strip(wsp) # so whitespace between words is ignored on the recursive call
     if lang=="zh": # hack for Mandarin - higher tone 5 after a tone 3 (and ma5 after 4 or 5 also)
         lastNum = None

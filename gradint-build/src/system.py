@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9959 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.996 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -234,8 +234,8 @@ if paranoid_file_management:
     # For ftpfs etc.  Retry on errno 13 (permission denied), and turn append into a copy.  Otherwise occasionally get vocab.txt truncated.
     if "a" in mode:
         try: dat = open(file,mode.replace("a","r")).read()
-        except IOError:
-            if sys.exc_info()[1].errno==2: dat = "" # no such file or directory
+        except IOError,err:
+            if err.errno==2: dat = "" # no such file or directory
             else: raise
         try: os.rename(file,file+"~") # just in case!
         except: pass
@@ -244,8 +244,8 @@ if paranoid_file_management:
         return o
     for tries in range(10)+["last"]:
         try: return _old_open(file,mode)
-        except IOError:
-            if tries=="last" or not sys.exc_info()[1].errno==13: raise
+        except IOError,err:
+            if tries=="last" or not err.errno==13: raise
             time.sleep(0.5)
 
 # Different extension separators again

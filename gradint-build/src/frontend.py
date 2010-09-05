@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9959 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.996 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -658,7 +658,7 @@ def startTk():
                 cacheManagementOptions = [] # (text, oldKey, newKey, oldFile, newFile)
                 for t,l in [(text1.encode('utf-8'),secondLanguage),(text2.encode('utf-8'),firstLanguage)]:
                     k,f = synthcache_lookup("!synth:"+t+"_"+l,justQueryCache=1)
-                    if f and (l in synth_partials_voices or get_synth_if_possible(l,0)): # (2nd condition is because there's no point having these buttons if there's no chance we can synth it by any method OTHER than the cache)
+                    if f and (partials_langname(l) in synth_partials_voices or get_synth_if_possible(l,0)): # (2nd condition is because there's no point having these buttons if there's no chance we can synth it by any method OTHER than the cache)
                         if k in synthCache_transtbl and k[0]=="_": cacheManagementOptions.append(("Keep in "+l+" cache",k,k[1:],0,0))
                         elif k[0]=="_": cacheManagementOptions.append(("Keep in "+l+" cache",0,0,f,f[1:]))
                         if k in synthCache_transtbl: cacheManagementOptions.append(("Reject from "+l+" cache",k,"__rejected_"+k,0,0))
@@ -1597,8 +1597,8 @@ def rest_of_main():
         else: lesson_loop()
     except SystemExit: pass
     except KeyboardInterrupt: pass
-    except PromptException:
-        waitOnMessage("\nProblem finding prompts:\n"+sys.exc_info()[1].message+"\n")
+    except PromptException,prEx:
+        waitOnMessage("\nProblem finding prompts:\n"+prEx.message+"\n")
         exitStatus = 1
     except:
         w="\nSomething has gone wrong with my program.\nThis is not your fault.\nPlease let me know what it says.\nThanks.  Silas\n"

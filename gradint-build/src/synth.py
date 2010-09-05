@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9959 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.996 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -288,9 +288,9 @@ elif winsound or mingw32 or cygwin:
 # that maps your language abbreviations onto eSpeak's, so
 # that gradint will recognise yours as an alternative to eSpeak's.
 # For example the following will cause "cant" to be a valid
-# alternative to "zhy" when specifying a language for synthesized text.
+# alternative to "zhy" when specifying a language for synthesized text
+# in espeak (or when using synth partials).
 espeak_language_aliases = { "cant":"zhy" }
-
 # TODO does the above need to be moved to advanced.txt?
 # (maybe not as 'cant' is probably the only example for now)
 
@@ -414,7 +414,7 @@ class ESpeakSynth(Synth):
                 elif not inSsml: l += 1
         else: l=len(text)
         return quickGuess(l,12)+cond(winCEsound,1.3,0) # TODO need a better estimate.  Overhead on 195MHz Vario (baseline?) >1sec (1.3 seems just about ok)
-    def can_transliterate(self,lang): return lang in ["zh","zhy"] and not riscos_sound # TODO it's OK on RISC OS if the eSpeak version is recent enough to do --phonout=filename; TODO aliases for zhy (but not usually a problem as can_transliterate is called only for preference)
+    def can_transliterate(self,lang): return espeak_language_aliases.get(lang,lang) in ["zh","zhy"] and not riscos_sound # TODO it's OK on RISC OS if the eSpeak version is recent enough to do --phonout=filename; TODO aliases for zhy (but not usually a problem as can_transliterate is called only for preference)
     def winCE_run(self,parameters,expectedOutputFile,infileToDel=None):
         self.winCE_start(parameters)
         time.sleep(0.3) # 0.2 not always long enough for transliterations (get empty output file if try to read too soon, then loop waiting for it to have contents)
@@ -527,7 +527,7 @@ class ESpeakSynth(Synth):
                       # TODO what about partial English words? e.g. try "kao3 testing" - translate 'testing' results in a translate of 'test' also (which assumes it's already in en mode), resulting in a spurious word "test" added to the text box; not sure how to pick this up without parsing the original text and comparing with the Replace rules that occurred
                       r.append(toAppend)
                       delete_last_r_if_blank = 1
-                  else: # lang=="zhy", or it's a duplicate of a word we already know to be in en_words
+                  else: # lang=="zhy"/"cant", or it's a duplicate of a word we already know to be in en_words
                       en_words[toAppend]=1 # make sure it's in there
               else: # not Translate
                   if lang=="zh" and l.startswith("Found: ") and l[8]==" " and "a"<=l[7]<="z": # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
@@ -726,6 +726,11 @@ if unix and not macsound and not (oss_sound_device=="/dev/sound/dsp" or oss_soun
     else: del ESpeakSynth.play # because we have no way of sending it to the alternative device, so do it via a file
     if hasattr(FliteSynth,"play"): del FliteSynth.play
 if hasattr(ESpeakSynth,"play") and (soundVolume<0.04 or (soundVolume<0.1 and not espeak_volume_ok()) or soundVolume>2): del ESpeakSynth.play # old versions of espeak are not very good at less than 10% volume, so generate offline and use sox
+
+# ESpeakSynth's c'tor may modify espeak_language_aliases, and it has to be consistent at the time of partial scanning.  Plus c'tor called too often.  Hack for now:
+globalEspeakSynth = ESpeakSynth()
+class ESpeakSynth(ESpeakSynth):
+    def __init__(self): self.__dict__ = globalEspeakSynth.__dict__
 
 class FestivalSynth(Synth):
     def __init__(self): Synth.__init__(self)
