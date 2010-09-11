@@ -795,6 +795,8 @@ def startTk():
             self.L1Label,self.L1Text,self.L1Entry = addLabelledBox(self.row3,status="The abbreviation of your\nfirst (i.e. native) language")
             self.L2Label,self.L2Text,self.L2Entry = addLabelledBox(self.row3,status="The abbreviation of the other\nlanguage that you learn most")
             self.L1Entry["width"]=self.L2Entry["width"]=3
+            self.L1Entry.bind('<Return>',lambda e:e.widget.after(10,lambda e=e:e.widget.event_generate('<Tab>')))
+            self.L2Entry.bind('<Return>',self.changeLanguages)
             self.ChangeLanguageButton = addButton(self.row3,"",self.changeLanguages,status="Use this button to set your\nfirst and second languages") # will set text in updateLanguageLabels
             if GUI_omit_settings and (vocabFile==user0[1] or fileExists(vocabFile)): self.row3.pack_forget()
             if (not olpc) or textEditorCommand or explorerCommand: # no point doing this on the XO, because no way to run editor or file browser (unless someone's installed one) and "do it yourself" is probably not helpful in that environment

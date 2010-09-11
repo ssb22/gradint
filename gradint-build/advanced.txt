@@ -639,6 +639,7 @@ GUI_translations={
 "Clear input boxes":{"zh":u"扫清输入地方","zh2":u"掃清輸入地方"},
 "Quit":{"zh":u"放弃","zh2":u"放棄"},
 "Back to main menu":{"zh":u"回去主要项目表","zh2":u"回去主要項目表"},
+# 回去主选单 ?
 "Delete non-hanzi":{"zh":u"除字非汉字","zh2":u"除字非漢字"},
 "Speak":{"zh":u"发音","zh2":u"發音"},
 "Add to %s":{"zh":u"加到词汇(%s)","zh2":u"加到詞匯(%s)"},
