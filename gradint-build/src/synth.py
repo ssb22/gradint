@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.996 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9961 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -414,7 +414,7 @@ class ESpeakSynth(Synth):
                 elif not inSsml: l += 1
         else: l=len(text)
         return quickGuess(l,12)+cond(winCEsound,1.3,0) # TODO need a better estimate.  Overhead on 195MHz Vario (baseline?) >1sec (1.3 seems just about ok)
-    def can_transliterate(self,lang): return espeak_language_aliases.get(lang,lang) in ["zh","zhy"] and not riscos_sound # TODO it's OK on RISC OS if the eSpeak version is recent enough to do --phonout=filename; TODO aliases for zhy (but not usually a problem as can_transliterate is called only for preference)
+    def can_transliterate(self,lang): return espeak_language_aliases.get(lang,lang) in ["zh","zhy","zh-yue"] and not riscos_sound # TODO it's OK on RISC OS if the eSpeak version is recent enough to do --phonout=filename; TODO aliases for zhy (but not usually a problem as can_transliterate is called only for preference)
     def winCE_run(self,parameters,expectedOutputFile,infileToDel=None):
         self.winCE_start(parameters)
         time.sleep(0.3) # 0.2 not always long enough for transliterations (get empty output file if try to read too soon, then loop waiting for it to have contents)
@@ -474,7 +474,9 @@ class ESpeakSynth(Synth):
             if type(t)==type([]):
                 indexList.append(len(retList))
                 retList.append(None) # result not filled in yet
-                write_to_espeak.append(fix_commas(pinyin_uColon_to_V(t[0].replace("-","/"))).replace(split_token," ")) # NB fix_compatibility has already been done (as has preprocess_chinese_numbers), by simpleZhTransliterator above
+                if lang=="zh": tt=pinyin_uColon_to_V(t[0].replace("-","/")) # NB fix_compatibility has already been done (as has preprocess_chinese_numbers), by simpleZhTransliterator above
+                else: tt=t[0]
+                write_to_espeak.append(fix_commas(tt).replace(split_token," "))
                 # (replacing - with / because espeak zh voice treats / as a silent word separator but - is ignored; - is used as a word separator in MeiLing etc.  so if you want to write the hanzi for wei2ren2 but you want it to be wei4+ren2, you can hack in this way.  TODO document?)
             else: retList.append(t)
         else: retList.append(None)
@@ -527,14 +529,14 @@ class ESpeakSynth(Synth):
                       # TODO what about partial English words? e.g. try "kao3 testing" - translate 'testing' results in a translate of 'test' also (which assumes it's already in en mode), resulting in a spurious word "test" added to the text box; not sure how to pick this up without parsing the original text and comparing with the Replace rules that occurred
                       r.append(toAppend)
                       delete_last_r_if_blank = 1
-                  else: # lang=="zhy"/"cant", or it's a duplicate of a word we already know to be in en_words
+                  else: # lang=="zhy"/"cant"/etc, or it's a duplicate of a word we already know to be in en_words
                       en_words[toAppend]=1 # make sure it's in there
               else: # not Translate
                   if lang=="zh" and l.startswith("Found: ") and l[8]==" " and "a"<=l[7]<="z": # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
                       if forPartials: r.append("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1".split()[ord(l[7])-ord('a')])
                       else: r.append(l[7])
                       foundLetter = 1
-                  elif not lang=="zh" and l.startswith("Found: ") and ord(l[7])>127:
+                  elif not lang=="zh" and l.startswith("Found: ") and (ord(l[7])>127 or (l[7]=="'" and ord(l[8])>127)): # (espeak 1.40 puts in l[7], 1.44 surrounds in quotes)
                       r.append(l[l.index("[")+1:l.index("]")])
               lastWasBlank=(l.startswith("Replace") or not l or foundLetter) # (take 'Replace' lines as blank, so 'Translate' doesn't add a second comma.  ditto letters thing.)
           if lang=="zh": retList[index]=fix_pinyin(" ".join(r),en_words)
@@ -785,6 +787,7 @@ class GeneralFileSynth(Synth):
         if self.letters[lang]<25:
             self.letters[lang] += len(text)
             self.duration[lang] += SampleEvent(self.makefile_cached(lang,text)).exactLen
+            assert self.duration[lang], "GeneralFileSynth didn't put sound in file?"
         return quickGuess(len(text),self.letters[lang]/self.duration[lang]) # (doing it this way so don't synth the whole list, but do make sure got a big enough sample)
     # (note: above works only because finish_makefile() is not necessary in this class)
     def makefile(self,lang,text):

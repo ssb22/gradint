@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.996 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9961 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -107,14 +107,13 @@ gradint.cab: $(Common_Files) gradint.py
 	for N in PocketPC0/gradint/*.txt; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
 	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
 	# PocketPC/espeak-data contains the altered phon* files in case the eSpeak version is slightly different, but we should be able to re-use the dictionaries etc
-	$(SevenZip) x windows/espeak-windows.7z && mv PocketPC0/espeak-data/* espeak/espeak-data && rmdir PocketPC0/espeak-data && mv espeak/espeak-data PocketPC0 && rm -rf espeak
+	$(SevenZip) x windows/espeak-windows.7z && mv PocketPC0/espeak-data/* espeak/espeak-data && rmdir PocketPC0/espeak-data && mv espeak/espeak-data PocketPC0 && rm -rf espeak PocketPC0/espeak-data/mbrola*
 	# Problem: we MUST have everything in ONE directory if it is to go on the storage card, otherwise it will go on the internal disk (which is a shame because the uninstall won't track where we really put things) (and no putting a file at top-level of device does not work)
 	cd PocketPC0 && mv bin Progra* espeak-data gradint && cd ..
-	# espeak compile instructions are at
-	# http://sourceforge.net/forum/message.php?msg_id=6511989
-	# but you don't have to recompile dictsource.
-	# + fclose(f_trans) at end of main() in speak.cpp
-	# + python -c 'd=open("speak","rb").read().replace("/temp/wcetrace.log","/notexist/tracelog") ; open("speak","wb").write(d)'
+	# compile PocketPC espeak:
+	# make speak CXX=arm-wince-pe-g++ USE_AUDIO="-DNEED_GETOPT -DNEED_WCHAR_FUNCTIONS -DWINCE" LIB_AUDIO=make speak CXX=arm-wince-pe-g++ USE_AUDIO="-DNEED_GETOPT -DNEED_WCHAR_FUNCTIONS -DWINCE" LIB_AUDIO=
+	# python -c 'd=open("speak","rb").read().replace("/temp/wcetrace.log","/notexist/tracelog") ; open("speak","wb").write(d)'
+	# then add to PocketPC/espeak.7z in bin/
 	cd PocketPC0 && find . -type f | sort -f | grep -v /mb | grep -v /files.list | sed -e 's,./\(.*\)$$,\1 /\1,' -e 's,/\([^/]*\)/\([^/]*\)$$,/\1,' -e 's, /[^/]*.py$$, /,' -e 's/Program Files/Program~Files/g' > files.list && cd ..
 	cd PocketPC0 && export PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH" && ../PocketPC/pocketpc-cab -p "" -a "Gradint $$(head gradint/gradint.py | grep program_name | sed -e 's/.*t v/v/' -e 's/(c).*//')" files.list ../gradint.cab && cd ..
 	# (need pocketpc-cab and lcab binaries for that to work)
