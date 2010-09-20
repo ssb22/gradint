@@ -111,6 +111,7 @@ gradint.cab: $(Common_Files) gradint.py
 	# Problem: we MUST have everything in ONE directory if it is to go on the storage card, otherwise it will go on the internal disk (which is a shame because the uninstall won't track where we really put things) (and no putting a file at top-level of device does not work)
 	cd PocketPC0 && mv bin Progra* espeak-data gradint && cd ..
 	# compile PocketPC espeak:
+	# (if compiling 1.04.03 remember the changes posted to espeak-general 2010-09-13)
 	# make speak CXX=arm-wince-pe-g++ USE_AUDIO="-DNEED_GETOPT -DNEED_WCHAR_FUNCTIONS -DWINCE" LIB_AUDIO=make speak CXX=arm-wince-pe-g++ USE_AUDIO="-DNEED_GETOPT -DNEED_WCHAR_FUNCTIONS -DWINCE" LIB_AUDIO=
 	# python -c 'd=open("speak","rb").read().replace("/temp/wcetrace.log","/notexist/tracelog") ; open("speak","wb").write(d)'
 	# then add to PocketPC/espeak.7z in bin/

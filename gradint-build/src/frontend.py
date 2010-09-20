@@ -1277,6 +1277,28 @@ def s60_main_menu():
     if function: function()
     else: break
 
+def downloadLAME():
+    # Sourceforge keep making this harder!
+    return not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi
+if ! test -e lame*.tar.gz; then
+  export Link="$($Curl "http://sourceforge.net/project/showfiles.php?group_id=290&package_id=309"|grep tar.gz|head -1)"
+  echo "Got HTML: $Link" 1>&2
+  export Link="$(echo "$Link"|sed -e 's,href="/,href="http://sourceforge.net/,' -e 's/.*http:/http:/' -e 's/.tar.gz.*/.tar.gz/')"
+  echo "Following link to $Link" 1>&2
+  if ! $Curl "$Link" > lame.tar.gz; then
+    rm -f lame.tar.gz; exit 1
+  fi
+  if grep downloads.sourceforge lame.tar.gz 2>/dev/null; then
+    export Link="$(cat lame.tar.gz|grep downloads.sourceforge|head -1)"
+    echo "Got HTML 2: $Link" 1>&2
+    export Link="$(echo "$Link"|sed -e 's/.*http/http/' -e 's,.*/projects,http://sourceforge.net/projects,' -e 's/".*//')"
+    echo "Following link 2 to $Link" 1>&2
+    if ! $Curl "$Link" > lame.tar.gz; then
+      rm -f lame.tar.gz; exit 1
+    fi
+  fi
+fi""")
+
 def gui_event_loop():
     app.todo.set_main_menu = 1 ; braveUser = 0
     if (orig_onceperday&2) and not need1adayMessage: check_for_slacking() # when running every day + 1st run of today
@@ -1396,7 +1418,7 @@ def gui_event_loop():
             if getYN("Do you really want to download and compile the LAME MP3 encoder? (this may take a while)"):
               app.setLabel("Downloading...") ; worked=0
               while True:
-                if not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi; if ! test -e lame*.tar.gz; then if ! $Curl "$($Curl "$($Curl "http://sourceforge.net/project/showfiles.php?group_id=290&package_id=309"|grep tar.gz|head -1|sed -e 's,href="/,href="http://sourceforge.net/,' -e 's/.*http:/http:/' -e 's/.tar.gz.*/.tar.gz/')"|grep downloads.sourceforge|head -1|sed -e 's/.*http/http/' -e 's,.*/projects,http://sourceforge.net/projects,' -e 's/".*//')" > lame.tar.gz; then rm -f lame.tar.gz; exit 1; fi; fi"""):
+                if downloadLAME():
                   worked=1 ; break
                 if not getYN("Download failed.  Try again?"): break
               if worked:

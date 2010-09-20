@@ -67,6 +67,8 @@ if "s60" in sys.argv: # S60 version
 "def check_for_slacking():",
 "def gui_outputTo_end():",
 "def gui_outputTo_start():",
+"def dowmloadLAME():",
+"def gui_event_loop():",
 ]
 else: assert 0, "Unrecognised version on command line"
 
