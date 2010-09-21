@@ -21,7 +21,13 @@ echo secondLanguage="en" >> "%HOMEDRIVE%%HOMEPATH%\gradint\settings.txt"
 goto nextBit
 
 :doneAlready
-if not exist "%HOMEDRIVE%%HOMEPATH%\gradint\gradint-wrapper.exe" goto silentRepair
+if exist "%HOMEDRIVE%%HOMEPATH%\gradint\vocab.txt" goto needWarning
+if exist "%HOMEDRIVE%%HOMEPATH%\gradint\settings.txt" goto needWarning
+if exist "%HOMEDRIVE%%HOMEPATH%\gradint\advanced.txt" goto needWarning
+if exist "%HOMEDRIVE%%HOMEPATH%\gradint\samples" goto needWarning
+rem is almost certainly a failed uninstall
+goto silentRepair
+:needWarning
 echo It seems that gradint was already installed on your system.
 echo The installer will replace the program files but not the data.
 echo Your vocab.txt and recorded words will not be changed,
@@ -50,6 +56,11 @@ goto afterGotSamples
 rem Update the previously-buggy whatSay_zh.txt prompt
 if exist "%HOMEDRIVE%%HOMEPATH%\gradint\samples\prompts\whatSay_zh.txt" copy /Y samples\prompts\whatSay_zh.txt "%HOMEDRIVE%%HOMEPATH%\gradint\samples\prompts"
 :afterGotSamples
+rem also support partials in bundle
+if not exist partials goto skipPartials
+if exist "%HOMEDRIVE%%HOMEPATH%\gradint\partials" goto skipPartials
+xcopy /I partials "%HOMEDRIVE%%HOMEPATH%\gradint\partials" /S
+:skipPartials
 xcopy /I /D /Y /S tcl "%HOMEDRIVE%%HOMEPATH%\gradint\tcl"
 copy /Y library.zip "%HOMEDRIVE%%HOMEPATH%\gradint"
 copy /Y datetime.pyd "%HOMEDRIVE%%HOMEPATH%\gradint"

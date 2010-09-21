@@ -367,7 +367,14 @@ if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam"
 
 if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"): # run every day
     currentDay = None
-    while True:
+    # markerFile logic to avoid 2 background copies etc (can't rely on taskkill beyond WinXP)
+    # (however this doesn't protect against uninstall + immediate reinstall)
+    markerFile,toDel="background1"+dottxt,"background2"+dottxt
+    if fileExists(markerFile): markerFile,toDel=toDel,markerFile
+    try: os.remove(toDel)
+    except OSError: pass
+    open(markerFile,"w").write("(delete this file to make the background process quit on next check)")
+    while fileExists(markerFile):
       need1adayMessage = (currentDay == time.localtime()[:3]) # (not 1st run of day, so if the run goes ahead then they quit earlier and we'd better explain why we came back)
       currentDay = time.localtime()[:3]
       if __name__=="__main__": # can do it by importing gradint
