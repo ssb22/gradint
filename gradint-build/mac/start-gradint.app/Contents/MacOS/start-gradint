@@ -1,4 +1,5 @@
 #!/bin/bash
+export PATH="$PATH:/usr/local/bin" # in case lame etc is there
 if test -e /usr/lib/libtk.dylib || test -e /usr/lib/tkConfig.sh || test -e /usr/local/lib/tkConfig.sh; then
 # run using only the Tk windows:
 cd "$(echo $0 | sed -e 's|start-gradint.app/Contents/MacOS/start-gradint.*$||')"
