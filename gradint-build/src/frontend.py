@@ -448,7 +448,11 @@ def startTk():
                 # NB DO NOT try to tell Tk a desired pixel size - you may get a *larger* pixel size.  Need to work out the desired nominal size.
                 approx_lines_per_screen_when_large = 25 # TODO really? (24 at 800x600 192dpi 15in but misses the status line, but OK for advanced users.  setting 25 gives nominal 7 which is rather smaller.)
                 largeNominalSize = int(nominalSize*self.Label.winfo_screenheight()/approx_lines_per_screen_when_large/pixelSize)
-                if largeNominalSize >= nominalSize+3: self.bigPrintFont = fontRest+" "+str(largeNominalSize)
+                if largeNominalSize >= nominalSize+3:
+                    self.bigPrintFont = fontRest+" "+str(largeNominalSize)
+                    if GUI_always_big_print:
+                        self.master.option_add('*font',self.bigPrintFont)
+                        del self.bigPrintFont
                 else: self.after(100,self.check_window_position) # (needs to happen when window is already drawn if you want it to preserve the X co-ordinate)
             except: pass # wrong font format or something - can't do it
             if winCEsound and ask_teacherMode: self.Label["font"]="Helvetica 16" # might make it slightly easier
@@ -821,7 +825,7 @@ def startTk():
             addStatus(self.ListBox,"This is your collection of computer-voiced words.\nClick to hear, change or remove an item.")
             self.ListBox["width"]=1 # so it will also squash down if window is narrow
             if winCEsound: self.ListBox["font"]="Helvetica 12" # larger is awkward, but it doesn't have to be SO small!
-            elif macsound and Tkinter.TkVersion>=8.6: self.ListBox["font"]="System 16" # ok with magnification, clearer than 13
+            elif macsound and Tkinter.TkVersion>=8.6: self.ListBox["font"]="System 16" # ok with magnification, clearer than 13 (TODO "System 20" was better on qzz's macbook if running in large print, but may need to check display resolution)
             self.ListBox.pack(fill=Tkinter.X,expand=1) # DON'T fill Y as well, because if you do we'll have to implement more items, and that could lose the clarity of incremental search
             if not GUI_omit_statusline: self.Version.pack(fill=Tkinter.X,expand=1)
             self.lastText1,self.lastText2=1,1 # (different from empty string, so it sync's)

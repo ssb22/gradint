@@ -14,8 +14,6 @@
 settingsFile = "settings"+dottxt
 user0 = (samplesDirectory,vocabFile,progressFile,progressFileBackup,pickledProgressFile,settingsFile)
 
-forceRadio = cond(macsound and sys.version_info >= (2,6),1,0) # OS X 10.6 doesn't display indicatoron=0 very well
-
 def addUserToFname(fname,userNo):
   if not userNo or not fname: return fname
   elif os.sep in fname: return fname+"-user"+str(userNo)

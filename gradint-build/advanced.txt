@@ -706,6 +706,8 @@ GUI_omit_settings = 0 # omit change language controls (for use if you don't set 
 # (change language controls are not omitted when you create a new user before that user's vocab file exists)
 GUI_omit_statusline = 0
 
+GUI_always_big_print = 0 # (set to 1 will cause 'big print' button to be auto-pressed when available)
+
 # If you set recorderMode, GUI will go straight into the recorder screen (if tkSnack is available)
 recorderMode = 0
 
