@@ -293,6 +293,8 @@ if winCEsound and __name__=="__main__":
 # Check for Mac OS Tk problem
 Tk_might_display_wrong_hanzi = wrong_hanzi_message = "" ; forceRadio=0
 if macsound:
+  try: os.remove("_tkinter.so") # it might be an old patched version for the wrong OS version
+  except: pass
   def tkpatch(): # patch Mac OS Tk to the included v8.6 (as v8.4 on OS10.5 has hanzi problem and v8.5 on 10.6 has fontsize problems etc)
     f="/System/Library/Frameworks/Python.framework/Versions/"+sys.version[:3]+"/lib/python"+sys.version[:3]+"/lib-dynload/_tkinter.so"
     if fileExists(f): # we might be able to patch this one up
@@ -303,15 +305,11 @@ if macsound:
       sys.path.insert(0,os.getcwd()) ; import _tkinter ; del sys.path[0]
       _tkinter.TK_VERSION = _tkinter.TCL_VERSION = "8.6"
       return True
-  if sys.version.startswith("2.3.5"): Tk_might_display_wrong_hanzi="10.4"
-  elif sys.version[:5] == "2.5.1": # 10.5
-    if not tkpatch(): Tk_might_display_wrong_hanzi="10.5"
-  elif sys.version[:5] == "2.6.1": # 10.6
-    forceRadio=1 # 10.6 doesn't display indicatoron very well
-    if os.environ.get("VERSIONER_PYTHON_PREFER_32_BIT","no")=="no": # oops, running from command line and might be 64-bit, better NOT use the hack
-      try: os.remove("_tkinter.so")
-      except: pass
-    elif tkpatch(): forceRadio=0
+  if not os.environ.get("VERSIONER_PYTHON_PREFER_32_BIT","no")=="no": # needed at least on 10.6 (so if run from cmd line w/out this setting, don't try this patch)
+    if sys.version.startswith("2.3.5"): Tk_might_display_wrong_hanzi="10.4"
+    elif sys.version[:5] == "2.5.1": # 10.5
+      if not tkpatch(): Tk_might_display_wrong_hanzi="10.5"
+    elif sys.version[:5] == "2.6.1": tkpatch() # 10.6 (still has Tk8.5, hanzi ok but other problems)
   if Tk_might_display_wrong_hanzi: wrong_hanzi_message = "NB: In Mac OS "+Tk_might_display_wrong_hanzi+", Chinese\ncan display wrongly here." # so they don't panic when it does
 
 # Handle keeping progress file and temp directories etc if we're running from a live CD

@@ -1119,6 +1119,7 @@ if useTK:
     # End of finding editor - now start GUI
     try:
         import thread,Tkinter,tkMessageBox
+        forceRadio=(macsound and 8.49<Tkinter.TkVersion<8.59) # indicatoron doesn't do very well in OS X 10.6 (Tk 8.5) unless we patched it
         if olpc:
             def interrupt_main(): os.kill(os.getpid(),2) # sigint
             thread.interrupt_main = interrupt_main
