@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9961 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9962 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -546,10 +546,12 @@ class RecorderControls:
             self.coords2buttons[(row,0)] = button
             del self.current_recordFrom_button
     def do_openInExplorer(self,*args):
+        l=os.listdir(self.currentDir) ; l.sort()
         openDirectory(self.currentDir,1)
         tkMessageBox.showinfo(app.master.title(),localise("Gradint has opened the current folder for you to work on.  When you press OK, Gradint will re-scan the folder for new files."))
-        self.undraw()
-        self.draw()
+        l2=os.listdir(self.currentDir) ; l2.sort()
+        if l==l2: return # no change
+        self.undraw() ; self.draw()
     def pocketPCrecord(self,*args):
         # (apparently get 11.025kHz 16-bit mono.  Can set Notes to NOT switch to notes app when holding Recording button, in which case you then need the task manager to actually get into Notes.)
         if firstLanguage==secondLanguage: tup=("word","meaning","word")
@@ -652,13 +654,15 @@ class RecorderControls:
                     if not flwr=="prompts": hadDirectories = True
             elif "_" in fname and (languageOverride in allLangs or languageof(fname) in allLangs): # something_lang where lang is a recognised language (don't just take "any _" because some podcasts etc will have _ in them)
               # TODO what about letting them record _explain_ files etc from the GUI (can be done but have to manually enter the _zh_explain bit), + toggling !poetry etc?
+              afterLang = ""
               if languageOverride:
-                  prefix=fname[:fname.index("_")]
-                  if not isMeaning: prefix += (" ("+(fname+extsep)[fname.find("_",fname.find("_")+1)+1:fname.rfind(extsep)]+")")
+                  realPrefix = prefix = fname[:fname.index("_")]
+                  if not isMeaning:
+                      afterLang = (fname+extsep)[fname.find("_",fname.find("_")+1):fname.rfind(extsep)]
+                      prefix += (" ("+afterLang[1:]+")")
               else:
-                  prefix=fname[:fname.rindex("_")]
+                  realPrefix = prefix = fname[:fname.rindex("_")]
                   languageOverride = languageof(fname)
-              
               wprefix = prefix
               for ww in ["word_","word","_"]:
                 if wprefix.startswith(ww):
@@ -674,7 +678,7 @@ class RecorderControls:
                     self.addLabel(curRow,0,utext=filename2unicode(prefix))
                     foundTxt = {}
                     for lang in self.languagesToDraw:
-                        if prefix+"_"+lang+dottxt in l: foundTxt[lang]=(self.currentDir+os.sep+prefix+"_"+lang+dottxt,2+3*self.languagesToDraw.index(lang))
+                        if realPrefix+"_"+lang+afterLang+dottxt in l: foundTxt[lang]=(self.currentDir+os.sep+realPrefix+"_"+lang+afterLang+dottxt,2+3*self.languagesToDraw.index(lang))
                     prefix2row[prefix] = curRow
                     for lang in self.languagesToDraw: # preserve tab order
                         if lang==languageOverride and not flwr.endswith(dottxt):

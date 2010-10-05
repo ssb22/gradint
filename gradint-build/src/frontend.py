@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9961 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9962 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -452,7 +452,7 @@ def startTk():
                     self.bigPrintFont = fontRest+" "+str(largeNominalSize)
                     if GUI_always_big_print:
                         self.master.option_add('*font',self.bigPrintFont)
-                        del self.bigPrintFont
+                        del self.bigPrintFont ; self.isBigPrint=1
                 else: self.after(100,self.check_window_position) # (needs to happen when window is already drawn if you want it to preserve the X co-ordinate)
             except: pass # wrong font format or something - can't do it
             if winCEsound and ask_teacherMode: self.Label["font"]="Helvetica 16" # might make it slightly easier
@@ -728,6 +728,7 @@ def startTk():
             self.master.option_add('*font',self.bigPrintFont)
             self.Version["font"]=self.Label["font"]=self.bigPrintFont
             del self.bigPrintFont # (TODO do we want an option to undo it?  or would that take too much of the big print real-estate.)
+            self.isBigPrint=1
             if self.rightPanel: # oops, need to re-construct it
                 global extra_buttons_waiting_list
                 extra_buttons_waiting_list = []
@@ -825,7 +826,7 @@ def startTk():
             addStatus(self.ListBox,"This is your collection of computer-voiced words.\nClick to hear, change or remove an item.")
             self.ListBox["width"]=1 # so it will also squash down if window is narrow
             if winCEsound: self.ListBox["font"]="Helvetica 12" # larger is awkward, but it doesn't have to be SO small!
-            elif macsound and Tkinter.TkVersion>=8.6: self.ListBox["font"]="System 16" # ok with magnification, clearer than 13 (TODO "System 20" was better on qzz's macbook if running in large print, but may need to check display resolution)
+            elif macsound and Tkinter.TkVersion>=8.6: self.ListBox["font"]=cond(hasattr(self,"isBigPrint"),"System 20","System 16") # 16 ok with magnification, clearer than 13
             self.ListBox.pack(fill=Tkinter.X,expand=1) # DON'T fill Y as well, because if you do we'll have to implement more items, and that could lose the clarity of incremental search
             if not GUI_omit_statusline: self.Version.pack(fill=Tkinter.X,expand=1)
             self.lastText1,self.lastText2=1,1 # (different from empty string, so it sync's)
@@ -1036,8 +1037,9 @@ def singular(number,s):
   return s
 def localise(s):
   d = GUI_translations.get(s,{}) ; s2 = 0
-  if scriptVariants.get(firstLanguage,0): s2 = d.get(firstLanguage+str(scriptVariants[firstLanguage]+1),0)
-  if not s2: s2 = d.get(firstLanguage,s)
+  GUIlang = GUI_languages.get(firstLanguage,firstLanguage)
+  if scriptVariants.get(GUIlang,0): s2 = d.get(GUIlang+str(scriptVariants[GUIlang]+1),0)
+  if not s2: s2 = d.get(GUIlang,s)
   return s2
 if Tk_might_display_wrong_hanzi: localise=lambda s:s
 if winCEsound: # some things need more squashing

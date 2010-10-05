@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9961 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9962 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -61,6 +61,7 @@ gradint.exe: $(Common_Files) gradint.py
 	for N in windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
 	# add a utf-8 BOM to start of vocab.txt, to ensure Notepad saves it in utf-8
 	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
+	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
 	# can trim down the shortcuts, as the GUI now gives access to them
 	cd windows0/shortcuts; rm "advanced setup.bat" "advanced utilities.bat" "General setup.bat" "Prompts.bat" "Recorded words.bat" "Synthesized words.bat" ; mv "Main program.bat" Gradint.bat ; cd ../..
 	# shortcuts: Don't use .lnk files, they are far too horrible (even if you put %HOMEDRIVE%%HOMEPATH% in the shortcut, it still stores the original location, and you can't reliably create them on the client without delving rediculously deep into Windows programming).  Perhaps could use .url files, but we just use small batch files.  Prepend a common header to each one.  (NB it won't work to try to force the sort order by calling things _uninstall, ~uninstall, etc, unless you want Z_uninstall, Z_advanced etc)
@@ -106,6 +107,7 @@ gradint.cab: $(Common_Files) gradint.py
 	rm -rf PocketPC0/gradint/samples/utils # TODO really?
 	for N in PocketPC0/gradint/*.txt; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
 	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
+	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
 	# PocketPC/espeak-data contains the altered phon* files in case the eSpeak version is slightly different, but we should be able to re-use the dictionaries etc
 	$(SevenZip) x windows/espeak-windows.7z && mv PocketPC0/espeak-data/* espeak/espeak-data && rmdir PocketPC0/espeak-data && mv espeak/espeak-data PocketPC0 && rm -rf espeak PocketPC0/espeak-data/mbrola*
 	# Problem: we MUST have everything in ONE directory if it is to go on the storage card, otherwise it will go on the internal disk (which is a shame because the uninstall won't track where we really put things) (and no putting a file at top-level of device does not work)
@@ -142,6 +144,7 @@ gradint-noGUI.exe: $(Common_Files) gradint.py
 	for N in windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
 	# add a utf-8 BOM to start of vocab.txt, to ensure Notepad saves it in utf-8
 	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
+	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
 	# shortcuts: Don't use .lnk files, they are far too horrible (even if you put %HOMEDRIVE%%HOMEPATH% in the shortcut, it still stores the original location, and you can't reliably create them on the client without delving rediculously deep into Windows programming).  Perhaps could use .url files, but we just use small batch files.  Prepend a common header to each one.  (NB it won't work to try to force the sort order by calling things _uninstall, ~uninstall, etc, unless you want Z_uninstall, Z_advanced etc)
 	cd windows0/shortcuts ; mv header.bat bat_header ; for N in *.bat ../startup/*.bat; do if ! test "$$N" == uninstall.bat; then cat bat_header "$$N" > n ; mv n "$$N"; fi; done ; rm bat_header ; cd ../..
 	# now run 7zip (look in a few extra places for it, and give it its full path in argv[0])
@@ -163,7 +166,9 @@ gradint.tbz: $(Mac_Files)
 	cp -r $(Mac_Files) gradint
 	chmod +x gradint/start-gradint.app/sox gradint/start-gradint.app/qtplay # just in case it lost its x attribute
 	mv gradint/samples/utils "gradint/samples/advanced utilities"
-	cp -p hanzi-prompts/* gradint/samples/prompts/ # overwriting the pinyin ones (as will bundle espeak so can translit.)
+	for N in hanzi-prompts/*.txt; do python -c "open('gradint/samples/prompts/$$(echo $$N|sed -e s,.*/,,)','w').write('\\xef\\xbb\\xbf'+open('$$N').read())"; done # overwriting the pinyin ones (as will bundle espeak so can translit.), and NB we *do* need the byte-order-mark on Mac OS 10.6 for TextEdit
+	cd gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ..
+	cd gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ..
 	cd gradint ; mv $(Most_Mac_Files) start-gradint.app/ ; mv start-gradint.app Gradint.app ; cd Gradint.app/Contents/MacOS ; sed -e s/start-gradint/Gradint/g -e s,Gradint.app/Contents,Contents,g < start-gradint > Gradint ; cp Gradint "Gradint 2"; chmod +x Gradint "Gradint 2" ; rm start-gradint ; cd ../../../.. # hide it all inside the app (optional) ("Gradint 2" is for upgrades - see code for details)
 	# tar -c gradint/ | bzip2 -9 > gradint.tbz
 	# use this alternative version if hiding all inside the app:
@@ -241,6 +246,7 @@ CD: $(Mac_Files) gradint.zip
 	zip -0 CD/gradint/library.zip gradint.py # (important to have no compression)
 	for N in CD/gradint/*.txt CD/gradint/*/*.txt CD/gradint/*/*/*.txt CD/setup.bat CD/gradint/*.bat CD/gradint/*/*.bat; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
 	cd CD/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
+	cd CD/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
 	echo "<html><body><h1>Gradint Live CD" > CD/Read_Me.html
 	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' >> CD/Read_Me.html
 	echo "</h1><h2>In the 'gradint' folder on this CD:</h2><ul><li>Recorded words are in <tt>samples</tt> folder<li>Synthesized words are in <tt>vocab.txt</tt> (and take priority over recorded words)<li>Run the program by choosing 'Windows-version', 'MacOS-version', 'Linux-version' or 'RiscOS-version' as appropriate<li>Don't worry about the many other files (they are supporting components)<li>Run it once per day if possible<li>You can change <tt>settings.txt</tt> and <tt>advanced.txt</tt> (e.g. set it to output to disk for listening later, or change the length of lesson), and you can manage the recorded and synthesized words, but you need to copy the 'gradint' folder to your hard disk (or use the 'setup' .bat file in Windows) before making changes, otherwise you can only run it the way it's set up at the moment because CDs are read-only.</ul></body></html>" >> CD/Read_Me.html

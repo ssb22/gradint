@@ -635,15 +635,15 @@ GUI_translations={
 "words in":{"zh":u"词, 用","zh2":u"詞, 用"},
 "new words in":{"zh":u"新词, 用","zh2":u"新詞, 用"},
 "mins":{"zh":u"分钟","zh2":u"分鐘"},
-"Start lesson":{"zh":u"开始课","zh2":u"開始課"},
+"Start lesson":{"zh":u"开始","zh2":u"開始"},
 "Clear input boxes":{"zh":u"扫清输入地方","zh2":u"掃清輸入地方"},
-"Quit":{"zh":u"放弃","zh2":u"放棄"},
+"Quit":{"zh":u"取消"},
 "Back to main menu":{"zh":u"回去主选单","zh2":u"回去主選單"},
 # (was 回去主要项目表, changed as seen 主选单 on a DVD)
 "Delete non-hanzi":{"zh":u"除字非汉字","zh2":u"除字非漢字"},
 "Speak":{"zh":u"发音","zh2":u"發音"},
 "Add to %s":{"zh":u"加到词汇(%s)","zh2":u"加到詞匯(%s)"},
-"Recorded words":{"zh":u"录音词语","zh2":u"錄音詞語"},
+"Recorded words":{"zh":u"录音词汇","zh2":u"錄音詞彙"},
 "To":{"zh":u"到"},
 "Make":{"zh":u"做"},
 "Speaker":{"zh":u"扬声器","zh2":u"揚聲器"},
@@ -668,23 +668,23 @@ GUI_translations={
 "Big print":{"zh":u"大号字体","zh2":u"大號字體"},
 "Compressing, please wait":{"zh":u"正在压缩...","zh2":u"正在壓縮..."},
 "All recordings have been compressed to MP3.  Do you also want to make a ZIP file for sending as email?":{"zh":u"所有录音都压缩成为MP3了。 你也想做一个ZIP文件所以能随email附上吗?","zh2":u"所有錄音都壓縮成為MP3了。 你也想做一個ZIP文件所以能隨email附上嗎?"},
-"Compress all":{"zh":u"压缩一切","zh2":u"壓縮一切"},
-"Play":{"zh":u"演"},
+"Compress all":{"zh":u"压缩这些文件","zh2":u"壓縮這些文件"},
+"Play":{"zh":u"播放"},
 "Synthesize":{"zh":u"用机器声音","zh2":u"用機器聲音"},
 "(synth'd)":{"zh":u"(机器声音)","zh2":u"(機器聲音)"},
-"Re-record":{"zh":u"从新录音","zh2":u"從新錄音"},
-"(empty)":{"zh":u"(空虚)","zh2":u"(空虛)"},
+"Re-record":{"zh":u"重新录音","zh2":u"重新錄音"},
+"(empty)":{"zh":u"(空白)"},
 "Record":{"zh":u"录音","zh2":u"錄音"},
-"Add more words":{"zh":u"加多词","zh2":u"加多詞"},
-"New folder":{"zh":u"新卷宗"},
+"Add more words":{"zh":u"添加词汇","zh2":u"添加詞彙"},
+"New folder":{"zh":u"新文件夹","zh2":"新文件夾"},
 "Stop":{"zh":u"停止"},
 "Action of spacebar during recording":{"zh":u"空格键在录音的时候的功能","zh2":u"空格鍵在錄音的時候的功能"},
 "move down":{"zh":u"进步下面"},
 "move along":{"zh":u"进步右边","zh2":u"進步右邊"},
 "stop":{"zh":u"停止"},
-"(Up)":{"zh":u"(上面)"},
+"(Up)":{"zh":u"(回去)"},
 "Record from %s":{"zh":u"从%s做录音","zh2":u"從%s做錄音"},
-"Record from file":{"zh":u"从文件做录音","zh2":u"從文件做錄音"},
+"Record from file":{"zh":u"切已录音的文件","zh2":u"切已錄音的文件"},
 "It has been %d days since your last Gradint lesson.  Please try to have one every day.":{"zh":u"你没做Gradint的课%d天了。请试试天天做。","zh2":u"你沒做Gradint的課%d天了。請試試天天做。"},
 "It has been %d days since you installed Gradint and you haven't had a lesson yet.  Please try to have one every day.":{"zh":u"%d天前安装了Gradint但还没做课。请试试天天做。","zh2":u"%d天前安裝了Gradint但還沒做課。請試試天天做。"},
 "Error: maximum number of new words must be an integer":{"zh":u"误差: 新词界限不是整数","zh2":u"誤差: 新詞界限不是整數"},
@@ -699,6 +699,11 @@ GUI_translations={
 # variant number starting from 0; you don't have to fill this in to get the
 # 1st one as default; may be overridden in settings.txt
 scriptVariants = {}
+
+# and you can map settings of firstLanguage to a GUI language
+# for example if you want "kw" to mean Guilin dialect but want "zh" in GUI
+# then you can say "kw":"zh" in here:
+GUI_languages = { "cant":"zh", "zhy":"zh", "zh-yue":"zh" }
 
 # Space-saving options if you want a more compact GUI:
 GUI_for_editing_only = 0 # if 1, omit controls for making a lesson (just vocab edit)
