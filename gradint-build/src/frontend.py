@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9962 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9963 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -256,15 +256,16 @@ def make_output_row(parent):
     # if there aren't any options then return None
     # we also put script-variant selection here, if any
     row = None
-    if "@variants-"+firstLanguage in GUI_translations: # the firstLanguage has script variants
+    GUIlang = GUI_languages.get(firstLanguage,firstLanguage)
+    if "@variants-"+GUIlang in GUI_translations: # the firstLanguage has script variants
         row = Tkinter.Frame(parent)
         row.pack(fill=Tkinter.X,expand=1)
         if not hasattr(app,"scriptVariant"): app.scriptVariant = Tkinter.StringVar(app)
         count = 0
-        for variant in GUI_translations["@variants-"+firstLanguage]:
+        for variant in GUI_translations["@variants-"+GUIlang]:
             Tkinter.Radiobutton(row, text=u" "+variant+u" ", variable=app.scriptVariant, value=str(count), indicatoron=forceRadio).pack({"side":"left"})
             count += 1
-        app.scriptVariant.set(str(scriptVariants.get(firstLanguage,0)))
+        app.scriptVariant.set(str(scriptVariants.get(GUIlang,0)))
     if not gotSox: return row # can't do any file output without sox
     if not hasattr(app,"outputTo"):
         app.outputTo = Tkinter.StringVar(app) # NB app not parent (as parent is no longer app)
@@ -551,7 +552,7 @@ def startTk():
                     if hasattr(self,"OutputRow"): self.OutputRow.pack_forget()
                     outRow = make_output_row(self.leftPanel)
                     if outRow: self.OutputRow=outRow
-                self.TestButton = addButton(self.leftPanel,localise("Manage word list"),self.showtest) # used to be called "Add or test words", but "Manage word list" may be better for beginners
+                self.TestButton = addButton(self.leftPanel,localise(cond(self.wordsExist,"Manage word list","Create word list")),self.showtest) # used to be called "Add or test words", but "Manage word list" may be better for beginners.  And it seems that "Create word list" is even better for absolute beginners, although it shouldn't matter if self.wordsExist is not always set back to 0 when it should be.
                 self.make_lesson_row()
                 if userNameFile:
                     global GUI_usersRow
@@ -770,7 +771,7 @@ def startTk():
             self.Cancel["text"] = localise("Cancel lesson")
             self.menu_response = "go"
         def showtest(self,*args): # Can assume main menu is shown at the moment.
-            title = localise("Manage word list")
+            title = localise(cond(self.wordsExist,"Manage word list","Create word list"))
             if hasattr(self,"userNo"):
                 try: uname = lastUserNames[intor0(self.userNo.get())]
                 except IndexError: uname="" # can happen if it's 0 but list is empty
@@ -888,7 +889,7 @@ def startTk():
                     if tkMessageBox.askyesno(self.master.title(),msg+"  "+localise("Would you like to see a list of the standard abbreviations for languages that can be computer voiced?")): self.todo.alert = localise("Languages that can be computer voiced:")+"\n"+langs
                 else: self.todo.alert = msg+"  "+localise("(Sorry, a list of these is not available on this system - check eSpeak installation.)")
                 return
-            need_redisplay = "@variants-"+firstLanguage in GUI_translations or "@variants-"+firstLanguage1 in GUI_translations # if EITHER old or new lang has variants, MUST reconstruct that row.  (TODO also do it anyway to get the "Speaker" etc updated?  but may cause unnecessary flicker if that's no big problem)
+            need_redisplay = "@variants-"+GUI_languages.get(firstLanguage,firstLanguage) in GUI_translations or "@variants-"+GUI_languages.get(firstLanguage1,firstLanguage1) in GUI_translations # if EITHER old or new lang has variants, MUST reconstruct that row.  (TODO also do it anyway to get the "Speaker" etc updated?  but may cause unnecessary flicker if that's no big problem)
             firstLanguage,secondLanguage = firstLanguage1,secondLanguage1
             updateSettingsFile(settingsFile,{"firstLanguage":firstLanguage,"secondLanguage":secondLanguage})
             if need_redisplay:
@@ -899,11 +900,6 @@ def startTk():
         def updateLanguageLabels(self):
             # TODO things like "To" and "Speaker" need updating dynamically with localise() as well, otherwise will be localised only on restart (unless the old or new lang has variants, in which case it will be repainted anyway above)
             self.Label1["text"] = (localise("Word in %s") % localise(secondLanguage))+":"
-            if winsound or mingw32 or cygwin: self.Label1["text"] += "\n(" + localise("press Control-V to paste")+")"
-            elif macsound:
-                l = localise("press Apple-V to paste")
-                if not Tk_might_display_wrong_hanzi: l=(u""+l).replace("Apple",u"\u2318") # not sure how well this works in earlier versions
-                self.Label1["text"] += "\n("+l+")"
             self.Label2["text"] = (localise("Meaning in %s") % localise(firstLanguage))+":"
             self.L1Text.set(firstLanguage)
             self.L2Text.set(secondLanguage)
@@ -913,6 +909,7 @@ def startTk():
             if hasattr(self,"userNo") and intor0(self.userNo.get()): gui_vocabFile_name="vocab file" # don't expose which user number they are because that might change
             elif len(vocabFile)>15 and os.sep in vocabFile: gui_vocabFile_name=vocabFile[vocabFile.rindex(os.sep)+1:]
             else: gui_vocabFile_name=vocabFile
+            if gui_vocabFile_name=="vocab.txt": gui_vocabFile_name=localise(gui_vocabFile_name)
             self.AddButton["text"] = localise("Add to %s") % gui_vocabFile_name
             self.ChangeLanguageButton["text"] = localise("Change languages")
             self.ChangeButton["text"] = localise("Change or delete item")
@@ -983,6 +980,7 @@ def startTk():
     def appThread(appclass):
         global app ; appclass() # sets 'app' to itself on construction
         app.master.title(appTitle)
+        app.wordsExist = words_exist()
         app.mainloop()
         closeBoxPressed = not hasattr(app.todo,"exit_ASAP")
         app = 0 # (not None - see 'app==None' below)
@@ -1470,7 +1468,7 @@ def gui_event_loop():
                 o.write(text1+"="+text2+"\n") # was " = " but it slows down parseSynthVocab
                 o.close()
                 if hasattr(app,"vocabList"): app.vocabList.append((ensure_unicode(text1),ensure_unicode(text2)))
-                app.todo.clear_text_boxes=1
+                app.todo.clear_text_boxes=app.wordsExist=1
         elif menu_response=="delete" or menu_response=="replace":
             app.set_watch_cursor = 1
             lang2,lang1 = app.toDelete

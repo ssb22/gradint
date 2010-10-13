@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9962 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9963 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -11,15 +11,14 @@
 
 # Start of filescan.py - check for available samples and prompts and read in synthesized vocabulary
 
-limitedFiles = {} # empty this before calling scanSamples if
-                  # scanSamples ever gets called a second
-                  # time (really need to put it in an object
-                  # but...) - lists sample (RHS) filenames
-                  # that are in 'limit' dirs
-dirsWithIntros = [] # ditto
-filesWithExplanations = {} # ditto
-singleLinePoems = {} # ditto (keys are any poem files which are single line only, so as to avoid saying 'beginning' in prompts)
-variantFiles = {} # ditto (but careful if prompts is using it also)
+def init_scanSamples():
+  global limitedFiles,dirsWithIntros,filesWithExplanations,singleLinePoems,variantFiles
+  limitedFiles = {} # lists sample (RHS) filenames that are in 'limit' dirs
+  dirsWithIntros = []
+  filesWithExplanations = {}
+  singleLinePoems = {} # keys are any poem files which are single line only, so as to avoid saying 'beginning' in prompts
+  variantFiles = {} # careful with clearing this if prompts is using it also (hence called only below and in loop.py before prompt scan)
+init_scanSamples() ; emptyCheck_hack = 0
 def scanSamples(directory=None):
     if not directory: directory=samplesDirectory
     # Scans the samples directory for pairs of
@@ -30,10 +29,16 @@ def scanSamples(directory=None):
     # files to use for a given "word" - currently used in
     # poetry learning)
     retVal = []
-    doLabel("Scanning samples")
+    if not emptyCheck_hack: doLabel("Scanning samples")
     if import_recordings_from: import_recordings()
     scanSamples_inner(directory,retVal,0)
     return retVal
+
+def words_exist(): # for GUI (but do NOT call from GUI thread)
+  global emptyCheck_hack ; emptyCheck_hack = 1
+  r = scanSamples() or parseSynthVocab(vocabFile)
+  emptyCheck_hack = 0
+  return r
 
 class CannotOverwriteExisting(Exception): pass
 def import_recordings(destDir=None):
@@ -188,6 +193,7 @@ def scanSamples_inner(directory,retVal,doLimit):
             lastFile = None # avoid problems with connecting poetry lines before/after a line that's not in the synth cache or something
             if withExt==None and (cache_maintenance_mode or not directory+os.sep+file==promptsDirectory): # a directory
                 scanSamples_inner(directory+os.sep+file,retVal,doLimit)
+                if emptyCheck_hack and retVal: return
             # else no extension, or not an extension we know about - ignore (DO need this, because one way of temporarily disabling stuff is to rename it to another exension)
         elif file.find("_")==-1: continue # save confusion (!poetry, !variants etc)
         elif (doPoetry and file.endswith(doPoetry)) or (not doPoetry and (not file.endswith(firstLangSuffix) or firstLanguage==secondLanguage)): # not a prompt word
@@ -224,6 +230,7 @@ def scanSamples_inner(directory,retVal,doLimit):
             elif cache_maintenance_mode: promptToAdd = prefix+withExt
             else: continue # can't do anything with this file
             retVal.append((0,promptToAdd,prefix+withExt))
+            if emptyCheck_hack: return
             if explanationFile: filesWithExplanations[prefix+withExt]=explanationFile
             if doLimit: limitedFiles[prefix+withExt]=prefix
             lastFile = [promptFile,withExt]
@@ -237,7 +244,7 @@ def parseSynthVocab(fname,forGUI=0):
     lastPromptAndWord = None
     try: o=open(fname,"rb")
     except IOError: return []
-    doLabel("Reading "+fname)
+    if not emptyCheck_hack: doLabel("Reading "+fname)
     allLangs = list2set([firstLanguage,secondLanguage]+otherLanguages)
     for l in u8strip(o.read()).replace("\r","\n").split("\n"):
         # TODO can we make this any faster on WinCE with large vocab lists? (tried SOME optimising already)
@@ -308,6 +315,7 @@ def parseSynthVocab(fname,forGUI=0):
                         prompt=f
                         singleLinePoems[f]=1
                     ret.append((0,prompt,f))
+                    if emptyCheck_hack: return ret
                     if doLimit: limitedFiles[f]="synth:"+str(limitNo)
                     if doPoetry: lastPromptAndWord = [prompt_L1only,f]
                 elif doPoetry: lastPromptAndWord=None # if one of the lines can't be synth'd, don't connect the lines before/after it

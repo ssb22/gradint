@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9962 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9963 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -18,6 +18,7 @@ if "s60" in sys.argv: # S60 version
   version = "S60"
   to_omit = [
 "if use_unicode_filenames:", # WinCE
+"def words_exist(): # for GUI (but do NOT call from GUI thread)",
 "if paranoid_file_management:",
 'if not extsep==".":',
 "if macsound:","elif macsound:",

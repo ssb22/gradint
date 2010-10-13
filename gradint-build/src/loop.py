@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9962 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9963 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -56,6 +56,7 @@ def lesson_loop():
   if ask_teacherMode and not soundCollector and waitBeforeStart: teacherMode=getYN("Use teacher assistant mode? (say 'no' for self-study)")
   try:
     # doLabel("Scanning prompts") # rarely takes long even on low-end systems
+    init_scanSamples() # in case was messed around with before
     availablePrompts = AvailablePrompts() # here so app is already initialised before any warnings
     global dbase # so can be accessed by interrupt handler
     if loadLesson: dbase=None
@@ -66,9 +67,7 @@ def lesson_loop():
             msg = "There are no words to put in the lesson."
             if app or appuifw:
                 drop_to_synthloop = False
-                msg = localise(msg)
-                if app and hasattr(app,"TestButton"): msg += ("\n"+(localise("Please press \"%s\" first.") % localise("Manage word list")))
-                else: msg += ("\n"+localise("Please add some words first."))
+                msg = localise(msg)+"\n"+localise("Please add some words first.")
             else:
                 drop_to_synthloop = (partials_langs or get_synth_if_possible("en",0) or viable_synths) # the get_synth_if_possible call here is basically to ensure viable_synths is populated
                 msg += "\nPlease read the instructions on the website\nwhich tell you how to add words.\n"+cond(drop_to_synthloop,"Dropping back to justSynthesize loop.\n","")

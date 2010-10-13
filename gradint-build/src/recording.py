@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9962 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9963 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -717,7 +717,7 @@ class RecorderControls:
         
         if winCEsound and not tkSnack: msg="Click on filenames at left to rename; click synthesized text to edit it"
         else: msg="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it."
-        Tkinter.Label(self.frame,text=msg,wraplength=cond(olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
+        Tkinter.Label(self.frame,text=msg,wraplength=cond(hasattr(app,"isBigPrint") or olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
         # (Don't worry about making the text files editable - editable filenames should be enough + easier to browse the result outside Gradint; can include both languages in the filename if you like - hope the users figure this out as we don't want to make the instructions too complex)
 
 def doRecWords(): # called from GUI thread
@@ -727,6 +727,7 @@ def doRecWords(): # called from GUI thread
     try: theRecorderControls
     except: theRecorderControls=RecorderControls()
     theRecorderControls.draw()
+    app.wordsExist = 1 # well not necessarily, but see comments re "Create word list"
 
 # Functions for recording on S60 phones:
 def s60_recordWord():
