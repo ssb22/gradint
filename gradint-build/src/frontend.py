@@ -1127,12 +1127,9 @@ if useTK:
             thread.interrupt_main = interrupt_main
             # (os.kill is more reliable than interrupt_main() on OLPC, *but* on Debian Sarge (2.4 kernel) threads are processes so DON'T do this.)
         elif not hasattr(thread,"interrupt_main"): emulated_interruptMain = 1
-        else:
-            try: # work around the "int object is not callable" thing on some platforms' interrupt_main
-                import signal
-                def raise_int(*args): raise KeyboardInterrupt
-                signal.signal(signal.SIGINT,raise_int)
-            except: pass
+        elif signal: # work around the "int object is not callable" thing on some platforms' interrupt_main
+            def raise_int(*args): raise KeyboardInterrupt
+            signal.signal(signal.SIGINT,raise_int)
     except RuntimeError:
         useTK = 0
         if __name__=="__main__": show_warning("Cannot start the GUI due to a Tk error")

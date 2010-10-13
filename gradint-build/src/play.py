@@ -189,6 +189,15 @@ def system(cmd):
     try: r=os.popen(cmd)
     except: return os.system(cmd) # too many file descriptors open or something
     r.read() ; return r.close()
+try: import signal
+except: signal = 0
+if signal:
+    # Unix: make sure "kill" on gradint's pid includes the players:
+    os.setpgrp()
+    def siggrp(sigNo,*args):
+        os.killpg(os.getpgrp(),sigNo)
+        os.abort() # in case still here
+    signal.signal(signal.SIGTERM,siggrp)
 
 # Event(len) gives a pause of that length
 # SampleEvent extends this to actually play something:
