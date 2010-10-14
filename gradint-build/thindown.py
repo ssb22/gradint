@@ -33,7 +33,6 @@ if "s60" in sys.argv: # S60 version
 "def decode_mp3(file):",
 "class Mp3FileCache(object):",
 "if outputFile:",
-"if signal:",
 "class InputSourceManager(object):",
 "def wavToMp3(directory):",
 "def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):",
