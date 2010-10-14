@@ -1327,6 +1327,7 @@ def gui_event_loop():
             if not app: return # (closed by the close box)
             else: app.todo.set_main_menu = 1
         elif menu_response=="edit":
+            app.wordsExist=1
             if not braveUser and fileExists(vocabFile) and open(vocabFile).readline().find("# This is vocab.txt.")==-1: braveUser=1
             if winCEsound:
                 if braveUser or getYN("You can break things if you don't read what it says and keep to the same format.  Continue?"):
@@ -1628,15 +1629,7 @@ def rest_of_main():
         waitOnMessage("\nProblem finding prompts:\n"+prEx.message+"\n")
         exitStatus = 1
     except:
-        w="\nSomething has gone wrong with my program.\nThis is not your fault.\nPlease let me know what it says.\nThanks.  Silas\n"
-        w += str(sys.exc_info()[0])
-        if sys.exc_info()[1]: w += (": "+str(sys.exc_info()[1]))
-        tbObj = sys.exc_info()[2]
-        while tbObj and hasattr(tbObj,"tb_next") and tbObj.tb_next: tbObj=tbObj.tb_next
-        if tbObj and hasattr(tbObj,"tb_lineno"): w += (" at line "+str(tbObj.tb_lineno))
-        if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and not tbObj.tb_frame.f_code.co_filename.find("gradint"+extsep+"py")>-1: w += (" in "+tbObj.tb_frame.f_code.co_filename+"\n")
-        else: w += (" in "+program_name[:program_name.index("(c)")]+"\n")
-        del tbObj
+        w="\nSomething has gone wrong with my program.\nThis is not your fault.\nPlease let me know what it says.\nThanks.  Silas\n"+exc_info()
         try: import traceback
         except:
             w += "Cannot import traceback\n"

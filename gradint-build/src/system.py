@@ -198,9 +198,25 @@ if not fileExists(configFiles[0]):
 if sys.platform.find("ymbian")>-1: sys.path.insert(0,os.getcwd()+os.sep+"lib")
 import time,sched,sndhdr,random,math,pprint,codecs
 
+def exc_info(inGradint=True):
+    w = str(sys.exc_info()[0])
+    if "'" in w: w=w[w.index("'")+1:w.rindex("'")]
+    if '.' in w: w=w[w.index(".")+1:]
+    if sys.exc_info()[1]: w += (": "+str(sys.exc_info()[1]))
+    tbObj = sys.exc_info()[2]
+    while tbObj and hasattr(tbObj,"tb_next") and tbObj.tb_next: tbObj=tbObj.tb_next
+    if tbObj and hasattr(tbObj,"tb_lineno"): w += (" at line "+str(tbObj.tb_lineno))
+    if inGradint:
+        if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and not tbObj.tb_frame.f_code.co_filename.find("gradint"+extsep+"py")>-1: w += (" in "+tbObj.tb_frame.f_code.co_filename+"\n")
+        else: w += (" in "+program_name[:program_name.index("(c)")]+"\n")
+    del tbObj
+    return w
+
 def readSettings(f):
-   try: exec(unicode(u8strip(open(f,"rb").read()).replace("\r","\n"),"utf-8")) in globals()
-   except: show_warning("Warning: Could not load "+f)
+   try: fdat = unicode(u8strip(open(f,"rb").read()).replace("\r","\n"),"utf-8")
+   except: show_warning("Warning: Could not load "+f+" (problem reading or decoding utf-8)")
+   try: exec(fdat) in globals()
+   except: show_warning("Warning: Could not load "+f+" ("+exc_info(False)+")")
 dir1 = list2set(dir()+["dir1","f","last_u8strip_found_BOM"])
 for f in configFiles: readSettings(f)
 for d in dir():

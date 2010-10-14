@@ -387,7 +387,7 @@ class AvailablePrompts(object):
         # and finally,
         if not language==secondLanguage and not prefix==language and not prefix=="meaningis": r=self.getPromptList(language,promptsData,language)+r # yes, before - works better than after
         return r
-# availablePrompts = AvailablePrompts() # do NOT construct here - if a warning is printed (e.g. can't find a synth) then it might go to the wrong place if GUI has not yet started.  Constructor moved to lesson_loop().
+# Do NOT construct availablePrompts here - if a warning is printed (e.g. can't find a synth) then it might go to the wrong place if GUI has not yet started.  Constructing moved to lesson_loop().
 
 def introductions(zhFile,progressData):
     toIntroduce = []
