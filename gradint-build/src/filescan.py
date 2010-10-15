@@ -180,8 +180,9 @@ def scanSamples_inner(directory,retVal,doLimit):
           if withExt:
             if file.endswith(secLangSuffix): ret=secLangSuffix # but stay in the loop
             elif (not file.endswith(firstLangSuffix)):
+                llist = [firstLanguage,secondLanguage]+otherFirstLanguages
                 for l in otherLanguages:
-                    if not l in [firstLanguage,secondLanguage] and file.endswith("_"+l): return "_"+l
+                    if not l in llist and file.endswith("_"+l): return "_"+l
          return ret
         doPoetry = poetry_language()
     prefix = directory[len(samplesDirectory)+cond(samplesDirectory,len(os.sep),0):] # the directory relative to samplesDirectory
@@ -189,6 +190,7 @@ def scanSamples_inner(directory,retVal,doLimit):
     lastFile = None # for doPoetry
     items = lsDic.items() ; items.sort()
     for file,withExt in items:
+        swapWithPrompt = 0
         if not withExt:
             lastFile = None # avoid problems with connecting poetry lines before/after a line that's not in the synth cache or something
             if withExt==None and (cache_maintenance_mode or not directory+os.sep+file==promptsDirectory): # a directory
@@ -202,9 +204,10 @@ def scanSamples_inner(directory,retVal,doLimit):
                 wordSuffix=None
                 for l in otherLanguages:
                     if not l in [firstLanguage,secondLanguage] and file.endswith("_"+l):
+                        if l in otherFirstLanguages: swapWithPrompt=1
                         wordSuffix="_"+l ; break
                 if not wordSuffix: continue # can't do anything with this file
-            if firstLanguage==secondLanguage: promptFile=None
+            if swapWithPrompt or firstLanguage==secondLanguage: promptFile=None
             else: promptFile = lsDic.get(file[:-len(wordSuffix)]+firstLangSuffix,0)
             explanationFile = lsDic.get(file[:-len(wordSuffix)]+wordSuffix+"_explain_"+firstLanguage,0)
             if not promptFile and not wordSuffix==secLangSuffix:
@@ -215,6 +218,7 @@ def scanSamples_inner(directory,retVal,doLimit):
                 promptFile = lsDic.get(file[:-len(wordSuffix)]+"-meaning"+wordSuffix,0)
             if promptFile:
                 # There is a simpler-language prompt
+                if swapWithPrompt: promptFile,withExt = withExt,promptFile
                 if doPoetry and lastFile:
                     if lastFile[0]: promptToAdd = [prefix+lastFile[0], prefix+promptFile, prefix+lastFile[1]] # both last line's and this line's prompt, then last line's contents
                     else: promptToAdd = [prefix+lastFile[1], prefix+promptFile] # last line didn't have a prompt, so put last line's contents before this line's prompt
@@ -289,9 +293,10 @@ def parseSynthVocab(fname,forGUI=0):
                 langsAlreadySeen[lang]=True
             return None,0
         prompt,onePastPromptIndex = findPrompt()
-        if not prompt and len(langsAndWords)>1: # 1st language prompt not found; try 2nd language to 3rd language
-            langsAlreadySeen = {secondLanguage:True}
-            prompt,onePastPromptIndex = findPrompt()
+        if not prompt and len(langsAndWords)>1: # 1st language prompt not found; try 2nd language to 3rd language etc
+            langsAlreadySeen = list2dict(otherFirstLanguages) ; prompt,onePastPromptIndex = findPrompt()
+            if not prompt:
+                langsAlreadySeen = {secondLanguage:True} ; prompt,onePastPromptIndex = findPrompt()
         prompt_L1only = prompt # before we possibly change it into a list etc.  (Actually not necessarily L1 see above, but usually is)
         if doPoetry:
             if prompt and lastPromptAndWord:
@@ -322,6 +327,13 @@ def parseSynthVocab(fname,forGUI=0):
         if not lastPromptAndWord==None: doPoetry = 1 # just processed a "poetry vocab line:" (lastPromptAndWord is either the real last prompt and word, or 0 if we were at the start)
     return ret
 
+def sanitise_otherLanguages():
+    for l in otherFirstLanguages:
+        if not l in otherLanguages: otherLanguages.append(l)
+    for l in otherLanguages:
+        if not l in possible_otherLanguages: possible_otherLanguages.append(l)
+sanitise_otherLanguages()
+
 # Prompt file syntax: word_language.wav
 # or: word_language_2.wav .. (alternatives chosen at random)
 # ('word' can also be a language name)
@@ -329,7 +341,7 @@ class PromptException(Exception):
     def __init__(self,message): self.message = message
     def __repr__(self): return self.message
 class AvailablePrompts(object):
-    reservedPrefixes = list2set(map(lambda x:x.lower(),["whatmean","meaningis","repeatAfterMe","sayAgain","longPause","begin","end",firstLanguage,secondLanguage] + otherLanguages + possible_otherLanguages))
+    reservedPrefixes = list2set(map(lambda x:x.lower(),["whatmean","meaningis","repeatAfterMe","sayAgain","longPause","begin","end",firstLanguage,secondLanguage] + possible_otherLanguages))
     def __init__(self):
         self.lsDic = getLsDic(promptsDirectory)
         self.prefixes = {}

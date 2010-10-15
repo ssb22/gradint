@@ -377,9 +377,7 @@ class ExtraButton(object):
             for lang in u8strip(open(newName+os.sep+"add-to-languages"+dottxt,"rb").read()).strip(wsp).split():
                 if not lang in [firstLanguage,secondLanguage]+otherLanguages:
                     otherLanguages.append(lang) ; changed = 1
-                if not lang in possible_otherLanguages:
-                    possible_otherLanguages.append(lang) ; changed = 1
-            if changed: updateSettingsFile("advanced"+dottxt,{"otherLanguages":otherLanguages,"possible_otherLanguages":possible_otherLanguages})
+            if changed: sanitise_otherLanguages(), updateSettingsFile("advanced"+dottxt,{"otherLanguages":otherLanguages,"possible_otherLanguages":possible_otherLanguages})
             os.remove(newName+os.sep+"add-to-languages"+dottxt)
         promptsAdd = newName+os.sep+"add-to-prompts"
         if isDirectory(promptsAdd):
@@ -810,7 +808,7 @@ def startTk():
                 self.RecordedWordsButton = addButton(self.row4,"",self.showRecordedWords,{"side":"left"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
                 row4right = addRightRow(self.row4)
                 self.EditVocabButton = addButton(row4right,"",self.openVocabFile,{"side":"left"},status="This button lets you edit your\nvocab collection in "+textEditorName)
-                if not GUI_omit_settings: addButton(row4right,"advanced"+dottxt,self.openAdvancedTxt,{"side":"left"},status="This button lets you change advanced settings\nand do other technical things - beginners beware!")
+                if not GUI_omit_settings: addButton(row4right,"advanced"+dottxt,self.openAdvancedTxt,{"side":"left"},status="Press this button to learn multiple languages\nor change advanced settings for synthesis etc")
                 self.make_lesson_row()
             else:
                 # can at least have Recorded Words button now we have a buillt-in manager
@@ -1330,7 +1328,7 @@ def gui_event_loop():
             app.wordsExist=1
             if not braveUser and fileExists(vocabFile) and open(vocabFile).readline().find("# This is vocab.txt.")==-1: braveUser=1
             if winCEsound:
-                if braveUser or getYN("You can break things if you don't read what it says and keep to the same format.  Continue?"):
+                if braveUser or getYN("You must read what it says and keep to the same format.  Continue?"):
                     braveUser = 1
                     # WinCE Word does not save non-Western characters when saving plain text (even if there's a Unicode "cookie")
                     waitOnMessage("WARNING: Word may not save non-Western characters properly.  Try an editor like MADE instead (need to set its font).") # TODO Flinkware MADE version 2.0.0 has been known to insert spurious carriage returns at occasional points in large text files
@@ -1340,7 +1338,7 @@ def gui_event_loop():
                     waitOnMessage("When you've finished editing "+app.fileToEdit+", close it and start gradint again.")
                     return
             elif textEditorCommand:
-                if braveUser or getYN("About to open "+app.fileToEdit+" in "+textEditorName+".\nYou can break things if you don't read what it says and keep to the same format.\nDo you really want to continue?"):
+                if braveUser or getYN("Open "+app.fileToEdit+" in "+textEditorName+"?\n(You must read what it says and keep to the same format.)"):
                     braveUser = 1 ; fileToEdit=app.fileToEdit
                     if not fileExists(fileToEdit): open(fileToEdit,"w") # at least make sure it exists
                     if textEditorWaits:

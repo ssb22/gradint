@@ -214,7 +214,7 @@ def exc_info(inGradint=True):
 
 def readSettings(f):
    try: fdat = unicode(u8strip(open(f,"rb").read()).replace("\r","\n"),"utf-8")
-   except: show_warning("Warning: Could not load "+f+" (problem reading or decoding utf-8)")
+   except: return show_warning("Warning: Could not load "+f+" (problem reading or decoding utf-8)")
    try: exec(fdat) in globals()
    except: show_warning("Warning: Could not load "+f+" ("+exc_info(False)+")")
 dir1 = list2set(dir()+["dir1","f","last_u8strip_found_BOM"])

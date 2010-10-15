@@ -831,7 +831,7 @@ def get_synth_if_possible(language,warn=1,to_transliterate=False):
     for synth in viable_synths:
         if synth.supports_language(language):
             getsynth_cache[language]=synth ; return synth
-    if (not warn) or language not in [firstLanguage,secondLanguage]+possible_otherLanguages+otherLanguages: return None # without printing a warning
+    if (not warn) or language not in [firstLanguage,secondLanguage]+possible_otherLanguages: return None # without printing a warning
     if not language in warned_about_nosynth:
         warned_about_nosynth[language] = 1
         canSay = []

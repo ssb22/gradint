@@ -5,111 +5,33 @@
 # scroll down to see all of them.  Each section starts with
 # a header between lines of dashes    ---- like this ----
 
-# ---- Options for outputting lessons to sound files ------
-
-# Sometimes it is useful to get gradint to output a lesson
-# to a sound file instead of playing it directly, for
-# example if you want to listen to it on a mobile device.
-# To do this without using the GUI, change the value of
-# outputFile (below) to a filename, e.g. outputFile = "myfile.mp3"
-
-outputFile = ""
-
-# Depending on the extension you specify, you will need a
-# copy of LAME (for MP3), TooLame (for MP2), oggenc (for
-# OGG), faac (for AAC) or speexenc (for SPX).  On Windows
-# put the .exe in the gradint folder; on other systems you can
-# put the binary in either the gradint folder or the PATH.
-# You will also need "sox" (you may already have this).
-
-# The Gradint GUI will offer to export to files of any
-# type that it can find encoders for, plus WAV.  So for
-# example if it finds lame, it will give an MP3 option.
-# On Windows (or Cygwin) you can also download
-# Windows Media Encoder from
-# http://www.microsoft.com/windows/windowsmedia/forpros/encoder/default.mspx
-# or http://www.microsoft.com/downloads/details.aspx?FamilyID=5691ba02-e496-465a-bba9-b2f1182cdf24
-# and the Gradint GUI will offer to use this to make WMA files.
-# On Mac it can make AAC files using afconvert if it finds it (10.5+ should have this).
-
-# In each case Gradint uses encoding parameters that have been
-# found to give good compression without sacrificing too
-# much quality for a language-learning application.
-
-# You can also specify .wav, .cdr, .au, etc (only sox is required)
-# but it will be very large.  .wav might be your best option if you
-# want to use a non-commandline music compressor.  .cdr is useful
-# for making old-style audio CDs.
-
-# gradint can also output to .sh (shell-script) files,
-# which, when run, produce wav audio on their standard
-# output for redirecting to an audio encoder or player.
-# These shell-script files store each sample only once and
-# without changing its rate, which means they can be
-# generated very quickly even on a machine with no
-# floating-point processor such as an NAS device.  They do
-# however require sox and floating point at runtime, because
-# the pipe to stdout means they all need to be converted to
-# one rate, but if you're piping to an audio encoder then
-# you probably need more floating-point for that anyway.
-compress_SH = False
-# - set that to True to make the .sh file smaller at the
-# expense of quality.  (Does not include (g)zip compression;
-# you can do that separately.)
-
-# If you specify no extension then gradint will output raw
-# samples.  If outputFile is "-" then gradint will send the
-# raw samples to the standard output for use in a pipe.
-# (You still need sox even for raw samples.)  Additionally,
-# you can specify "-" as a filename followed by any of the
-# above extentions, in which case gradint will write to its
-# standard output in the format appropriate for that extention.
-
-# If you want to append silence to the end of the output
-# (useful if there's going to be another track) then you can
-# set the number of seconds of silence here:
-
-outputFile_appendSilence = 0
-if outputFile.endswith("cdr"): outputFile_appendSilence = 5
-
-# If writing an early lesson to tape for a beginner, it is
-# possible that the long gaps will cause the beginner to
-# think that the tape has finished, even with the "longpause"
-# message in place.  So the following variable sets the
-# minimum length of silence to be replaced by beeps every few
-# seconds.  It is effective only for outputFile (not for
-# playing lessons in real time)
-
-beepThreshold = 20
-
-# You can set the following to "file.wav" for file.wav to be
-# included as an announcement at the start and end
-# respectively.  NB the time taken by this file will be
-# subtracted from the lesson time.
-# (.mp3 is also supported on some systems - see note in samples/README)
-
-startAnnouncement = None
-endAnnouncement = None
-
-# If you want to put additional comments into spare
-# graduated-interval gaps on the first lesson, you can set
-# the following variable to ['comment1.wav','comment2.wav',...]
-# (.mp3 is also supported on some systems - see note in samples/README)
-# commentsToAdd will be added first, in order, then
-# orderlessCommentsToAdd will be added after.
-# (Warning!  If the comments can't fit, program will crash.)
-
-commentsToAdd = None
-orderlessCommentsToAdd = None
-
 # ------- Options for learning multiple languages ---------
 
-# List of auxiliary languages (other than second language)
-# that you want to learn some phrases in.  NB you need
-# prompts like cant_en.wav, cant_zh.wav or cant_cant.wav in
-# the prompts directory (program may fail otherwise).
+# otherLanguages below is a list of auxiliary languages
+# (other than your first and second languages)
+# that you want to learn some phrases in.
+# The same abbreviations are used as with
+# the 1st-language/2nd-language settings.
 
 otherLanguages = ["cant","ko","jp"]
+
+# Note 1: Unfortunately the GUI screens cannot yet show
+# the auxiliary languages, unless you temporarily
+# change your first/second languages and
+# change them back again afterwards.  But they
+# will be used in lessons if you have suitable words
+# in your collection.
+
+# Note 2: For each auxiliary language you learn,
+# you will need to tell Gradint how to say the
+# name of that language.  For example, you can put
+# files cant_en.txt, cant_zh.wav and cant_cant.wav in
+# the prompts directory, to tell Gradint
+# how to say the name of the "cant" language in en, zh or cant
+# (you don't need all of them, but should at least
+# have one in your first or second language).
+# Some have been supplied already, but if
+# you add new languages you'll need to do this.
 
 # possible_otherLanguages (below) is a list of POSSIBLE
 # auxiliary languages.  This should list all the auxiliary
@@ -123,6 +45,22 @@ otherLanguages = ["cant","ko","jp"]
 # ordinary English prompt and might use it wrongly.
 
 possible_otherLanguages = ["cant","ko","jp","en","zh"]
+
+# You can also fill in otherFirstLanguages below
+# (using the same ["item","item"] format) to
+# specify which of the otherLanguages you want to
+# be treated as auxiliary "first" languages.
+# For example, if your first language is Cantonese
+# and you are learning English, but you also speak
+# good Mandarin and have some Mandarin-to-English recordings,
+# then it makes sense to set your first language
+# to "cant", second to "en", and otherFirstLanguages=["zh"]
+# and Gradint will then know that both Cantonese->English
+# and Mandarin->English are acceptable
+# (whereas if you just set otherLanguages=["zh"] then
+# you'll get Cantonese->English and Cantonese->Mandarin)
+
+otherFirstLanguages = []
 
 # You can also add lines in vocab.txt that say
 # "SET LANGUAGE" followed by a list of abbreviations
@@ -139,93 +77,42 @@ possible_otherLanguages = ["cant","ko","jp","en","zh"]
 # where the 2nd column is the prompt phrase and the 1st
 # column is the target word.
 
-# ------- Options for changing the type of lesson ---------
+# ------- GUI "preset collections" buttons ---------
 
-# Maximum length of each lesson, in seconds.
-# Longer than 30 minutes is not recommended.  Shorter may be OK
-# but if you set it less than 5 or 10 minutes then you may
-# have to adjust some of the other parameters and it may not
-# work very well.
+# If you are giving gradint to your students then you might
+# want to bundle it with a pre-made vocabulary collection.
+# If this collection is large then it might be good to let
+# the student choose which sections to learn first.
+# You can have them do that within the GUI:
+# 1.  Put each section in its own directory (as recorded words or .txt
+# files).  Name each directory with a name that ends with exclude_from_scan
+# (default "_disabled"), e.g. unit1words_disabled, extraWords_disabled, etc.
+# 2.  If any words are to be added to vocab.txt by a section, then create
+# a file add-to-vocab.txt in that directory, with the contents (you'd better
+# include a SET LANGUAGE command).  (You don't have to do this; you could
+# just have sampled words and/or words in .txt files.)
+# 3.  If any files are to be added to the student's prompts directory, these
+# can be placed in an add-to-prompts subdirectory of each section (useful if
+# the student already has a gradint installation and you're adding more presets).
+# Similarly, if any language abbreviations are to be added to the student's
+# otherLanguages and possible_otherLanguages variables, these can be listed
+# in a file called add-to-languages.txt (separated by spaces) in each section.
+# 4.  Create a file short-description.txt for each section.  This should be
+# very short because it will be displayed on a button in the GUI.
+# 5. Optionally create long-description.txt for some sections.  This will be
+# displayed in a yes/no box asking the user to confirm their addition.
+# 6. Put all those _disabled directories into the user's samplesDirectory (or
+# drag into the recorded words folder and restart gradint).  You can also
+# put them in the directory above, to avoid confusing any users who open
+# "recorded words".
+# (If you're a developer and have downloaded the Gradint build environment,
+# you can make a version of Gradint's installation files that bundles your
+# presets, by placing the _disabled directories into Gradint's build
+# directory before typing "make".)
 
-maxLenOfLesson = 30*60
-
-# The following variable controls whether or not gradint will
-# save your progress.  If you set it to 0 then the progress
-# will not be saved.  This might be useful for testing.
-
-saveProgress = 1
-
-# Set ask_teacherMode (below) to 1 to enable a rather
-# experimental "teacher assistant mode" designed to help
-# language teachers to use graduated-interval timings
-# in a class.  Instead of playing the lesson, Gradint
-# will tell you when each word is due, and you can choose
-# whether to say it yourself or have the computer say it.
-# Gradint can adapt to some timing fluctuations, but quick
-# reactions are usually needed.  However Gradint does
-# display the next word in advance and give a countdown.
-# It's probably better to use keyboard shortcuts or a
-# touch screen, not a mouse.
-
-ask_teacherMode = 0
-
-# The following settings control various things such as the
-# maximum number of new words introduced in each lesson,
-# etc.  You shouldn't normally have to change any of this
-# unless you have very special requirements.
-# Note: a maximum of -1 means no maximum.
-
-maxNewWords = 5
-maxReviseBeforeNewWords = 3
-newInitialNumToTry = 5
-recentInitialNumToTry = 3
-newWordsTryAtLeast = 3 # if introducing a new word and can't
-# fit in this number of times, don't bother
-knownThreshold = 5 # after which it won't repeat so much
-reallyKnownThreshold = 10 # after which never added before new words
-meaningTestThreshold = 20 # or 0; if >= this then 50% chance of "what meaning" test
-randomDropThreshold = 14 # after which drop some words even if they can fit
-randomDropLevel = 0.67 # fraction of above that is dropped
-randomDropThreshold2 = 35 # (or set to the same as above)
-randomDropLevel2 = 0.97
-shuffleConstant = 2.0 # Used to control how much the number
-# of repetitions matters when it is high.  Higher values of
-# this constant mean it doesn't matter so much and samples
-# that have been repeated a lot will get shuffled more.
-transitionPromptThreshold = 10 # after repeating a prompt
-# this many times, begin transition to target-language prompt
-advancedPromptThreshold = 20 # ONLY use target-language prompt
-transitionPromptThreshold2 = 2 # for 3rd, 4th etc languages
-advancedPromptThreshold2 = 5
-limit_words = max(1,int(maxNewWords * 0.4)) # num words to
-# include from limited directories.  Done separately for
-# EACH limited directory, but limits deeper in the tree are
-# "masked" by higher-level limits (this behaviour may change
-# in future)
-
-# If you set logFile (below) to anything other than None, gradint
-# will try to create a log containing the time at which each
-# word is played.  This can be useful if you have a separate
-# way of logging the time at which you had some trouble
-# (make sure to synchronize with the computer's clock first).
-# (When writing to an output file, the times are in minutes and
-# seconds from the start of the file, but when playing in
-# real-time, actual clock time can be logged.)
-# (Note: Following the log while listening to the lesson
-# may distract you from the audio.  It can however be useful if
-# you need to check something afterwards, especially if you are
-# going over lots of very old words.)
-
-logFile = "log.txt"
-
-# You can set the default number of seconds that the lesson will be
-# interrupted when you press "Brief interrupt".  Don't make this too
-# big, though - Gradint will DROP any graduated-interval sequences that
-# cannot properly fit in as a result of the delay.  (Progress update
-# will reflect this.)  The same thing will happen if Gradint is
-# delayed for other reasons, like Unix process signalling (Ctrl-Z stuff).
-
-briefInterruptLength = 10
+max_extra_buttons = 12
+# - this setting limits the number of "add pre-made collection" buttons that
+# are displayed on the screen at one time.  Set it to 0 to disable this feature.
 
 # ---- Speech synthesis options ---
 
@@ -405,6 +292,10 @@ synthCache_test_mode = 0
 # then Gradint will enter a simple loop that asks for
 # words to synthesize from the terminal (this is the
 # default when the collection is empty and no GUI can run).
+# Note: If using justSynthesize="-" on Unix,
+#    gradint "justSynthesize='-'" < <(command)
+# is easier to interrupt with Ctrl-C than
+#    command | gradint "justSynthesize='-'"
 
 justSynthesize = ""
 
@@ -526,6 +417,191 @@ betweenPhrasePause = 0.3
 # (a bit like the inverse of sporadic synthCache and synthCache_test_mode).
 partials_are_sporadic = 0
 
+# ---- Options for outputting lessons to sound files ------
+
+# Sometimes it is useful to get gradint to output a lesson
+# to a sound file instead of playing it directly, for
+# example if you want to listen to it on a mobile device.
+# To do this without using the GUI, change the value of
+# outputFile (below) to a filename, e.g. outputFile = "myfile.mp3"
+
+outputFile = ""
+
+# Depending on the extension you specify, you will need a
+# copy of LAME (for MP3), TooLame (for MP2), oggenc (for
+# OGG), faac (for AAC) or speexenc (for SPX).  On Windows
+# put the .exe in the gradint folder; on other systems you can
+# put the binary in either the gradint folder or the PATH.
+# You will also need "sox" (you may already have this).
+
+# The Gradint GUI will offer to export to files of any
+# type that it can find encoders for, plus WAV.  So for
+# example if it finds lame, it will give an MP3 option.
+# On Windows (or Cygwin) you can also download
+# Windows Media Encoder from
+# http://www.microsoft.com/windows/windowsmedia/forpros/encoder/default.mspx
+# or http://www.microsoft.com/downloads/details.aspx?FamilyID=5691ba02-e496-465a-bba9-b2f1182cdf24
+# and the Gradint GUI will offer to use this to make WMA files.
+# On Mac it can make AAC files using afconvert if it finds it (10.5+ should have this).
+
+# In each case Gradint uses encoding parameters that have been
+# found to give good compression without sacrificing too
+# much quality for a language-learning application.
+
+# You can also specify .wav, .cdr, .au, etc (only sox is required)
+# but it will be very large.  .wav might be your best option if you
+# want to use a non-commandline music compressor.  .cdr is useful
+# for making old-style audio CDs.
+
+# gradint can also output to .sh (shell-script) files,
+# which, when run, produce wav audio on their standard
+# output for redirecting to an audio encoder or player.
+# These shell-script files store each sample only once and
+# without changing its rate, which means they can be
+# generated very quickly even on a machine with no
+# floating-point processor such as an NAS device.  They do
+# however require sox and floating point at runtime, because
+# the pipe to stdout means they all need to be converted to
+# one rate, but if you're piping to an audio encoder then
+# you probably need more floating-point for that anyway.
+compress_SH = False
+# - set that to True to make the .sh file smaller at the
+# expense of quality.  (Does not include (g)zip compression;
+# you can do that separately.)
+
+# If you specify no extension then gradint will output raw
+# samples.  If outputFile is "-" then gradint will send the
+# raw samples to the standard output for use in a pipe.
+# (You still need sox even for raw samples.)  Additionally,
+# you can specify "-" as a filename followed by any of the
+# above extentions, in which case gradint will write to its
+# standard output in the format appropriate for that extention.
+
+# If you want to append silence to the end of the output
+# (useful if there's going to be another track) then you can
+# set the number of seconds of silence here:
+
+outputFile_appendSilence = 0
+if outputFile.endswith("cdr"): outputFile_appendSilence = 5
+
+# If writing an early lesson to tape for a beginner, it is
+# possible that the long gaps will cause the beginner to
+# think that the tape has finished, even with the "longpause"
+# message in place.  So the following variable sets the
+# minimum length of silence to be replaced by beeps every few
+# seconds.  It is effective only for outputFile (not for
+# playing lessons in real time)
+
+beepThreshold = 20
+
+# You can set the following to "file.wav" for file.wav to be
+# included as an announcement at the start and end
+# respectively.  NB the time taken by this file will be
+# subtracted from the lesson time.
+# (.mp3 is also supported on some systems - see note in samples/README)
+
+startAnnouncement = None
+endAnnouncement = None
+
+# If you want to put additional comments into spare
+# graduated-interval gaps on the first lesson, you can set
+# the following variable to ['comment1.wav','comment2.wav',...]
+# (.mp3 is also supported on some systems - see note in samples/README)
+# commentsToAdd will be added first, in order, then
+# orderlessCommentsToAdd will be added after.
+# (Warning!  If the comments can't fit, program will crash.)
+
+commentsToAdd = None
+orderlessCommentsToAdd = None
+
+# ------- Options for changing the type of lesson ---------
+
+# Maximum length of each lesson, in seconds.
+# Longer than 30 minutes is not recommended.  Shorter may be OK
+# but if you set it less than 5 or 10 minutes then you may
+# have to adjust some of the other parameters and it may not
+# work very well.
+
+maxLenOfLesson = 30*60
+
+# The following variable controls whether or not gradint will
+# save your progress.  If you set it to 0 then the progress
+# will not be saved.  This might be useful for testing.
+
+saveProgress = 1
+
+# Set ask_teacherMode (below) to 1 to enable a rather
+# experimental "teacher assistant mode" designed to help
+# language teachers to use graduated-interval timings
+# in a class.  Instead of playing the lesson, Gradint
+# will tell you when each word is due, and you can choose
+# whether to say it yourself or have the computer say it.
+# Gradint can adapt to some timing fluctuations, but quick
+# reactions are usually needed.  However Gradint does
+# display the next word in advance and give a countdown.
+# It's probably better to use keyboard shortcuts or a
+# touch screen, not a mouse.
+
+ask_teacherMode = 0
+
+# The following settings control various things such as the
+# maximum number of new words introduced in each lesson,
+# etc.  You shouldn't normally have to change any of this
+# unless you have very special requirements.
+# Note: a maximum of -1 means no maximum.
+
+maxNewWords = 5
+maxReviseBeforeNewWords = 3
+newInitialNumToTry = 5
+recentInitialNumToTry = 3
+newWordsTryAtLeast = 3 # if introducing a new word and can't
+# fit in this number of times, don't bother
+knownThreshold = 5 # after which it won't repeat so much
+reallyKnownThreshold = 10 # after which never added before new words
+meaningTestThreshold = 20 # or 0; if >= this then 50% chance of "what meaning" test
+randomDropThreshold = 14 # after which drop some words even if they can fit
+randomDropLevel = 0.67 # fraction of above that is dropped
+randomDropThreshold2 = 35 # (or set to the same as above)
+randomDropLevel2 = 0.97
+shuffleConstant = 2.0 # Used to control how much the number
+# of repetitions matters when it is high.  Higher values of
+# this constant mean it doesn't matter so much and samples
+# that have been repeated a lot will get shuffled more.
+transitionPromptThreshold = 10 # after repeating a prompt
+# this many times, begin transition to target-language prompt
+advancedPromptThreshold = 20 # ONLY use target-language prompt
+transitionPromptThreshold2 = 2 # for 3rd, 4th etc languages
+advancedPromptThreshold2 = 5
+limit_words = max(1,int(maxNewWords * 0.4)) # num words to
+# include from limited directories.  Done separately for
+# EACH limited directory, but limits deeper in the tree are
+# "masked" by higher-level limits (this behaviour may change
+# in future)
+
+# If you set logFile (below) to anything other than None, gradint
+# will try to create a log containing the time at which each
+# word is played.  This can be useful if you have a separate
+# way of logging the time at which you had some trouble
+# (make sure to synchronize with the computer's clock first).
+# (When writing to an output file, the times are in minutes and
+# seconds from the start of the file, but when playing in
+# real-time, actual clock time can be logged.)
+# (Note: Following the log while listening to the lesson
+# may distract you from the audio.  It can however be useful if
+# you need to check something afterwards, especially if you are
+# going over lots of very old words.)
+
+logFile = "log.txt"
+
+# You can set the default number of seconds that the lesson will be
+# interrupted when you press "Brief interrupt".  Don't make this too
+# big, though - Gradint will DROP any graduated-interval sequences that
+# cannot properly fit in as a result of the delay.  (Progress update
+# will reflect this.)  The same thing will happen if Gradint is
+# delayed for other reasons, like Unix process signalling (Ctrl-Z stuff).
+
+briefInterruptLength = 10
+
 # ------- Where to find files and directories ---------
 
 # Normally these settings are OK but in some circumstances
@@ -571,43 +647,6 @@ import_recordings_from = [r"\My Documents", r"\Storage Card\My Documents", r"\Ra
 # into even numbered files.
 # This can be useful to catch words with the Notes app on a PocketPC
 # (which saves its recordings to \My Documents by default).
-
-# ------- GUI "preset collections" buttons ---------
-
-# If you are giving gradint to your students then you might
-# want to bundle it with a pre-made vocabulary collection.
-# If this collection is large then it might be good to let
-# the student choose which sections to learn first.
-# You can have them do that within the GUI:
-# 1.  Put each section in its own directory (as recorded words or .txt
-# files).  Name each directory with a name that ends with exclude_from_scan
-# (default "_disabled"), e.g. unit1words_disabled, extraWords_disabled, etc.
-# 2.  If any words are to be added to vocab.txt by a section, then create
-# a file add-to-vocab.txt in that directory, with the contents (you'd better
-# include a SET LANGUAGE command).  (You don't have to do this; you could
-# just have sampled words and/or words in .txt files.)
-# 3.  If any files are to be added to the student's prompts directory, these
-# can be placed in an add-to-prompts subdirectory of each section (useful if
-# the student already has a gradint installation and you're adding more presets).
-# Similarly, if any language abbreviations are to be added to the student's
-# otherLanguages and possible_otherLanguages variables, these can be listed
-# in a file called add-to-languages.txt (separated by spaces) in each section.
-# 4.  Create a file short-description.txt for each section.  This should be
-# very short because it will be displayed on a button in the GUI.
-# 5. Optionally create long-description.txt for some sections.  This will be
-# displayed in a yes/no box asking the user to confirm their addition.
-# 6. Put all those _disabled directories into the user's samplesDirectory (or
-# drag into the recorded words folder and restart gradint).  You can also
-# put them in the directory above, to avoid confusing any users who open
-# "recorded words".
-# (If you're a developer and have downloaded the Gradint build environment,
-# you can make a version of Gradint's installation files that bundles your
-# presets, by placing the _disabled directories into Gradint's build
-# directory before typing "make".)
-
-max_extra_buttons = 12
-# - this setting limits the number of "add pre-made collection" buttons that
-# are displayed on the screen at one time.  Set it to 0 to disable this feature.
 
 # ------- GUI translation dictionary ---------
 

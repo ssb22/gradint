@@ -626,7 +626,7 @@ class RecorderControls:
             else: return 0
         l.sort(cmpfunc)
         self.has_variants = check_has_variants(self.currentDir,l)
-        allLangs = list2set([firstLanguage,secondLanguage]+possible_otherLanguages+otherLanguages)
+        allLangs = list2set([firstLanguage,secondLanguage]+possible_otherLanguages)
         hadDirectories = False
         for fname in l:
             flwr = fname.lower() ; isMeaning=0
