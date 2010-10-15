@@ -346,7 +346,7 @@ class ESpeakSynth(Synth):
             if placeStat==tuple(os.stat(self.place)): self.translitCache = tc # otherwise regenerate it because eSpeak installation has changed (TODO if you overwrite an existing _dict file in-place, it might not update the stat() of espeak-data and the cache might not be re-generated when it should; espeak's --compile seems ok though)
         if self.place: self.place=self.place[:self.place.rindex(os.sep)] # drop the \espeak-data, so can be used in --path=
     def _add_lang(self,lang,fname):
-        if ("-" in lang and not lang=="zh-yue") or "~" in lang: return # variants and emacs backup files
+        if "~" in lang: return # emacs backup files
         self.languages[lang]=fname
         for l in open(self.place+os.sep+"voices"+os.sep+fname).read(256).replace("\r","\n").split("\n"):
             if l.startswith("language "):
@@ -360,6 +360,7 @@ class ESpeakSynth(Synth):
         ret=[]
         items=self.languages.items() ; items.sort()
         for k,v in items:
+            if "-" in k and not k=="zh-yue": continue # skip variants in the report (but do recognise them)
             o=open(self.place+os.sep+"espeak-data"+os.sep+"voices"+os.sep+v)
             line=""
             for t in range(10):
