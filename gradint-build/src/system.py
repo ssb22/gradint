@@ -221,7 +221,7 @@ def readSettings(f):
 dir1 = list2set(dir()+["dir1","f","last_u8strip_found_BOM"])
 for f in configFiles: readSettings(f)
 for d in dir():
-  if not d in dir1 and eval(d): # (ignore unrecognised options that evaluate false - these might be an OLD unused option with a newer gradint rather than vice versa)
+  if not d in dir1 and eval(d) and not type(eval(d))==type(lambda *args:0): # (ignore unrecognised options that evaluate false - these might be an OLD unused option with a newer gradint rather than vice versa; also ignore functions as these could be used in command-line parameters)
     show_warning("Warning: Unrecognised option in config files: "+d)
 del dir1
 GUI_translations_old.update(GUI_translations) ; GUI_translations = GUI_translations_old # in case more have been added since advanced.txt last update

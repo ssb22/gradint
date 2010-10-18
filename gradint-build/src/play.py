@@ -391,8 +391,8 @@ class SoundCollector(object):
     def tell(self):
         # How many seconds have we had?  (2 because 16-bit)
         return 1.0*self.theLen/self.rate/2
-    def addSilence(self,seconds):
-        if seconds > beepThreshold: return self.addBeeps(seconds)
+    def addSilence(self,seconds,maybeBeep=True):
+        if maybeBeep and seconds > beepThreshold: return self.addBeeps(seconds)
         self.silences.append(seconds)
         # Must add an integer number of samples
         sampleNo = int(0.5+seconds*self.rate)

@@ -1666,3 +1666,4 @@ def rest_of_main():
     if exitStatus: sys.exit(exitStatus)
 
 if __name__=="__main__": main() # Note: calling main() is the ONLY control logic that can happen under the 'if __name__=="__main__"' block; everything else should be in main() itself.  This is because gradint-wrapper.exe under Windows calls main() from the exe and does not call this block
+
