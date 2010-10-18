@@ -74,7 +74,7 @@ def import_recordings(destDir=None):
                     try:
                         import shutil
                         shutil.copy2(importDir+os.sep+f,destDir+os.sep+f)
-                    except: open(destDir+os.sep+f,"wb").write(importDir+os.sep+f).read()
+                    except: open(destDir+os.sep+f,"wb").write(read(importDir+os.sep+f))
                     os.remove(importDir+os.sep+f)
                 numFound += 1
     if numFound: open(destDir+os.sep+"settings"+dottxt,"w").write("firstLanguage=\""+firstLanguage+"\"\nsecondLanguage=\""+secondLanguage+"\"\n")
@@ -103,7 +103,7 @@ def getLsDic(directory):
     except: return {} # (can run without a 'samples' directory at all if just doing synth)
     if "settings"+dottxt in ls:
         # Sort out the o/p from import_recordings (and legacy record-with-HDogg.bat if anyone's still using that)
-        oddLanguage,evenLanguage = exec_in_a_func(u8strip(open(directory+os.sep+"settings"+dottxt,"rb").read().replace("\r\n","\n")).strip(wsp))
+        oddLanguage,evenLanguage = exec_in_a_func(u8strip(read(directory+os.sep+"settings"+dottxt).replace("\r\n","\n")).strip(wsp))
         if oddLanguage==evenLanguage: oddLanguage,evenLanguage="_"+oddLanguage,"-meaning_"+evenLanguage # if user sets languages the same, assume they want -meaning prompts
         else: oddLanguage,evenLanguage="_"+oddLanguage,"_"+evenLanguage
         for f in ls:
@@ -246,11 +246,10 @@ def parseSynthVocab(fname,forGUI=0):
     ret = []
     count = 1 ; doLimit = 0 ; limitNo = 0 ; doPoetry = 0
     lastPromptAndWord = None
-    try: o=open(fname,"rb")
-    except IOError: return []
+    if not fileExists(fname): return []
     if not emptyCheck_hack: doLabel("Reading "+fname)
     allLangs = list2set([firstLanguage,secondLanguage]+otherLanguages)
-    for l in u8strip(o.read()).replace("\r","\n").split("\n"):
+    for l in u8strip(read(fname)).replace("\r","\n").split("\n"):
         # TODO can we make this any faster on WinCE with large vocab lists? (tried SOME optimising already)
         if not "=" in l: # might be a special instruction
             if not l: continue

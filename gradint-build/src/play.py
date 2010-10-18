@@ -346,7 +346,7 @@ def rough_guess_mp3_length(fname):
 
 def filelen(fname):
     try: fileLen=os.stat(fname).st_size
-    except: fileLen=len(open(fname,'rb').read())
+    except: fileLen=len(read(fname))
     return fileLen
 
 def lengthOfSound(file):
@@ -418,7 +418,7 @@ class SoundCollector(object):
             self.addSilence(betweenBeeps/2.0)
             if riscos_sound:
                 os.system(beepCmd() % (self.soxParams(),"tmp0"))
-                data=open("tmp0","rb").read() ; os.unlink("tmp0")
+                data=read("tmp0") ; os.unlink("tmp0")
             else: data=os.popen((beepCmd() % (self.soxParams(),"-")),"rb").read()
             outfile_writeBytes(self.o,data)
             self.theLen += len(data)
@@ -573,7 +573,7 @@ def decode_mp3(file):
     if riscos_sound:
         warn_sox_decode()
         os.system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
-        data=open("tmp0","rb").read() ; os.unlink("tmp0")
+        data=read("tmp0") ; os.unlink("tmp0")
         return data
     elif madplay_program or got_program("mpg123"):
         oldDir = os.getcwd()

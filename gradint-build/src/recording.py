@@ -46,7 +46,7 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
             if filelen(fileToPlay)<1048576:
                 # only small - copy to temp 1st
                 self.fileToDel = os.tempnam()+fileToPlay[fileToPlay.rfind(extsep):]
-                open(self.fileToDel,"wb").write(open(fileToPlay,"rb").read())
+                open(self.fileToDel,"wb").write(read(fileToPlay))
                 fileToPlay=self.fileToDel
             else: open(fileToPlay)
         if fileToPlay.lower().endswith(dotwav) and filelen(fileToPlay)<1048576: self.sound=tkSnack.Sound(load=fileToPlay) # in-memory if <1M (saves problems with Windows keeping them open even after object deleted), TODO is this still needed now that .destroy() is called properly?  (but might be a good idea to keep it in anyway)
@@ -274,7 +274,7 @@ class RecorderControls:
         if col==0: self.coords2buttons[(row,col)].bind('<Button-1>',lambda *args:self.startRename(row,col,utext))
     def makeLabel_lenLimit(self,utext): return Tkinter.Label(self.grid,text=utext,wraplength=int(self.ourCanvas.winfo_screenwidth()/(1+len(self.languagesToDraw))))
     def addSynthLabel(self,filename,row,col):
-        try: ftext = ensure_unicode(u8strip(open(filename).read().strip(wsp)))
+        try: ftext = ensure_unicode(u8strip(read(filename).strip(wsp)))
         except IOError: return False
         l = self.makeLabel_lenLimit(ftext)
         l.grid(row=row,column=col,columnspan=2,sticky="w")
@@ -286,7 +286,7 @@ class RecorderControls:
           self.cancelRename(rr,cc)
         if l: l.grid_forget()
         editText,editEntry = addTextBox(self.grid,"nopack")
-        try: editText.set(ensure_unicode(u8strip(open(filename).read().strip(wsp))))
+        try: editText.set(ensure_unicode(u8strip(read(filename).strip(wsp))))
         except IOError: pass
         editEntry.grid(row=row,column=col,sticky='we',columnspan=2)
         editEntry.bind('<Return>',lambda *args:self.doEdit(editText,editEntry,row,col,filename))
@@ -644,8 +644,8 @@ class RecorderControls:
                         focusButton(self.coords2buttons[(curRow,0)])
                         dirToHighlight = None # done
                     curRow += 1
-                    if fileExists(self.currentDir+os.sep+fname+os.sep+longDescriptionName): description=u8strip(open(self.currentDir+os.sep+fname+os.sep+longDescriptionName).read()).strip(wsp)
-                    elif fileExists(self.currentDir+os.sep+fname+os.sep+shortDescriptionName): description=u8strip(open(self.currentDir+os.sep+fname+os.sep+shortDescriptionName).read()).strip(wsp)
+                    if fileExists(self.currentDir+os.sep+fname+os.sep+longDescriptionName): description=u8strip(read(self.currentDir+os.sep+fname+os.sep+longDescriptionName)).strip(wsp)
+                    elif fileExists(self.currentDir+os.sep+fname+os.sep+shortDescriptionName): description=u8strip(read(self.currentDir+os.sep+fname+os.sep+shortDescriptionName)).strip(wsp)
                     else: description=None
                     if description:
                         l = Tkinter.Label(self.grid,text="     "+description,wraplength=self.ourCanvas.winfo_screenwidth())

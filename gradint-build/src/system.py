@@ -212,8 +212,9 @@ def exc_info(inGradint=True):
     del tbObj
     return w
 
+def read(fname): return open(fname,"rb").read()
 def readSettings(f):
-   try: fdat = unicode(u8strip(open(f,"rb").read()).replace("\r","\n"),"utf-8")
+   try: fdat = unicode(u8strip(read(f)).replace("\r","\n"),"utf-8")
    except: return show_warning("Warning: Could not load "+f+" (problem reading or decoding utf-8)")
    try: exec(fdat) in globals()
    except: show_warning("Warning: Could not load "+f+" ("+exc_info(False)+")")
@@ -243,11 +244,18 @@ if len(sys.argv)>1:
     progressFileBackup=logFile=None
     exec(" ".join(sys.argv[1:]))
 
-# Paranoid file management option.  Can't go any earlier than this because must parse advanced.txt first.  At least fileExists should call the new version of open() after this happens.
+# Paranoid file management option.  Can't go any earlier than this because must parse advanced.txt first.
 if paranoid_file_management:
+  # For ftpfs etc.  Retry on errno 13 (permission denied), and turn append into a copy.  Otherwise occasionally get vocab.txt truncated.
   _old_open = open
+  def tryIO(func):
+    for tries in range(10)+["last"]:
+        try: return func()
+        except IOError,err:
+            if tries=="last" or not err.errno==13: raise
+            time.sleep(0.5)
+  def read(file): return tryIO(lambda x=file:_old_open(x,"rb").read())
   def open(file,mode="r"):
-    # For ftpfs etc.  Retry on errno 13 (permission denied), and turn append into a copy.  Otherwise occasionally get vocab.txt truncated.
     if "a" in mode:
         try: dat = open(file,mode.replace("a","r")).read()
         except IOError,err:
@@ -258,11 +266,7 @@ if paranoid_file_management:
         o=open(file,mode.replace("a","w"))
         o.write(dat)
         return o
-    for tries in range(10)+["last"]:
-        try: return _old_open(file,mode)
-        except IOError,err:
-            if tries=="last" or not err.errno==13: raise
-            time.sleep(0.5)
+    return tryIO(lambda x=file,m=mode:_old_open(x,m))
 
 # Different extension separators again
 if not extsep==".":
@@ -316,7 +320,7 @@ if macsound:
     if fileExists(f): # we might be able to patch this one up
      if not isDirectory("Frameworks") and fileExists("Frameworks.tbz"): os.system("tar -jxvf Frameworks.tbz && rm Frameworks.tbz && chmod -R +w Frameworks")
      if isDirectory("Frameworks"):
-      if not fileExists("_tkinter.so"): open("_tkinter.so","w").write(open(f).read().replace("/System/Library/Frameworks/T","/tmp/gradint-Tk-Frameworks/T").replace("/Versions/8.4/","/Versions/8.6/").replace("/Versions/8.5/","/Versions/8.6/"))
+      if not fileExists("_tkinter.so"): open("_tkinter.so","w").write(read(f).replace("/System/Library/Frameworks/T","/tmp/gradint-Tk-Frameworks/T").replace("/Versions/8.4/","/Versions/8.6/").replace("/Versions/8.5/","/Versions/8.6/"))
       os.system('ln -fs "$(pwd)/Frameworks" /tmp/gradint-Tk-Frameworks') # must be same length as /System/Library/Frameworks
       sys.path.insert(0,os.getcwd()) ; import _tkinter ; del sys.path[0]
       _tkinter.TK_VERSION = _tkinter.TCL_VERSION = "8.6"

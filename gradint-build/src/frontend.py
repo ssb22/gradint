@@ -303,7 +303,7 @@ def make_output_row(parent):
 def updateSettingsFile(fname,newVals):
     # leaves comments etc intact, but TODO does not cope with changing variables that have been split over multiple lines
     replacement_lines = []
-    try: oldLines=u8strip(open(fname,"rb").read()).replace("\r\n","\n").split("\n")
+    try: oldLines=u8strip(read(fname)).replace("\r\n","\n").split("\n")
     except IOError: oldLines=[]
     for l in oldLines:
         found=0
@@ -341,8 +341,8 @@ shortDescriptionName = "short-description"+dottxt
 longDescriptionName = "long-description"+dottxt
 class ExtraButton(object):
     def __init__(self,directory):
-        self.shortDescription = u8strip(open(directory+os.sep+shortDescriptionName).read()).strip(wsp)
-        if fileExists(directory+os.sep+longDescriptionName): self.longDescription = u8strip(open(directory+os.sep+longDescriptionName).read()).strip(wsp)
+        self.shortDescription = u8strip(read(directory+os.sep+shortDescriptionName)).strip(wsp)
+        if fileExists(directory+os.sep+longDescriptionName): self.longDescription = u8strip(read(directory+os.sep+longDescriptionName)).strip(wsp)
         else: self.longDescription = self.shortDescription
         self.directory = directory
     def add(self):
@@ -368,13 +368,13 @@ class ExtraButton(object):
             which_collection = localise(" has been added to your collection.")
             o=open(vocabFile,"a")
             o.write("# --- BEGIN "+self.shortDescription+" ---\n")
-            o.write(u8strip(open(newName+os.sep+"add-to-vocab"+dottxt,"rb").read()).strip(wsp)+"\n")
+            o.write(u8strip(read(newName+os.sep+"add-to-vocab"+dottxt)).strip(wsp)+"\n")
             o.write("# ----- END "+self.shortDescription+" ---\n")
             if hasattr(app,"vocabList"): del app.vocabList # so re-reads
             os.remove(newName+os.sep+"add-to-vocab"+dottxt)
         if fileExists(newName+os.sep+"add-to-languages"+dottxt):
             changed = 0
-            for lang in u8strip(open(newName+os.sep+"add-to-languages"+dottxt,"rb").read()).strip(wsp).split():
+            for lang in u8strip(read(newName+os.sep+"add-to-languages"+dottxt)).strip(wsp).split():
                 if not lang in [firstLanguage,secondLanguage]+otherLanguages:
                     otherLanguages.append(lang) ; changed = 1
             if changed: sanitise_otherLanguages(), updateSettingsFile("advanced"+dottxt,{"otherLanguages":otherLanguages,"possible_otherLanguages":possible_otherLanguages})
@@ -1025,7 +1025,7 @@ def readText(l): # see utils/transliterate.py (running guiVocabList on txt files
         varList = filter(lambda x:x.endswith(dottxt),variantFiles[l])
         varList.sort() # so at least it consistently returns the same one.  TODO utils/ cache-synth.py list-synth.py synth-batchconvert-helper.py all use readText() now, can we get them to cache the other variants too?
         l = lp + varList[0]
-    return u8strip(open(l,"rb").read()).strip(wsp)
+    return u8strip(read(l)).strip(wsp)
 
 def singular(number,s):
   s=localise(s)
@@ -1237,7 +1237,7 @@ def s60_viewVocab():
 
 def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
     langs = [secondLanguage,firstLanguage]
-    v=u8strip(open(vocabFile,"rb").read()).replace("\r\n","\n").replace("\r","\n")
+    v=u8strip(read(vocabFile)).replace("\r\n","\n").replace("\r","\n")
     o=open(vocabFile,"w") ; found = 0
     if last_u8strip_found_BOM: o.write('\xef\xbb\xbf') # re-write it
     v=v.split("\n")
@@ -1342,7 +1342,7 @@ def gui_event_loop():
                     braveUser = 1 ; fileToEdit=app.fileToEdit
                     if not fileExists(fileToEdit): open(fileToEdit,"w") # at least make sure it exists
                     if textEditorWaits:
-                        oldContents = open(fileToEdit,"rb").read()
+                        oldContents = read(fileToEdit)
                         if paranoid_file_management: # run the editor on a temp file instead (e.g. because gedit can fail when saving over ftpfs)
                             fileToEdit=os.tempnam()+dottxt
                             open(fileToEdit,"w").write(oldContents)
@@ -1353,7 +1353,7 @@ def gui_event_loop():
                         t = time.time()
                         system(cmd)
                         if time.time() < t+3: waitOnMessage(textEditorName+" returned control to Gradint in less than 3 seconds.  Perhaps you already had an instance running and it loaded the file remotely.  Press OK when you have finished editing the file.")
-                        newContents = open(fileToEdit,"rb").read()
+                        newContents = read(fileToEdit)
                         if not newContents==oldContents:
                             if paranoid_file_management: open(app.fileToEdit,"w").write(newContents)
                             if app.fileToEdit==vocabFile: del app.vocabList # re-read
@@ -1507,7 +1507,7 @@ def gui_event_loop():
 
 def vocabLinesWithLangs(): # used for merging different users' vocab files
     langs = [secondLanguage,firstLanguage] ; ret = []
-    try: v=u8strip(open(vocabFile,"rb").read()).replace("\r","\n")
+    try: v=u8strip(read(vocabFile)).replace("\r","\n")
     except IOError: v=""
     for l in v.split("\n"):
         l2=l.lower()
@@ -1518,7 +1518,7 @@ def vocabLinesWithLangs(): # used for merging different users' vocab files
 def appendVocabFileInRightLanguages():
     # check if we need a SET LANGUAGE
     langs = [secondLanguage,firstLanguage]
-    try: v=u8strip(open(vocabFile,"rb").read()).replace("\r","\n")
+    try: v=u8strip(read(vocabFile)).replace("\r","\n")
     except IOError: v=""
     for l in v.split("\n"):
         l2=l.lower()
@@ -1643,11 +1643,13 @@ def rest_of_main():
                 if traceback: w += "Details have been written to "+os.getcwd()+os.sep+"last-gradint-error"+extsep+"txt" # do this only if there's a traceback, otherwise little point
             except: pass
         try: # audio warning in case was away from computer.  Do this last as it may overwrite the exception.
+            global soundCollector
+            if app: soundCollector=0
             if not soundCollector and get_synth_if_possible("en",0): synth_event("en","Error in graddint program.").play() # if possible, give some audio indication of the error (double D to try to force correct pronunciation if not eSpeak, e.g. S60)
         except: pass
         waitOnMessage(w.strip())
         if not useTK:
-            if tracebackFile: sys.stderr.write(open("last-gradint-error"+extsep+"txt").read())
+            if tracebackFile: sys.stderr.write(read("last-gradint-error"+extsep+"txt"))
             elif traceback: traceback.print_exc() # will be wrong if there was an error in speaking
         exitStatus = 1
         if appuifw: raw_input() # so traceback stays visible

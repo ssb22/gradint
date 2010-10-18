@@ -39,7 +39,7 @@ class Partials_Synth(Synth):
         # the first syllable in 1st list can optionally be the header file to use
         fname = os.tempnam()+dotwav
         o=open(fname,"wb")
-        if not (text and text[0] and text[0][0].endswith(dotwav)): o.write(open(partialsDirectory+os.sep+"header"+dotwav,"rb").read())
+        if not (text and text[0] and text[0][0].endswith(dotwav)): o.write(read(partialsDirectory+os.sep+"header"+dotwav))
         for phrase in text:
             datFileInUse = 0
             for f in phrase:
@@ -47,7 +47,7 @@ class Partials_Synth(Synth):
                     datFile,offset,size = audioDataPartials[f]
                     if not datFileInUse: datFileInUse = open(partialsDirectory+os.sep+datFile,"rb")
                     datFileInUse.seek(offset) ; o.write(datFileInUse.read(size))
-                else: o.write(open(partialsDirectory+os.sep+f,"rb").read())
+                else: o.write(read(partialsDirectory+os.sep+f))
             if not phrase==text[-1]: o.write(chr(0)*partials_raw_0bytes)
         # MUST fix the length, for Windows etc:
         wavLen = o.tell()-8
@@ -65,7 +65,7 @@ def fileToEvent(fname,dirBase=None):
     if dirBase+fname in variantFiles:
         variantFiles[dirBase+fname]=variantFiles[dirBase+fname][1:]+[variantFiles[dirBase+fname][0]] # cycle through the random order of variants
         fname=variantFiles[dirBase+fname][0]
-    if fname.lower().endswith(dottxt) and "_" in fname: fname = "!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+'_'+lang
+    if fname.lower().endswith(dottxt) and "_" in fname: fname = "!synth:"+u8strip(read(dirBase+fname)).strip(wsp)+'_'+lang
     if fname.find("!synth:")>-1:
         s = synthcache_lookup(fname)
         if type(s)==type([]): # trying to synth from partials
@@ -113,7 +113,7 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
     if dirBase: dirBase += os.sep
     if not lang: lang = languageof(fname)
     if fname.lower().endswith(dottxt):
-        try: fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(open(dirBase+fname,"rb").read()).strip(wsp)+"_"+lang
+        try: fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(read(dirBase+fname)).strip(wsp)+"_"+lang
         except IOError: return 0,0 # probably trying to synthcache_lookup a file with variants without first choosing a variant (e.g. in anticipation() to check for sporadic cache entries in old words) - just ignore this
     text = textof(fname)
     useSporadic = -1 # undecided (no point accumulating counters for potentially-unbounded input)

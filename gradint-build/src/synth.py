@@ -137,7 +137,7 @@ class PttsSynth(Synth):
         if cygwin: self.lily_file = win2cygwin(lily_file)
         else: self.lily_file = lily_file
         if fileExists(self.lily_file):
-            self.old_lily_data=open(self.lily_file,"rb").read()
+            self.old_lily_data=read(self.lily_file)
             if "zh" in sapiVoices and sapiVoices["zh"][0].lower()=="vw lily": del sapiVoices["zh"] # because we don't want to bypass our own interface to lily if a user set that without realising it's not needed
         else: self.lily_file = None
     def supports_language(self,lang): return lang in sapiVoices or lang=="en" or (self.lily_file and lang=="zh")
@@ -180,7 +180,7 @@ class PttsSynth(Synth):
             self.sapi_unicode("VW Lily",self.preparePinyinPhrase(text),fname,16000,speed=sapiSpeeds.get(lang,None))
             self.restore_lily_dict()
         os.chdir(oldcwd)
-        d = sapi_sox_bug_workaround(open(fname,"rb").read()); open(fname,"wb").write(d)
+        d = sapi_sox_bug_workaround(read(fname)); open(fname,"wb").write(d)
         if cygwin: os.system("chmod -x '"+fname+"'")
         return fname
     def preparePinyinPhrase(self,pinyin):
@@ -433,7 +433,7 @@ class ESpeakSynth(Synth):
         while True:
             if firstIter: firstIter -= 1
             else: time.sleep(0.2)
-            try: dat=open(u""+expectedOutputFile,"rb").read()
+            try: dat=read(u""+expectedOutputFile)
             except: continue # error on trying to read output
             if not dat: continue # output read as empty
             if expectedOutputFile.endswith(dotwav) and (len(dat)<8 or dat[6:8]=="\xff\x7f"): continue # length field not yet written

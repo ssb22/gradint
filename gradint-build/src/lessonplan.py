@@ -35,7 +35,7 @@ class ProgressDatabase(object):
                 else: variantList = [ff]
                 l=languageof(ff)
                 for f in variantList:
-                  if f.lower().endswith(dottxt): text=u8strip(open(dirBase+f,"rb").read()).strip(wsp)
+                  if f.lower().endswith(dottxt): text=u8strip(read(dirBase+f)).strip(wsp)
                   elif f.find("!synth")==-1: continue # don't need to translit. filenames of wav's etc
                   else: text = textof(f)
                   if not l in tList: tList[l]={}
@@ -68,7 +68,7 @@ class ProgressDatabase(object):
             if compress_progress_file or (unix and got_program("gzip")):
                 if paranoid_file_management: open(progressFile) # ensure ready
                 expr = os.popen('gzip -fdc "'+progressFile+'"',"rb").read()
-            else: expr = open(progressFile,"rb").read()
+            else: expr = read(progressFile)
         else: expr = None
         if expr:
             expr = u8strip(expr) # just in case progress.txt has been edited in Notepad
@@ -110,7 +110,7 @@ class ProgressDatabase(object):
                 shutil.copy2(progressFile,progressFileBackup) # preserve timestamp etc if shutil is available
             except:
                 try:
-                    open(progressFileBackup,'wb').write(open(progressFile,'rb').read())
+                    open(progressFileBackup,'wb').write(read(progressFile))
                 except IOError: pass # maybe progressFile not made yet
             progressFileBackup = None
         while True:
