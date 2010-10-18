@@ -930,7 +930,7 @@ class ShellEvent(Event): # used in just_synthesize below, and in concatenative s
             for e in self.equivalent_event_list:
                 if type(e)==type([]): # we have a list of lists-separated-by-pauses
                     for ee in e: ee.play()
-                elif e.__class__==Event: soundCollector.addSilence(e.length)
+                elif e.__class__==Event: soundCollector.addSilence(e.length,False)
                 else: e.play()
             return
         elif hasattr(self,"VolReplace"): r = system(self.command.replace("$Vol$",str(eval(self.VolReplace))))

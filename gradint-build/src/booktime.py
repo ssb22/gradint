@@ -92,7 +92,10 @@ class Event (GlueOrEvent):
         # Playing a "silence event".  Normally don't need to do anything.
         # However, if playing in real time and the scheduler is behind, then
         # this delay is probably important - so have at least most of it.
-        if not soundCollector: mysleep(min(3,self.length*0.7))
+        # AND if not real-time then we DON'T want to beep during this silence
+        # (long-phrase/pause/long-answer is different from pause between sequences)
+        if soundCollector: soundCollector.addSilence(self.length*0.7,False)
+        else: mysleep(min(3,self.length*0.7))
 class CompositeEvent (Event):
     # An event made up of several others in sequence with
     # nothing intervening

@@ -506,8 +506,8 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,) # S=script P=params for sox (ignor
         self.bytesWritten = len(start) # need to keep a count because it might be stdout
         self.commands.append("sox $P - -t wav - </dev/null 2>/dev/null") # get the wav header with unspecified length
     def tell(self): return self.seconds
-    def addSilence(self,seconds):
-        if seconds > beepThreshold: return self.addBeeps(seconds)
+    def addSilence(self,seconds,maybeBeep=True):
+        if maybeBeep and seconds > beepThreshold: return self.addBeeps(seconds)
         # Must add an integer number of samples
         sampleNo = int(0.5+seconds*44100)
         if not sampleNo: sampleNo=1 # so don't lock on rounding errors (however this is not worth a separate dd command, hence condition below)
@@ -549,7 +549,7 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,) # S=script P=params for sox (ignor
             self.lastProgress = int(self.seconds*100/lessonLen)
             self.commands.append("C %d" % self.lastProgress)
     def finished(self):
-        if outputFile_appendSilence: self.addSilence(outputFile_appendSilence)
+        if outputFile_appendSilence: self.addSilence(outputFile_appendSilence,False)
         outfile_writeBytes(self.o,"\n") # so "tail" has a start of a line
         self.commands.append("C 100;echo 1>&2;exit")
         for c in self.commands: outfile_writeBytes(self.o,c+"\n")

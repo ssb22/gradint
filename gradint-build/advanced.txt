@@ -417,7 +417,7 @@ betweenPhrasePause = 0.3
 # (a bit like the inverse of sporadic synthCache and synthCache_test_mode).
 partials_are_sporadic = 0
 
-# ---- Options for outputting lessons to sound files ------
+# ---- Options for outputting lessons to sound files and adding comments ------
 
 # Sometimes it is useful to get gradint to output a lesson
 # to a sound file instead of playing it directly, for
