@@ -514,6 +514,9 @@ endAnnouncement = None
 commentsToAdd = None
 orderlessCommentsToAdd = None
 
+# See also the readme file in the samples directory
+# for how to add introductory comments to specific words etc.
+
 # ------- Options for changing the type of lesson ---------
 
 # Maximum length of each lesson, in seconds.
