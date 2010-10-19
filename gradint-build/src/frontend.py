@@ -389,6 +389,7 @@ class ExtraButton(object):
         self.button.pack_forget()
         app.extra_button_callables.remove(self)
         if extra_buttons_waiting_list: app.add_extra_button()
+        app.wordsExist = 1
         if tkMessageBox.askyesno(app.master.title(),unicode(self.shortDescription,"utf-8")+which_collection+"\n"+localise("Do you want to start learning immediately?")): app.makelesson()
 
 extra_buttons_waiting_list = []
@@ -1325,7 +1326,6 @@ def gui_event_loop():
             if not app: return # (closed by the close box)
             else: app.todo.set_main_menu = 1
         elif menu_response=="edit":
-            app.wordsExist=1
             if not braveUser and fileExists(vocabFile) and open(vocabFile).readline().find("# This is vocab.txt.")==-1: braveUser=1
             if winCEsound:
                 if braveUser or getYN("You must read what it says and keep to the same format.  Continue?"):
@@ -1356,7 +1356,8 @@ def gui_event_loop():
                         newContents = read(fileToEdit)
                         if not newContents==oldContents:
                             if paranoid_file_management: open(app.fileToEdit,"w").write(newContents)
-                            if app.fileToEdit==vocabFile: del app.vocabList # re-read
+                            if app.fileToEdit==vocabFile:
+                                app.wordsExist=1 ; del app.vocabList # re-read
                             else: waitOnMessage("The changes you made to "+app.fileToEdit+" will take effect when you quit Gradint and start it again.")
                         del oldContents,newContents
                         if paranoid_file_management: os.remove(fileToEdit) # the temp file
@@ -1666,4 +1667,3 @@ def rest_of_main():
     if exitStatus: sys.exit(exitStatus)
 
 if __name__=="__main__": main() # Note: calling main() is the ONLY control logic that can happen under the 'if __name__=="__main__"' block; everything else should be in main() itself.  This is because gradint-wrapper.exe under Windows calls main() from the exe and does not call this block
-
