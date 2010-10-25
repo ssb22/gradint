@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9963 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9964 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -481,24 +481,32 @@ def startTk():
             self.Cancel = addButton(self.CancelRow,text,self.cancel,{"side":"left"})
             self.CancelRow.pack()
         def set_statusline(self,text): # ONLY from callbacks
-            if not hasattr(self,"ListBox"): return # status changes on main screen can cause too much jumping
+            if GUI_omit_statusline or not hasattr(self,"ListBox"): return # status changes on main screen can cause too much jumping
             if not "\n" in text: text += "\n(TODO: Make that a 2-line message)" # being 2 lines helps to reduce flashing problems.  but don't want to leave 2nd line blank.
             self.Version["text"] = text
+            self.balance_statusline,self.pollInterval = self.pollInterval,10
         def restore_statusline(self,*args): # ONLY from callbacks
             if not hasattr(self,"ListBox"): return
             # self.Version["text"] = self.copyright_string
             self.Version["text"] = "\n"
         def restore_copyright(self,*args): self.Version["text"] = self.copyright_string
         def addOrTestScreen_poll(self):
+            if hasattr(self,"balance_statusline"): # try to prevent flashing on some systems/languages due to long statusline causing window resize which then takes the mouse out of the button that set the long statusline etc
+                if self.Version.winfo_reqwidth() > self.ListBox.winfo_reqwidth(): self.ListBox["width"] = int(self.ListBox["width"])+1
+                else:
+                    self.pollInterval = self.balance_statusline
+                    del self.balance_statusline
             self.sync_listbox_etc()
             if self.ListBox.curselection():
                 if not self.change_button_shown:
                     self.ChangeButton.pack()
                     self.change_button_shown = 1
+                    self.Cancel["text"] = localise("Cancel selection")
             else:
                 if self.change_button_shown:
                     self.ChangeButton.pack_forget()
                     self.change_button_shown = 0
+                    self.lastText1 = 1 # force update
             if self.toRestore:
                 if not hasattr(self,"restoreButton"): self.restoreButton = addButton(self.TestEtcCol,localise("Restore"),self.restoreText,status="This button will undo\nGradint's transliteration of the input")
             elif hasattr(self,"restoreButton"):
@@ -649,7 +657,7 @@ def startTk():
             for control,current,restoreTo in self.toRestore:
                 if not asUnicode(control.get())==current:
                     self.toRestore = [] ; break
-            if text1 or text2: self.Cancel["text"] = localise("Clear input boxes")
+            if text1 or text2: self.Cancel["text"] = localise(cond(self.ListBox.curselection(),"Cancel selection","Clear input boxes"))
             else: self.Cancel["text"] = localise(cond(olpc or GUI_for_editing_only,"Quit","Back to main menu"))
             h = hanzi_only(text1)
             if Tk_might_display_wrong_hanzi and not self.Label1["text"].endswith(wrong_hanzi_message) and (h or hanzi_only(text2)): self.Label1["text"]+=("\n"+wrong_hanzi_message)
@@ -789,7 +797,7 @@ def startTk():
             self.row4 = addRow(self.leftPanel,1)
             self.Label1,self.Text1,self.Entry1 = addLabelledBox(self.row1,True)
             self.TestEtcCol = addRow(self.row1) # effectively adding a column to the end of the row, for "Speak" and any other buttons to do with 2nd-language text (although be careful not to add too many due to tabbing)
-            self.TestTextButton = addButton(self.TestEtcCol,"",self.testText,status="Use this button to check how the\ncomputer will pronounce words before you add them") # will set text in updateLanguageLabels
+            self.TestTextButton = addButton(self.TestEtcCol,"",self.testText,status="Use this button to check how the computer\nwill pronounce words before you add them") # will set text in updateLanguageLabels
             self.Label2,self.Text2,self.Entry2 = addLabelledBox(self.row2,True)
             if not WMstandard:
               self.Entry1.bind('<Return>',self.testText)
@@ -805,17 +813,16 @@ def startTk():
             for e in [self.L1Entry,self.L2Entry]: e.bind('<Button-1>',(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
             self.ChangeLanguageButton = addButton(self.row3,"",self.changeLanguages,status="Use this button to set your\nfirst and second languages") # will set text in updateLanguageLabels
             if GUI_omit_settings and (vocabFile==user0[1] or fileExists(vocabFile)): self.row3.pack_forget()
-            if (not olpc) or textEditorCommand or explorerCommand: # no point doing this on the XO, because no way to run editor or file browser (unless someone's installed one) and "do it yourself" is probably not helpful in that environment
+            if textEditorCommand:
                 self.RecordedWordsButton = addButton(self.row4,"",self.showRecordedWords,{"side":"left"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
                 row4right = addRightRow(self.row4)
                 self.EditVocabButton = addButton(row4right,"",self.openVocabFile,{"side":"left"},status="This button lets you edit your\nvocab collection in "+textEditorName)
                 if not GUI_omit_settings: addButton(row4right,"advanced"+dottxt,self.openAdvancedTxt,{"side":"left"},status="Press this button to learn multiple languages\nor change advanced settings for synthesis etc")
                 self.make_lesson_row()
-            else:
-                # can at least have Recorded Words button now we have a buillt-in manager
+            else: # no text editor, but can at least have Recorded Words button now we have a built-in manager
                 self.make_lesson_row()
                 self.RecordedWordsButton = addButton(self.LessonRow,"",self.showRecordedWords,{"side":"right"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
-            if ((not olpc) or textEditorCommand or explorerCommand) and lastUserNames and lastUserNames[0]: self.CopyFromButton = addButton(cond(GUI_omit_settings,row4right,self.LessonRow),localise("Copy from..."),self.showCopyFrom,{"side":"left"},status="This button lets you copy recorded\nand computer-voiced words from other users")
+            if textEditorCommand and lastUserNames and lastUserNames[0]: self.CopyFromButton = addButton(cond(GUI_omit_settings,row4right,self.LessonRow),localise("Copy from..."),self.showCopyFrom,{"side":"left"},status="This button lets you copy recorded\nand computer-voiced words from other users") # TODO if not textEditorCommand then only reason why can't have this is row4right won't be defined, need to fix that (however probably don't want to bother on XO etc)
             self.remake_cancel_button(localise(cond(olpc or GUI_for_editing_only,"Quit","Back to main menu")))
             self.ChangeButton = addButton(self.CancelRow,"",self.changeItem,{"side":"left"},status="Press to alter or to delete\nthe currently-selected word in the list") ; self.ChangeButton.pack_forget() # don't display it until select a list item
             self.updateLanguageLabels()

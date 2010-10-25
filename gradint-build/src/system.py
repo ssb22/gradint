@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9963 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9964 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -252,7 +252,7 @@ if paranoid_file_management:
     for tries in range(10)+["last"]:
         try: return func()
         except IOError,err:
-            if tries=="last" or not err.errno==13: raise
+            if tries=="last" or not err.errno in [5,13]: raise
             time.sleep(0.5)
   def read(file): return tryIO(lambda x=file:_old_open(x,"rb").read())
   def open(file,mode="r"):
