@@ -484,7 +484,7 @@ def startTk():
             if GUI_omit_statusline or not hasattr(self,"ListBox"): return # status changes on main screen can cause too much jumping
             if not "\n" in text: text += "\n(TODO: Make that a 2-line message)" # being 2 lines helps to reduce flashing problems.  but don't want to leave 2nd line blank.
             self.Version["text"] = text
-            self.balance_statusline,self.pollInterval = self.pollInterval,10
+            if not winCEsound: self.balance_statusline,self.pollInterval = self.pollInterval,10
         def restore_statusline(self,*args): # ONLY from callbacks
             if not hasattr(self,"ListBox"): return
             # self.Version["text"] = self.copyright_string
@@ -1050,7 +1050,7 @@ if winCEsound: # some things need more squashing
     del localise
     def localise(s):
         s=GUI_translations.get(s,{}).get(firstLanguage,s)
-        return {"Your first language":"1st","second":"2nd"}.get(s,s)
+        return {"Your first language":"1st","second":"2nd","Start lesson":"Start"}.get(s,s)
 
 def synchronizeListbox(listbox,masterList):
     mi=li=0 ; toDelete = []
