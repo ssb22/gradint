@@ -214,10 +214,12 @@ def exc_info(inGradint=True):
 
 def read(fname): return open(fname,"rb").read()
 def readSettings(f):
-   try: fdat = unicode(u8strip(read(f)).replace("\r","\n"),"utf-8")
-   except: return show_warning("Warning: Could not load "+f+" (problem reading or decoding utf-8)")
+   try: fdat = u8strip(read(f)).replace("\r","\n")
+   except: return show_warning("Warning: Could not load "+f)
+   try: fdat = unicode(fdat,"utf-8")
+   except: return show_warning("Problem decoding utf-8 in "+f)
    try: exec(fdat) in globals()
-   except: show_warning("Warning: Could not load "+f+" ("+exc_info(False)+")")
+   except: show_warning("Error in "+f+" ("+exc_info(False)+")")
 dir1 = list2set(dir()+["dir1","f","last_u8strip_found_BOM"])
 for f in configFiles: readSettings(f)
 for d in dir():
