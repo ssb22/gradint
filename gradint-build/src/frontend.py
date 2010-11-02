@@ -1566,14 +1566,14 @@ def gui_outputTo_start():
             need_run_media_encoder = (out_type,outputFile)
             out_type="wav" ; outputFile=os.tempnam()+dotwav
         else: need_run_media_encoder = 0
-        global soundCollector,viable_synths ; soundCollector,viable_synths = SoundCollector(),[] # may need to re-construct viable_synths when moving from online to offline and vice versa
+        setSoundCollector(SoundCollector())
         global waitBeforeStart, waitBeforeStart_old
         waitBeforeStart_old = waitBeforeStart ; waitBeforeStart = 0
 def gui_outputTo_end():
-    global outputFile, soundCollector, waitBeforeStart, viable_synths
+    global outputFile, waitBeforeStart
     if outputFile:
         no_output = not soundCollector.tell() # probably 'no words to put in the lesson'
-        soundCollector = None ; viable_synths = []
+        setSoundCollector(None)
         if no_output: os.remove(outputFile)
         elif need_run_media_encoder:
             t,f = need_run_media_encoder

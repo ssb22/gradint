@@ -812,6 +812,10 @@ all_synth_classes = all_synth_classes + [FestivalSynth,FliteSynth,OldRiscosSynth
 viable_synths = []
 warned_about_nosynth = {}
 getsynth_cache = {}
+def setSoundCollector(sc):
+    # for GUI etc - need to reset the available synths when changing it
+    global soundCollector, viable_synths, getsynth_cache
+    soundCollector,viable_synths,getsynth_cache = sc,[],{}
 def get_synth_if_possible(language,warn=1,to_transliterate=False):
     if language in getsynth_cache and not to_transliterate: return getsynth_cache[language] # most common case (vocab.txt parse)
     if language==None:
