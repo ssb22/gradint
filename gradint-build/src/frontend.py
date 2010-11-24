@@ -1327,6 +1327,7 @@ def gui_event_loop():
             gui_outputTo_start()
             if not soundCollector: app.todo.add_briefinterrupt_button = 1
             try: lesson_loop()
+            except PromptException,prEx: waitOnMessage("Problem finding prompts:\n"+prEx.message) # and don't quit, user may be able to fix
             except KeyboardInterrupt: pass # probably pressed Cancel Lesson while it was still being made (i.e. before handleInterrupt)
             if app and not soundCollector: app.todo.remove_briefinterrupt_button = 1 # (not app if it's closed by the close box)
             gui_outputTo_end()
