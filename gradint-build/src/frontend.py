@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9964 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9965 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -159,6 +159,7 @@ def addButton(parent,text,command,packing=None,status=None):
     button = makeButton(parent,text,command)
     if status: addStatus(button,status)
     if packing=="nopack": pass
+    elif type(packing)==type(""): button.pack(side=packing)
     elif packing: button.pack(packing)
     else: button.pack()
     return button

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9964 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9965 (c) 2002-2010 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -209,6 +209,39 @@ def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):
         system("zip -9 \"%s\" \"%s\"" % (zipfile,baseDir+os.sep+direc))
     return zipNo
 
+def getAmplify(directory):
+    statfile = os.tempnam()
+    tmplist = []
+    for f in os.listdir(directory):
+        factor = None
+        if f.endswith(dotwav) and not system("sox \""+directory+os.sep+f+"\" -t nul nul stat 2> \""+statfile+"\""):
+            for l in read(statfile).replace("\r","\n").split("\n"):
+                if l.startswith("Volume adjustment:"): factor=l.split()[2]
+        if not factor: continue
+        tmplist.append([float(factor),f,factor])
+    try: os.remove(statfile)
+    except: pass
+    if not tmplist: return [],"",0
+    tmplist.sort()
+    minFactor = tmplist[-1][0]/2 # amplify softest by at least half its required amp (TODO parameterise that 2)
+    i=len(tmplist)-1
+    while i>=0:
+        if tmplist[i][0]<minFactor: break
+        i -= 1
+    i += 1
+    if not tmplist[i][2]==tmplist[0][2]: tmplist[i][2]="%.3f" % (tmplist[i][0]/tmplist[0][0]) # don't make the softest ones louder than the existing loudest one
+    if tmplist[i][2].startswith("1.0"): return [],"",len(tmplist)
+    else: return map(lambda x:x[1],tmplist[i:]),tmplist[i][2],i
+
+def doAmplify(directory,fileList,factor):
+    failures = 0
+    for f in fileList:
+        if system("sox \""+directory+os.sep+f+"\" -t wav \""+directory+os.sep+"tmp0\" vol "+factor): failures += 1
+        else:
+            os.remove(directory+os.sep+f)
+            os.rename(directory+os.sep+"tmp0",directory+os.sep+f)
+    return failures
+
 class RecorderControls:
     def __init__(self):
         self.snack_initialized = 0
@@ -310,6 +343,17 @@ class RecorderControls:
             if labelAdded: self.addLabel(row-1,col+1,localise("(synth'd)"))
             else: self.addButton(row-1,col+1,text=localise("Synthesize"),command=(lambda *args:self.startSynthEdit(None,row,col,filename)))
             self.coords2buttons[(row-1,col+1)].is_synth_label = True
+    def amplify(self,*args):
+        self.AmplifyButton["text"] = localise("Please wait") # TODO not in the GUI thread !! (but lock our other buttons while it's doing it)
+        toAmp,factor,numOutliers = getAmplify(self.currentDir)
+        if not toAmp:
+            if numOutliers>1: app.todo.alert=localise("Found %d files but they were too loud to amplify") % numOutliers
+            elif numOutliers: app.todo.alert=localise("Found 1 file but it was too loud to amplify")
+            else: app.todo.alert=localise("No WAV files found in this folder")
+        elif tkMessageBox.askyesno(app.master.title(),localise("Amplify %d files by %s? (exceptions: %d)") % (len(toAmp),factor,numOutliers)):
+            f=doAmplify(self.currentDir,toAmp,factor)
+            if f: app.todo.alert="%d sox failures" % f
+        self.AmplifyButton["text"] = localise("Amplify")
     def all2mp3_or_zip(self,*args):
         self.CompressButton["text"] = localise("Compressing, please wait")
         if got_program("lame"): wavToMp3(self.currentDir) # TODO not in the GUI thread !! (but lock our other buttons while it's doing it)
@@ -701,19 +745,17 @@ class RecorderControls:
             b = self.coords2buttons.get((0,2),None)
             if not b: b = self.coords2buttons.get((0,0),None)
             if b: b.focus() # don't focusButton in this case - no Mac flashing
-        r=Tkinter.Frame(self.frame)
-        r.grid(columnspan=2)
-        r2 = Tkinter.Frame(r) ; r2.pack(side="left")
-        makeButton(r2,text=localise("Advanced"),command=self.do_openInExplorer).pack()
-        makeButton(r2,text=localise("Record from file"),command=self.do_recordFromFile).pack()
-        r2 = Tkinter.Frame(r) ; r2.pack(side="left")
-        if not self.always_enable_synth: makeButton(r2,text=localise("Mix with computer voice"),command=self.enable_synth).pack()
-        r = Tkinter.Frame(r2) ; r.pack()
-        if got_program("lame"): self.CompressButton = makeButton(r,text=localise("Compress all"),command=(lambda *args:self.all2mp3_or_zip())) # was "Compress all recordings" but it takes too much width
+        r1=Tkinter.Frame(self.frame) ; r1.grid(columnspan=2) ; r1=Tkinter.Frame(r1) ; r1.pack()
+        r2=Tkinter.Frame(self.frame) ; r2.grid(columnspan=2) ; r2=Tkinter.Frame(r2) ; r2.pack()
+        # note: addButton NOT self.addButton :
+        addButton(r1,localise("Advanced"),self.do_openInExplorer,"left")
+        if gotSox: self.AmplifyButton=addButton(r1,localise("Amplify"),self.amplify,"left")
+        if not self.always_enable_synth: addButton(r1,localise("Mix with computer voice"),self.enable_synth,"left")
+        addButton(r2,localise("Record from file"),self.do_recordFromFile,"left")
+        if got_program("lame"): self.CompressButton = addButton(r2,localise("Compress all"),self.all2mp3_or_zip,"left") # was "Compress all recordings" but it takes too much width
         # TODO else can we see if it's possible to get the encoder on the fly, like in the main screen? (would need some restructuring)
-        elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = makeButton(r,text=localise("Zip for email"),command=(lambda *args:self.all2mp3_or_zip()))
-        if hasattr(self,"CompressButton"): self.CompressButton.pack(side="left")
-        makeButton(r,text=localise(cond(recorderMode,"Quit","Back to main menu")),command=self.finished).pack(side="left")
+        elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = addButton(r2,localise("Zip for email"),lambda *args:self.all2mp3_or_zip,"left")
+        addButton(r2,localise(cond(recorderMode,"Quit","Back to main menu")),self.finished,"left")
         
         if winCEsound and not tkSnack: msg="Click on filenames at left to rename; click synthesized text to edit it"
         else: msg="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it."
