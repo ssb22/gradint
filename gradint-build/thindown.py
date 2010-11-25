@@ -37,6 +37,8 @@ if "s60" in sys.argv: # S60 version
 "class InputSourceManager(object):",
 "def wavToMp3(directory):",
 "def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):",
+"def getAmplify(directory):",
+"def doAmplify(directory,fileList,factor):",
 "class RecorderControls:",
 "def doRecWords():",
 "if app:","elif app:",
