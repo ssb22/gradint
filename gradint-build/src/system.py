@@ -400,7 +400,7 @@ if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"): # run every day
     if fileExists(markerFile): markerFile,toDel=toDel,markerFile
     try: os.remove(toDel)
     except OSError: pass
-    open(markerFile,"w").write("(delete this file to make the background process quit on next check)")
+    open(markerFile,"w").write("(delete this file to make the background process quit on next check)\n")
     while fileExists(markerFile):
       need1adayMessage = (currentDay == time.localtime()[:3]) # (not 1st run of day, so if the run goes ahead then they quit earlier and we'd better explain why we came back)
       currentDay = time.localtime()[:3]

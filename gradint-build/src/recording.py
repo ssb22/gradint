@@ -212,9 +212,11 @@ def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):
 def getAmplify(directory):
     statfile = os.tempnam()
     tmplist = []
+    if winsound: out2nul="-t wav nul" # sox bug workaround
+    else: out2nul="-t nul nul"
     for f in os.listdir(directory):
         factor = None
-        if f.endswith(dotwav) and not system("sox \""+directory+os.sep+f+"\" -t nul nul stat 2> \""+statfile+"\""):
+        if f.endswith(dotwav) and not system("sox \""+directory+os.sep+f+"\" "+out2nul+" stat 2> \""+statfile+"\""):
             for l in read(statfile).replace("\r","\n").split("\n"):
                 if l.startswith("Volume adjustment:"): factor=l.split()[2]
         if not factor: continue
