@@ -551,7 +551,7 @@ class RecorderControls:
     def newFolder(self,*args):
         count=0
         while True:
-            fname = "folder%d" % count
+            fname = "folder%d" % count # DON'T default its name to today's date etc, as this may make it less obvious what the GUI's renaming step is
             try: os.mkdir(unicode2filename(self.currentDir+os.sep+fname))
             except:
                 count += 1 ; continue
