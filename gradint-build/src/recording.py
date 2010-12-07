@@ -399,7 +399,8 @@ class RecorderControls:
         renameEntry.bind('<Escape>',lambda *args:self.cancelRename(row,col))
     def doRename(self,row,col):
         if hasattr(self,"renameToCancel"): del self.renameToCancel
-        origName = self.coords2buttons[(row,col)].origName
+        try: origName = self.coords2buttons[(row,col)].origName
+        except AttributeError: return # event must have fired twice for some reason?
         newNames = filter(lambda x:x,asUnicode(self.coords2buttons[(row,col)].theText.get()).split("\n")) # multiline paste, ignore blank lines
         for newName in newNames:
             if not origName: # extra lines - need to get their origNames
