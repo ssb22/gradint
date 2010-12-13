@@ -551,8 +551,7 @@ def startTk():
             if hasattr(self.todo,"set_main_menu") and not recorderMode:
                 # set up the main menu (better do it on this thread just in case)
                 self.cancelling = 0 # in case just pressed "stop lesson" on a repeat - make sure Quit button will now work
-                if need1adayMessage: self.Label["text"]="If you quit before making today's lesson,\nGradint will come back in 1 hour." # "\n(This is to encourage you to learn every day.)" - no, maybe let users figure that out for themselves otherwise they might think they're being patronised
-                else: self.Label.pack_forget()
+                self.Label.pack_forget()
                 self.CancelRow.pack_forget()
                 if self.todo.set_main_menu=="keep-outrow":
                     if hasattr(self,"OutputRow"): self.OutputRow.pack(fill=Tkinter.X,expand=1) # just done pack_forget in thindown
@@ -1310,7 +1309,7 @@ fi""")
 
 def gui_event_loop():
     app.todo.set_main_menu = 1 ; braveUser = 0
-    if (orig_onceperday&2) and not need1adayMessage: check_for_slacking() # when running every day + 1st run of today
+    if orig_onceperday&2: check_for_slacking()
     while app:
         while not hasattr(app,"menu_response"):
             if warnings_printed: waitOnMessage("") # If running gui_event_loop, better put any warnings in a separate dialogue now, rather than waiting for user to get one via 'make lesson' or some other method

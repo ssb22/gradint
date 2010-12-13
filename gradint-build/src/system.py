@@ -402,21 +402,20 @@ if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"): # run every day
     except OSError: pass
     open(markerFile,"w").write("(delete this file to make the background process quit on next check)\n")
     while fileExists(markerFile):
-      need1adayMessage = (currentDay == time.localtime()[:3]) # (not 1st run of day, so if the run goes ahead then they quit earlier and we'd better explain why we came back)
+     if not currentDay == time.localtime()[:3]: # first run of day
       currentDay = time.localtime()[:3]
       if __name__=="__main__": # can do it by importing gradint
         sys._gradint_innerImport = 1
         try:
             try: reload(gradint)
             except NameError: import gradint
-            gradint.need1adayMessage = need1adayMessage
             gradint.orig_onceperday = once_per_day
             gradint.main()
         except SystemExit: pass
       elif winsound and fileExists("gradint-wrapper.exe"): # in this setup we can do it by recursively calling gradint-wrapper.exe
         s=" ".join(sys.argv[1:])
         if s: s += ";"
-        s += "once_per_day="+str(once_per_day-2)+";need1adayMessage="+str(need1adayMessage)+";orig_onceperday="+str(once_per_day)
+        s += "once_per_day="+str(once_per_day-2)+";orig_onceperday="+str(once_per_day)
         s="gradint-wrapper.exe "+s
         if fileExists_stat("tcl"): os.popen(s).read() # (looks like we're a GUI setup; start /wait will probably pop up an undesirable console if we're not already in one)
         else: os.system("start /wait "+s) # (NB with "start", can't have quotes around 1st part of the program, as XP 'start' will treat it as a title, but if add another title before it then Win9x will fail)
@@ -424,10 +423,8 @@ if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"): # run every day
         show_warning("Not doing once_per_day&2 logic because not running as main program")
         # (DO need to be able to re-init the module - they might change advanced.txt etc)
         break
-      time.sleep(3600) # delay 1 hour at a time (in case hibernated, + if quit without lesson come back in an hour) (NB if changing this, change the message below too)
+     time.sleep(3600) # delay 1 hour at a time (in case hibernated)
 if once_per_day&1 and fileExists(progressFile) and time.localtime(os.stat(progressFile).st_mtime)[:3]==time.localtime()[:3]: sys.exit() # already run today
-try: need1adayMessage
-except: need1adayMessage=0
 try: orig_onceperday
 except: orig_onceperday=0
 
