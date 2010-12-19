@@ -443,14 +443,26 @@ def startTk():
             # See if we can figure out what Tk is doing with the fonts (on systems without magnification):
             try:
                 f=str(self.Label.cget("font")).split()
-                nominalSize = int(f[-1]) # IF it's in that format (e.g. Windows)
-                fontRest=" ".join(f[:-1])
+                nominalSize = intor0(f[-1])
+                if nominalSize: f=" ".join(f[:-1])+" %d"
+                else: # Tk 8.5+ ?
+                    f=str(self.tk.eval('set font [font actual '+' '.join(f)+']')).split()
+                    upNext = 0
+                    for i in range(len(f)):
+                        if f[i]=="-size": upNext=1
+                        elif upNext:
+                            nominalSize=intor0(f[i])
+                            if nominalSize<0: nominalSize,f[i] = -nominalSize,"-%d"
+                            else: f[i]="%d"
+                            break
+                    f=" ".join(f)
+                    if not "%d" in f: raise Exception("wrong format") # caught below
                 pixelSize = self.Label.winfo_reqheight()-2*int(str(self.Label["borderwidth"]))-2*int(str(self.Label["pady"]))
                 # NB DO NOT try to tell Tk a desired pixel size - you may get a *larger* pixel size.  Need to work out the desired nominal size.
                 approx_lines_per_screen_when_large = 25 # TODO really? (24 at 800x600 192dpi 15in but misses the status line, but OK for advanced users.  setting 25 gives nominal 7 which is rather smaller.)
                 largeNominalSize = int(nominalSize*self.Label.winfo_screenheight()/approx_lines_per_screen_when_large/pixelSize)
                 if largeNominalSize >= nominalSize+3:
-                    self.bigPrintFont = fontRest+" "+str(largeNominalSize)
+                    self.bigPrintFont = f % largeNominalSize
                     if GUI_always_big_print:
                         self.master.option_add('*font',self.bigPrintFont)
                         del self.bigPrintFont ; self.isBigPrint=1

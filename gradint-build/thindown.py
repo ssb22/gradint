@@ -16,9 +16,9 @@ import sys
 
 if "s60" in sys.argv: # S60 version
   version = "S60"
-  to_omit = [
+  to_omit = [ # note: comments are stripped BEFORE checking against this list
 "if use_unicode_filenames:", # WinCE
-"def words_exist(): # for GUI (but do NOT call from GUI thread)",
+"def words_exist():",
 "if paranoid_file_management:",
 'if not extsep==".":',
 "if macsound:","elif macsound:",
@@ -71,7 +71,7 @@ if "s60" in sys.argv: # S60 version
 "def check_for_slacking():",
 "def gui_outputTo_end():",
 "def gui_outputTo_start():",
-"def dowmloadLAME():",
+"def downloadLAME():",
 "def gui_event_loop():",
 ]
 else: assert 0, "Unrecognised version on command line"
