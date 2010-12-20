@@ -470,6 +470,7 @@ def startTk():
             except: pass # wrong font format or something - can't do it
             if winCEsound and ask_teacherMode: self.Label["font"]="Helvetica 16" # might make it slightly easier
             self.remake_cancel_button(localise("Cancel lesson"))
+            self.Cancel.focus() # (default focus if we don't add anything else, e.g. reader)
             self.copyright_string = u"This is "+(u""+program_name).replace("(c)",u"\n\u00a9").replace("-",u"\u2013")
             self.Version = Tkinter.Label(self.leftPanel,text=self.copyright_string)
             addStatus(self.Version,self.copyright_string)
