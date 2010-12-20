@@ -389,7 +389,7 @@ def optimise_partial_playing(ce):
                 if not simplified_header(e.file)==format:
                     ok=False ; break
         if ok:
-            s=ShellEvent('set -o pipefail;('+'&&'.join(['cat "%s" | sox -t %s - -t wav - $Vol$ 2>/dev/null' % (ce.eventList[0].file,fileType)]+['cat "%s" | sox -t %s - -t raw - $Vol$'%(e.file,fileType) for e in ce.eventList[1:]])+')|'+cond(playProgram=="aplay",'aplay -q','sox -t wav - '+sox_type+' '+oss_sound_device),True)
+            s=ShellEvent('set -o pipefail;('+'&&'.join(['cat "%s" | sox -t %s - -t wav - $Vol$ 2>/dev/null' % (ce.eventList[0].file,fileType)]+['cat "%s" | sox -t %s - -t raw - $Vol$'%(e.file,fileType) for e in ce.eventList[1:]])+')'+sox_ignoreLen+'|'+cond(playProgram=="aplay",'aplay -q','sox -t wav - '+sox_type+' '+oss_sound_device),True)
             s.VolReplace="sox_effect"
         elif playProgram=="aplay" and not sox_effect: s=ShellEvent('aplay -q '+''.join(map(lambda x:' "'+x.file+'"', ce.eventList)),True) # (which is not quite as good but is the next best thing) (and hope they don't then try to re-play a saved lesson with a volume adjustment)
     if s:
@@ -416,7 +416,7 @@ def optimise_partial_playing_list(ceList):
         if not ce==ceList[-1]:
             l.append('dd if=/dev/zero bs=%d count=1 2>/dev/null' % (int(betweenPhrasePause*format[1])*format[2]*(format[-1]/8)))
             theLen += betweenPhrasePause
-    s=ShellEvent('('+';'.join(l)+')|aplay -q',True)
+    s=ShellEvent('('+';'.join(l)+')'+sox_ignoreLen+'|aplay -q',True) # sox_ignoreLen is needed for newer 'sox' versions which manage to write the 1st syllable's length no matter how we try to stop it
     s.length = theLen
     s.VolReplace="sox_effect"
     s.equivalent_event_list = []

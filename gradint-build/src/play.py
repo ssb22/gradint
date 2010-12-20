@@ -96,14 +96,23 @@ elif unix and hasattr(os,"popen"):
     if not fileExists(cond(cygwin,madplay_program+".exe",madplay_program)): madplay_program=0 # in case of a Unix 'which' returning error on stdout
 if madplay_program and not winsound and not mingw32: madplay_program='"'+madplay_program+'"' # in case there's spaces etc in the path
 
+def intor0(v):
+    try: return int(v)
+    except ValueError: return 0
+
 playProgram = mpg123 = "" ; sox_effect=""
-sox_8bit, sox_16bit = "-b", "-w"
+sox_8bit, sox_16bit, sox_ignoreLen = "-b", "-w", ""
 # Older sox versions (e.g. the one bundled with Windows Gradint) recognise -b and -w only; sox v14+ recognises both that and -1/-2; newer versions recognise only -1/-2.  We check for newer versions if unix.  (TODO riscos / other?)
 soundVolume_dB = math.log(soundVolume)*(-6/math.log(0.5))
 if unix:
   if macsound: got_qtplay = 1 # should be bundled
   sox_formats=os.popen("sox --help 2>&1").read() # NOT .lower() yet
-  if sox_formats.lower().startswith("sox: sox v") and '1'<=sox_formats[10]<='9' and int(sox_formats[10:sox_formats.index('.')])>=14: sox_8bit, sox_16bit = "-1", "-2" # see comment above
+  if sox_formats.lower().startswith("sox: sox v"):
+    soxMaj = intor0(sox_formats[10:sox_formats.index('.')])
+    if soxMaj>=14:
+      sox_8bit, sox_16bit = "-1", "-2" # see comment above
+      if soxMaj==14 and sox_formats[13]<'3': pass
+      else: sox_ignoreLen = "|sox --ignore-length -t wav - -t wav - 2>/dev/null"
   if sox_formats.lower().find("wav")>-1: gotSox=1
   else:
     gotSox=0
@@ -451,10 +460,6 @@ def outfile_writeFile(o,handle):
         theLen += len(data)
     return theLen
 def outfile_write_error(): raise IOError("Error writing to outputFile: either you are missing an encoder for "+out_type+", or the disk is full or something.")
-
-def intor0(v):
-    try: return int(v)
-    except ValueError: return 0
 
 def lame_endian_parameters():
   # The input to lame will always be little-endian regardless of which architecture we're on and what kind of sox build we're using.
