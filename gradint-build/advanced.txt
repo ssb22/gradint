@@ -844,6 +844,9 @@ compress_progress_file = 0
 # (gradint will try to be more careful not to erase it
 # if the mount goes wrong).  If you are not using that
 # kind of mount then leave it at 0 (it just takes more time).
+# (Note: curlftpfs reliability is worse if you use transform_symlinks
+# and point gradint to 2 symlinks in the remote filesystem,
+# e.g. samples and synth-cache: curlftpfs may confuse them!)
 
 paranoid_file_management = 0
 

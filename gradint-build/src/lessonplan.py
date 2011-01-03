@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9965 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -260,7 +260,7 @@ class ProgressDatabase(object):
                     self.try_add_poem(self.do_as_poem[i]) ; continue
                 oldPromptsData = self.promptsData.copy()
                 seq=anticipationSequence(promptFile,zhFile,timesDone,timesDone+thisNumToTry,self.promptsData,introductions(zhFile,self.data))
-                seq[0].timesDone = timesDone # for diagram.py
+                seq[0].timesDone = timesDone # for diagram.py (and now status messages) to know if it's a new word
                 global earliestAllowedEvent ; earliestAllowedEvent = 0
                 if not timesDone and type(promptFile)==type([]):
                     # for poems: if any previously-added new word makes part of the prompt, try to ensure this one is introduced AFTER that one
@@ -285,8 +285,8 @@ class ProgressDatabase(object):
                 numberAdded = numberAdded + 1
                 self.exclude[i] = 1
                 # Keep a count
-                if not timesDone: self.l.newWords=self.l.newWords + 1
-                else: self.l.oldWords=self.l.oldWords+1
+                if not timesDone: self.l.newWords += 1
+                else: self.l.oldWords += 1
                 self.data[i]=(timesDone+thisNumToTry,promptFile,zhFile)
                 if not timesDone: newWordTimes[zhFile] = seq[0].getEventStart(0) # track where it started
         return numberAdded
@@ -301,8 +301,11 @@ class ProgressDatabase(object):
             poemSequence.append(Event(e.length))
             poemSequence.append(e)
             self.exclude[self.responseIndex[line]] = 1 # (don't try to add it again this lesson, whether successful or not)
-        try: self.l.addSequence([GluedEvent(initialGlue(),CompositeEvent(poemSequence))])
+        poemSequence = [GluedEvent(initialGlue(),CompositeEvent(poemSequence))]
+        poemSequence[0].endseq = False # boolean 'is it a new word'
+        try: self.l.addSequence(poemSequence)
         except StretchedTooFar: return
+        self.l.oldWords += 1 # have to only count it as one due to endseq handling
         for line in poem: self.data[self.responseIndex[line]]=(self.data[self.responseIndex[line]][0]+1,)+self.data[self.responseIndex[line]][1:]
     def veryExperienced(self):
         # used for greater abbreviation in the prompts etc

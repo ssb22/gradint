@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9965 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -465,6 +465,7 @@ def startTk():
                     self.bigPrintFont = f % largeNominalSize
                     if GUI_always_big_print:
                         self.master.option_add('*font',self.bigPrintFont)
+                        self.Label["font"]=self.bigPrintFont
                         del self.bigPrintFont ; self.isBigPrint=1
                 else: self.after(100,self.check_window_position) # (needs to happen when window is already drawn if you want it to preserve the X co-ordinate)
             except: pass # wrong font format or something - can't do it

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9965 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -85,6 +85,7 @@ class GlueOrEvent(object):
         # i.e. to the events that matter to addToEvents.
         # (and only if they don't already have such an attribute, so we can put the exceptions first.)
         if not hasattr(self,name): exec('self.'+name+'='+repr(value))
+    def setOnLastLeaf(self,name,value): self.setOnLeaves(name,value)
 class Event (GlueOrEvent):
     def __init__(self,length):
         GlueOrEvent.__init__(self,length)
@@ -112,6 +113,7 @@ class CompositeEvent (Event):
         for e in self.eventList: e.play()
     def setOnLeaves(self,name,value):
         for e in self.eventList: e.setOnLeaves(name,value)
+    def setOnLastLeaf(self,name,value): self.eventList[-1].setOnLastLeaf(name,value)
     def makesSenseToLog(self):
         if hasattr(self,"is_prompt"): return not self.is_prompt
         for e in self.eventList:
@@ -167,6 +169,7 @@ class GluedEvent(object):
     def getEventStart(self,glueStart):
         return glueStart+self.glue.length+self.glue.adjustment
     def setOnLeaves(self,name,value): self.event.setOnLeaves(name,value)
+    def setOnLastLeaf(self,name,value): self.event.setOnLastLeaf(name,value)
 
 def setGlue(gluedEventList, schedule, glueStart = 0):
     # Uses tail recursion / backtracking with exceptions
@@ -254,7 +257,9 @@ class Lesson(object):
             if lastI: lastI.event.setOnLeaves("max_lateness",max(1,10/len(gluedEventList))+min(lastI.glue.plusMinus-lastI.glue.adjustment,i.glue.plusMinus+i.glue.adjustment))
             # (Note that this setting of max_lateness is not particularly clever - it can detect if a sequence's existing scheduling has been pushed beyond its limits, but it can't dynamically re-schedule the sequence as a whole when that happens.  Hopefully people's emergency interruptions won't be too long.)
             lastI = i
-        if lastI: lastI.event.setOnLeaves("max_lateness",max(1,10/len(gluedEventList))+lastI.glue.plusMinus-lastI.glue.adjustment)
+        if lastI:
+            lastI.event.setOnLeaves("max_lateness",max(1,10/len(gluedEventList))+lastI.glue.plusMinus-lastI.glue.adjustment)
+            if hasattr(gluedEventList[0],"timesDone"): lastI.event.setOnLastLeaf("endseq",not gluedEventList[0].timesDone)
         self.eventListCounter += 1
     def cap_max_lateness(self):
         # if an event of importance I has a max lateness of M, then all previous events with importance <I have to cap their max lateness to M+(intervening gaps) so as not to make it late.
@@ -274,7 +279,8 @@ class Lesson(object):
         if (synthCache_test_mode or synthCache_test_mode==[]) and not hasattr(self,"doneSubst"):
             subst_some_synth_for_synthcache(self.events)
             self.doneSubst=1
-        global runner, finishTime, lessonLen
+        global runner, finishTime, lessonLen, wordsLeft
+        wordsLeft={False:self.oldWords,True:self.newWords}
         initLogFile()
         for (t,event) in self.events: event.will_be_played()
         if soundCollector:

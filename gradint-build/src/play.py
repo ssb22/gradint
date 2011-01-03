@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9965 (c) 2002-2010 Silas S. Brown. GPL v3+.
+# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -13,7 +13,7 @@
 
 emergency_lessonHold_to = 0 # set to a time.time() value for resume from emergency holds
 # (TODO: S2G problems! - both emergency_lessonHold_to and timeout_time below can be set to 0 to mean "always in the past"; this might not work if the clock wraps around.)
-sequenceIDs_to_cancel = {} ; lessonStartTime = 0
+sequenceIDs_to_cancel = {} ; lessonStartTime = 0 ; wordsLeft={False:0,True:0}
 def play(event):
     global copy_of_runner_events, lessonStartTime
     if soundCollector:
@@ -38,12 +38,21 @@ def play(event):
     if not play_error and logFile and event.makesSenseToLog(): logFileHandle.write(t+" "+str(event)+"\n")
     if play_error and hasattr(event,"wordToCancel") and event.wordToCancel: # probably max_lateness exceeded, and we have something to cancel
         cancelledFiles.append(event.wordToCancel)
-        if hasattr(event,"sequenceID"): sequenceIDs_to_cancel[event.sequenceID]=True
+        if hasattr(event,"sequenceID"): sequenceIDs_to_cancel[event.sequenceID]=True # TODO what if its last event has "endseq" attribute, do we want to decrement wordsLeft early?
+    if hasattr(event,"endseq"): wordsLeft[event.endseq] -= 1
     del copy_of_runner_events[0]
     if soundCollector: doLabel("%d%% completed" % (soundCollector.tell()*100/lessonLen))
     else:
+        line2 = "" # report what you'd lose if you cancel now (in case you're deciding whether to answer the phone etc)
+        new,old=wordsLeft[True],wordsLeft[False]
+        if new: line2="%d new " % new
+        if old:
+          if line2: line2 += ("+ %d old " % old)
+          else: line2="%d old words " % old
+        elif new: line2 += "words "
+        if line2: line2=cond(app or appuifw,"\n",", ")+line2+"remain"
         if not lessonStartTime: lessonStartTime = time.time() # the actual time of the FIRST event (don't set it before as there may be delays).  (we're setting this at the END of the 1st event - the extra margin should be ok, and can help with start-of-lesson problems with slow disks.)
-        if finishTime and time.time() >= emergency_lessonHold_to: doLabel("%s (finish %s)" % (time.strftime("%H:%M",time.localtime(time.time())),time.strftime("%H:%M",time.localtime(finishTime)))) # was %I:%M but don't like leading '0' in PM times.  2nd condition added because might press 'brief interrupt' while playing.
+        if finishTime and time.time() >= emergency_lessonHold_to: doLabel("%s (finish %s)%s" % (time.strftime("%H:%M",time.localtime(time.time())),time.strftime("%H:%M",time.localtime(finishTime)),line2)) # was %I:%M but don't like leading '0' in PM times.  2nd condition added because might press 'brief interrupt' while playing.
 def doLabel(labelText):
     labelText = ensure_unicode(labelText)
     if app: app.setLabel(labelText)

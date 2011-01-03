@@ -25,6 +25,12 @@ hanziOnly = 1  # 1 or 0.  If 1 then only phrases consisting
 # entirely of Chinese characters will be listed (could be useful
 # for voices like MeiLing which can't really manage anything else)
 
+# (Note: If you need to artificially specify a
+# division between two hanzi words, use a hyphen
+# (-) to do it.  MeiLing and Gradint/Yali will
+# both recognise this as a word boundary that is
+# not to be pronounced.)
+
 newStuff = "new-stuff" # the directory in which *.txt files
 # will be created, and to look for the resulting *.mp3/*.wav files
 
