@@ -422,7 +422,7 @@ class RecorderControls:
                 self.addButton(row,col,text=newName,command=(lambda e=None,f=self.currentDir+os.sep+newName:self.changeDir(f)))
             else: # not a directory - rename individual files
                 self.doStop() # just in case
-                for lang in self.languagesToDraw:
+                for lang in list2set([firstLanguage,secondLanguage]+otherLanguages+self.languagesToDraw): # not just self.languagesToDraw, as a student of more languages than these might not have them all showing and still expect renames to work
                     updated=False
                     for ext in [dottxt, dotwav, dotmp3]:
                       if fileExists_stat(unicode2filename(self.currentDir+os.sep+origName+"_"+lang+ext)):
@@ -430,9 +430,10 @@ class RecorderControls:
                         except:
                             tkMessageBox.showinfo(app.master.title(),localise("Could not rename %s to %s") % (origName+"_"+lang+ext,newName+"_"+lang+ext)) # TODO undo any that did succeed first!  + check for destination-already-exists (OS may not catch it)
                             return
+                        if not lang in self.languagesToDraw: continue
                         self.updateFile(unicode2filename(newName+"_"+lang+ext),row,self.languagesToDraw.index(lang),cond(ext==dottxt,0,2)) # TODO the 2 should be 1 if and only if we didn't just record it
                         updated=True
-                    if not updated: self.updateFile(unicode2filename(newName+"_"+lang+dotwav),row,self.languagesToDraw.index(lang),0)
+                    if not updated and lang in self.languagesToDraw: self.updateFile(unicode2filename(newName+"_"+lang+dotwav),row,self.languagesToDraw.index(lang),0)
                 self.addLabel(row,col,newName)
             # TODO what about updating progress.txt with wildcard changes (cld be going too far - we have the move script in utilities)
             origName = None # get any others from the form
