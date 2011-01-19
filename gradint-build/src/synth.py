@@ -425,6 +425,7 @@ class ESpeakSynth(Synth):
         ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(s))
         self.hProcess = s.hProcess # TODO check it's not NULL (failed to run)
     def winCE_wait(self,expectedOutputFile,infileToDel=None):
+        # won't always work: if app and not app.Label["text"].strip(): app.setLabel("Waiting for eSpeak") # in case it doesn't produce output
         ctypes.cdll.coredll.WaitForSingleObject(self.hProcess,4294967295) # i.e. 0xFFFFFFFF but that throws up a warning on Python 2.3
         ctypes.cdll.coredll.CloseHandle(self.hProcess)
         # In some rare circumstances, that command won't wait (e.g. process hadn't started despite the fact we delayed), so check the output files also.
@@ -432,7 +433,7 @@ class ESpeakSynth(Synth):
         firstIter = 2
         while True:
             if firstIter: firstIter -= 1
-            else: time.sleep(0.2)
+            else: time.sleep(0.2),check_for_interrupts() # (latter needed in case it gets stuck)
             try: dat=read(u""+expectedOutputFile)
             except: continue # error on trying to read output
             if not dat: continue # output read as empty
