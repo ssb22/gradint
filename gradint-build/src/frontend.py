@@ -65,6 +65,9 @@ def getYN(msg,defaultIfEof="n"):
 
 def primitive_synthloop():
     lang = None
+    interactive = appuifw or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty()
+    if interactive: interactive=cond(winCEsound and warnings_printed,"(see warnings under this window) Say:","Say: ") # (WinCE uses an input box so need to repeat the warnings if any - but can't because prompt is size-limited, so need to say move the window.)
+    else: interactive="" # no prompt on the raw_input (we might be doing outputFile="-" as well)
     while True:
         global justSynthesize,warnings_printed
         if appuifw:
@@ -73,11 +76,11 @@ def primitive_synthloop():
             if justSynthesize: justSynthesize=justSynthesize.encode("utf-8")
             else: break
         else:
-            try: justSynthesize=raw_input(cond(winCEsound and warnings_printed,"(see warnings under this window) Say:","Say: ")) # (WinCE uses an input box so need to repeat the warnings if any - but can't because prompt is size-limited, so need to say move the window.)
+            try: justSynthesize=raw_input(interactive)
             except EOFError: break
             if (winCEsound or riscos_sound) and not justSynthesize: break # because no way to send EOF (and we won't be taking i/p from a file)
         oldLang = lang
-        if justSynthesize: lang = just_synthesize(appuifw or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty(),lang)
+        if justSynthesize: lang = just_synthesize(interactive,lang)
         # and see if it transliterates:
         if justSynthesize and lang and not "#" in justSynthesize:
             if justSynthesize.startswith(lang+" "):
