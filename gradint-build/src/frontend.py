@@ -64,12 +64,12 @@ def getYN(msg,defaultIfEof="n"):
         return 0
 
 def primitive_synthloop():
+    global justSynthesize,warnings_printed
     lang = None
     interactive = appuifw or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty()
     if interactive: interactive=cond(winCEsound and warnings_printed,"(see warnings under this window) Say:","Say: ") # (WinCE uses an input box so need to repeat the warnings if any - but can't because prompt is size-limited, so need to say move the window.)
     else: interactive="" # no prompt on the raw_input (we might be doing outputFile="-" as well)
     while True:
-        global justSynthesize,warnings_printed
         if appuifw:
             if not justSynthesize: justSynthesize=""
             justSynthesize=appuifw.query(u"Say:","text",u""+justSynthesize)
