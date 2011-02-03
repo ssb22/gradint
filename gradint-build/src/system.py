@@ -199,6 +199,7 @@ if sys.platform.find("ymbian")>-1: sys.path.insert(0,os.getcwd()+os.sep+"lib")
 import time,sched,sndhdr,random,math,pprint,codecs
 
 def exc_info(inGradint=True):
+    import sys # in case it's been gc'd
     w = str(sys.exc_info()[0])
     if "'" in w: w=w[w.index("'")+1:w.rindex("'")]
     if '.' in w: w=w[w.index(".")+1:]
