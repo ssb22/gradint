@@ -580,8 +580,8 @@ def dd_command(offset,length):
 warned_about_sox_decode = 0
 def warn_sox_decode():
     global warned_about_sox_decode
-    if not warned_about_sox_decode:
-        show_warning("Had to use sox to decode MP3 (as no madplay etc); some versions of sox truncate the end of MP3s")
+    if not warned_about_sox_decode and not sox_ignoreLen:
+        show_warning("Had to use sox to decode MP3 (as no madplay etc); some versions of sox truncate the end of MP3s") # but 14.3+ (sox_ignoreLen set) should be OK
         warned_about_sox_decode = 1
 def decode_mp3(file):
     if riscos_sound:
