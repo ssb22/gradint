@@ -212,7 +212,8 @@ def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):
 def getAmplify(directory):
     statfile = os.tempnam()
     tmplist = []
-    if winsound: out2nul="-t wav nul" # sox bug workaround
+    if unix: out2nul="-t wav /dev/null" # sox bug workaround on some versions
+    elif winsound: out2nul="-t wav nul" # sox bug workaround
     else: out2nul="-t nul nul"
     for f in os.listdir(directory):
         factor = None
