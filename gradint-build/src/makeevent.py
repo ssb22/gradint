@@ -218,7 +218,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
   if pickle and fileExists(partials_cache_file):
     try:
         partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat,ela,partials_language_aliases = pickle.Unpickler(open(partials_cache_file,"rb")).load()
-        if not ela==espeak_language_aliases: dirsToStat=[]
+        if not ela==espeak_language_aliases or not dirsToStat[0][0]==partialsDirectory: dirsToStat=[]
         del ela
     except MemoryError: raise # has been known on winCEsound when we're a library module (so previous memory check didn't happen)
     except: dirsToStat = []
