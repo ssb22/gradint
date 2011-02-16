@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9967 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -218,7 +218,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
   if pickle and fileExists(partials_cache_file):
     try:
         partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat,ela,partials_language_aliases = pickle.Unpickler(open(partials_cache_file,"rb")).load()
-        if not ela==espeak_language_aliases or not dirsToStat[0][0]==partialsDirectory: dirsToStat=[]
+        if not (ela==espeak_language_aliases and dirsToStat[0][0]==partialsDirectory): dirsToStat=[]
         del ela
     except MemoryError: raise # has been known on winCEsound when we're a library module (so previous memory check didn't happen)
     except: dirsToStat = []

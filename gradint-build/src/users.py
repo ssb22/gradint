@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9967 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -36,6 +36,8 @@ def select_userNumber(N,updateGUI=1):
       app.thin_down_for_lesson()
       app.todo.set_main_menu="keep-outrow"
   if updateGUI and hasattr(app,"vocabList"): del app.vocabList # re-read
+def select_userNumber2(N):
+    select_userNumber(N) ; app.userNo.set(str(N))
 
 def setup_samplesDir_ifNec(d=0): # if the user doesn't have a samples directory, create one, and copy in the README.txt if it exists
   if not d: d=samplesDirectory
@@ -74,7 +76,7 @@ def updateUserRow(fromMainMenu=0):
     names.append("") # ensure at least one blank
     if not hasattr(app,"userNo"):
         app.userNo = Tkinter.StringVar(app)
-        app.userNo.set(0)
+        app.userNo.set("0")
     row["borderwidth"]=1
     if hasattr(Tkinter,"LabelFrame") and not winCEsound: # new in Tk 8.4 and clearer (but takes up a bit more space, so not winCEsound)
         r=Tkinter.LabelFrame(row,text=localise("Students"),padx=5,pady=5)
@@ -83,18 +85,24 @@ def updateUserRow(fromMainMenu=0):
     row.widgetsToDel.append(r) ; row=r
     if winCEsound: row.pack()
     else: row.pack(padx=10,pady=10)
-    if len(names)>4: row, c = setupScrollbar(row,1) # better have a scrollbar (will configure it after the loop below)
+    global userBSM
+    if len(names)>4:
+        row, c = setupScrollbar(row,1) # better have a scrollbar (will configure it after the loop below)
+        userBSM = ButtonScrollingMixin() ; userBSM.ourCanvas = c
+    else: userBSM = None
     for i in range(len(names)):
       if names[i].strip(wsp):
         r=Tkinter.Radiobutton(row, text=names[i], variable=app.userNo, value=str(i), takefocus=0)
         r.grid(row=i+1,column=0,sticky="w")
-        r["command"]=lambda i=i,*args: select_userNumber(i)
+        r["command"]=cmd=lambda e=None,i=i: select_userNumber(i)
         if not forceRadio:
            r2=Tkinter.Radiobutton(row, text="Select", variable=app.userNo, value=str(i), indicatoron=0) ; bindUpDown(r2,True)
            r2.grid(row=i+1,column=1,sticky="e")
-           r2["command"]=lambda i=i,*args: select_userNumber(i)
+           r2["command"]=cmd
+           r2.bind('<Return>',lambda e=None,i=i: select_userNumber2(i))
+           if userBSM: userBSM.bindFocusIn(r2)
         addButton(row,"Rename",lambda e=None,i=i,r=r,row=row:renameUser(i,r,row),"nopack").grid(row=i+1,column=2,sticky="e")
-        addButton(row,"Delete",lambda e=None,i=i:deleteUser(i),"nopack").grid(row=i+1,column=3,sticky="e")
+        r=addButton(row,"Delete",lambda e=None,i=i:deleteUser(i),"nopack") ; r.grid(row=i+1,column=3,sticky="e")
       else:
         r=Tkinter.Frame(row) ; r.grid(row=i+1,column=0,columnspan=4)
         text,entry = addTextBox(r)
@@ -103,9 +111,10 @@ def updateUserRow(fromMainMenu=0):
         addButton(r,localise("Add new name"),l)
         entry.bind('<Return>',l)
         if not i: Tkinter.Label(row,text="The first name should be that of the\nEXISTING user (i.e. YOUR name).").grid(row=i+2,column=0,columnspan=4)
+      if userBSM: userBSM.bindFocusIn(r) # for shift-tab from the bottom
       if hasattr(row,"widgetsToDel"): row.widgetsToDel.append(r)
       if not names[i]: break
-    if len(names)>4: c.after(cond(winCEsound,1500,300),lambda *args:c.config(scrollregion=c.bbox(Tkinter.ALL),width=c.bbox(Tkinter.ALL)[2],height=min(c["height"],c.winfo_screenheight()/2,c.bbox(Tkinter.ALL)[3]))) # hacky (would be better if it could auto shrink on resize)
+    if userBSM: c.after(cond(winCEsound,1500,300),lambda *args:c.config(scrollregion=c.bbox(Tkinter.ALL),width=c.bbox(Tkinter.ALL)[2],height=min(c["height"],c.winfo_screenheight()/2,c.bbox(Tkinter.ALL)[3]))) # hacky (would be better if it could auto shrink on resize)
   else: row.widgetsToDel.append(addButton(row,localise("Family mode (multiple user)"),lambda *args:(set_userName(0,""),updateUserRow())))
 
 def renameUser(i,radioButton,parent,cancel=0):
@@ -150,5 +159,5 @@ def deleteUser(i):
             d2=addUserToFname(fileOrDir,j)
             if fileExists_stat(d2): os.rename(d2,d)
             d=d2
-    select_userNumber(0) ; app.userNo.set(0) # save confusion
+    select_userNumber2(0) # save confusion
     updateUserRow()

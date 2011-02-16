@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9967 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -134,7 +134,7 @@ class ProgressDatabase(object):
         if not partial: self.saved_completely = 1
         if not app and not appuifw: show_info("done\n")
     def save_binary(self,data): # save a pickled version if possible (no error if not)
-        if not pickledProgressFile or not pickle: return
+        if not (pickledProgressFile and pickle): return
         try:
             if compress_progress_file: f=os.popen('gzip -9 > "'+pickledProgressFile+'"','wb')
             else: f = open(pickledProgressFile,'wb')

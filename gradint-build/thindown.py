@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9967 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -39,7 +39,8 @@ if "s60" in sys.argv: # S60 version
 "def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):",
 "def getAmplify(directory):",
 "def doAmplify(directory,fileList,factor):",
-"class RecorderControls:",
+"class ButtonScrollingMixin(object):",
+"class RecorderControls(ButtonScrollingMixin):",
 "def doRecWords():",
 "if app:","elif app:",
 "def addStatus(widget,status,mouseOnly=0):",
@@ -54,6 +55,7 @@ if "s60" in sys.argv: # S60 version
 "def addRightRow(widerow):",
 "def make_output_row(parent):",
 "def select_userNumber(N,updateGUI=1):",
+"def select_userNumber2(N):",
 "def updateUserRow(fromMainMenu=0):",
 "def renameUser(i,radioButton,parent,cancel=0):",
 "def deleteUser(i):",

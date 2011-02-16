@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9967 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -30,7 +30,7 @@ def waitOnMessage(msg):
     elif app:
         if not (winsound or winCEsound or mingw32 or cygwin): show_info(msg2+"\n\nWaiting for you to press OK on the message box... ",True) # in case terminal is in front
         app.todo.alert = "".join(warnings_printed)+msg
-        while hasattr(app.todo,"alert"): time.sleep(0.5)
+        while app and hasattr(app.todo,"alert"): time.sleep(0.5)
         if not (winsound or winCEsound or mingw32 or cygwin): show_info("OK\n",True)
     else:
         if clearScreen(): msg2 = "This is "+program_name.replace("(c)","\n(c)")+"\n\n"+msg2 # clear screen is less confusing for beginners, but NB it may not happen if warnings etc
@@ -48,7 +48,8 @@ def getYN(msg,defaultIfEof="n"):
         return appuifw.query(u""+msg,'query')
     elif app:
         app.todo.question = localise(msg)
-        while not hasattr(app,"answer_given"): time.sleep(0.5)
+        while app and not hasattr(app,"answer_given"): time.sleep(0.5)
+        if not app: raise SystemExit
         ans = app.answer_given
         del app.answer_given
         return ans
@@ -204,7 +205,7 @@ def addTextBox(row,wide=0):
           try: had_doRawInput
           except:
             had_doRawInput=1
-            text.set("(Push OK to type A-Z)")
+            text.set("(Push OK to type A-Z)") # (if changing this message, change it below too)
             class E: pass
             e=E() ; e.widget = entry
             entry.after(10,lambda *args:selectAll(e))
@@ -671,6 +672,8 @@ def startTk():
                 self.lastText1=1 # so continues below
             text1,text2 = asUnicode(self.Text1.get()),asUnicode(self.Text2.get())
             if text1==self.lastText1 and text2==self.lastText2: return
+            self.lastText1,self.lastText2 = text1,text2
+            if WMstandard and text1=="(Push OK to type A-Z)": text1=""
             for control,current,restoreTo in self.toRestore:
                 if not asUnicode(control.get())==current:
                     self.toRestore = [] ; break
@@ -700,7 +703,6 @@ def startTk():
                     for b in self.cacheManagementButtons: b.pack_forget()
                     self.cacheManagementButtons = []
                     for txt,a,b,c,d in cacheManagementOptions: self.cacheManagementButtons.append(addButton(self.TestEtcCol,txt,lambda e=self,a=a,b=b,c=c,d=d:e.doSynthcacheManagement(a,b,c,d),status="This button is for synthCache management.\nsynthCache is explained in advanced"+extsep+"txt"))
-            self.lastText1,self.lastText2 = text1,text2
             if self.ListBox.curselection():
                 if not (text1 or text2): self.ListBox.selection_clear(0,'end') # probably just added a new word while another was selected (added a variation) - clear selection to reduce confusion
                 else: return # don't try to be clever with searches when editing an existing item (the re-ordering can be confusing)
@@ -875,8 +877,8 @@ def startTk():
             m=Tkinter.Menu(None, tearoff=0, takefocus=0)
             for i in range(len(lastUserNames)):
                 if lastUserNames[i] and not i==intor0(self.userNo.get()):
-                    if fileExists(addUserToFname(user0[1],i)): m.add_command(label=u"Copy vocab list from "+lastUserNames[i],command=(lambda i=i,*args:self.copyVocabFrom(i)))
-                    m.add_command(label=u"Copy recordings to/from "+lastUserNames[i],command=(lambda i=i,*args:self.setToOpen((addUserToFname(user0[0],i),addUserToFname(user0[0],intor0(self.userNo.get()))))))
+                    if fileExists(addUserToFname(user0[1],i)): m.add_command(label=u"Copy vocab list from "+lastUserNames[i],command=(lambda e=None,i=i:self.copyVocabFrom(i)))
+                    m.add_command(label=u"Copy recordings to/from "+lastUserNames[i],command=(lambda e=None,i=i:self.setToOpen((addUserToFname(user0[0],i),addUserToFname(user0[0],intor0(self.userNo.get()))))))
             m.tk_popup(self.CopyFromButton.winfo_rootx(),self.CopyFromButton.winfo_rooty(),entry="0")
         def setToOpen(self,toOpen): self.menu_response,self.toOpen = "samplesCopy",toOpen
         def copyVocabFrom(self,userNo):

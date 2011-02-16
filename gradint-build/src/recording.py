@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9966 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9967 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -245,7 +245,37 @@ def doAmplify(directory,fileList,factor):
             os.rename(directory+os.sep+"tmp0",directory+os.sep+f)
     return failures
 
-class RecorderControls:
+class ButtonScrollingMixin(object):
+    # expects self.ourCanvas
+    def bindFocusIn(self,b):
+        b.bind('<FocusIn>',lambda *args:self.scrollIntoView(b))
+        if not hasattr(app,"gotFocusInHandler"):
+            # (see scrollIntoView method's use of justGotFocusIn)
+            app.gotFocusInHandler=1
+            def set(*args):
+                def clear(*args):
+                    try: del app.justGotFocusIn
+                    except: pass
+                app.justGotFocusIn = 1
+                app.after(1, clear) # (that delay is quite short, but it shouldn't execute until after the current chain of FocusIn events finishes)
+            app.bind('<FocusIn>',set)
+    def scrollIntoView(self,button):
+        if hasattr(app,"justGotFocusIn"): return # ignore double <FocusIn> event - allows switch out of app and back in again w/out scrolling back to the keyboard-focused button
+        self.scrollingIntoView = button
+        self.continueScrollIntoView(button)
+    def continueScrollIntoView(self,button):
+        if not self.scrollingIntoView==button: return # some other button took over
+        if not hasattr(self,"ourCanvas"): return # closing down?
+        by,bh,cy,ch = button.winfo_rooty(),button.winfo_height(),self.ourCanvas.winfo_rooty(),self.ourCanvas.winfo_height()
+        if not by or not bh or not cy or not ch: pass # wait a bit longer
+        elif by+bh >= cy+ch-cond(ch>2*bh,bh,0):
+            self.ourCanvas.yview("scroll","1","units") # can't specify pixels, so have to keep advancing until we get it
+            if by+bh<=cy+ch: return # make this the last one - don't loop consuming CPU on bottom of list
+        elif by < cy: self.ourCanvas.yview("scroll","-1","units")
+        else: return # done
+        app.after(10,lambda *args:self.continueScrollIntoView(button))
+
+class RecorderControls(ButtonScrollingMixin):
     def __init__(self):
         self.snack_initialized = 0
         self.currentDir = samplesDirectory
@@ -283,17 +313,7 @@ class RecorderControls:
     def addButton(self,row,col,text,command,colspan=None):
         if (row,col) in self.coords2buttons: self.coords2buttons[(row,col)].grid_forget()
         b = makeButton(self.grid,text=text,command=command)
-        b.bind('<FocusIn>',lambda *args:self.scrollIntoView(b))
-        if not hasattr(app,"gotFocusInHandler"):
-            # (see scrollIntoView method's use of justGotFocusIn)
-            app.gotFocusInHandler=1
-            def set(*args):
-                def clear(*args):
-                    try: del app.justGotFocusIn
-                    except: pass
-                app.justGotFocusIn = 1
-                app.after(1, clear) # (that delay is quite short, but it shouldn't execute until after the current chain of FocusIn events finishes)
-            app.bind('<FocusIn>',set)
+        self.bindFocusIn(b)
         self.coords2buttons[(row,col)] = b
         if not colspan:
             if not col: colspan=1+3*len(self.languagesToDraw)
@@ -515,22 +535,6 @@ class RecorderControls:
             if r==self.addMoreRow: self.addMore()
             if (r,3+3*languageNo) in self.coords2buttons:
                 return focusButton(self.coords2buttons[(r,3+3*languageNo)])
-    def scrollIntoView(self,button):
-        if hasattr(app,"justGotFocusIn"): return # ignore double <FocusIn> event - allows switch out of app and back in again w/out scrolling back to the keyboard-focused button
-        self.scrollingIntoView = button
-        self.continueScrollIntoView(button)
-    def continueScrollIntoView(self,button):
-        # TODO this logic should be separated from this class and used for the multiple-students scrollbar also (along with the FocusIn binding above)
-        if not self.scrollingIntoView==button: return # some other button took over
-        if not hasattr(self,"ourCanvas"): return # closing down?
-        by,bh,cy,ch = button.winfo_rooty(),button.winfo_height(),self.ourCanvas.winfo_rooty(),self.ourCanvas.winfo_height()
-        if not by or not bh or not cy or not ch: pass # wait a bit longer
-        elif by+bh >= cy+ch-cond(ch>2*bh,bh,0):
-            self.ourCanvas.yview("scroll","1","units") # can't specify pixels, so have to keep advancing until we get it
-            if by+bh<=cy+ch: return # make this the last one - don't loop consuming CPU on bottom of list
-        elif by < cy: self.ourCanvas.yview("scroll","-1","units")
-        else: return # done
-        app.after(10,lambda *args:self.continueScrollIntoView(button))
     def doStop(self,*args):
         theISM.stopRecording()
         self.updateForStopOrChange()
