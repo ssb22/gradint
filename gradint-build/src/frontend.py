@@ -653,12 +653,13 @@ def startTk():
             addStatus(entry,"Limits the maximum number of NEW words\nthat are put in each lesson")
             self.NumWords.set(words)
             addLabel(self.LessonRow,localise(cond(fileExists(progressFile),"new ","")+"words in"))
-            self.Minutes,entry = addTextBox(self.LessonRow)
-            addStatus(entry,"Limits the maximum time\nthat a lesson is allowed to take")
-            entry["width"]=3
+            self.Minutes,self.MinsEntry = addTextBox(self.LessonRow)
+            addStatus(self.MinsEntry,"Limits the maximum time\nthat a lesson is allowed to take")
+            self.MinsEntry["width"]=3
             self.Minutes.set(mins)
             addLabel(self.LessonRow,localise("mins"))
             self.MakeLessonButton=addButton(self.LessonRow,localise("Start lesson"),self.makelesson,{"side":"left"},status="Press to create customized lessons\nusing the words in your collection")
+            self.MakeLessonButton.bind('<FocusIn>',(lambda *args:app.after(10,lambda *args:app.MinsEntry.selection_clear())))
         def sync_listbox_etc(self):
             if not hasattr(self,"vocabList"):
                 if hasattr(self,"needVocablist"): return # already waiting for main thread to make one
@@ -831,6 +832,8 @@ def startTk():
             self.L2Entry.bind('<Return>',self.changeLanguages)
             for e in [self.L1Entry,self.L2Entry]: e.bind('<Button-1>',(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
             self.ChangeLanguageButton = addButton(self.row3,"",self.changeLanguages,status="Use this button to set your\nfirst and second languages") # will set text in updateLanguageLabels
+            self.ChangeLanguageButton.bind('<FocusIn>',(lambda *args:app.after(10,lambda *args:app.L2Entry.selection_clear())))
+            self.AddButton.bind('<FocusIn>',(lambda *args:app.after(10,lambda *args:app.L1Entry.selection_clear()))) # for backwards tabbing
             if GUI_omit_settings and (vocabFile==user0[1] or fileExists(vocabFile)): self.row3.pack_forget()
             if textEditorCommand:
                 self.RecordedWordsButton = addButton(self.row4,"",self.showRecordedWords,{"side":"left"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
