@@ -204,7 +204,7 @@ def changeToDirOf(file,winsound_also=0):
 def system(cmd):
     # Don't call os.system for commands like sound playing, because if you do then any Control-C interrupt will go to that rather than to gradint as we want, and it will pop up a large blank console window in Windows GUI-only version
     if riscos_sound or not hasattr(os,"popen"): return os.system(cmd) # no popen
-    if unix and '&' in cmd: cmd='/bin/bash -c "'+cmd.replace('\\','\\\\').replace('"','\\"')+'"' # not /bin/sh if it's complex
+    if unix and ';' in cmd: cmd='/bin/bash -c "'+cmd.replace('\\','\\\\').replace('"','\\"')+'"' # not /bin/sh if it's complex
     try: r=os.popen(cmd)
     except: return os.system(cmd) # too many file descriptors open or something
     r.read() ; return r.close()

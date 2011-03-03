@@ -55,7 +55,7 @@ theMap={
 'bian3-f':0x6241,
 'bian4-i':0x904d,
 'biao1-i':0x6a19,
-'biao3-i':0x8868,
+'biao3-f':0x8868,
 'bie1-i':0x618b,
 'bie2-i':0x522b,
 'bie3-i':0x765f,
@@ -929,10 +929,7 @@ threshold=2
 
 def trim(filename,startThreshold,endThreshold):
     (wtype,rate,channels,wframes,bits) = sndhdr.what(filename)
-    if bits==8:
-        soxBits="-b -u"
-        structBits="B"
-    elif bits==16:
+    if bits==16:
         soxBits="-w -s"
         structBits="h"
         startThreshold *= 256
@@ -959,4 +956,3 @@ for k in theMap.keys():
     else: trim(k+".wav",threshold,threshold)
 open("kou5-i.wav","wb").write(open("kou3-i.wav","rb").read())
 print "All done, in new-stuff"+os.sep+""
-
