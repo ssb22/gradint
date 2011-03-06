@@ -955,4 +955,7 @@ for k in theMap.keys():
     if k.endswith("-f") or k[:k.index("-")] in 'bang3 di3 dian3 duan3 lu3 qiang3 tan3 ting3': trim(k+".wav",threshold,0)
     else: trim(k+".wav",threshold,threshold)
 open("kou5-i.wav","wb").write(open("kou3-i.wav","rb").read())
-print "All done, in new-stuff"+os.sep+""
+print "All done, in new-stuff"+os.sep
+print '''If you want to calibrate the tone 1s, do this:
+(works in praat v5.0.2, NOT v5.1.29)
+cd new-stuff ; for N in *1*.wav; do echo "Read from file... $N"; echo "Change gender... 75.0 600.0 1.0 200 1.0 1.0"; echo "nowarn Write to WAV file... $N"; echo "Remove"; done > temp.praat ; praat temp.praat ; touch \!calibrated'''

@@ -365,6 +365,7 @@ partialsDirectory = "partials"
 # directory to let gradint know consecutive tone 1's are OK.
 # One way to pitch-calibrate the tone 1's is to download
 # praat from www.praat.org and use a script like this:
+# (works in praat v5.0.2, NOT v5.1.29)
 # for N in *1*.wav; do echo "Read from file... $N"; echo "Change gender... 75.0 600.0 1.0 250 1.0 1.0"; echo "nowarn Write to WAV file... $N"; echo "Remove"; done > temp.praat ; praat temp.praat
 # replacing 250 with the frequency of an average tone 1
 # (don't worry about the function being called "change gender"; the
