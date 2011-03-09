@@ -130,7 +130,6 @@ mp3webName = ""
 # This is not filled in by default because you must check the
 # setting below: tell Gradint where to look for your browser's
 # downloaded files.  The following directories will be tried:
-# (Gradint will use the first one that exists)
 
 downloadsDirs = ["../Downloads","..\\Desktop"]
 
