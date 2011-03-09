@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9968 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9969 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -282,7 +282,15 @@ class SampleEvent(Event):
                     ctypes.cdll.coredll.sndPlaySoundW(u""+fname,1) # 0=sync 1=async
                     time.sleep(self.exactLen) # if async.  Async seems to be better at avoiding crashes on some handhelds.
             except RuntimeError: return 1
-        elif macsound and got_qtplay: return system("qtplay \"%s\"" % (self.file,))
+        elif macsound and got_qtplay:
+            try: unicode(self.file,"ascii")
+            except UnicodeDecodeError: # qtplay can't always handle non-ASCII
+              t=os.tempnam()+self.file[self.file.rindex(extsep):]
+              open(t,"w").write(open(self.file).read())
+              ret=system("qtplay \"%s\"" % (t,))
+              os.remove(t)
+              return ret
+            return system("qtplay \"%s\"" % (self.file,))
         elif riscos_sound:
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (TODO find a RISC OS program that can play the MP3s directly?)
             else: file=self.file
@@ -348,9 +356,9 @@ def rough_guess_mp3_length(fname):
   try:
     maybe_warn_mp3() # in case there's no mp3 player
     # (NB this is only a rough guess because it doesn't support VBR
-    # and doesn't even check all sync bits or scan beyond 25 bytes.
+    # and doesn't even check all sync bits or scan beyond 128 bytes.
     # It should be fairly quick though.)
-    head=open(fname).read(25)
+    head=open(fname).read(128)
     i=head.find('\xFF')
     b=ord(head[i+1])
     layer = 4-((b&6)>>1)

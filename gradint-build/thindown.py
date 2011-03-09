@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9968 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9969 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -24,6 +24,7 @@ if "s60" in sys.argv: # S60 version
 "if macsound:","elif macsound:",
 "if winsound:",
 "if unix:",
+"if mp3web:",
 "if winsound or mingw32:",
 "elif unix and not macsound:",
 "if gotSox and unix:",

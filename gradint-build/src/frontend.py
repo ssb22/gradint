@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9968 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9969 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -504,10 +504,6 @@ def startTk():
                 else:
                     show_warning("Cannot do recorderMode because tkSnack library (python-tksnack) not installed")
                     recorderMode = 0
-            if mp3web: # synth-cache must exist:
-                global synthCache, synthCache_contents
-                if not synthCache: synthCache,synthCache_contents = "synth-cache",{}
-                if not isDirectory(synthCache): os.mkdir(synthCache)
         def remake_cancel_button(self,text=""): # sometimes need to re-make it to preserve tab order
             self.CancelRow = addRow(self.leftPanel)
             self.Cancel = addButton(self.CancelRow,text,self.cancel,{"side":"left"})
@@ -1472,20 +1468,23 @@ def gui_event_loop():
           for c in list(text1.encode("utf-8")):
             if ord(',')<=ord(c)<=ord('9') or ord('a')<=ord(c.lower())<=ord('z'): url.append(c)
             else: url.append("%"+hex(ord(c))[2:])
-          downloadsDir = None
-          for d in downloadsDirs:
+          def scanDirs():
+           dd={} ; found=0
+           for d in downloadsDirs:
             if isDirectory(d):
-              downloadsDir = d ; break
-          if downloadsDir: oldLs=list2set(os.listdir(downloadsDir))
-          if not downloadsDir: app.todo.alert=localise("Please change downloadsDirs in advanced.txt")
+             found=1
+             for f in os.listdir(d): dd[d+os.sep+f]=1
+           return dd,found
+          oldLs,found = scanDirs()
+          if not found: app.todo.alert=localise("Please set downloadsDirs in advanced"+dottxt)
           elif not url: app.todo.alert=localise("You need to type a word in the box before you can press this button")
           elif not startBrowser(mp3web.replace("$Word","".join(url)).replace("$Lang",secondLanguage)): app.todo.alert = localise("Can't start the web browser")
           else:
             waitOnMessage(localise("If the word is there, download it. When you press OK, Gradint will check for downloads."))
             found=0
-            for f in os.listdir(downloadsDir):
-              if not f in oldLs and (f.lower().endswith(dotmp3) or f.lower().endswith(dotwav)) and getYN("Use "+f+"?"): # TODO don't ask this question too many times if there are many and they're all 'no'
-                system("mp3gain -r -s r -k -d 10 \""+downloadsDir+os.sep+f+"\"") # (if mp3gain command is available; ignore errors if not (TODO document in advanced.txt)) (note: doing here not after the move, in case synthCache is over ftpfs mount or something)
+            for f in scanDirs()[0].keys():
+              if not f in oldLs and (f.lower().endswith(dotmp3) or f.lower().endswith(dotwav)) and getYN("Use "+f[f.rfind(os.sep)+1:]+"?"): # TODO don't ask this question too many times if there are many and they're all 'no'
+                system("mp3gain -r -s r -k -d 10 \""+f+"\"") # (if mp3gain command is available; ignore errors if not (TODO document in advanced.txt)) (note: doing here not after the move, in case synthCache is over ftpfs mount or something)
                 uf=scFile=text1.encode("utf-8")+"_"+secondLanguage+f[-4:].lower()
                 try:
                   if winCEsound: raise IOError
@@ -1496,7 +1495,7 @@ def gui_event_loop():
                   synthCache_transtbl[scFile]=uf
                   open(synthCache+os.sep+transTbl,'a').write(uf+" "+scFile+"\n")
                 synthCache_contents[uf]=1
-                f=downloadsDir+os.sep+f ; o.write(open(f,"rb").read()) ; o.close() ; os.remove(f)
+                o.write(open(f,"rb").read()) ; o.close() ; os.remove(f)
                 app.lastText1 = 1 # ensure different
                 found=1 ; break
             if not found: app.todo.alert="No new sounds found in "+downloadsDir
