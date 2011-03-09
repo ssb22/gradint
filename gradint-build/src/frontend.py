@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9967 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9968 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -110,6 +110,7 @@ def startBrowser(url): # true if success
           return g.open_new(url)
       # else don't risk it - it might be text-mode and unsuitable for multitask-with-gradint
   if winsound: return not os.system('start "%ProgramFiles%\\Internet Explorer\\iexplore.exe" '+url) # use os.system not system here (don't know why but system() doesn't always work for IE)
+  # (NB DON'T replace % with %%, it doesn't work. just hope nobody set an environment variable to any hex code we're using in mp3web)
 
 def clearScreen():
     global warnings_printed
@@ -261,23 +262,31 @@ def make_output_row(parent):
     # if there aren't any options then return None
     # we also put script-variant selection here, if any
     row = None
-    GUIlang = GUI_languages.get(firstLanguage,firstLanguage)
-    if "@variants-"+GUIlang in GUI_translations: # the firstLanguage has script variants
+    def getRow(row):
+      if not row:
         row = Tkinter.Frame(parent)
         row.pack(fill=Tkinter.X,expand=1)
+      return row
+    GUIlang = GUI_languages.get(firstLanguage,firstLanguage)
+    if "@variants-"+GUIlang in GUI_translations: # the firstLanguage has script variants
+        row=getRow(row)
         if not hasattr(app,"scriptVariant"): app.scriptVariant = Tkinter.StringVar(app)
         count = 0
         for variant in GUI_translations["@variants-"+GUIlang]:
             Tkinter.Radiobutton(row, text=u" "+variant+u" ", variable=app.scriptVariant, value=str(count), indicatoron=forceRadio).pack({"side":"left"})
             count += 1
         app.scriptVariant.set(str(scriptVariants.get(GUIlang,0)))
+    if guiVoiceOptions:
+        row=getRow(row)
+        if not hasattr(app,"voiceOption"): app.voiceOption = Tkinter.StringVar(app)
+        Tkinter.Radiobutton(row, text=u" Normal ", variable=app.voiceOption, value="", indicatoron=forceRadio).pack({"side":"left"})
+        for o in guiVoiceOptions: Tkinter.Radiobutton(row, text=u" "+o[1].upper()+o[2:]+u" ", variable=app.voiceOption, value=o, indicatoron=forceRadio).pack({"side":"left"})
+        app.voiceOption.set(voiceOption)
     if not gotSox: return row # can't do any file output without sox
     if not hasattr(app,"outputTo"):
         app.outputTo = Tkinter.StringVar(app) # NB app not parent (as parent is no longer app)
         app.outputTo.set("0") # not "" or get tri-state boxes on OS X 10.6
-    if not row:
-        row = Tkinter.Frame(parent)
-        row.pack(fill=Tkinter.X,expand=1)
+    row=getRow(row)
     rightrow = addRightRow(row) # to show beginners this row probably isn't the most important thing despite being in a convenient place, we'll right-align
     def addFiletypeButton(fileType):
         ftu = fileType.upper()
@@ -495,6 +504,10 @@ def startTk():
                 else:
                     show_warning("Cannot do recorderMode because tkSnack library (python-tksnack) not installed")
                     recorderMode = 0
+            if mp3web: # synth-cache must exist:
+                global synthCache, synthCache_contents
+                if not synthCache: synthCache,synthCache_contents = "synth-cache",{}
+                if not isDirectory(synthCache): os.mkdir(synthCache)
         def remake_cancel_button(self,text=""): # sometimes need to re-make it to preserve tab order
             self.CancelRow = addRow(self.leftPanel)
             self.Cancel = addButton(self.CancelRow,text,self.cancel,{"side":"left"})
@@ -540,12 +553,15 @@ def startTk():
             except: pass # (if the Tk for some reason doesn't support them then that's OK)
         def poll(self):
           try:
+            global voiceOption
             if hasattr(self,"ListBox"): self.addOrTestScreen_poll()
             if hasattr(self,"scriptVariant"):
               v = self.scriptVariant.get()
               if v: v=int(v)
               else: v=0
               if not v==scriptVariants.get(firstLanguage,0): self.setVariant(v)
+            if hasattr(self,"voiceOption") and not self.voiceOption.get()==voiceOption:
+              voiceOption=self.voiceOption.get() ; updateSettingsFile(settingsFile,{"voiceOption":voiceOption})
             if hasattr(self,"outputTo"):
               outTo = self.outputTo.get()
               if outTo=="0": outTo=""
@@ -691,17 +707,25 @@ def startTk():
                 cacheManagementOptions = [] # (text, oldKey, newKey, oldFile, newFile)
                 for t,l in [(text1.encode('utf-8'),secondLanguage),(text2.encode('utf-8'),firstLanguage)]:
                     k,f = synthcache_lookup("!synth:"+t+"_"+l,justQueryCache=1)
-                    if f and (partials_langname(l) in synth_partials_voices or get_synth_if_possible(l,0)): # (2nd condition is because there's no point having these buttons if there's no chance we can synth it by any method OTHER than the cache)
+                    if f:
+                      if (partials_langname(l) in synth_partials_voices or get_synth_if_possible(l,0)): # (no point having these buttons if there's no chance we can synth it by any method OTHER than the cache)
                         if k in synthCache_transtbl and k[0]=="_": cacheManagementOptions.append(("Keep in "+l+" cache",k,k[1:],0,0))
                         elif k[0]=="_": cacheManagementOptions.append(("Keep in "+l+" cache",0,0,f,f[1:]))
                         if k in synthCache_transtbl: cacheManagementOptions.append(("Reject from "+l+" cache",k,"__rejected_"+k,0,0))
                         else: cacheManagementOptions.append(("Reject from "+l+" cache",0,0,f,"__rejected_"+f))
+                    else:
+                      k,f = synthcache_lookup("!synth:__rejected_"+t+"_"+l,justQueryCache=1)
+                      if not f: k,f = synthcache_lookup("!synth:__rejected__"+t+"_"+l,justQueryCache=1)
+                      if f:
+                        if k in synthCache_transtbl: cacheManagementOptions.append(("Undo "+l+" cache reject",k,k[11:],0,0))
+                        else: cacheManagementOptions.append(("Undo "+l+" cache reject",0,0,f,f[11:]))
+                      elif l==secondLanguage and mp3web and not ';' in t: cacheManagementOptions.append(("Get from "+mp3webName,0,0,0,0))
                 if not hasattr(self,"cacheManagementOptions"):
                     self.cacheManagementOptions = []
                     self.cacheManagementButtons = []
                 if not cacheManagementOptions==self.cacheManagementOptions:
-                    self.cacheManagementOptions = cacheManagementOptions
                     for b in self.cacheManagementButtons: b.pack_forget()
+                    self.cacheManagementOptions = cacheManagementOptions
                     self.cacheManagementButtons = []
                     for txt,a,b,c,d in cacheManagementOptions: self.cacheManagementButtons.append(addButton(self.TestEtcCol,txt,lambda e=self,a=a,b=b,c=c,d=d:e.doSynthcacheManagement(a,b,c,d),status="This button is for synthCache management.\nsynthCache is explained in advanced"+extsep+"txt"))
             if self.ListBox.curselection():
@@ -712,6 +736,8 @@ def startTk():
             l.reverse() ; synchronizeListbox(self.ListBox,l) # show in reverse order, in case the bottom of the list box is off-screen
         def doSynthcacheManagement(self,oldKey,newKey,oldFname,newFname):
             # should be a quick operation - might as well do it in the GUI thread
+            if (oldKey,oldFname) == (0,0): # special for mp3web
+                self.menu_response="mp3web" ; return
             if oldKey in synthCache_transtbl:
                 if newKey: synthCache_transtbl[newKey]=synthCache_transtbl[oldKey]
                 else: del synthCache_transtbl[oldKey]
@@ -1424,7 +1450,9 @@ def gui_event_loop():
                         if can_be_synthesized("!synth:"+text+"_"+lang): justSynthesize += ("#"+lang+" "+text)
                         else: app.todo.alert="Cannot find a synthesizer that can say '"+text+"' in language '"+lang+"' on this system"
                         t=transliterates_differently(text,lang)
-                        if t:
+                        if t: # (don't go straight into len() stuff, it could be None)
+                          if unix and len(t)>300 and hasattr(app,"isBigPrint"): app.todo.alert="Transliteration suppressed to work around Ubuntu bug 731424" # https://bugs.launchpad.net/ubuntu/+bug/731424
+                          else:
                             control.set(t) ; app.toRestore.append((control,t,restoreTo))
                 doControl(text1,secondLanguage,app.Text1)
                 def doSynth():
@@ -1439,6 +1467,39 @@ def gui_event_loop():
                 else:
                     doControl(text2,firstLanguage,app.Text2)
                     doSynth()
+        elif menu_response=="mp3web":
+          url=[] ; text1 = asUnicode(app.Text1.get())
+          for c in list(text1.encode("utf-8")):
+            if ord(',')<=ord(c)<=ord('9') or ord('a')<=ord(c.lower())<=ord('z'): url.append(c)
+            else: url.append("%"+hex(ord(c))[2:])
+          downloadsDir = None
+          for d in downloadsDirs:
+            if isDirectory(d):
+              downloadsDir = d ; break
+          if downloadsDir: oldLs=list2set(os.listdir(downloadsDir))
+          if not downloadsDir: app.todo.alert=localise("Please change downloadsDirs in advanced.txt")
+          elif not url: app.todo.alert=localise("You need to type a word in the box before you can press this button")
+          elif not startBrowser(mp3web.replace("$Word","".join(url)).replace("$Lang",secondLanguage)): app.todo.alert = localise("Can't start the web browser")
+          else:
+            waitOnMessage(localise("If the word is there, download it. When you press OK, Gradint will check for downloads."))
+            found=0
+            for f in os.listdir(downloadsDir):
+              if not f in oldLs and (f.lower().endswith(dotmp3) or f.lower().endswith(dotwav)) and getYN("Use "+f+"?"): # TODO don't ask this question too many times if there are many and they're all 'no'
+                system("mp3gain -r -s r -k -d 10 \""+downloadsDir+os.sep+f+"\"") # (if mp3gain command is available; ignore errors if not (TODO document in advanced.txt)) (note: doing here not after the move, in case synthCache is over ftpfs mount or something)
+                uf=scFile=text1.encode("utf-8")+"_"+secondLanguage+f[-4:].lower()
+                try:
+                  if winCEsound: raise IOError
+                  else: o=open(synthCache+os.sep+scFile,"wb")
+                except IOError:
+                  uf=unicode2filename(text1+"_"+secondLanguage+f[-4:].lower())
+                  o=open(synthCache+os.sep+uf,"wb")
+                  synthCache_transtbl[scFile]=uf
+                  open(synthCache+os.sep+transTbl,'a').write(uf+" "+scFile+"\n")
+                synthCache_contents[uf]=1
+                f=downloadsDir+os.sep+f ; o.write(open(f,"rb").read()) ; o.close() ; os.remove(f)
+                app.lastText1 = 1 # ensure different
+                found=1 ; break
+            if not found: app.todo.alert="No new sounds found in "+downloadsDir
         elif menu_response=="get-encoder":
           if winsound or mingw32:
             if getYN("Gradint can use Windows Media Encoder to make WMA files, which can be played on most pocket MP3 players and mobiles etc.  Do you want to go to the Microsoft site to install Windows Media Encoder now?"):

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9967 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9968 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -166,7 +166,7 @@ def stripPuncEtc(text):
     for t in ".!?:;": text=text.replace(t,",")
     return filter(lambda x:x,text.split(","))
 
-for zipToCheck in ["yali-voice","cameron-voice"]:
+for zipToCheck in ["yali-voice","yali-lower","cameron-voice"]:
     if riscos_sound:
         if fileExists(zipToCheck+"/exe") or fileExists(samplesDirectory+"."+zipToCheck+"/exe") or fileExists(os.getcwd()[:os.getcwd().rindex(".")]+"."+zipToCheck+"/exe"): show_warning("RISC OS users: Please rename the file "+zipToCheck+"/exe to "+zipToCheck+"/zip and unpack it into the gradint directory.")
     elif not winsound: # ok if mingw32, appuifw etc (unzip_and_delete will warn)
@@ -217,7 +217,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
   dirsToStat = []
   if pickle and fileExists(partials_cache_file):
     try:
-        partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat,ela,partials_language_aliases = pickle.Unpickler(open(partials_cache_file,"rb")).load()
+        partials_langs,partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,ela,partials_language_aliases = pickle.Unpickler(open(partials_cache_file,"rb")).load()
         if not (ela==espeak_language_aliases and dirsToStat[0][0]==partialsDirectory): dirsToStat=[]
         del ela
     except MemoryError: raise # has been known on winCEsound when we're a library module (so previous memory check didn't happen)
@@ -227,9 +227,10 @@ if partialsDirectory and isDirectory(partialsDirectory):
         dirsToStat=[] ; break
   if not dirsToStat: # need to re-scan
     if riscos_sound or winCEsound: show_info("Scanning partials... ")
+    guiVoiceOptions = []
     partials_langs = os.listdir(partialsDirectory)
     dirsToStat.append((partialsDirectory,os.stat(partialsDirectory)))
-    audioDataPartials = {}
+    audioDataPartials = {} ; synth_partials_voices = {}
     partials_raw_mode = "header"+dotwav in partials_langs
     for l in partials_langs:
         try: voices = os.listdir(partialsDirectory+os.sep+l)
@@ -237,6 +238,9 @@ if partialsDirectory and isDirectory(partialsDirectory):
         if voices: dirsToStat.append((partialsDirectory+os.sep+l,os.stat(partialsDirectory+os.sep+l)))
         thisLangVoices = [] ; voices.sort()
         for v in voices:
+            if "-" in v and v[:v.index("-")] in voices:
+              suffix=v[v.index("-"):]
+              if not suffix in guiVoiceOptions: guiVoiceOptions.append(suffix)
             start,mid,end = [],[],[] ; flags=0
             try: files = os.listdir(partialsDirectory+os.sep+l+os.sep+v)
             except: files = []
@@ -295,7 +299,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
         if l in espeak_language_aliases: partials_language_aliases[espeak_language_aliases[l]]=l
     if riscos_sound or winCEsound: show_info("done\n")
     if pickle:
-      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partials_langs,partials_raw_mode,synth_partials_voices,audioDataPartials,dirsToStat,espeak_language_aliases,partials_language_aliases))
+      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partials_langs,partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,espeak_language_aliases,partials_language_aliases))
       except IOError: pass # ignore write errors as it's only a cache
       except OSError: pass
   if partials_raw_mode:
@@ -334,7 +338,14 @@ def synth_from_partials(text,lang,voice=None,isStart=1):
                     needCalibrated=True ; break # TODO: unless this syllable is exactly the same as the last syllable (a repeated syllable is always ok to use even if uncalibrated)
                 if c in "123456": lastNum=c
             # end of hack for Mandarin
-        for v in synth_partials_voices[lang]:
+        vTry = synth_partials_voices[lang]
+        if voiceOption:
+            vt1=[] ; vt2=[]
+            for v in vTry:
+              if v[0].endswith(voiceOption): vt1.append(v)
+              else: vt2.append(v)
+            vTry=vt1+vt2
+        for v in vTry:
             if needCalibrated and not v[-1]&1: continue
             r = synth_from_partials(text,lang,v)
             if r:
