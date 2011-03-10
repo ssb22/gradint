@@ -1498,7 +1498,7 @@ def gui_event_loop():
                 o.write(open(f,"rb").read()) ; o.close() ; os.remove(f)
                 app.lastText1 = 1 # ensure different
                 found=1 ; break
-            if not found: app.todo.alert="No new sounds found in "+downloadsDir
+            if not found: app.todo.alert="No new sounds found"
         elif menu_response=="get-encoder":
           if winsound or mingw32:
             if getYN("Gradint can use Windows Media Encoder to make WMA files, which can be played on most pocket MP3 players and mobiles etc.  Do you want to go to the Microsoft site to install Windows Media Encoder now?"):
