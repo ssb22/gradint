@@ -24,10 +24,11 @@ class InputSource(object):
 class MicInput(InputSource):
     def __init__(self):
         rates = tkSnack.audio.rates()
-        for rate in [22050, 16000, 24000, 44100]:
+        if rates:
+          for rate in [22050, 16000, 24000, 44100]:
             if rate in rates:
                 self.rate = rate ; return
-        if rates: self.rate = max(rates)
+          self.rate = max(rates)
         else: self.rate = None
     def startRec(self,outFile,lastStopRecVal=None):
         if not self.rate: return # TODO tell the user we can't record anything on this system (currently we just let them find out)
