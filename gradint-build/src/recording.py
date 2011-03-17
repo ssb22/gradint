@@ -479,7 +479,7 @@ class RecorderControls(ButtonScrollingMixin):
         if recFilename.lower().endswith(dotmp3): recFilename=recFilename[:-len(dotmp3)]+dotwav # always record in WAV; can compress to MP3 after
         if state: # exists
             if not tkSnack or tkSnack=="MicOnly": self.addButton(row,2+3*languageNo,text=localise("Play"),command=(lambda e=None,f=filename:(self.doStop(),SampleEvent(f).play())))  # but if got full tkSnack, might as well use setInputSource instead to be consistent with the non-_ version:
-            else: self.addButton(row,2+3*languageNo,text=localise("Play"),command=(lambda e=None,f=filename:(self.doStop(),theISM.setInputSource(PlayerInput(f,not self.syncFlag)))))
+            else: self.addButton(row,2+3*languageNo,text=localise("Play"),command=(lambda e=None,f=filename:(self.doStop(),theISM.setInputSource(PlayerInput(f,not self.syncFlag)),self.setSync(False))))
             if tkSnack and (state==2 or self.always_enable_rerecord):
                 self.addButton(row,3+3*languageNo,text=localise("Re-record"),command=(lambda e=None,f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l,needToUpdatePlayButton=(not filename==recFilename))))
             else:
