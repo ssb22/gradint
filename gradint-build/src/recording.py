@@ -31,7 +31,9 @@ class MicInput(InputSource):
           self.rate = max(rates)
         else: self.rate = None
     def startRec(self,outFile,lastStopRecVal=None):
-        if not self.rate: return # TODO tell the user we can't record anything on this system (currently we just let them find out)
+        if not self.rate:
+            app.todo.alert="Cannot record on this system (try aoss?)"
+            return
         self.sound = tkSnack.Sound(file=outFile, rate=self.rate, channels=1, encoding="Lin16")
         self.sound.record()
     def stopRec(self): self.sound.stop()
@@ -63,7 +65,8 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
     def startPlaying(self,curSample=0):
         theISM.nowPlaying = self
         tkSnack.audio.stop() # as we might be still in c'tor and just about to be assigned to replace the previously-playing sound (i.e. it might not have stopped yet), and we don't want to confuse elapsedTime
-        self.sound.play(start=curSample)
+        try: self.sound.play(start=curSample)
+        except: app.todo.alert="tkSnack problem playing sound: try running gradint under aoss"
         self.startSample = curSample ; self.startTime = time.time()
         self.autostop()
     def autostop(self,thread_id=None):
