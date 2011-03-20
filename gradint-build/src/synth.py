@@ -988,7 +988,7 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
       def checkCanSynth(fname):
           ret=can_be_synthesized(fname)
           if ret: return fileToEvent(fname)
-          else: show_warning("Can't say %s in %s" % (repr(text),repr(lang))) # previous warnings should have said why (e.g. partials-only language)
+          else: show_warning("Can't say "+repr(fname)) # previous warnings should have said why (e.g. partials-only language)
       for line in justSynthesize.split("#"):
         line = line.strip(wsp) ; l = line.split(None,1)
         if extsep in line and fileExists(line): event = fileToEvent(line,"")
