@@ -276,7 +276,7 @@ def make_output_row(parent):
             Tkinter.Radiobutton(row, text=u" "+variant+u" ", variable=app.scriptVariant, value=str(count), indicatoron=forceRadio).pack({"side":"left"})
             count += 1
         app.scriptVariant.set(str(scriptVariants.get(GUIlang,0)))
-    if guiVoiceOptions:
+    if synth_partials_voices and guiVoiceOptions:
         row=getRow(row)
         if not hasattr(app,"voiceOption"): app.voiceOption = Tkinter.StringVar(app)
         Tkinter.Radiobutton(row, text=u" Normal ", variable=app.voiceOption, value="", indicatoron=forceRadio).pack({"side":"left"})
