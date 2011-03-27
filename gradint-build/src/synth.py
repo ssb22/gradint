@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9969 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.99691 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -175,7 +175,7 @@ class PttsSynth(Synth):
         fname = os.tempnam()+dotwav
         oldcwd=os.getcwd()
         if lang in sapiVoices: self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),fname,sapiVoices[lang][1],speed=sapiSpeeds.get(lang,None))
-        elif lang=="en": os.popen(self.program+speed+' -c 1 -w '+changeToDirOf(fname,1)+self.speedParam(sapiSpeeds.get(lang,None))+toNull,"w").write(text+"\n") # (can specify mono but can't specify sample rate if it wasn't mentioned in sapiVoices - might make en synth-cache bigger than necessary but otherwise no great problem)
+        elif lang=="en": os.popen(self.program+' -c 1 -w '+changeToDirOf(fname,1)+self.speedParam(sapiSpeeds.get(lang,None))+toNull,"w").write(text+"\n") # (can specify mono but can't specify sample rate if it wasn't mentioned in sapiVoices - might make en synth-cache bigger than necessary but otherwise no great problem)
         elif lang=='zh':
             self.sapi_unicode("VW Lily",self.preparePinyinPhrase(text),fname,16000,speed=sapiSpeeds.get(lang,None))
             self.restore_lily_dict()
