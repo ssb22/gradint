@@ -2,6 +2,16 @@
 
 program_name = "gradint.cgi v1.0 (c) 2011 Silas S. Brown.  GPL v3+"
 
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
 gradint_dir = "/home/ssb22/gradint" # include samples/prompts
 path_add = "/home/ssb22/gradint/bin" # include sox, lame, espeak, maybe oggenc
 lib_path_add = "/home/ssb22/gradint/lib"

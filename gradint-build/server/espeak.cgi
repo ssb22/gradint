@@ -5,6 +5,16 @@
 # (c) 2008 Silas S. Brown, License: GPL
 version="1.1211"
 
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 3 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+
 # With most webservers you should be able to put this
 # in your public_html and do chmod +x.  You will also need to
 # install eSpeak on the system (if you can't do it system-wide
