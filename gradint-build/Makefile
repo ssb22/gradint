@@ -18,7 +18,7 @@
 # installer for giving to someone.
 Extra_Data=partials *_disabled [^g]*.exe
 
-All_Versions=gradint-build.7z gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip
+All_Versions=gradint-build.7z gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip servertools.bgz
 # dropping gradint-noGUI.exe and GUI.exe for now - probably don't need that separation anymore
 
 SHELL=/bin/bash
@@ -196,6 +196,10 @@ gradint.bgz: $(Linux_Files)
 	cp -r $(Linux_Files) gradint
 	tar -c gradint/ | bzip2 -9 > gradint.bgz
 	rm -rf gradint
+
+servertools.bgz: server
+	rm -f server/*~
+	tar -c server/ | bzip2 -9 > servertools.bgz
 
 gradint.zip: $(Riscos_Files) riscos.zip
 	mkdir \!gradint
