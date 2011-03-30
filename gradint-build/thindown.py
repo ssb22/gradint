@@ -91,11 +91,12 @@ for l in sys.stdin.xreadlines():
   for i in range(len(l)):
     if not l[i]==" ":
       indentLevel = i ; break
+  was_inTripleQuotes = inTripleQuotes
   if (len(l.split('"""'))%2) == 0: inTripleQuotes = not inTripleQuotes
-  if indentLevel<0 or indentLevel==len(l) or (revertToIndent>=0 and (indentLevel>revertToIndent or inTripleQuotes)): continue
+  if indentLevel<0 or indentLevel==len(l) or (revertToIndent>=0 and (indentLevel>revertToIndent or was_inTripleQuotes)): continue
   revertToIndent = -1
   code = (l+"#")[:l.find("#")].strip()
-  if code in to_omit: # TODO and not inTripleQuotes?
+  if code in to_omit and not was_inTripleQuotes:
     print " "*indentLevel+code+" pass # trimmed"
     revertToIndent = indentLevel
     omitted[code]=1
