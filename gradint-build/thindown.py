@@ -81,7 +81,7 @@ else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = -1
 lCount = -1
-omitted = {}
+omitted = {} ; inTripleQuotes=0
 for l in sys.stdin.xreadlines():
   lCount += 1
   if lCount==2: print "\n# NOTE: this version has been automatically TRIMMED for "+version+" (some non-"+version+" code taken out)\n"
@@ -91,10 +91,11 @@ for l in sys.stdin.xreadlines():
   for i in range(len(l)):
     if not l[i]==" ":
       indentLevel = i ; break
-  if indentLevel<0 or indentLevel==len(l) or (revertToIndent>=0 and indentLevel>revertToIndent): continue
+  if (len(l.split('"""'))%2) == 0: inTripleQuotes = not inTripleQuotes
+  if indentLevel<0 or indentLevel==len(l) or (revertToIndent>=0 and (indentLevel>revertToIndent or inTripleQuotes)): continue
   revertToIndent = -1
   code = (l+"#")[:l.find("#")].strip()
-  if code in to_omit:
+  if code in to_omit: # TODO and not inTripleQuotes?
     print " "*indentLevel+code+" pass # trimmed"
     revertToIndent = indentLevel
     omitted[code]=1
