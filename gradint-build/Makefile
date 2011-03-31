@@ -104,7 +104,7 @@ gradint.cab: $(Common_Files) gradint.py
 	# if using partials, must combine them for CAB:
 	for Dir in PocketPC0/gradint/partials/*/*; do if cd $$Dir; then if wc -c *.raw | grep -v total$$ | sed -e 's/^ *//' > audiodata.dat ; then cat *.raw >> audiodata.dat ; rm *.raw; else rm -f audiodata.dat; fi; cd ../../../../..; else true; fi; done
 	chmod +w PocketPC0/gradint/gradint.py # saves problems with pocketpc-cab
-	rm -rf PocketPC0/gradint/samples/utils # TODO really?
+	rm -rf PocketPC0/gradint/samples/utils # no point having those on Windows Mobile
 	for N in PocketPC0/gradint/*.txt; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
 	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
 	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
@@ -126,6 +126,7 @@ gradint.cab: $(Common_Files) gradint.py
 gradint-S60.zip: $(Common_Files) gradint.py
 	cp S60.zip gradint-S60.zip
 	zip -9r gradint-S60.zip $(Common_Files)
+	zip -d gradint-S60.zip 'samples/utils*' # no point having those on S60
 	mkdir gradint
 	cd gradint && python ../thindown.py s60 < ../gradint.py > gradint.py && zip -9r ../gradint-S60.zip gradint.py && cd ..
 	rm -rf gradint
