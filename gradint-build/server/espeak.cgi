@@ -2,8 +2,8 @@
 
 # espeak.cgi - a CGI script for the eSpeak speech synthesizer
 
-# (c) 2008 Silas S. Brown, License: GPL
-version="1.1211"
+# (c) 2008,2011 Silas S. Brown, License: GPL
+version="1.122"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@ else:
 if len(t)>stream_if_input_bigger_than:
     # streaming - will need sox to convert
     if not commands.getoutput("which sox 2>/dev/null"): raise Exception("Cannot find sox")
+    fname=None
 else:
     # not streaming (so can fill in length etc) - will need a writable file in a private tmp directory, preferably in memory
     worked = 0
@@ -122,7 +123,7 @@ else:
     if not loc: sys.stdout.write("<br>Warning: could not find a UTF-8 locale; espeak may malfunction on some languages")
     warnings=commands.getoutput(prog+" -q -x .").strip() # make sure any warnings about locales are output
     if warnings: sys.stdout.write("<br>"+warnings)
-    sys.stdout.write("<FORM accept-charset=UTF-8>Text or SSML: <INPUT TYPE=text NAME=t STYLE='width:80%'><br>Language: <SELECT NAME=l>")
+    sys.stdout.write("<FORM method=post accept-charset=UTF-8>Text or SSML: <INPUT TYPE=text NAME=t STYLE='width:80%'><br>Language: <SELECT NAME=l>")
     ld=os.listdir(voiceDir)
     directories = {}
     for f in ld[:]:
@@ -152,4 +153,4 @@ else:
         if ss==speed: sys.stdout.write(" SELECTED")
         sys.stdout.write(">"+str(ss)+"</OPTION>")
     sys.stdout.write("</SELECT> <INPUT TYPE=submit NAME=qx VALUE=\"View phonemes\"><center><big><INPUT TYPE=submit VALUE=SPEAK></big></center></FORM></BODY></HTML>")
-os.system("rm -rf \""+fname+"\"") # clean up temp dir
+if fname: os.system("rm -rf \""+fname+"\"") # clean up temp dir

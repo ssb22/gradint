@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.997 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9971 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -69,7 +69,16 @@ def fileToEvent(fname,dirBase=None):
     if fname.find("!synth:")>-1:
         s = synthcache_lookup(fname)
         if type(s)==type([]): # trying to synth from partials
-            if partials_raw_mode: e=synth_event(None,s)
+            if filter(lambda x:not type(x)==type([]), s): # but not completely (switching between partials and synth in a long text), this is more tricky:
+                eList = []
+                for phrase in s:
+                    if type(phrase)==type([]):
+                      if partials_raw_mode: eList.append(synth_event(None,phrase))
+                      else: eList.append(optimise_partial_playing(CompositeEvent(map(lambda x:SampleEvent(partialsDirectory+os.sep+x,useExactLen=True),phrase))))
+                    else: eList.append(phrase) # it will be a SynthEvent
+                    eList.append(Event(betweenPhrasePause))
+                e = CompositeEvent(eList)
+            elif partials_raw_mode: e=synth_event(None,s)
             else: e=optimise_partial_playing_list([CompositeEvent(map(lambda x:SampleEvent(partialsDirectory+os.sep+x,useExactLen=True),phrase)) for phrase in s]) # (tell SampleEvent to useExactLen in this case - don't want ANY pause between them)
             if not e: # can't make a ShellEvent from the whole lot; try making individual ShellEvents:
                 e=[]
@@ -110,7 +119,7 @@ if synthCache and transTbl in synthCache_contents:
     del ensure_nodups
 def textof(fname): return fname[fname.find('!synth:')+7:fname.rfind('_')]
 last_partials_transliteration = None
-synth_partials_cache = {}
+synth_partials_cache = {} ; scl_disable_recursion = 0
 def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=None):
     # if justQueryCache (used by the GUI), return value is (synthCache_transtbl key, result if any).  If key starts with _, we got a sporadic one.
     if dirBase==None: dirBase=samplesDirectory
@@ -137,16 +146,31 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
                     if useSporadic: return ret
                 else: return ret
     if justQueryCache: return 0,0
-    if lang not in partials_langs: l,translit=None,None # don't bother trying to transliterate here if there aren't even any partials for that language
+    if lang not in synth_partials_voices: l,translit=None,None # don't bother trying to transliterate here if there aren't even any partials for that language
     elif (lang,text) not in synth_partials_cache:
         # See if we can transliterate the text first.
         synth,translit = get_synth_if_possible(lang,0,to_transliterate=True),None
-        if synth: translit=synth.transliterate(lang,text)
-        if translit: text=translit
-        if lang=="zh": t2=sort_out_pinyin_3rd_tones(pinyin_uColon_to_V(text)) # need to do this BEFORE stripPuncEtc, for correct sandhi blocking
-        else: t2=text
-        l = [synth_from_partials(phrase,lang) for phrase in stripPuncEtc(t2.lower())] # TODO do we really want to be able to pick new voices at every phrase?  if not, would have to pass the pause points into synth_from_partials itself
-        if None in l: l=None # if any of the partials-phrases failed, fail all (don't mix partials and synth for different parts of the same phrase, it's too confusing)
+        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text2=preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode('utf-8')
+        else: text2=text
+        if synth: translit=synth.transliterate(lang,text2)
+        if translit: t2=translit
+        else: t2=text2
+        if lang=="zh": t2=sort_out_pinyin_3rd_tones(pinyin_uColon_to_V(t2)) # need to do this BEFORE stripPuncEtc, for correct sandhi blocking
+        phraseList = stripPuncEtc(t2.lower())
+        l = [synth_from_partials(phrase,lang) for phrase in phraseList] # TODO do we really want to be able to pick new voices at every phrase?  if not, would have to pass the pause points into synth_from_partials itself
+        if None in l: # at least one of the partials-phrases failed
+          global scl_disable_recursion
+          if len(t2)<100 or not filter(lambda x:x,l) or scl_disable_recursion: l=None # don't mix partials and synth for different parts of a short phrase, it's too confusing (TODO make the 100 configurable?)
+          else: # longer text and SOME can be synth'd from partials: go through it more carefully
+            t2=fix_compatibility(ensure_unicode(text2.replace(chr(0),"")).replace(u"\u3002",".").replace(u"\u3001",",")).encode('utf-8')
+            for t in ".!?:;,": t2=t2.replace(t,t+chr(0))
+            l=[]
+            scl_disable_recursion = 1
+            for phrase in filter(lambda x:x,t2.split(chr(0))):
+              ll=synthcache_lookup("!synth:"+phrase+"_"+lang,dirBase,0,0,lang)
+              if type(ll)==type([]): l += ll
+              else: l.append(synth_event(lang,phrase,0))
+            scl_disable_recursion = 0
         synth_partials_cache[(lang,text)]=(l,translit)
     else: l,translit=synth_partials_cache[(lang,text)]
     if l and partials_are_sporadic:
@@ -156,7 +180,10 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
         global last_partials_transliteration
         last_partials_transliteration=translit
     if l: return l
-    if printErrors and synthCache and not (app and winsound): show_info("Not in cache: "+repr(text.lower()+"_"+lang)+"\n",True)
+    if printErrors and synthCache and not (app and winsound):
+        r = repr(text.lower()+"_"+lang)
+        if len(r)>100: r=r[:100]+"..."
+        show_info("Not in cache: "+r+"\n",True)
 def can_be_synthesized(fname,dirBase=None,lang=None):
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
@@ -221,7 +248,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
   dirsToStat = []
   if pickle and fileExists(partials_cache_file):
     try:
-        partials_langs,partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,ela,partials_language_aliases = pickle.Unpickler(open(partials_cache_file,"rb")).load()
+        partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,ela,partials_language_aliases = pickle.Unpickler(open(partials_cache_file,"rb")).load()
         if not (ela==espeak_language_aliases and dirsToStat[0][0]==partialsDirectory): dirsToStat=[]
         del ela
     except MemoryError: raise # has been known on winCEsound when we're a library module (so previous memory check didn't happen)
@@ -232,11 +259,11 @@ if partialsDirectory and isDirectory(partialsDirectory):
   if not dirsToStat: # need to re-scan
     if riscos_sound or winCEsound: show_info("Scanning partials... ")
     guiVoiceOptions = []
-    partials_langs = os.listdir(partialsDirectory)
+    langs = os.listdir(partialsDirectory)
     dirsToStat.append((partialsDirectory,os.stat(partialsDirectory)))
     audioDataPartials = {} ; synth_partials_voices = {}
-    partials_raw_mode = "header"+dotwav in partials_langs
-    for l in partials_langs:
+    partials_raw_mode = "header"+dotwav in langs
+    for l in langs:
         try: voices = os.listdir(partialsDirectory+os.sep+l)
         except: voices = []
         if voices: dirsToStat.append((partialsDirectory+os.sep+l,os.stat(partialsDirectory+os.sep+l)))
@@ -303,13 +330,15 @@ if partialsDirectory and isDirectory(partialsDirectory):
         if l in espeak_language_aliases: partials_language_aliases[espeak_language_aliases[l]]=l
     if riscos_sound or winCEsound: show_info("done\n")
     if pickle:
-      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partials_langs,partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,espeak_language_aliases,partials_language_aliases))
+      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,espeak_language_aliases,partials_language_aliases))
       except IOError: pass # ignore write errors as it's only a cache
       except OSError: pass
   if partials_raw_mode:
     (wtype,wrate,wchannels,wframes,wbits) = sndhdr.what(partialsDirectory+os.sep+"header"+dotwav)
     partials_raw_0bytes = int(betweenPhrasePause*wrate)*wchannels*(wbits/8)
-else: partials_langs,partials_raw_mode = [],None
+else: synth_partials_voices,partials_raw_mode = {},None
+
+if "cant" in synth_partials_voices: synth_partials_voices["zhy"]=synth_partials_voices["zh-yue"]=synth_partials_voices["cant"]
 
 def partials_langname(lang):
     lang = espeak_language_aliases.get(lang,lang)

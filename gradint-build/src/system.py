@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.997 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9971 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -80,7 +80,7 @@ def show_info(i,always_stderr=False):
     # == sys.stderr.write(i) with no \n and no error if closed (+ redirect to app or appuifw if exists)
     if (app or appuifw) and not always_stderr: return doLabel(i)
     if not always_stderr and hasattr(sys.stderr,"isatty") and not sys.stderr.isatty(): return # be quiet if o/p is being captured by cron etc
-    if winCEsound and len(i)>101: i=i[:100]+"..."+i[-1] # otherwise can hang winCEsound's console (e.g. a long "Not in cache" message)
+    if winCEsound and len(i)>101: i=i[:100]+"..."+i[-1] # otherwise can hang winCEsound's console
     if type(i)==type(u""): i=i.encode('utf-8')
     try: sys.stderr.write(i)
     except IOError: pass

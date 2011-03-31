@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.997 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9971 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -503,36 +503,36 @@ class ESpeakSynth(Synth):
           if not (winsound or macsound): show_warning("Warning: eSpeak's transliterate returned wrong number of items (%d instead of %d).  Falling back to separate runs for each item (slower)." % (len(data),len(indexList)))
           return None
       for index,dat in zip(indexList,data):
-          en_words={} # any en words that espeak found embedded in the text
+          en_words={} # any en words that espeak found embedded in the text (needed for fix_pinyin)
           r=[] ; lastWasBlank=False
           delete_last_r_if_blank = 0
           thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
           for l in dat.strip(wsp).split("\n"):
-              if lang=="zh": # sort out en_words
-                  lWords = l.split()
-                  if lWords: int0 = intor0(lWords[0])
-                  else: int0 = 0
-                  if int0:
-                      if int0 > thisgroup_max_priority:
-                          thisgroup_max_priority = int0
-                          if lWords[-1]=="[_^_]": thisgroup_enWord_priority = int0 # so far it looks like this is going to be an English word
-                  else: # a split between the groups
-                      if thisgroup_enWord_priority == thisgroup_max_priority: # the choice with the highest priority was the one containing the [_^_] to put the word into English
-                          en_words[r[-1]]=1
-                      thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
-              # end of sort out en_words
+              # get en_words for fix_pinyin (and for making sure we embed them in cant)
+              lWords = l.split()
+              if lWords: int0 = intor0(lWords[0])
+              else: int0 = 0
+              if int0:
+                  if int0 > thisgroup_max_priority:
+                      thisgroup_max_priority = int0
+                      if lWords[-1]=="[_^_]": thisgroup_enWord_priority = int0 # so far it looks like this is going to be an English word
+              else: # a split between the groups
+                  if thisgroup_enWord_priority == thisgroup_max_priority: # the choice with the highest priority was the one containing the [_^_] to put the word into English
+                      en_words[r[-1]]=1
+                  thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
+              # end of getting en_words
               if lang=="zh" and not lastWasBlank and r and (l.startswith("Replace") or l.startswith("Translate") or l.startswith("Found")): r[-1]+="," # (because not-blank is probably the line of phonemes)
+              elif not lang=="zh" and l.startswith("_|") and r: r[-1] += "," # works for zh-yue
               if delete_last_r_if_blank and not l: r=r[:-1] # "Translate" followed by blank line is probably corner-brackets or something; don't want that confusing the transliteration (especially if it's for partials)
               delete_last_r_if_blank = 0
               foundLetter=0
               if l.startswith("Translate "):
                   toAppend=l[l.index("'")+1:-1].replace("\xc3\xbc","v")
-                  if lang=="zh" and not (toAppend in en_words and r and toAppend==r[-1]):
-                      # TODO what about partial English words? e.g. try "kao3 testing" - translate 'testing' results in a translate of 'test' also (which assumes it's already in en mode), resulting in a spurious word "test" added to the text box; not sure how to pick this up without parsing the original text and comparing with the Replace rules that occurred
-                      r.append(toAppend)
-                      delete_last_r_if_blank = 1
-                  else: # lang=="zhy"/"cant"/etc, or it's a duplicate of a word we already know to be in en_words
-                      en_words[toAppend]=1 # make sure it's in there
+                  if not (toAppend in en_words and r and toAppend==r[-1]):
+                    # TODO what about partial English words? e.g. try "kao3 testing" - translate 'testing' results in a translate of 'test' also (which assumes it's already in en mode), resulting in a spurious word "test" added to the text box; not sure how to pick this up without parsing the original text and comparing with the Replace rules that occurred
+                    r.append(toAppend)
+                    delete_last_r_if_blank = 1
+                  else: en_words[toAppend]=1
               else: # not Translate
                   if lang=="zh" and l.startswith("Found: ") and l[8]==" " and "a"<=l[7]<="z": # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
                       if forPartials: r.append("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1".split()[ord(l[7])-ord('a')])
@@ -541,11 +541,14 @@ class ESpeakSynth(Synth):
                   elif not lang=="zh" and l.startswith("Found: ") and (ord(l[7])>127 or (l[7]=="'" and ord(l[8])>127)): # (espeak 1.40 puts in l[7], 1.44 surrounds in quotes)
                       r.append(l[l.index("[")+1:l.index("]")])
               lastWasBlank=(l.startswith("Replace") or not l or foundLetter) # (take 'Replace' lines as blank, so 'Translate' doesn't add a second comma.  ditto letters thing.)
+          while r and r[-1] and r[-1][-1]==',': r[-1]=r[-1][:-1] # strip any trailing commas
           if lang=="zh": retList[index]=fix_pinyin(" ".join(r),en_words)
           else: retList[index]=" ".join(r)
       return retList
+    def escape_cantonese_transliteration(self,text): return re.sub(r"([abcdefghjklmnopstuwz][a-z]*[1-7])",r"[[\1]]",text) # TODO what if user already escaped it?
     def play(self,lang,text):
-        if lang=="zh": text=fix_commas(fix_compatibility(ensure_unicode(text)).encode('utf-8'))
+        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_cantonese_transliteration(text)
+        elif lang=="zh": text=fix_commas(fix_compatibility(ensure_unicode(text)).encode('utf-8'))
         if winCEsound: # need to play via makefile, and careful not to leave too many tempfiles or take too long
             ret = 0
             if len(text)>15: # not a short phrase - let's split it up
@@ -574,6 +577,7 @@ class ESpeakSynth(Synth):
             p.write(text+"\n") ; return p.close()
         else: return system(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
     def makefile(self,lang,text,is_winCEhint=0):
+        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_cantonese_transliteration(text)
         if hasattr(self,"winCEhint"): # waiting for a previous async one that was started with is_winCEhint=1
             fname,fnameIn = self.winCEhint
             del self.winCEhint
@@ -658,7 +662,7 @@ def remove_tone_numbers(utext): # for hanzi_and_punc to take out numbers that ca
         if "1"<=utext[i]<="5" and "a"<=utext[i-1].lower()<="z" and (i==len(utext)-1 or not "0"<=utext[i+1]<="9"): utext=utext[:i]+utext[i+1:]
         i+=1
     return utext
-def preprocess_chinese_numbers(utext):
+def preprocess_chinese_numbers(utext,isCant=0):
     # Hack for reading years digit by digit:
     for year in ["nian2",u"\u5e74"]: # TODO also " nian2" to catch that? what of multiple spaces?
         while utext.find(year)>=4 and 1200 < intor0(utext[utext.find(year)-4:utext.find(year)]) < 2300: # TODO is that range right?
@@ -672,6 +676,8 @@ def preprocess_chinese_numbers(utext):
             while j<len(utext) and utext[j] in "0123456789.": j += 1
             while utext[j-1]==".": j -= 1 # exclude trailing point(s)
             num = read_chinese_number(utext[i:j])
+            if isCant: # if Cantonese, we want to return hanzi so can pass back to eSpeak transliterate
+              for mand,cant in zip("ling2 yi1 er4 san1 si4 wu3 liu4 qi1 ba1 jiu3 dian3 yi4 qian1 bai3 shi2 wan4".split(),list(u"\u96f6\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u70b9\u4ebf\u5343\u767e\u5341\u4e07")): num=num.replace(mand,cant)
             utext=utext[:i]+num+utext[j:]
             i += len(num)
         else: i += 1
@@ -841,7 +847,7 @@ def get_synth_if_possible(language,warn=1,to_transliterate=False):
     if not language in warned_about_nosynth:
         warned_about_nosynth[language] = 1
         canSay = []
-        if language in partials_langs: canSay.append("recorded syllables (partials)")
+        if language in synth_partials_voices: canSay.append("recorded syllables (partials)")
         if synthCache: canSay.append("recorded phrases (synthCache)")
         if canSay: canSay="\n  - can use only "+" and ".join(canSay)
         else: canSay="\n  (did you read ALL the comments in vocab.txt?)"

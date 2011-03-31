@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.997 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9971 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1309,7 +1309,7 @@ def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
     o.close()
     return found
 
-def maybeCanSynth(lang): return lang in partials_langs or get_synth_if_possible(lang,0) or synthCache
+def maybeCanSynth(lang): return lang in synth_partials_voices or get_synth_if_possible(lang,0) or synthCache
 def s60_main_menu():
   while True:
     appuifw.app.body = None # NOT text saying version no etc - has distracting blinking cursor
