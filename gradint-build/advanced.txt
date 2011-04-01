@@ -148,11 +148,15 @@ downloadsDirs = ["../Downloads","..\\Desktop"]
 # most non-English languages, so if you explicity install some
 # other synth for those languages then it will be used instead)
 
-synth_priorities = "eSpeak MacOS SAPI"
+synth_priorities = "eSpeak Ekho MacOS SAPI"
 
-# (SAPI is the name of the Windows speech synthesis system,
+# SAPI is the name of the Windows speech synthesis system,
 # so if you have a Windows voice then it is probably SAPI.
-# More details are in vocab.txt.)
+# More details are in vocab.txt.  Ekho is Cameron Wong's
+# Cantonese synth from eGuideDog and this setting lets Gradint
+# use the Ekho program directly; if you don't have Ekho on your
+# system then Gradint can still use its data as partials (see below)
+# but only if there is no English mixed in with the Cantonese phrases.
 
 # You can also set extra_speech to a list of (language prefix,
 # command), for example:

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9971 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9972 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -465,7 +465,7 @@ class ESpeakSynth(Synth):
       # Note: Don't make textList TOO long, because the resulting data must fit on the (RAM)disk and in memory.
       retList = [] ; write_to_espeak = [] ; indexList = []
       split_token = "^^^" # must be something not defined in the _rules files
-      for text in textList:
+      for text in textList: # DON'T escape_jyutping (treat as en words)
         if lang=="zh":
          if keepIndexList: # making the cache - can we go a bit faster?
            try: t = unicode(text,"ascii") # if no utf, know is OK (but ONLY if keepIndexList, as the result is imprecise)
@@ -503,7 +503,7 @@ class ESpeakSynth(Synth):
           if not (winsound or macsound): show_warning("Warning: eSpeak's transliterate returned wrong number of items (%d instead of %d).  Falling back to separate runs for each item (slower)." % (len(data),len(indexList)))
           return None
       for index,dat in zip(indexList,data):
-          en_words={} # any en words that espeak found embedded in the text (needed for fix_pinyin)
+          en_words={} # any en words that espeak found embedded in the text
           r=[] ; lastWasBlank=False
           delete_last_r_if_blank = 0
           thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
@@ -545,10 +545,10 @@ class ESpeakSynth(Synth):
           if lang=="zh": retList[index]=fix_pinyin(" ".join(r),en_words)
           else: retList[index]=" ".join(r)
       return retList
-    def escape_cantonese_transliteration(self,text): return re.sub(r"([abcdefghjklmnopstuwz][a-z]*[1-7])",r"[[\1]]",text) # TODO what if user already escaped it?
+    def escape_jyutping(self,text): return re.sub(r"([abcdefghjklmnopstuwz][a-z]*[1-7])",r"[[\1]]",text) # TODO what if user already escaped it?
     def play(self,lang,text):
-        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_cantonese_transliteration(text)
-        elif lang=="zh": text=fix_commas(fix_compatibility(ensure_unicode(text)).encode('utf-8'))
+        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_jyutping(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode("utf-8"))
+        elif lang=="zh": text=fix_commas(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode('utf-8'))
         if winCEsound: # need to play via makefile, and careful not to leave too many tempfiles or take too long
             ret = 0
             if len(text)>15: # not a short phrase - let's split it up
@@ -577,7 +577,8 @@ class ESpeakSynth(Synth):
             p.write(text+"\n") ; return p.close()
         else: return system(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
     def makefile(self,lang,text,is_winCEhint=0):
-        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_cantonese_transliteration(text)
+        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_jyutping(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode("utf-8"))
+        elif lang=="zh": text=fix_commas(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode('utf-8'))
         if hasattr(self,"winCEhint"): # waiting for a previous async one that was started with is_winCEhint=1
             fname,fnameIn = self.winCEhint
             del self.winCEhint
@@ -587,7 +588,6 @@ class ESpeakSynth(Synth):
         oldcwd=os.getcwd()
         sysCommand = cond(winCEsound,"",self.program)+cond(text.find("</")>-1," -m","")+' -w %s -v%s' % (changeToDirOf(fname,1),espeak_language_aliases.get(lang,lang))
         # (eSpeak wavs are 22.05k 16-bit mono; not much point down-sampling to 16k to save 30% storage at expense of CPU)
-        if lang=="zh": text=fix_commas(fix_compatibility(ensure_unicode(text)).encode('utf-8'))
         if winsound or mingw32: os.popen(sysCommand,"w").write(text+"\n") # must pipe the text in
         elif riscos_sound: os.system(sysCommand+' '+shell_escape(text))
         elif winCEsound:
@@ -662,7 +662,7 @@ def remove_tone_numbers(utext): # for hanzi_and_punc to take out numbers that ca
         if "1"<=utext[i]<="5" and "a"<=utext[i-1].lower()<="z" and (i==len(utext)-1 or not "0"<=utext[i+1]<="9"): utext=utext[:i]+utext[i+1:]
         i+=1
     return utext
-def preprocess_chinese_numbers(utext,isCant=0):
+def preprocess_chinese_numbers(utext,isCant=0): # isCant=1 for Cantonese, 2 for hanzi (and if 1 or 2, also assumes input may be jyutping not just pinyin)
     # Hack for reading years digit by digit:
     for year in ["nian2",u"\u5e74"]: # TODO also " nian2" to catch that? what of multiple spaces?
         while utext.find(year)>=4 and 1200 < intor0(utext[utext.find(year)-4:utext.find(year)]) < 2300: # TODO is that range right?
@@ -671,13 +671,13 @@ def preprocess_chinese_numbers(utext,isCant=0):
     # End of hack for reading years
     i=0
     while i<len(utext):
-        if "0"<=utext[i]<="9" and not ("1"<=utext[i]<="5" and i and "a"<=utext[i-1].lower()<="z" and (i==len(utext)-1 or not "0"<=utext[i+1]<="9")): # number that isn't a tone digit
+        if "0"<=utext[i]<="9" and not ("1"<=utext[i]<=cond(isCant,"7","5") and i and "a"<=utext[i-1].lower()<="z" and (i==len(utext)-1 or not "0"<=utext[i+1]<="9")): # number that isn't a tone digit
             j=i
             while j<len(utext) and utext[j] in "0123456789.": j += 1
             while utext[j-1]==".": j -= 1 # exclude trailing point(s)
             num = read_chinese_number(utext[i:j])
-            if isCant: # if Cantonese, we want to return hanzi so can pass back to eSpeak transliterate
-              for mand,cant in zip("ling2 yi1 er4 san1 si4 wu3 liu4 qi1 ba1 jiu3 dian3 yi4 qian1 bai3 shi2 wan4".split(),list(u"\u96f6\u4e00\u4e8c\u4e09\u56db\u4e94\u516d\u4e03\u516b\u4e5d\u70b9\u4ebf\u5343\u767e\u5341\u4e07")): num=num.replace(mand,cant)
+            if isCant:
+              for mand,cant in zip("ling2 yi1 er4 san1 si4 wu3 liu4 qi1 ba1 jiu3 dian3 yi4 qian1 bai3 shi2 wan4".split(),cond(isCant==2,u"\u96f6 \u4e00 \u4e8c \u4e09 \u56db \u4e94 \u516d \u4e03 \u516b \u4e5d \u70b9 \u4ebf \u5343 \u767e \u5341 \u4e07","ling4 jat1 ji6 saam7 sei3 ng5 luk6 cat7 baat3 gau2 dim2 jik1 cin7 baak3 sap6 maan6").split()): num=num.replace(mand,cant)
             utext=utext[:i]+num+utext[j:]
             i += len(num)
         else: i += 1
@@ -741,6 +741,25 @@ if hasattr(ESpeakSynth,"play") and (soundVolume<0.04 or (soundVolume<0.1 and not
 globalEspeakSynth = ESpeakSynth()
 class ESpeakSynth(ESpeakSynth):
     def __init__(self): self.__dict__ = globalEspeakSynth.__dict__
+
+class EkhoSynth(Synth):
+    def __init__(self): Synth.__init__(self)
+    def supports_language(self,lang): return lang in ["zhy","zh-yue","cant"] # not Mandarin unless we can check we have a version of ekho that does 3rd tones correctly
+    def works_on_this_platform(self): return got_program("ekho")
+    def guess_length(self,lang,text): return quickGuess(len(text),6) # TODO need a better estimate
+    def play(self,lang,text):
+        text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=2).encode("utf-8")
+        infile = os.tempnam()+dottxt ; open(infile,"w").write(text)
+        r = system("ekho --voice=Cantonese -f \""+infile+"\"")
+        os.remove(infile)
+        return r
+    def makefile(self,lang,text):
+        text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=2).encode("utf-8")
+        fname = os.tempnam()+dotwav # TODO can also have dotmp3 (with -t mp3 added), and the resulting mp3 can be smaller than gradint's
+        infile = os.tempnam()+dottxt ; open(infile,"w").write(text)
+        system("ekho --voice=Cantonese -f \""+infile+"\" -o \""+fname+"\"")
+        os.remove(infile)
+        return fname
 
 class FestivalSynth(Synth):
     def __init__(self): Synth.__init__(self)
@@ -810,6 +829,7 @@ class GeneralFileSynth(Synth):
 all_synth_classes = [GeneralSynth,GeneralFileSynth] # first so user can override
 for s in synth_priorities.split():
     if s.lower()=="espeak": all_synth_classes.append(ESpeakSynth)
+    if s.lower()=="ekho": all_synth_classes.append(EkhoSynth)
     elif s.lower()=="macos":
        all_synth_classes.append(OSXSynth_Say)
        all_synth_classes.append(OSXSynth_OSAScript) # (prefer _Say if >=10.3 because it's faster)
