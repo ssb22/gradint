@@ -14,32 +14,11 @@
 
 import sys
 
-if "s60" in sys.argv: # S60 version
-  version = "S60"
-  to_omit = [ # note: comments are stripped BEFORE checking against this list
-"if use_unicode_filenames:", # WinCE
+tk_only = [ # we want these on WinCE but not S60:
+# note: comments are stripped BEFORE checking against this list
 "def words_exist():",
-"if paranoid_file_management:",
-'if not extsep==".":',
-"if macsound:","elif macsound:",
-"if winsound:",
-"if unix:",
 "if mp3web:",
-"if winsound or mingw32:",
-"elif unix and not macsound:",
-"if gotSox and unix:",
-"class SoundCollector(object):",
-"def lame_endian_parameters():",
-# TODO SH sound collector will have problem with indentation due to """..""" strings
-"def decode_mp3(file):",
-"class Mp3FileCache(object):",
-"if outputFile:",
-"def setSoundCollector(sc):",
 "class InputSourceManager(object):",
-"def wavToMp3(directory):",
-"def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):",
-"def getAmplify(directory):",
-"def doAmplify(directory,fileList,factor):",
 "class ButtonScrollingMixin(object):",
 "class RecorderControls(ButtonScrollingMixin):",
 "def doRecWords():",
@@ -70,13 +49,79 @@ if "s60" in sys.argv: # S60 version
 "def synchronizeListbox(listbox,masterList):",
 "if useTK:",
 "def openDirectory(dir,inGuiThread=0):",
-"if winCEsound:",
-"def check_for_slacking():",
-"def gui_outputTo_end():",
-"def gui_outputTo_start():",
-"def downloadLAME():",
 "def gui_event_loop():",
 ]
+
+not_S60 = [ # but may still need on winCE
+"if winsound:",
+"if winsound or mingw32:",
+]
+
+desktop_only = [ # Don't want these on either WinCE or S60:
+'if not extsep==".":', # RISC OS
+"if macsound:","elif macsound:",
+"if unix:",
+"if paranoid_file_management:",
+"elif unix and not macsound:",
+"def wavToMp3(directory):",
+"def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):",
+"def check_for_slacking():",
+"def checkAge(fname,message):",
+"def downloadLAME():",
+"def decode_mp3(file):",
+"class Mp3FileCache(object):",
+"class OSXSynth_Say(Synth):",
+"def aiff2wav(fname):",
+"class OSXSynth_OSAScript(Synth):",
+"class OldRiscosSynth(Synth):",
+"class PttsSynth(Synth):",
+"def sapi_sox_bug_workaround(wavdata):",
+"class FliteSynth(Synth):",
+"def espeak_stdout_works():", # called only if unix
+# (keep ESpeakSynth for WinCE)
+"class EkhoSynth(Synth):",
+"class FestivalSynth(Synth):",
+"class GeneralSynth(Synth):", # (needs os.system, so not S60/WinCE)
+"class GeneralFileSynth(Synth):", # (ditto)
+"class ShellEvent(Event):",
+# And the following are desktop only because they need sox:
+"if gotSox and unix:",
+"class SoundCollector(object):",
+"class ShSoundCollector(object):",
+"def dd_command(offset,length):",
+"def lame_endian_parameters():",
+"if outputFile:",
+"def setSoundCollector(sc):",
+"def getAmplify(directory):",
+"def doAmplify(directory,fileList,factor):",
+"def gui_outputTo_end():",
+"def gui_outputTo_start():",
+"def warn_sox_decode():",
+]
+
+winCE_only = [
+"if use_unicode_filenames:",
+"if winCEsound:",
+]
+
+S60_only = [
+"class S60Synth(Synth):",
+"if appuifw:",
+"def s60_recordWord():",
+"def s60_recordFile(language):",
+"def s60_addVocab():",
+"def s60_changeLang():",
+"def s60_runLesson():",
+"def s60_viewVocab():",
+"def s60_main_menu():",
+]
+
+if "s60" in sys.argv: # S60 version
+  version = "S60"
+  to_omit = tk_only + desktop_only + winCE_only + not_S60
+elif "wince" in sys.argv:
+  version = "WinCE"
+  to_omit = desktop_only + S60_only
 else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = -1

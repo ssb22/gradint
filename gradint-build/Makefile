@@ -100,7 +100,8 @@ recorder.exe: $(Common_Files) gradint.py
 gradint.cab: $(Common_Files) gradint.py
 	rm -rf PocketPC0 ; cp -r PocketPC PocketPC0
 	cd PocketPC0 && $(SevenZip) x espeak.7z && $(SevenZip) x tkinter.7z && rm espeak.7z tkinter.7z pocketpc-cab && cd ..
-	cp -r gradint.py $(Common_Files) PocketPC0/gradint
+	cp -r $(Common_Files) PocketPC0/gradint
+	cd PocketPC0/gradint && python ../../thindown.py wince < ../../gradint.py > gradint.py && cd ../..
 	# if using partials, must combine them for CAB:
 	for Dir in PocketPC0/gradint/partials/*/*; do if cd $$Dir; then if wc -c *.raw | grep -v total$$ | sed -e 's/^ *//' > audiodata.dat ; then cat *.raw >> audiodata.dat ; rm *.raw; else rm -f audiodata.dat; fi; cd ../../../../..; else true; fi; done
 	chmod +w PocketPC0/gradint/gradint.py # saves problems with pocketpc-cab
@@ -210,7 +211,7 @@ gradint.zip: $(Riscos_Files) riscos.zip
 	rm -rf \!gradint
 
 publish0: $(All_Versions) gradint.py
-	scp -i ~/.srcf/keyfile gradint.py wa.eguidedog.net:gradint/
+	scp -C -i ~/.srcf/keyfile gradint.py wa.eguidedog.net:gradint/
 	mv $(All_Versions) ~/public_html/gradint/
 	cp vocab.txt advanced.txt ~/public_html/gradint/
 	cp samples/README.txt ~/public_html/gradint/samples-readme.txt

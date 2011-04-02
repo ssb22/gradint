@@ -21,6 +21,9 @@ otherLanguages = ["cant","ko","jp"]
 # change them back again afterwards.  But they
 # will be used in lessons if you have suitable words
 # in your collection.
+# No harm is done by including your firstLanguage and
+# secondLanguage in the otherLanguages list as well,
+# which can be useful if you frequently need to change.
 
 # Note 2: For each auxiliary language you learn,
 # you will need to tell Gradint how to say the
