@@ -743,21 +743,24 @@ class ESpeakSynth(ESpeakSynth):
     def __init__(self): self.__dict__ = globalEspeakSynth.__dict__
 
 class EkhoSynth(Synth):
-    def __init__(self): Synth.__init__(self)
+    def __init__(self):
+        Synth.__init__(self)
+        if ekho_speed_delta: self.prog="ekho -s %d" % ekho_speed_delta
+        else: self.prog="ekho"
     def supports_language(self,lang): return lang in ["zhy","zh-yue","cant"] # not Mandarin unless we can check we have a version of ekho that does 3rd tones correctly
     def works_on_this_platform(self): return got_program("ekho")
     def guess_length(self,lang,text): return quickGuess(len(text),6) # TODO need a better estimate
     def play(self,lang,text):
         text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=2).encode("utf-8")
         infile = os.tempnam()+dottxt ; open(infile,"w").write(text)
-        r = system("ekho --voice=Cantonese -f \""+infile+"\"")
+        r = system(self.prog+" --voice=Cantonese -f \""+infile+"\"")
         os.remove(infile)
         return r
     def makefile(self,lang,text):
         text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=2).encode("utf-8")
         fname = os.tempnam()+dotwav # TODO can also have dotmp3 (with -t mp3 added), and the resulting mp3 can be smaller than gradint's
         infile = os.tempnam()+dottxt ; open(infile,"w").write(text)
-        system("ekho --voice=Cantonese -f \""+infile+"\" -o \""+fname+"\"")
+        system(self.prog+" --voice=Cantonese -f \""+infile+"\" -o \""+fname+"\"")
         os.remove(infile)
         return fname
 
