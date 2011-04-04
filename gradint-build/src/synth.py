@@ -161,6 +161,7 @@ class PttsSynth(Synth):
             os.chdir(d) ; return ret
     def sapi_unicode(self,voice,unicode_string,toFile=None,sampleRate=None,speed=None):
         # Speaks unicode_string in 'voice'.  toFile (if present) must be something that was returned by tempnam.  May change the current directory.
+        if voice=="Ekho Cantonese": unicode_string = preprocess_chinese_numbers(fix_compatibility(unicode_string),isCant=2) # hack to duplicate the functionality of EkhoSynth
         unifile=os.tempnam() ; open(unifile,"wb").write(codecs.utf_16_encode(unicode_string)[0])
         if not toFile: extra=""
         else:

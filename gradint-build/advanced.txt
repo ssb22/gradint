@@ -151,13 +151,14 @@ downloadsDirs = ["../Downloads","..\\Desktop"]
 # most non-English languages, so if you explicity install some
 # other synth for those languages then it will be used instead)
 
-synth_priorities = "eSpeak Ekho MacOS SAPI"
+synth_priorities = "eSpeak MacOS SAPI Ekho"
 
 # SAPI is the name of the Windows speech synthesis system,
 # so if you have a Windows voice then it is probably SAPI.
 # More details are in vocab.txt.  Ekho is Cameron Wong's
 # Cantonese synth from eGuideDog and this setting lets Gradint
-# use the Ekho program directly; if you don't have Ekho on your
+# use the Ekho program directly on non-Windows systems (on Windows
+# it needs to be set as a SAPI voice); if you don't have Ekho on your
 # system then Gradint can still use its data as partials (see below)
 # but only if there is no English mixed in with the Cantonese phrases.
 
@@ -198,6 +199,10 @@ sapiVoices = {
 # and the June 2008 release is better than Neospeech Lily
 # although still not perfect) you can have
     # "zh" : ("Lisheng", 16000),
+# or for Ekho Cantonese you can have:
+    # "zhy"     : ("Ekho Cantonese", 8000),
+    # "zhy-yue" : ("Ekho Cantonese", 8000),
+    # "cant"    : ("Ekho Cantonese", 8000),
 # or if you have other voices in other languages, you can
 # use them too.  Note that FULL voice names must be used,
 # exactly as they are shown in the Control Panel under Speech.
@@ -215,7 +220,7 @@ sapiSpeeds = {
 # "en": -5, "zh": +3   (but without the # at the beginning)
 }
 
-# You can also set the speed of the Ekho voice (if you have it)
+# You can also set the speed of the non-SAPI Ekho voice (if you have it)
 # from -50 to +100 (percent, default 0) here:
 ekho_speed_delta = 0
 
