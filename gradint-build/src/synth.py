@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9972 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9973 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -753,7 +753,7 @@ class EkhoSynth(Synth):
     def guess_length(self,lang,text): return quickGuess(len(text),6) # TODO need a better estimate
     def play(self,lang,text):
         text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=2).encode("utf-8")
-        infile = os.tempnam()+dottxt ; open(infile,"w").write(text)
+        infile = os.tempnam()+dottxt ; open(infile,"w").write(text) # Ekho 4.5 takes "-f -" for stdin, but 4.1 can't
         r = system(self.prog+" --voice=Cantonese -f \""+infile+"\"")
         os.remove(infile)
         return r

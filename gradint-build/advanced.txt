@@ -200,9 +200,9 @@ sapiVoices = {
 # although still not perfect) you can have
     # "zh" : ("Lisheng", 16000),
 # or for Ekho Cantonese you can have:
-    # "zhy"     : ("Ekho Cantonese", 8000),
-    # "zhy-yue" : ("Ekho Cantonese", 8000),
-    # "cant"    : ("Ekho Cantonese", 8000),
+    # "zhy"     : ("Ekho Cantonese", 8000), # or 16000 for v4.5+
+    # "zhy-yue" : ("Ekho Cantonese", 8000), # ditto
+    # "cant"    : ("Ekho Cantonese", 8000), # ditto
 # or if you have other voices in other languages, you can
 # use them too.  Note that FULL voice names must be used,
 # exactly as they are shown in the Control Panel under Speech.

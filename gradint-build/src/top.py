@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint v0.9972 (c) 2002-2011 Silas S. Brown. GPL v3+."
+program_name = "gradint v0.9973 (c) 2002-2011 Silas S. Brown. GPL v3+."
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
