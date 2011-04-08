@@ -246,12 +246,14 @@ partials_cache_file="partials-cache"+extsep+"bin"
 partials_language_aliases = {}
 if partialsDirectory and isDirectory(partialsDirectory):
   dirsToStat = []
+  partialsCacheFormat="(partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,espeak_language_aliases,partials_language_aliases)"
   if pickle and fileExists(partials_cache_file):
     try:
-        # Number of items in the tuple goes down as well as up between Gradint versions, so MUST save the version number that wrote it (e.g. an upgrade jump from 0.9966 to 0.9972 resulted in corruption/crash)
-        gv,partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,ela,partials_language_aliases = pickle.Unpickler(open(partials_cache_file,"rb")).load()
-        if not (gv==program_name and ela==espeak_language_aliases and dirsToStat[0][0]==partialsDirectory): dirsToStat=[]
-        del ela,gv
+        ela = espeak_language_aliases
+        format,values = pickle.Unpickler(open(partials_cache_file,"rb")).load()
+        if format==partialsCacheFormat: exec format+"=values"
+        if not (ela==espeak_language_aliases and dirsToStat[0][0]==partialsDirectory): espeak_language_aliases,dirsToStat=ela,[]
+        del ela,format,values
     except MemoryError: raise # has been known on winCEsound when we're a library module (so previous memory check didn't happen)
     except: dirsToStat = []
     for d,result in dirsToStat:
@@ -331,7 +333,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
         if l in espeak_language_aliases: partials_language_aliases[espeak_language_aliases[l]]=l
     if riscos_sound or winCEsound: show_info("done\n")
     if pickle:
-      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((program_name,partials_raw_mode,synth_partials_voices,guiVoiceOptions,audioDataPartials,dirsToStat,espeak_language_aliases,partials_language_aliases))
+      try: pickle.Pickler(open(partials_cache_file,"wb"),-1).dump((partialsCacheFormat,eval(partialsCacheFormat)))
       except IOError: pass # ignore write errors as it's only a cache
       except OSError: pass
   if partials_raw_mode:
