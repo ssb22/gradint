@@ -115,7 +115,7 @@ gradint.cab: $(Common_Files) gradint.py
 	cd PocketPC0 && mv bin Progra* espeak-data gradint && cd ..
 	# compile PocketPC espeak:
 	# (if compiling 1.04.03 remember the changes posted to espeak-general 2010-09-13)
-	# make speak CXX=arm-wince-pe-g++ USE_AUDIO="-DNEED_GETOPT -DNEED_WCHAR_FUNCTIONS -DWINCE" LIB_AUDIO=make speak CXX=arm-wince-pe-g++ USE_AUDIO="-DNEED_GETOPT -DNEED_WCHAR_FUNCTIONS -DWINCE" LIB_AUDIO=
+	# make speak CXX=arm-wince-pe-g++ USE_AUDIO="-DNEED_GETOPT -DNEED_WCHAR_FUNCTIONS -DWINCE" LIB_AUDIO=
 	# python -c 'd=open("speak","rb").read().replace("/temp/wcetrace.log","/notexist/tracelog") ; open("speak","wb").write(d)'
 	# then add to PocketPC/espeak.7z in bin/
 	cd PocketPC0 && find . -type f | sort -f | grep -v /mb | grep -v /files.list | sed -e 's,./\(.*\)$$,\1 /\1,' -e 's,/\([^/]*\)/\([^/]*\)$$,/\1,' -e 's, /[^/]*.py$$, /,' -e 's/Program Files/Program~Files/g' > files.list && cd ..

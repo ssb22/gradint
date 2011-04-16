@@ -1635,7 +1635,14 @@ def transliterates_differently(text,lang):
 gui_output_counter = 1
 def gui_outputTo_start():
     if hasattr(app,"outputTo") and app.outputTo.get() and not app.outputTo.get()=="0":
-        global outputFile ; outputFile=None
+        global outputFile,gui_output_directory,oldGID ; outputFile=None
+        if type(gui_output_directory)==type([]):
+            oldGID = gui_output_directory
+            for d in gui_output_directory:
+                if d and d[-1]=="*" and len(os.listdir(d[:-1]))==1: d=d[:-1]+os.listdir(d[:-1])[0]
+                if isDirectory(d):
+                    gui_output_directory = d ; break
+        if type(gui_output_directory)==type([]): gui_output_directory=gui_output_directory[-1]
         try: os.mkdir(gui_output_directory)
         except: pass
         global gui_output_counter
@@ -1653,7 +1660,7 @@ def gui_outputTo_start():
         global waitBeforeStart, waitBeforeStart_old
         waitBeforeStart_old = waitBeforeStart ; waitBeforeStart = 0
 def gui_outputTo_end():
-    global outputFile, waitBeforeStart
+    global outputFile, waitBeforeStart, oldGID, gui_output_directory
     if outputFile:
         no_output = not soundCollector.tell() # probably 'no words to put in the lesson'
         setSoundCollector(None)
@@ -1687,6 +1694,8 @@ def gui_outputTo_end():
         outputFile=None
         waitBeforeStart = waitBeforeStart_old
         if not no_output: openDirectory(gui_output_directory)
+        try: gui_output_directory = oldGID
+        except: pass
 
 def main():
     global useTK,justSynthesize,waitBeforeStart,traceback,appTitle

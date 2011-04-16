@@ -668,6 +668,14 @@ pickledProgressFile = "progress.bin"
 # and will be used if manually updated, i.e. time stamp newer than pickledProgressFile.)
 
 gui_output_directory = "output"
+# You can also set that to a LIST of directories, e.g.
+# gui_output_directory = ["/path/to/MP3/player", "output"]
+# in which case the first directory that EXISTS will be used
+# (or the last one on the list if all else fail).
+# Useful if the directory to your MP3 player only appears when
+# it's plugged in for example.  With Linux automounters you can
+# set "/media/*" as one of the directories, and it will expand to
+# whatever removable device is mounted IF there is only one.
 
 # See README.txt in the samples directory for what these mean:
 limit_filename = "!limit"   # do not specify an extension

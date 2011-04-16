@@ -425,7 +425,7 @@ class ESpeakSynth(Synth):
         s = ShellExecuteInfo(60,File=u""+self.program,Parameters=u"--path="+self.place+" "+parameters,fMask=0x40)
         ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(s))
         self.hProcess = s.hProcess # TODO check it's not NULL (failed to run)
-    def winCE_wait(self,expectedOutputFile,infileToDel=None):
+    def winCE_wait(self,expectedOutputFile,infileToDel=None,needDat=1):
         # won't always work: if app and not app.Label["text"].strip(): app.setLabel("Waiting for eSpeak") # in case it doesn't produce output
         ctypes.cdll.coredll.WaitForSingleObject(self.hProcess,4294967295) # i.e. 0xFFFFFFFF but that throws up a warning on Python 2.3
         ctypes.cdll.coredll.CloseHandle(self.hProcess)
@@ -435,7 +435,9 @@ class ESpeakSynth(Synth):
         while True:
             if firstIter: firstIter -= 1
             else: time.sleep(0.2),check_for_interrupts() # (latter needed in case it gets stuck)
-            try: dat=read(u""+expectedOutputFile)
+            try:
+              if needDat: dat=read(u""+expectedOutputFile)
+              else: dat=open(u""+expectedOutputFile).read(8)
             except: continue # error on trying to read output
             if not dat: continue # output read as empty
             if expectedOutputFile.endswith(dotwav) and (len(dat)<8 or dat[6:8]=="\xff\x7f"): continue # length field not yet written
@@ -583,7 +585,7 @@ class ESpeakSynth(Synth):
         if hasattr(self,"winCEhint"): # waiting for a previous async one that was started with is_winCEhint=1
             fname,fnameIn = self.winCEhint
             del self.winCEhint
-            self.winCE_wait(fname,fnameIn)
+            self.winCE_wait(fname,fnameIn,needDat=0)
             return fname
         fname = os.tempnam()+dotwav
         oldcwd=os.getcwd()

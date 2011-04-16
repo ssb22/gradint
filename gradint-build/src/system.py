@@ -379,7 +379,7 @@ if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam"
           return True
         tmpPrefix = None
         if winCEsound or not isAscii():
-            # WinCE: If a \Ramdisk has been set up (e.g. with http://www.amv007.narod.ru/Ramdisk_WinCE.zip), try that first.  (Could next try storage card if on WM5+ to save hitting internal flash, but that would be counterproductive on WM2003, and anyway the space in the pathname would be awkward.)
+            # WinCE: If a \Ramdisk has been set up, try that first.  (Could next try storage card if on WM5+ to save hitting internal flash, but that would be counterproductive on WM2003, and anyway the space in the pathname would be awkward.)
             for t in cond(winCEsound,["\\Ramdisk\\","\\TEMP\\", "\\"],["C:\\TEMP\\", "C:\\"]):
                 try:
                     open(t+"gradint-tempfile-test","w")
