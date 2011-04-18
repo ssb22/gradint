@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9973 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9974 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -21,6 +21,7 @@ def filesToEvents(files,dirBase=None):
 
 class Partials_Synth(Synth):
     # text is really a list of lists of filenames
+    # TODO if there's a SoundCollector, and if header.wav matches its desired parameters, we can feed bytes directly to it rather than making a temp file; could be useful in environments with Flash disks (NSLU2 etc). (Could have WAV partials there instead, but the resulting number of wav-to-raw sox conversions can slow down SoundCollector on large texts (TODO document this))
     def guess_length(self,lang,text):
         l=(len(text)-1)*0.3
         for phrase in text: l+=quickGuess(len(phrase),1.5) # TODO assumes average of 1.5 partials/sec; needs to be better than that
@@ -41,14 +42,14 @@ class Partials_Synth(Synth):
         o=open(fname,"wb")
         if not (text and text[0] and text[0][0].endswith(dotwav)): o.write(read(partialsDirectory+os.sep+"header"+dotwav))
         for phrase in text:
-            datFileInUse = 0
+            datFileInUse = 0 ; assert type(phrase)==type([])
             for f in phrase:
                 if f in audioDataPartials:
                     datFile,offset,size = audioDataPartials[f]
                     if not datFileInUse: datFileInUse = open(partialsDirectory+os.sep+datFile,"rb")
                     datFileInUse.seek(offset) ; o.write(datFileInUse.read(size))
                 else: o.write(read(partialsDirectory+os.sep+f))
-            if not phrase==text[-1]: o.write(chr(0)*partials_raw_0bytes)
+            if not phrase==text[-1]: o.write(chr(0)*partials_raw_0bytes) # TODO what if there's a duplicate of text[-1]
         # MUST fix the length, for Windows etc:
         wavLen = o.tell()-8
         o.seek(4) ; o.write(chr(wavLen&0xFF)+chr((wavLen>>8)&0xFF)+chr((wavLen>>16)&0xFF)+chr(wavLen>>24))
@@ -73,11 +74,11 @@ def fileToEvent(fname,dirBase=None):
                 eList = []
                 for phrase in s:
                     if type(phrase)==type([]):
-                      if partials_raw_mode: eList.append(synth_event(None,phrase))
+                      if partials_raw_mode: eList.append(synth_event(None,[phrase]))
                       else: eList.append(optimise_partial_playing(CompositeEvent(map(lambda x:SampleEvent(partialsDirectory+os.sep+x,useExactLen=True),phrase))))
                     else: eList.append(phrase) # it will be a SynthEvent
                     eList.append(Event(betweenPhrasePause))
-                e = CompositeEvent(eList)
+                e = CompositeEvent(eList[:-1]) # omit trailing pause
             elif partials_raw_mode: e=synth_event(None,s)
             else: e=optimise_partial_playing_list([CompositeEvent(map(lambda x:SampleEvent(partialsDirectory+os.sep+x,useExactLen=True),phrase)) for phrase in s]) # (tell SampleEvent to useExactLen in this case - don't want ANY pause between them)
             if not e: # can't make a ShellEvent from the whole lot; try making individual ShellEvents:
@@ -150,7 +151,9 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
     elif (lang,text) not in synth_partials_cache:
         # See if we can transliterate the text first.
         synth,translit = get_synth_if_possible(lang,0,to_transliterate=True),None
-        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text2=preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode('utf-8')
+        if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]:
+          text2=preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode('utf-8')
+          if ekho_speed_delta and type(get_synth_if_possible(lang,0))==EkhoSynth: return # don't use partials at all if they've got ekho and have set a different speed (TODO unless they've also changed the speed of the partials? but that would impair the quality advantage of using partials anyway)
         else: text2=text
         if synth: translit=synth.transliterate(lang,text2)
         if translit: t2=translit
@@ -161,6 +164,7 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
         if None in l: # at least one of the partials-phrases failed
           global scl_disable_recursion
           if len(t2)<100 or not filter(lambda x:x,l) or scl_disable_recursion: l=None # don't mix partials and synth for different parts of a short phrase, it's too confusing (TODO make the 100 configurable?)
+          elif type(get_synth_if_possible(lang,0))==EkhoSynth: l=None # some faulty versions of Ekho are more likely to segfault if called on fragments (e.g. if the fragment ends with some English), so don't do this with Ekho
           else: # longer text and SOME can be synth'd from partials: go through it more carefully
             t2=fix_compatibility(ensure_unicode(text2.replace(chr(0),"")).replace(u"\u3002",".").replace(u"\u3001",",")).encode('utf-8')
             for t in ".!?:;,": t2=t2.replace(t,t+chr(0))

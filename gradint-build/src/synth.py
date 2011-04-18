@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9973 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9974 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -897,7 +897,9 @@ class SynthEvent(Event):
     def __init__(self,text,synthesizer,language,is_prompt=0):
         self.text = text ; self.synthesizer = synthesizer
         self.modifiedText = self.text
-        if language=="en" and not self.text[-1] in ";.!?-" and not (';' in self.text and ';' in self.text[self.text.index(';')+1:]): self.modifiedText += ';' # prosody hack (some synths sound a bit too much like 'disjointed strict commands' without this)
+        if language=="en":
+            self.modifiedText = self.modifiedText.replace("\xE2\x80\xA7","").replace("\xE2\x80\xB2","") # remove syllable boundaries and primes (usually just confuse speech synths)
+            if not self.text[-1] in ";.!?-" and not (';' in self.text and ';' in self.text[self.text.index(';')+1:]): self.modifiedText += ';' # prosody hack (some synths sound a bit too much like 'disjointed strict commands' without this)
         elif language=="zh":
             # normalise pinyin
             # (note - this code is NOT used for partials synth, only for passing to espeak etc.  see elsewhere for partials synth)

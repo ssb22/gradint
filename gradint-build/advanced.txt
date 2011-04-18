@@ -223,6 +223,7 @@ sapiSpeeds = {
 # You can also set the speed of the non-SAPI Ekho voice (if you have it)
 # from -50 to +100 (percent, default 0) here:
 ekho_speed_delta = 0
+# (Note: If this is not 0, Ekho will be preferred over partials.)
 
 # Another thing you can do is to selectively override the
 # speech synthesis of certain words.  To do this, set

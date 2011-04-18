@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9973 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9974 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -559,7 +559,10 @@ def startTk():
             if hasattr(self,"voiceOption") and not self.voiceOption.get()==voiceOption:
               voiceOption=self.voiceOption.get() ; updateSettingsFile(settingsFile,{"voiceOption":voiceOption})
             if hasattr(self,"outputTo"):
-              outTo = self.outputTo.get()
+             outTo = self.outputTo.get()
+             if hasattr(self,"lastOutTo") and self.lastOutTo==outTo: pass
+             else:
+              self.lastOutTo = outTo
               if outTo=="0": outTo=""
               if hasattr(self,"TestTextButton"):
                 if outTo: self.TestTextButton["text"]=localise("To")+" "+outTo.upper()
@@ -1037,9 +1040,11 @@ def startTk():
         if closeBoxPressed:
             if emulated_interruptMain:
                 global need_to_interrupt ; need_to_interrupt = 1
+                while RM_running: time.sleep(0.1) # ensure main thread is last to exit, sometimes needed
             else: thread.interrupt_main()
     def processing_thread():
         while not app: time.sleep(0.1) # make sure started
+        # import cProfile as profile ; return profile.run('rest_of_main()',sort=2)
         rest_of_main()
     if Tkinter.TkVersion < 8.5: # we can do the processing in the main thread, so interrupt_main works
         thread.start_new_thread(appThread,(Application,))
@@ -1704,8 +1709,8 @@ def main():
         startTk()
     else: rest_of_main()
 def rest_of_main():
-    global useTK,justSynthesize,waitBeforeStart,traceback,appTitle,saveProgress
-    exitStatus = 0
+    global useTK,justSynthesize,waitBeforeStart,traceback,appTitle,saveProgress,RM_running
+    exitStatus = 0 ; RM_running = 1
 
     try:
         try: ceLowMemory
@@ -1763,6 +1768,7 @@ def rest_of_main():
     elif appuifw: appuifw.app.set_exit()
     elif riscos_sound: show_info("You may now close this Task Window.\n")
     else: show_info("\n") # in case got any \r'd string there - don't want to confuse the next prompt
+    RM_running = 0
     if exitStatus: sys.exit(exitStatus)
 
 if __name__=="__main__": main() # Note: calling main() is the ONLY control logic that can happen under the 'if __name__=="__main__"' block; everything else should be in main() itself.  This is because gradint-wrapper.exe under Windows calls main() from the exe and does not call this block
