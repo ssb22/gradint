@@ -1628,7 +1628,7 @@ def transliterates_differently(text,lang):
         else: return # (don't try to translit. if was in synth cache - will have no idea which synth did it)
     partials_are_sporadic = o
     synth=get_synth_if_possible(lang,0) # not to_transliterate=True this time because we want the synth that actually synth'd it (may have done it differently from the transliterating synth)
-    if not synth: return
+    if not synth or not synth.can_transliterate(lang): return
     translit=synth.transliterate(lang,text,forPartials=0)
     if translit and not translit==text: return translit
 

@@ -296,6 +296,7 @@ espeak_language_aliases = { "cant":"zhy" }
 # (maybe not as 'cant' is probably the only example for now)
 
 class SimpleZhTransliterator(object): # if not got eSpeak on system
+    def can_transliterate(self,lang): return lang=="zh"
     def transliterate(self,lang,text,forPartials=1,from_espeak=0):
         if lang=="zh" and not text.find("</")>-1: # (not </ - don't do this if got SSML)
             text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode("utf-8")
