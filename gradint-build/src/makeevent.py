@@ -164,7 +164,7 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
         if None in l: # at least one of the partials-phrases failed
           global scl_disable_recursion
           if len(t2)<100 or not filter(lambda x:x,l) or scl_disable_recursion: l=None # don't mix partials and synth for different parts of a short phrase, it's too confusing (TODO make the 100 configurable?)
-          elif type(get_synth_if_possible(lang,0))==EkhoSynth: l=None # some faulty versions of Ekho are more likely to segfault if called on fragments (e.g. if the fragment ends with some English), so don't do this with Ekho
+          elif type(get_synth_if_possible(lang,0))==EkhoSynth: l=None # some faulty versions of Ekho are more likely to segfault if called on fragments (e.g. if the fragment ends with some English), so don't do this with Ekho (unless can confirm it's at least ekho_4.5-2ubuntu10.04 .. not all versions of ekho can report their version no.)
           else: # longer text and SOME can be synth'd from partials: go through it more carefully
             t2=fix_compatibility(ensure_unicode(text2.replace(chr(0),"")).replace(u"\u3002",".").replace(u"\u3001",",")).encode('utf-8')
             for t in ".!?:;,": t2=t2.replace(t,t+chr(0))
