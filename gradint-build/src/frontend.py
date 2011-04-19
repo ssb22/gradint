@@ -311,7 +311,7 @@ def make_output_row(parent):
     addFiletypeButton("wav")
     # "Get MP3 encoder" and "Get WMA encoder" changed to "MP3..." and "WMA..." to save width (+ no localisation necessary)
     if unix and not got_program("lame") and got_program("make") and got_program("gcc") and (got_program("curl") or got_program("wget")): addButton(rightrow,"MP3...",app.getEncoder,status="Press this to compile an MP3 encoder\nso Gradint can output to MP3 files") # (checking gcc as well as make because some distros strangely have make but no compiler; TODO what if has a non-gcc compiler)
-    elif (winsound or mingw32) and not got_windows_encoder and not got_program("lame"): addButton(rightrow,"WMA...",app.getEncoder,status="Press this to download a WMA encoder\nso Gradint can output to WMA files")
+    # (no longer available) elif (winsound or mingw32) and not got_windows_encoder and not got_program("lame"): addButton(rightrow,"WMA...",app.getEncoder,status="Press this to download a WMA encoder\nso Gradint can output to WMA files")
     return row
 
 def updateSettingsFile(fname,newVals):
@@ -1506,11 +1506,12 @@ def gui_event_loop():
             if not found: app.todo.alert="No new sounds found"
         elif menu_response=="get-encoder":
           if winsound or mingw32:
-            if getYN("Gradint can use Windows Media Encoder to make WMA files, which can be played on most pocket MP3 players and mobiles etc.  Do you want to go to the Microsoft site to install Windows Media Encoder now?"):
-              if not startBrowser('http://www.microsoft.com/windows/windowsmedia/forpros/encoder/default.mspx'): app.todo.alert = "There was a problem starting the web browser.  Please install manually (see notes in advanced.txt)."
-              else:
-                app.setLabel("Waiting for you to install Media Encoder")
-                while not fileExists(programFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs"): time.sleep(1)
+            assert 0, "Windows Media Encoder no longer available for new installations"
+            #if getYN("Gradint can use Windows Media Encoder to make WMA files, which can be played on most pocket MP3 players and mobiles etc.  Do you want to go to the Microsoft site to install Windows Media Encoder now?"):
+            #  if not startBrowser('http://www.microsoft.com/windows/windowsmedia/forpros/encoder/default.mspx'): app.todo.alert = "There was a problem starting the web browser.  Please install manually (see notes in advanced.txt)."
+            #  else:
+            #    app.setLabel("Waiting for you to install Media Encoder")
+            #    while not fileExists(programFiles+"\\Windows Media Components\\Encoder\\WMCmd.vbs"): time.sleep(1)
           else:
             if getYN("Do you really want to download and compile the LAME MP3 encoder? (this may take a while)"):
               app.setLabel("Downloading...") ; worked=0
