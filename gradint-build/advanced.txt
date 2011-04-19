@@ -479,12 +479,9 @@ outputFile = ""
 # The Gradint GUI will offer to export to files of any
 # type that it can find encoders for, plus WAV.  So for
 # example if it finds lame, it will give an MP3 option.
-# On Windows (or Cygwin) you can also download
-# Windows Media Encoder from
-# http://www.microsoft.com/windows/windowsmedia/forpros/encoder/default.mspx
-# or http://www.microsoft.com/downloads/details.aspx?FamilyID=5691ba02-e496-465a-bba9-b2f1182cdf24
-# and the Gradint GUI will offer to use this to make WMA files.
-# On Mac it can make AAC files using afconvert if it finds it (10.5+ should have this).
+# On Windows it can use Windows Media Encoder to make WMA,
+# if you installed this before Microsoft withdrew it in 2010.
+# On Mac it can make AAC files using afconvert (10.5+ should have this).
 
 # In each case Gradint uses encoding parameters that have been
 # found to give good compression without sacrificing too
