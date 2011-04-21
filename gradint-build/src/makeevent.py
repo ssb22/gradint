@@ -190,7 +190,8 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
         global NICcount
         try: NICcount += 1
         except: NICcount=1
-        if NICcount==20: show_info("Further 'not in cache' warnings turned off\n") # (TODO configurable? important on S60 etc)
+        if NICcount>20: pass
+        elif NICcount==20: show_info("Further 'not in cache' warnings turned off\n") # (TODO configurable? important on S60 etc)
         else: show_info("Not in cache: "+r+"\n",True)
 def can_be_synthesized(fname,dirBase=None,lang=None):
     if dirBase==None: dirBase=samplesDirectory
