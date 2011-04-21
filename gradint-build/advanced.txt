@@ -146,7 +146,8 @@ downloadsDirs = ["../Downloads","..\\Desktop"]
 # if you like one of your MacOS voices better than eSpeak then
 # you can move MacOS to before eSpeak (in which case MacOS will be
 # used for English and eSpeak for other languages).
-# (Festival, FLite and old-RISCOS will be added to the end of the list.)
+# (Other synths, e.g. Festival, FLite, S60, old-RISCOS, will be
+# automatically added to the end of the list.)
 # (Note: the priority of eSpeak is automatically reduced for
 # most non-English languages, so if you explicity install some
 # other synth for those languages then it will be used instead)
