@@ -502,7 +502,7 @@ if useTK and runInBackground and not (winsound or mingw32) and hasattr(os,"fork"
 else: runInBackground = 0
 
 try: import readline # enable readline editing of raw_input()
-except: pass
+except: readline=0
 
 try: import cPickle as pickle
 except:

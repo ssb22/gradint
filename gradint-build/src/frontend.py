@@ -67,10 +67,11 @@ def getYN(msg,defaultIfEof="n"):
 def primitive_synthloop():
     global justSynthesize,warnings_printed
     lang = None
-    interactive = appuifw or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty()
+    interactive = appuifw or winCEsound or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty()
     if interactive: interactive=cond(winCEsound and warnings_printed,"(see warnings under this window) Say:","Say: ") # (WinCE uses an input box so need to repeat the warnings if any - but can't because prompt is size-limited, so need to say move the window.)
     else: interactive="" # no prompt on the raw_input (we might be doing outputFile="-" as well)
     while True:
+        old_js = justSynthesize
         if appuifw:
             if not justSynthesize: justSynthesize=""
             justSynthesize=appuifw.query(u"Say:","text",u""+justSynthesize)
@@ -80,6 +81,9 @@ def primitive_synthloop():
             try: justSynthesize=raw_input(interactive)
             except EOFError: break
             if (winCEsound or riscos_sound) and not justSynthesize: break # because no way to send EOF (and we won't be taking i/p from a file)
+            if interactive and not readline:
+              interactive="('a' for again) Say: "
+              if justSynthesize=="a": justSynthesize=old_js
         oldLang = lang
         if justSynthesize: lang = just_synthesize(interactive,lang)
         # and see if it transliterates:

@@ -244,7 +244,7 @@ def parseSynthVocab(fname,forGUI=0):
     if not fname: return []
     langs = [secondLanguage,firstLanguage] ; someLangsUnknown = 0 ; maxsplit = 1
     ret = []
-    count = 1 ; doLimit = 0 ; limitNo = 0 ; doPoetry = 0
+    count = 1 ; doLimit = 0 ; limitNo = 0 ; doPoetry = disablePoem = 0
     lastPromptAndWord = None
     if not fileExists(fname): return []
     if not emptyCheck_hack: doLabel("Reading "+fname)
@@ -264,7 +264,7 @@ def parseSynthVocab(fname,forGUI=0):
             elif l2.startswith("limit on"):
                 doLimit = 1 ; limitNo += 1
             elif l2.startswith("limit off"): doLimit = 0
-            elif l2.startswith("begin poetry"): doPoetry,lastPromptAndWord = True,None
+            elif l2.startswith("begin poetry"): doPoetry,lastPromptAndWord,disablePoem = True,None,False
             elif l2.startswith("end poetry"): doPoetry = lastPromptAndWord = None
             elif l2.startswith("poetry vocab line:"): doPoetry,lastPromptAndWord = 0,cond(lastPromptAndWord,lastPromptAndWord,0) # not None, in case we're at the very start of a poem (see "just processed"... at end)
             else: canProcess=1
@@ -314,6 +314,7 @@ def parseSynthVocab(fname,forGUI=0):
                 if i==onePastPromptIndex or (lang==firstLanguage and not firstLanguage==secondLanguage) or not word: continue # if 1st language occurs more than once (target as well as prompt) then don't get confused - this vocab file is probably being used with reverse settings
                 elif word[0] in wsp or word[-1] in wsp: word=word.strip(wsp) # avoid call if unnecessary
                 if lang in getsynth_cache or can_be_synthesized("!synth:"+word+"_"+lang):
+                  if not (doPoetry and disablePoem):
                     f=strCount+word+"_"+lang
                     if prompt==1 or prompt==f: # a file with itself as the prompt (either explicitly or by omitting any other prompt)
                         prompt=f
@@ -322,7 +323,7 @@ def parseSynthVocab(fname,forGUI=0):
                     if emptyCheck_hack: return ret
                     if doLimit: limitedFiles[f]="synth:"+str(limitNo)
                     if doPoetry: lastPromptAndWord = [prompt_L1only,f]
-                elif doPoetry: lastPromptAndWord=None # if one of the lines can't be synth'd, don't connect the lines before/after it
+                elif doPoetry: disablePoem=1 # if one of the lines can't be synth'd, disable the rest of the poem (otherwise get wrongly connected lines, disconnected lines, or re-introduction of isolated lines that were previously part of a poem but can't be synth'd on this platform)
         if not lastPromptAndWord==None: doPoetry = 1 # just processed a "poetry vocab line:" (lastPromptAndWord is either the real last prompt and word, or 0 if we were at the start)
     return ret
 

@@ -105,7 +105,11 @@ class S60Synth(Synth):
     def supports_language(self,lang): return lang=="en" # (audio.say always uses English even when other languages are installed on the device)
     def works_on_this_platform(self): return appuifw and hasattr(audio,"say")
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
-    def play(self,lang,text): audio.say(text)
+    def play(self,lang,text):
+        if not text=="Error in graddint program.": # (just in case it's unclear)
+          if text.endswith(';'): doLabel(text[:-1])
+          else: doLabel(text)
+        audio.say(text)
 
 if winsound or mingw32: toNull=" > nul"
 else: toNull=" >/dev/null" # stdout only, not stderr, because we want to see any errors that happen

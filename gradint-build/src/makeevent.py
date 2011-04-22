@@ -122,7 +122,7 @@ def textof(fname): return fname[fname.find('!synth:')+7:fname.rfind('_')]
 last_partials_transliteration = None
 synth_partials_cache = {} ; scl_disable_recursion = 0
 def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=None):
-    # if justQueryCache (used by the GUI), return value is (synthCache_transtbl key, result if any).  If key starts with _, we got a sporadic one.
+    # if justQueryCache (used by the GUI), return value is (synthCache_transtbl key, result if any).  If key starts with _, we got a sporadic one.  (If =2, query sporadic ones but also try partials, used for can_be_synthesized)
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
     if not lang: lang = languageof(fname)
@@ -131,7 +131,8 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
         except IOError: return 0,0 # probably trying to synthcache_lookup a file with variants without first choosing a variant (e.g. in anticipation() to check for sporadic cache entries in old words) - just ignore this
     text = textof(fname)
     useSporadic = -1 # undecided (no point accumulating counters for potentially-unbounded input)
-    if justQueryCache: useSporadic=1
+    if justQueryCache: useSporadic,tryHarder=1,0
+    else: tryHarder = not get_synth_if_possible(lang,0) # (tryHarder = always use sporadic if can't synth from partials, because there's no other synth to fall back on)
     if synthCache:
       for init in "_","":
         for ext in "wav","mp3":
@@ -141,12 +142,13 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
             elif s.lower().endswith(dotwav) and s[:-len(dotwav)]+dotmp3 in synthCache_contents: ret=s[:-len(dotwav)]+dotmp3
             else: ret=0
             if ret:
-                if justQueryCache: ret=(k,ret)
+                if justQueryCache==1: ret=(k,ret)
                 if init=="_":
                     if useSporadic==-1: useSporadic=decide_subst_synth(text)
                     if useSporadic: return ret
+                    elif tryHarder: tryHarder=ret
                 else: return ret
-    if justQueryCache: return 0,0
+    if justQueryCache==1: return 0,0
     if lang not in synth_partials_voices: l,translit=None,None # don't bother trying to transliterate here if there aren't even any partials for that language
     elif (lang,text) not in synth_partials_cache:
         # See if we can transliterate the text first.
@@ -184,6 +186,7 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
         global last_partials_transliteration
         last_partials_transliteration=translit
     if l: return l
+    if tryHarder and not tryHarder==True: return tryHarder
     if printErrors and synthCache and not (app and winsound):
         r = repr(text.lower()+"_"+lang)
         if len(r)>100: r=r[:100]+"..."
@@ -191,14 +194,14 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
         try: NICcount += 1
         except: NICcount=1
         if NICcount>20: pass
-        elif NICcount==20: show_info("Further 'not in cache' warnings turned off\n",True) # (TODO configurable? important on S60 etc)
+        elif NICcount==20: show_info("Further 'not in cache' warnings turned off\n",True) # (important on S60 etc; TODO configurable?)
         else: show_info("Not in cache: "+r+"\n",True)
 def can_be_synthesized(fname,dirBase=None,lang=None):
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
     if not lang: lang = languageof(fname)
     if get_synth_if_possible(lang,0): return True
-    elif synthcache_lookup(fname,dirBase,1,lang=lang): return True
+    elif synthcache_lookup(fname,dirBase,1,2,lang): return True
     else: return get_synth_if_possible(lang) # and this time print the warning
 def stripPuncEtc(text):
     # For sending text to synth_from_partials.  Removes spaces and punctuation from text, and returns a list of the text split into phrases.

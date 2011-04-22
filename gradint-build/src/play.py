@@ -254,7 +254,7 @@ class SampleEvent(Event):
         elif appuifw:
             fname = self.file
             if not fname[1]==":": fname=os.getcwd()+cwd_addSep+fname # must be full drive:\path
-            sound = audio.Sound.open(fname)
+            sound = audio.Sound.open(ensure_unicode(fname))
             sound.play()
             try: time.sleep(self.length) # TODO or exactLen?
             finally: sound.stop()
