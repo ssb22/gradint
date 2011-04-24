@@ -396,17 +396,17 @@ def denumber_synth(z,also_norm_extsep=0):
     elif also_norm_extsep: return z.replace("\\","/").replace(".","/") # so compares equally across platforms with os.sep and extsep differences
     return z
 
+def norm_filelist(x,y):
+    def noext(x): return (x+extsep)[:x.rfind(extsep)] # so user can change e.g. wav to mp3 without disrupting progress.txt
+    if type(x)==type([]): x=tuple(map(lambda z:denumber_synth(noext(z),1),x))
+    else: x=denumber_synth(noext(x),1)
+    if type(y)==type([]): y=tuple(map(lambda z:denumber_synth(noext(z),1),y))
+    else: y=denumber_synth(noext(y),1)
+    return (x,y)
 def mergeProgress(progList,scan):
     # Merges a progress database with a samples scan, to
     # pick up any new samples that were added since last
     # time.  Appends to progList.  Return value see below.
-    def norm_filelist(x,y):
-        def noext(x): return (x+extsep)[:x.rfind(extsep)] # so user can change e.g. wav to mp3 without disrupting progress.txt
-        if type(x)==type([]): x=tuple(map(lambda z:denumber_synth(noext(z),1),x))
-        else: x=denumber_synth(noext(x),1)
-        if type(y)==type([]): y=tuple(map(lambda z:denumber_synth(noext(z),1),y))
-        else: y=denumber_synth(noext(y),1)
-        return (x,y)
     proglistDict = {} ; scanlistDict = {} ; n = 0
     while n<len(progList):
         i,j,k = progList[n]
