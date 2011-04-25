@@ -962,7 +962,7 @@ def startTk():
             self.L2Text.set(secondLanguage)
             self.L1Label["text"] = localise("Your first language")+":"
             self.L2Label["text"] = localise("second")+":"
-            self.TestTextButton["text"] = localise("Speak")
+            self.TestTextButton["text"] = localise("Speak") ; self.lastOutTo=-1 # so updates to "To WAV" etc if necessary
             if hasattr(self,"userNo") and intor0(self.userNo.get()): gui_vocabFile_name="vocab file" # don't expose which user number they are because that might change
             elif len(vocabFile)>15 and os.sep in vocabFile: gui_vocabFile_name=vocabFile[vocabFile.rindex(os.sep)+1:]
             else: gui_vocabFile_name=vocabFile
