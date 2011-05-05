@@ -775,6 +775,9 @@ def startTk():
                     self.ChangeButton.pack_forget()
                     self.change_button_shown = 0
                 del self.ListBox # so doesn't sync lists, or assume Cancel button is a Clear button
+                if hasattr(self,"cacheManagementButtons"):
+                    for b in self.cacheManagementButtons: b.pack_forget()
+                    del self.cacheManagementButtons,self.cacheManagementOptions
                 app.master.title(appTitle)
             self.CancelRow.pack_forget() ; self.Version.pack_forget()
             self.Label.pack() ; self.CancelRow.pack()

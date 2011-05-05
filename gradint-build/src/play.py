@@ -435,7 +435,7 @@ class SoundCollector(object):
             handle=open("tmp0","rb")
         elif winsound or mingw32: handle = os.popen(("sox -t %s - %s - < \"%s\"" % (fileType,self.soxParams(),file)),"rb")
         else: handle = os.popen(("cat \"%s\" | sox -t %s - %s -" % (file,fileType,self.soxParams())),"rb")
-        self.theLen += outfile_writeFile(self.o,handle)
+        self.theLen += outfile_writeFile(self.o,handle,file)
         if riscos_sound:
             handle.close() ; os.unlink("tmp0")
     def addBeeps(self,gap):
@@ -470,13 +470,13 @@ def outfile_writeBytes(o,bytes):
 def outfile_close(o):
     try: o.close()
     except IOError: outfile_write_error()
-def outfile_writeFile(o,handle):
+def outfile_writeFile(o,handle,filename):
     data,theLen = 1,0
     while data:
         data = handle.read(102400)
         outfile_writeBytes(o,data)
         theLen += len(data)
-    assert theLen, "No data: check for sox crash" # TODO report what file was being fed to sox; if it's from EkhoSynth it could be a buggy version of Ekho
+    assert theLen, "No data when reading "+filename+": check for sox crash" # TODO if it's from EkhoSynth it could be a buggy version of Ekho
     return theLen
 def outfile_write_error(): raise IOError("Error writing to outputFile: either you are missing an encoder for "+out_type+", or the disk is full or something.")
 
@@ -555,7 +555,7 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,) # S=script P=params for sox (ignor
             if fileType=="mp3": fileData,fileType = decode_mp3(file),"wav" # because remote sox may not be able to do it
             elif compress_SH and unix: handle=os.popen("cat \""+file+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null","rb") # 8-bit if possible (but don't change sample rate, as we might not have floating point)
             else: handle = open(file,"rb")
-            offset, length = self.bytesWritten, outfile_writeFile(self.o,handle)
+            offset, length = self.bytesWritten, outfile_writeFile(self.o,handle,file)
             self.bytesWritten += length
             # dd is more efficient when copying large chunks - try to align to 1k
             first_few_bytes = min(length,(1024-(offset%1024))%1024)
