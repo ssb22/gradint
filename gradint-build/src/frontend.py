@@ -197,7 +197,7 @@ def selectAllButNumber(e): # hack for recording.py - select all but any number a
 def addTextBox(row,wide=0):
     text = Tkinter.StringVar(row)
     entry = Tkinter.Entry(row,textvariable=text)
-    if winsound or mingw32 or cygwin or macsound: entry.bind('<Button-3>',CXVMenu)
+    entry.bind('<ButtonRelease-3>',CXVMenu)
     if macsound: entry.bind('<Control-Button-1>',CXVMenu)
     if winCEsound:
       if WMstandard: # non-numeric inputs no good on WMstandard Tkinter
