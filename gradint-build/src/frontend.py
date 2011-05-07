@@ -198,7 +198,7 @@ def addTextBox(row,wide=0):
     text = Tkinter.StringVar(row)
     entry = Tkinter.Entry(row,textvariable=text)
     entry.bind('<ButtonRelease-3>',CXVMenu)
-    if macsound: entry.bind('<Control-Button-1>',CXVMenu)
+    if macsound: entry.bind('<Control-ButtonRelease-1>',CXVMenu)
     if winCEsound:
       if WMstandard: # non-numeric inputs no good on WMstandard Tkinter
         def doRawInput(text,entry):
