@@ -30,7 +30,11 @@ def waitOnMessage(msg):
     elif app:
         if not (winsound or winCEsound or mingw32 or cygwin): show_info(msg2+"\n\nWaiting for you to press OK on the message box... ",True) # in case terminal is in front
         app.todo.alert = "".join(warnings_printed)+msg
-        while app and hasattr(app.todo,"alert"): time.sleep(0.5)
+        while True:
+            try:
+              if not hasattr(app.todo,"alert"): break
+            except: break # app destroyed
+            time.sleep(0.5)
         if not (winsound or winCEsound or mingw32 or cygwin): show_info("OK\n",True)
     else:
         if clearScreen(): msg2 = "This is "+program_name.replace("(c)","\n(c)")+"\n\n"+msg2 # clear screen is less confusing for beginners, but NB it may not happen if warnings etc
@@ -1493,6 +1497,7 @@ def gui_event_loop():
           elif not startBrowser(mp3web.replace("$Word","".join(url)).replace("$Lang",secondLanguage)): app.todo.alert = localise("Can't start the web browser")
           else:
             waitOnMessage(localise("If the word is there, download it. When you press OK, Gradint will check for downloads."))
+            if not app: break
             found=0
             for f in scanDirs()[0].keys():
               if not f in oldLs and (f.lower().endswith(dotmp3) or f.lower().endswith(dotwav)) and getYN("Use "+f[f.rfind(os.sep)+1:]+"?"): # TODO don't ask this question too many times if there are many and they're all 'no'
