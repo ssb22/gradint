@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-program_name = "gradint.cgi v1.0 (c) 2011 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.01 (c) 2011 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -147,6 +147,7 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
       if not gradint.justSynthesize:
         gradint.justSynthesize = "en Problem generating the lesson. Check we have prompts for those languages." ; gradint.main()
   if stream:
+    print "Content-Disposition: attachment; filename=gradint.mp3" # helps with some browsers that can't really do streaming
     print ; sys.stdout.flush()
     gradint.write_to_stdout = 1
     gradint.outputFile="-."+filetype ; gradint.setSoundCollector(gradint.SoundCollector())
