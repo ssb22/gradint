@@ -130,7 +130,7 @@ def htmlOut(body_u8):
     print "Content-type: text/html; charset=utf-8" ; print
     print '<html><head><title>Gradint Web edition</title>'
     print '<meta name="viewport" content="width=device-width">'
-    print a</head><body>'+body_u8
+    print '</head><body>'+body_u8
     print '<HR>This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="http://people.pwf.cam.ac.uk/ssb22/gradint/">download the full version of Gradint</A>.<p>'+program_name[:program_name.index("(")]+"using "+gradint.program_name[:gradint.program_name.index("(")]
     # TODO @ low-priority: Android 3 <input type="file" accept="audio/*;capture=microphone"></input>
     print "</body></html>"
