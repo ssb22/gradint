@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-program_name = "gradint.cgi v1.01 (c) 2011 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.02 (c) 2011 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -69,6 +69,7 @@ def main():
     if "l2w" in query and query["l2w"][0] and "l1w" in query and query["l1w"][0]:
       gradint.startBrowser=lambda *args:0
       if query["l2"][0]=="zh": scmsg=gradint.sanityCheck(query["l2w"][0],"zh")
+      else: scmsg=None
       if scmsg: htmlOut(scmsg+''+backLink)
       else: addWord(query["l1w"][0],query["l2w"][0],query["l1"][0],query["l2"][0])
     else: htmlOut('You must type words in both boxes before pressing the Add button.'+backLink) # TODO maybe add a Javascript test to the form also, IF can figure out a way to tell whether window.alert() works or not
