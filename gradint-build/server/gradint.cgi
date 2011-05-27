@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-program_name = "gradint.cgi v1.02 (c) 2011 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.03 (c) 2011 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ def main():
     else: htmlOut('You must type words in both boxes before pressing the Add button.'+backLink) # TODO maybe add a Javascript test to the form also, IF can figure out a way to tell whether window.alert() works or not
   elif "clang" in query: # change languages
     dirID = setup_userID()
-    if (gradint.firstLanguage,gradint.secondLanguage) == (query["l1"][0],query["l2"][0]): return htmlOut('You must change the settings before pressing the Change Languages button.'+backLink)
+    if (gradint.firstLanguage,gradint.secondLanguage) == (query["l1"][0],query["l2"][0]) and not query["clang"][0]=="ignore-unchanged": return htmlOut('You must change the settings before pressing the Change Languages button.'+backLink) # (external scripts can set clang=ignore-unchanged)
     gradint.updateSettingsFile(gradint.settingsFile,{"firstLanguage": query["l1"][0],"secondLanguage":query["l2"][0]})
     redirectHomeKeepCookie(dirID)
   elif "swaplang" in query: # change languages
@@ -180,13 +180,15 @@ def addWord(l1w,l2w,l1,l2):
 def redirectHomeKeepCookie(dirID,extra=""):
     print "Location: gradint.cgi?random="+str(random.random())+"&id="+dirID[dirID.rindex("/")+1:]+extra ; print
 
-def langSelect(name,curLang): return '<select name="'+name+'">'+''.join(['<option value="'+abbr+'"'+gradint.cond(abbr==curLang," selected","")+'>'+localise(abbr)+' ('+abbr+')'+'</option>' for abbr in sorted(lDic.keys())])+'</select>'
+def langSelect(name,curLang):
+    curLang = gradint.espeak_language_aliases.get(curLang,curLang)
+    return '<select name="'+name+'">'+''.join(['<option value="'+abbr+'"'+gradint.cond(abbr==curLang," selected","")+'>'+localise(abbr)+' ('+abbr+')'+'</option>' for abbr in sorted(lDic.keys())])+'</select>'
 
 def numSelect(name,nums,curNum): return '<select name="'+name+'">'+''.join(['<option value="'+str(num)+'"'+gradint.cond(num==curNum," selected","")+'>'+str(num)+'</option>' for num in nums])+'</select>'
 
 def localise(x):
     r=gradint.localise(x)
-    if r==x: return lDic.get(x,x)
+    if r==x: return lDic.get(gradint.espeak_language_aliases.get(x,x),x)
     else: return r.encode('utf-8')
 
 def listVocab(hasList): # main screen
