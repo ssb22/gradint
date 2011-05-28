@@ -431,7 +431,7 @@ partialsDirectory = "partials"
 # the other voices (but still put a default header.wav in partials).
 # If you don't like having so many *.raw files in a directory
 # then you can also do (in a Unix evironment such as OSX or Cygwin) :
-# wc -c *.raw | grep -v total$ | sed -e 's/^ *//' > audiodata.dat ; cat *.raw >> audiodata.dat ; rm *.raw
+# wc -c *.raw | grep -v total$ | sed -e 's/^ *//' > audiodata.dat && cat *.raw >> audiodata.dat && rm *.raw
 
 # You can also store syllables using UTF-8 filenames, but some systems may
 # have difficulty storing all of these (especially for Korean); therefore

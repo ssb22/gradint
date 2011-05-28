@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-program_name = "gradint.cgi v1.03 (c) 2011 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.04 (c) 2011 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -53,6 +53,14 @@ def main():
   filetype=""
   if "filetype" in query: filetype=query["filetype"][0]
   if not filetype in ["mp3","ogg","wav"]: filetype="mp3"
+  for k in query.keys():
+    if k.startswith("del-"):
+     k=urllib.unquote(urllib.unquote(k)) # might be needed
+     if '=' in k:
+       l2,l1 = k[4:].split('=')
+       setup_userID()
+       gradint.delOrReplace(gradint.ensure_unicode(l2),gradint.ensure_unicode(l1),"","","delete")
+       return listVocab(True)
   if "js" in query:
     if "jsl" in query: justSynth(query["js"][0], query["jsl"][0],filetype=filetype)
     else: justSynth(query["js"][0],filetype=filetype)
@@ -224,12 +232,18 @@ function h5a(link) { if (document.createElement) {
        if type(l)==type([]) or type(l)==type(()): return htmlize(l[-1],lang)
        if "!synth:" in l: return htmlize(l[l.index("!synth:")+7:l.rfind("_")],lang)
        return justsynthLink(l,lang)
+    def deleteLink(l1,l2):
+       r = []
+       for l in [l2,l1]:
+         if type(l)==type([]) or type(l)==type(()) or not "!synth:" in l: return "" # Web-GUI delete in poetry etc not yet supported
+         r.append(urllib.quote(l[l.index("!synth:")+7:l.rfind("_")]))
+       return '<TD><input type=submit name="del-%s%%3d%s" value=Delete onClick="javascript: return confirm(\'Really delete this word?\');"></TD>' % tuple(r)
     if hasList:
        gradint.availablePrompts = gradint.AvailablePrompts() # needed before ProgressDatabase()
        # gradint.cache_maintenance_mode=1 # don't transliterate on scan -> NO, including this scans promptsDirectory!
        gradint.ESpeakSynth.update_translit_cache=lambda *args:0 # do it this way instead
        data = gradint.ProgressDatabase().data ; data.reverse()
-       if data: hasList = "<p><TABLE style=\"border: thin solid green\"><caption><nobr>Your word list</NOBR> <NOBR>(click for audio)</NOBR> <input type=submit name=edit value=\"Text edit \""+localise("vocab.txt").replace(".txt","")+"\"></caption><TR><TH>Repeats</TH><TH>"+localise(gradint.secondLanguage)+"</TH><TH>"+localise(gradint.firstLanguage)+"</TH></TR>"+"".join(["<TR><TD>%d</TD><TD>%s</TD><TD>%s</TD>" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage)) for num,src,dest in data])+"</TABLE>"
+       if data: hasList = "<p><TABLE style=\"border: thin solid green\"><caption><nobr>Your word list</NOBR> <NOBR>(click for audio)</NOBR> <input type=submit name=edit value=\"Text edit \""+localise("vocab.txt").replace(".txt","")+"\"></caption><TR><TH>Repeats</TH><TH>"+localise(gradint.secondLanguage)+"</TH><TH>"+localise(gradint.firstLanguage)+"</TH></TR>"+"".join(["<TR><TD>%d</TD><TD>%s</TD><TD>%s</TD>%s" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</TABLE>"
        else: hasList=""
     else: hasList=""
     if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+' <input type=submit name=lesson value="'+localise("Start lesson")+'"></td></tr></table>'

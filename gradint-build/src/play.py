@@ -486,11 +486,11 @@ def lame_endian_parameters():
   # lame 3.98+ has changed the default of -x and introduced explicit --big-endian and --little-endian.
   # (Note: None of this would be needed if we give lame a WAV input, as email-lesson.sh does.  But lame 3.97 on Windows faults on wav inputs.)
   lameVer = os.popen("lame --version").read()
-  if "version " in lameVer:
+  if lameVer.find("version ")>-1:
     lameVer = lameVer[lameVer.index("version "):].split()[1]
     if lameVer and '.' in lameVer and (lameVer[0]>'3' or intor0(lameVer[2:4])>97):
       # Got 3.98+ - explicitly tell it the endianness (but check for alpha releases first - some of them don't deal with either this or the 3.97 behaviour very well)
-      if "alpha" in lameVer and lameVer[0]=="3" and intor0(lameVer[2:4])==98: show_warning("Warning: You have a 3.98 alpha release of LAME.\nIf the MP3 file is white noise, try a different LAME version.")
+      if lameVer.find("alpha")>-1 and lameVer[0]=="3" and intor0(lameVer[2:4])==98: show_warning("Warning: You have a 3.98 alpha release of LAME.\nIf the MP3 file is white noise, try a different LAME version.")
       return " --little-endian"
   # otherwise fall-through to older lame behaviour:
   if big_endian: return "" # TODO are we sure we don't need -x on lame 3.97 PPC as well?
