@@ -219,6 +219,7 @@ function h5a(link) { if (document.createElement) {
 //--></script>"""
     body += '<center><form action="gradint.cgi">'
     gotVoiceOptions = (gradint.secondLanguage in gradint.synth_partials_voices or gradint.firstLanguage in gradint.synth_partials_voices) and gradint.guiVoiceOptions
+    # TODO what if it's in synth_partials_voices but NOT the one that has guiVoiceOptions ? (e.g. Cantonese when both Mandarin voices are installed) (currently displaying 'non-functional' voice option buttons when that happens)
     if gotVoiceOptions:
       body += 'Voice option: <input type=submit name=voNormal value="Normal"'+gradint.cond(gradint.voiceOption=="",' disabled="disabled"',"")+'>'
       for v in gradint.guiVoiceOptions: body += ' | <input type=submit name=vopt value="'+v[1].upper()+v[2:]+'"'+gradint.cond(gradint.voiceOption==v,' disabled="disabled"',"")+'>'
