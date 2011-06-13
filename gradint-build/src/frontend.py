@@ -1174,7 +1174,7 @@ if useTK:
             # (TODO if both rox and gnome-open are available, can we tell which one the user prefers?  currently using gnome-open)
             explorerCommand="rox"
         # anyway, see if we can find a nice editor
-        for editor in ["gedit","nedit","kedit","xedit"]:
+        for editor in ["leafpad","gedit","nedit","kedit","xedit"]:
             if got_program(editor):
                 textEditorName=textEditorCommand=editor
                 textEditorWaits = 1

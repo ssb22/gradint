@@ -13,28 +13,28 @@
 # be used.  E.g.: export ESPEAK_CGI_URL="/~userID/espeak.cgi"
 # (TODO: this script ignores the possibility of synthesizing phrases from partials)
 
-# (c) Silas S. Brown, License: GPL
+# Version 1.1, (c) Silas S. Brown, License: GPL
 
 from gradint import *
 if not synthCache: synthCache_contents = []
 langs=[secondLanguage,firstLanguage]
 o=open(vocabFile,"rU")
 justHadP=1
-sys.stdout.write("<HEAD><META HTTP_EQUIV=Content-type CONTENT=\"text/html; charset=utf-8\"></HEAD>\n") # (assume utf8 in case there's any hanzi in lily, or in espeak cantonese voice or whatever - but TODO what if using another charset for another language?)
+print '<html><HEAD><META HTTP-EQUIV=Content-type CONTENT="text/html; charset=utf-8"><meta name="viewport" content="width=device-width"></HEAD><body>' # (assume utf8 in case there's any hanzi, but TODO what if using another charset for another language?)
 for l in o.readlines():
   l2=l.lower()
   if l2.startswith("set language ") or l2.startswith("set languages "): langs=l.split()[2:]
   if not l.strip():
     # blank line
-    if not justHadP: sys.stdout.write("<P>")
+    if not justHadP: print "<P>"
     justHadP=1 ; continue
-  if not justHadP: sys.stdout.write("<BR>")
+  if not justHadP: print "<BR>"
   if l2.startswith("set language ") or l2.startswith("set languages ") or l2.startswith("limit on") or l2.startswith("limit off") or l2.startswith("begin poetry") or l2.startswith("end poetry"):
-    sys.stdout.write("<EM>%s</EM>" % (l,))
+    print "<EM>%s</EM>" % (l,)
   elif l2.startswith("#"):
     # comment (and may be part of multi-line comment)
-    if not l[1:].strip().startswith("<!--"): sys.stdout.write("<small>#</small> ")
-    sys.stdout.write(l[1:])
+    if not l[1:].strip().startswith("<!--"): print "<small>#</small> "
+    print l[1:]
   else:
     # vocab line
     langsAndWords=zip(langs,map(lambda x:x.strip(),l.split("=")))
@@ -51,5 +51,6 @@ for l in o.readlines():
               import urllib
               out.append("<A HREF=\""+os.getenv("ESPEAK_CGI_URL")+"?"+urllib.urlencode({"t":word,"l":lang})+"\">"+word+"</A>")
           else: out.append(word)
-    sys.stdout.write(" = ".join(out))
+    print " = ".join(out)
   justHadP=0
+print "</body></html>"

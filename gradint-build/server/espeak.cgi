@@ -3,7 +3,7 @@
 # espeak.cgi - a CGI script for the eSpeak speech synthesizer
 
 # (c) 2008,2011 Silas S. Brown, License: GPL
-version="1.122"
+version="1.123"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -117,7 +117,7 @@ elif t:
         sys.stdout.write("Content-Type: audio/wav\nContent-Disposition: attachment; filename=\""+t+"_"+lang+".wav\"\n\n")
         sys.stdout.write(open(fname2,"rb").read())
 else:
-    sys.stdout.write("Content-Type: text/html; charset=utf-8\n\n<HTML><BODY>") # (specify utf-8 here in case accept-charset is not recognised, e.g. some versions of IE6)
+    sys.stdout.write('Content-Type: text/html; charset=utf-8\n\n<HTML><head><meta name="viewport" content="width=device-width"></head><BODY>') # (specify utf-8 here in case accept-charset is not recognised, e.g. some versions of IE6)
     banner = commands.getoutput(prog+" --help|head -3").strip()
     sys.stdout.write("This is espeak.cgi version "+version+", using <A HREF=http://espeak.sourceforge.net/>eSpeak</A> "+" ".join(banner.split()[1:]))
     if not loc: sys.stdout.write("<br>Warning: could not find a UTF-8 locale; espeak may malfunction on some languages")
