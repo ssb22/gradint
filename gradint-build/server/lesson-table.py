@@ -4,7 +4,7 @@
 # for summarizing it to a teacher or native speaker.
 # Reads from progressFile and progressFileBackup.
 
-# Version 1.01 (c) 2011 Silas S. Brown.  License: GPL
+# Version 1.02 (c) 2011 Silas S. Brown.  License: GPL
 
 # Example use:
 # python lesson-table.py | ssh some-server 'mutt -e "set record = \"\";" -e "set charset=\"utf-8\"; set send_charset=\"utf-8\"; set content_type=\"text/html\";" to-address -s "Gradint report"' || echo Send failed
@@ -44,6 +44,14 @@ print '<html><head><meta http_equiv="Content-type" value="text/html; charset=utf
 def wrappable(f):
   z = u'\u200b'.encode('utf-8') # zero-width space
   return f.replace(os.sep,os.sep+z).replace('_',z+'_')
+def checkVariant(l):
+  if os.sep in l: fname=l[l.rindex(os.sep):]
+  else: fname=l
+  variants = gradint.variantFiles.get(gradint.samplesDirectory+os.sep+l,[fname])
+  if fname in variants: return l # ok
+  # else no default variant, need to pick one for the link
+  if not os.sep in l: return variants[0]
+  return l[:l.rindex(os.sep)+1]+variants[0]
 def link(l):
   if type(l)==type([]): return link(l[-1])
   if l.lower().endswith(gradint.dottxt): l="!synth:"+gradint.u8strip(gradint.read(gradint.samplesDirectory+os.sep+l)).strip(gradint.wsp)+"_"+gradint.languageof(l)
@@ -51,7 +59,7 @@ def link(l):
     if gradint.languageof(l) not in [gradint.firstLanguage,gradint.secondLanguage]: l=gradint.textof(l)+" ("+gradint.languageof(l)+")"
     else: l=gradint.textof(l)
     return l.replace('&','&amp;').replace('<','&lt;')
-  if samples_url: return '<A HREF="'+samples_url+l+'">'+wrappable(l)+'</A>'
+  if samples_url: return '<A HREF="'+samples_url+checkVariant(l)+'">'+wrappable(l)+'</A>'
   return wrappable(l).replace('&','&amp;').replace('<','&lt;')
 for b4,pos,today,l1,l2 in changes: print '<tr><td>%d</td><td>%d</td><td>%s</td><td>%s</td></tr>' % (b4,today,link(l1),link(l2))
 print '</table></body></html>'
