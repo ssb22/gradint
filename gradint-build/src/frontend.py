@@ -1492,10 +1492,10 @@ def gui_event_loop():
              for f in os.listdir(d): dd[d+os.sep+f]=1
            return dd,found
           oldLs,found = scanDirs()
-          if not found: app.todo.alert=localise("Please set downloadsDirs in advanced"+dottxt)
+          if downloadsDirs and not found: app.todo.alert=localise("Please set downloadsDirs in advanced"+dottxt)
           elif not url: app.todo.alert=localise("You need to type a word in the box before you can press this button")
           elif not startBrowser(mp3web.replace("$Word","".join(url)).replace("$Lang",secondLanguage)): app.todo.alert = localise("Can't start the web browser")
-          else:
+          elif downloadsDirs:
             waitOnMessage(localise("If the word is there, download it. When you press OK, Gradint will check for downloads."))
             if not app: break
             found=0
