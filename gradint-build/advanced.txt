@@ -139,7 +139,7 @@ downloadsDirs = ["../Downloads","..\\Desktop"]
 # If you then tell Gradint to use an MP3 file you have downloaded,
 # Gradint will store it in the synth cache (see below).
 
-# If you set downloadsDirs = None  or downloadsDirs = []
+# If you set downloadsDirs = []
 # then Gradint will not check for downloaded files, but will just
 # point the browser to the site.  This might be useful for situations
 # when you just want to check if words are there or not.
