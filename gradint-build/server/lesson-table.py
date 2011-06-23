@@ -4,7 +4,7 @@
 # for summarizing it to a teacher or native speaker.
 # Reads from progressFile and progressFileBackup.
 
-# Version 1.02 (c) 2011 Silas S. Brown.  License: GPL
+# Version 1.03 (c) 2011 Silas S. Brown.  License: GPL
 
 # Example use:
 # python lesson-table.py | ssh some-server 'mutt -e "set record = \"\";" -e "set charset=\"utf-8\"; set send_charset=\"utf-8\"; set content_type=\"text/html\";" to-address -s "Gradint report"' || echo Send failed
@@ -45,7 +45,7 @@ def wrappable(f):
   z = u'\u200b'.encode('utf-8') # zero-width space
   return f.replace(os.sep,os.sep+z).replace('_',z+'_')
 def checkVariant(l):
-  if os.sep in l: fname=l[l.rindex(os.sep):]
+  if os.sep in l: fname=l[l.rindex(os.sep)+1:]
   else: fname=l
   variants = gradint.variantFiles.get(gradint.samplesDirectory+os.sep+l,[fname])
   if fname in variants: return l # ok
