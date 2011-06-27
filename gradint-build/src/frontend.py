@@ -1471,14 +1471,16 @@ def gui_event_loop():
                     gui_outputTo_start() ; just_synthesize() ; gui_outputTo_end()
                     global justSynthesize ; justSynthesize = ""
                     if app: app.unset_watch_cursor = 1 # otherwise was closed by the close box
-                if ask_teacherMode and text1 and text2: # Do the L2, then ask if actually WANT the L1 as well (might be useful on WinCE etc, search-and-demonstrate-L2)
+                if text1 and text2:
+                  if app and hasattr(app,"outputTo") and app.outputTo.get() and not app.outputTo.get()=="0":
+                    if getYN("Save %s and %s to separate files?" % (secondLanguage,firstLanguage)): doSynth()
+                  elif ask_teacherMode: # Do the L2, then ask if actually WANT the L1 as well (might be useful on WinCE etc, search-and-demonstrate-L2)
                     doSynth()
-                    if app and getYN("Also speak the %s?" % firstLanguage):
-                        doControl(text2,firstLanguage,app.Text2)
-                        doSynth()
-                else:
-                    doControl(text2,firstLanguage,app.Text2)
-                    doSynth()
+                    if app and not getYN("Also speak the %s?" % firstLanguage):
+                      if app: del app.menu_response
+                      continue
+                doControl(text2,firstLanguage,app.Text2)
+                doSynth()
         elif menu_response=="mp3web":
           url=[] ; text1 = asUnicode(app.Text1.get())
           for c in list(text1.encode("utf-8")):
