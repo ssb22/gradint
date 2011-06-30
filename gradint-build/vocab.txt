@@ -144,7 +144,8 @@
 # on the top line of this file, Gradint's GUI will assume
 # you don't need to be asked if you're sure when editing files)
 
-#The three lines below are to help the Emacs editor.
+# The three lines below are to help the Emacs editor.
+#   (XEmacs users might like to try winmgr instead of m4)
 #Local Variables:
-#mode: winmgr
+#mode: m4
 #End:
