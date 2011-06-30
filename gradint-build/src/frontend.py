@@ -1467,13 +1467,13 @@ def gui_event_loop():
                           else:
                             control.set(t) ; app.toRestore.append((control,t,restoreTo))
                 doControl(text1,secondLanguage,app.Text1)
-                def doSynth():
-                    gui_outputTo_start() ; just_synthesize() ; gui_outputTo_end()
+                def doSynth(openDir=True):
+                    gui_outputTo_start() ; just_synthesize() ; gui_outputTo_end(openDir)
                     global justSynthesize ; justSynthesize = ""
                     if app: app.unset_watch_cursor = 1 # otherwise was closed by the close box
                 if text1 and text2:
                   if app and hasattr(app,"outputTo") and app.outputTo.get() and not app.outputTo.get()=="0":
-                    if getYN("Save %s and %s to separate files?" % (secondLanguage,firstLanguage)): doSynth()
+                    if getYN("Save %s and %s to separate files?" % (secondLanguage,firstLanguage)): doSynth(False)
                   elif ask_teacherMode: # Do the L2, then ask if actually WANT the L1 as well (might be useful on WinCE etc, search-and-demonstrate-L2)
                     doSynth()
                     if app and not getYN("Also speak the %s?" % firstLanguage):
@@ -1679,7 +1679,7 @@ def gui_outputTo_start():
         setSoundCollector(SoundCollector())
         global waitBeforeStart, waitBeforeStart_old
         waitBeforeStart_old = waitBeforeStart ; waitBeforeStart = 0
-def gui_outputTo_end():
+def gui_outputTo_end(openDir=True):
     global outputFile, waitBeforeStart, oldGID, gui_output_directory
     if outputFile:
         no_output = not soundCollector.tell() # probably 'no words to put in the lesson'
@@ -1713,7 +1713,7 @@ def gui_outputTo_end():
                 no_output = 1
         outputFile=None
         waitBeforeStart = waitBeforeStart_old
-        if not no_output: openDirectory(gui_output_directory)
+        if openDir and not no_output: openDirectory(gui_output_directory)
         try: gui_output_directory = oldGID
         except: pass
 
