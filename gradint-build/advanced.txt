@@ -122,16 +122,15 @@ max_extra_buttons = 12
 mp3web = ""
 mp3webName = ""
 
-# If you use a website like Forvo that lets you download
+# If you use a website that lets you download
 # MP3 or WAV pronunciations of words, you can use this from
 # within the Gradint GUI by setting the above like this:
-# mp3web = "http://www.forvo.com/search/$Word/$Lang"
-# mp3webName = "Forvo"
+# mp3web = "http://www.example.com/search/$Word/$Lang"
+# mp3webName = "Example"
 # ($Word is replaced by the word to look for, and
 # $Lang by the language code)
 
-# This is not filled in by default because you must check the
-# setting below: tell Gradint where to look for your browser's
+# Also you need to tell Gradint where to look for your browser's
 # downloaded files.  The following directories will be tried:
 
 downloadsDirs = ["../Downloads","..\\Desktop"]
