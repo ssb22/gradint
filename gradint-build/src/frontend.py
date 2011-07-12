@@ -1652,7 +1652,6 @@ def transliterates_differently(text,lang):
     translit=synth.transliterate(lang,text,forPartials=0)
     if translit and not translit==text: return translit
 
-gui_output_counter = 1
 def gui_outputTo_start():
     if hasattr(app,"outputTo") and app.outputTo.get() and not app.outputTo.get()=="0":
         global outputFile,gui_output_directory,oldGID ; outputFile=None
@@ -1665,9 +1664,15 @@ def gui_outputTo_start():
         if type(gui_output_directory)==type([]): gui_output_directory=gui_output_directory[-1]
         try: os.mkdir(gui_output_directory)
         except: pass
-        global gui_output_counter
+        gui_output_counter = 1 # now local because we also got prefix
+        if justSynthesize:
+            if '#' in justSynthesize[1:]: prefix="" # multiple languages
+            else: # prefix the language that's being synth'd
+                prefix=justSynthesize.split()[0]
+                if prefix.startswith('#'): prefix=prefix[1:]
+        else: prefix = "lesson"
         while not outputFile or fileExists(outputFile):
-            outputFile=gui_output_directory+os.sep+str(gui_output_counter)+extsep+app.outputTo.get()
+            outputFile=gui_output_directory+os.sep+prefix+str(gui_output_counter)+extsep+app.outputTo.get()
             gui_output_counter += 1
         global write_to_stdout ; write_to_stdout = 0
         global out_type ; out_type = app.outputTo.get()
