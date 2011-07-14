@@ -542,9 +542,11 @@ class ESpeakSynth(Synth):
                     delete_last_r_if_blank = 1
                   else: en_words[toAppend]=1
               else: # not Translate
-                  if lang=="zh" and l.startswith("Found: ") and l[8]==" " and "a"<=l[7]<="z": # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
-                      if forPartials: r.append("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1".split()[ord(l[7])-ord('a')])
-                      else: r.append(l[7])
+                  if lang=="zh" and l.startswith("Found: ") and ((l[7]==l[9]=="'" and "a"<=l[8]<="z") or (l[8]==" " and "a"<=l[7]<="z")): # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
+                      if l[8]==' ': letter=l[7]
+                      else: letter=l[8]
+                      if forPartials: r.append("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1".split()[ord(letter)-ord('a')])
+                      else: r.append(letter)
                       foundLetter = 1
                   elif not lang=="zh" and l.startswith("Found: ") and (ord(l[7])>127 or (l[7]=="'" and ord(l[8])>127)): # (espeak 1.40 puts in l[7], 1.44 surrounds in quotes)
                       r.append(l[l.index("[")+1:l.index("]")])
