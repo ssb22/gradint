@@ -110,13 +110,13 @@ def primitive_synthloop():
 
 def startBrowser(url): # true if success
   if winCEsound: return None # user might be paying per byte! + difficult to switch back if no Alt-Tab program
-  try: import webbrowser
-  except: webbrowser=0
-  if webbrowser:
+  try:
+      import webbrowser
       g=webbrowser.get()
-      if g and (winCEsound or macsound or (hasattr(g,"background") and g.background) or (hasattr(webbrowser,"BackgroundBrowser") and g.__class__==webbrowser.BackgroundBrowser) or (hasattr(webbrowser,"Konqueror") and g.__class__==webbrowser.Konqueror)):
-          return g.open_new(url)
-      # else don't risk it - it might be text-mode and unsuitable for multitask-with-gradint
+  except: g=0
+  if g and (winCEsound or macsound or (hasattr(g,"background") and g.background) or (hasattr(webbrowser,"BackgroundBrowser") and g.__class__==webbrowser.BackgroundBrowser) or (hasattr(webbrowser,"Konqueror") and g.__class__==webbrowser.Konqueror)):
+      return g.open_new(url)
+  # else don't risk it - it might be text-mode and unsuitable for multitask-with-gradint
   if winsound: return not os.system('start "%ProgramFiles%\\Internet Explorer\\iexplore.exe" '+url) # use os.system not system here (don't know why but system() doesn't always work for IE)
   # (NB DON'T replace % with %%, it doesn't work. just hope nobody set an environment variable to any hex code we're using in mp3web)
 
