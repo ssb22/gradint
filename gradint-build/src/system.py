@@ -79,7 +79,7 @@ def show_warning(w):
 def show_info(i,always_stderr=False):
     # == sys.stderr.write(i) with no \n and no error if closed (+ redirect to app or appuifw if exists)
     if (app or appuifw) and not always_stderr: return doLabel(i)
-    if not always_stderr and hasattr(sys.stderr,"isatty") and not sys.stderr.isatty(): return # be quiet if o/p is being captured by cron etc
+    if not riscos_sound and not always_stderr and hasattr(sys.stderr,"isatty") and not sys.stderr.isatty(): return # be quiet if o/p is being captured by cron etc (but isatty() might always return false on RISC OS
     if winCEsound and len(i)>101: i=i[:100]+"..."+i[-1] # otherwise can hang winCEsound's console
     if type(i)==type(u""): i=i.encode('utf-8')
     try: sys.stderr.write(i)
