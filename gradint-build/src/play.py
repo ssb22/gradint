@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9975 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9976 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -476,7 +476,7 @@ def outfile_writeFile(o,handle,filename):
         data = handle.read(102400)
         outfile_writeBytes(o,data)
         theLen += len(data)
-    assert theLen, "No data when reading "+filename+": check for sox crash" # TODO if it's from EkhoSynth it could be a buggy version of Ekho
+    if not filename.startswith(partialsDirectory+os.sep): assert theLen, "No data when reading "+filename+": check for sox crash" # (but allow empty partials e.g. r5.  TODO if it's from EkhoSynth it could be a buggy version of Ekho)
     return theLen
 def outfile_write_error(): raise IOError("Error writing to outputFile: either you are missing an encoder for "+out_type+", or the disk is full or something.")
 
