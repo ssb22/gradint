@@ -1,3 +1,12 @@
+
+Below is the copyright notice for qtplay.
+qtplay is used by Gradint on OS X 10.4, which lacks afplay.
+(afplay is bundled with 10.5 onwards.)
+qtplay is compiled to the PowerPC architecture, so it won't work on
+10.7+ which lacks Rosetta, but this shouldn't matter if you have afplay.
+
+--------------------------------------------------------------------
+
 qtplay
 Copyright (c) 2002, Rainbow Flight.
 All rights reserved.

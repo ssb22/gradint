@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9976 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9977 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -114,7 +114,7 @@ sox_8bit, sox_16bit, sox_ignoreLen = "-b", "-w", ""
 # Older sox versions (e.g. the one bundled with Windows Gradint) recognise -b and -w only; sox v14+ recognises both that and -1/-2; newer versions recognise only -1/-2.  We check for newer versions if unix.  (TODO riscos / other?)
 soundVolume_dB = math.log(soundVolume)*(-6/math.log(0.5))
 if unix:
-  if macsound: got_qtplay = 1 # should be bundled
+  if macsound: got_afplay = got_program("afplay") # 10.5+, use in preference to the bundled qtplay which requires PowerPC or Rosetta
   sox_formats=os.popen("sox --help 2>&1").read() # NOT .lower() yet
   if sox_formats.lower().startswith("sox: sox v"):
     soxMaj = intor0(sox_formats[10:sox_formats.index('.')])
@@ -125,14 +125,7 @@ if unix:
   if sox_formats.lower().find("wav")>-1: gotSox=1
   else:
     gotSox=0
-    if got_program("sox"):
-      if macsound and sox_formats.find("Rosetta")>-1:
-        try: u""+sox_formats
-        except: sox_formats="Please install Rosetta (from the Mac OS X optional CD) to run sox." # just in case there are encoding problems with localisation
-        show_warning(sox_formats.replace("sox.","some of the utilities Gradint uses.")+" Otherwise expect problems!") # (TODO need to check espeak separately in case they've compiled it x86, see in synth.py)
-        # TODO document a way to install Rosetta without the CD?  (e.g. downloading a PowerPC-only Abiword binary seems to do it)
-        got_qtplay = 0
-      else: show_warning("SOX found, but it can't handle WAV files. Ubuntu users please install libsox-fmt-all.")
+    if got_program("sox"): show_warning("SOX found, but it can't handle WAV files. Ubuntu users please install libsox-fmt-all.")
 else: gotSox = got_program("sox")
 if winsound or mingw32:
     # in winsound can use PlaySound() but better not use it for LONGER sounds - find a playProgram anyway for those (see self.length condition in play() method below)
@@ -282,7 +275,9 @@ class SampleEvent(Event):
                     ctypes.cdll.coredll.sndPlaySoundW(u""+fname,1) # 0=sync 1=async
                     time.sleep(self.exactLen) # if async.  Async seems to be better at avoiding crashes on some handhelds.
             except RuntimeError: return 1
-        elif macsound and got_qtplay:
+        elif macsound:
+          if got_afplay: return system("afplay \"%s\"" % (self.file,))
+          else:
             try: unicode(self.file,"ascii")
             except UnicodeDecodeError: # qtplay can't always handle non-ASCII
               t=os.tempnam()+self.file[self.file.rindex(extsep):]

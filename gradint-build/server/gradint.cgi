@@ -139,7 +139,9 @@ def htmlOut(body_u8):
     print '<html><head><title>Gradint Web edition</title>'
     print '<meta name="viewport" content="width=device-width">'
     print '</head><body>'+body_u8
-    print '<HR>This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="http://people.pwf.cam.ac.uk/ssb22/gradint/">download the full version of Gradint</A>.<p>'+program_name[:program_name.index("(")]+"using "+gradint.program_name[:gradint.program_name.index("(")]
+    print '<HR>This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="http://people.pwf.cam.ac.uk/ssb22/gradint/">download the full version of Gradint</A>.'
+    if "iPhone" in os.environ.get("HTTP_USER_AGENT","") and gradint.secondLanguage=="zh": print '<p>You can also try the Open University <A HREF="http://itunes.apple.com/gb/app/chinese-characters-first-steps/id441549197?mt=8#">Chinese Characters First Steps</A> iPhone application.'
+    print '<p>'+program_name[:program_name.index("(")]+"using "+gradint.program_name[:gradint.program_name.index("(")]
     # TODO @ low-priority: Android 3 <input type="file" accept="audio/*;capture=microphone"></input>
     print "</body></html>"
 backLink = ' <A HREF="gradint.cgi" onClick="javascript:history.go(-1);return false">Back</A>' # TODO may want to add a random= to the non-js HREF
