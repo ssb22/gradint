@@ -80,95 +80,109 @@ otherFirstLanguages = []
 # where the 2nd column is the prompt phrase and the 1st
 # column is the target word.
 
-# ------- GUI "preset collections" buttons ---------
+# ---- Speech synthesis options ------------
 
-# If you are giving gradint to your students then you might
-# want to bundle it with a pre-made vocabulary collection.
-# If this collection is large then it might be good to let
-# the student choose which sections to learn first.
-# You can have them do that within the GUI:
-# 1.  Put each section in its own directory (as recorded words or .txt
-# files).  Name each directory with a name that ends with exclude_from_scan
-# (default "_disabled"), e.g. unit1words_disabled, extraWords_disabled, etc.
-# 2.  If any words are to be added to vocab.txt by a section, then create
-# a file add-to-vocab.txt in that directory, with the contents (you'd better
-# include a SET LANGUAGE command).  (You don't have to do this; you could
-# just have sampled words and/or words in .txt files.)
-# 3.  If any files are to be added to the student's prompts directory, these
-# can be placed in an add-to-prompts subdirectory of each section (useful if
-# the student already has a gradint installation and you're adding more presets).
-# Similarly, if any language abbreviations are to be added to the student's
-# otherLanguages and possible_otherLanguages variables, these can be listed
-# in a file called add-to-languages.txt (separated by spaces) in each section.
-# 4.  Create a file short-description.txt for each section.  This should be
-# very short because it will be displayed on a button in the GUI.
-# 5. Optionally create long-description.txt for some sections.  This will be
-# displayed in a yes/no box asking the user to confirm their addition.
-# 6. Put all those _disabled directories into the user's samplesDirectory (or
-# drag into the recorded words folder and restart gradint).  You can also
-# put them in the directory above, to avoid confusing any users who open
-# "recorded words".
-# (If you're a developer and have downloaded the Gradint build environment,
-# you can make a version of Gradint's installation files that bundles your
-# presets, by placing the _disabled directories into Gradint's build
-# directory before typing "make".)
+# eSpeak (if available) will be preferred for the following languages
+# (for other languages it's used only if there is no other voice)
+# (set this to "" if you don't want to prefer eSpeak for any language)
 
-max_extra_buttons = 12
-# - this setting limits the number of "add pre-made collection" buttons that
-# are displayed on the screen at one time.  Set it to 0 to disable this feature.
+prefer_espeak = "en"
 
-# ---- Website options ---
+# eSpeak is bundled with the Windows and Mac versions of Gradint
+# and can be downloaded at http://espeak.sourceforge.net/
+# Any of eSpeak's languages can be used as long as you use the
+# same language abbreviations as eSpeak does, e.g. "en" for English,
+# "zh" for Zhongwen (Mandarin).
+#    - You can improve eSpeak's English by installing
+#    Festival's dictionary and using lexconvert to convert
+#    it, see http://people.pwf.cam.ac.uk/ssb22/gradint/lexconvert.html
+#    (this has already been done in the bundled version).
+#    - eSpeak is not very natural-sounding, but it is very
+#    clear and accurate in English and some other languages
 
-mp3web = ""
-mp3webName = ""
+# WINDOWS VOICES: Gradint can use Microsoft SAPI 5, which is
+# included with Windows XP+ and can be added to earlier versions.
+# You can choose which SAPI voices to use here:
 
-# If you use a website that lets you download
-# MP3 or WAV pronunciations of words, you can use this from
-# within the Gradint GUI by setting the above like this:
-# mp3web = "http://www.example.com/search/$Word/$Lang"
-# mp3webName = "Example"
-# ($Word is replaced by the word to look for, and
-# $Lang by the language code)
+sapiVoices = {
+# Add them in this format but without the # at the beginning:
+    # "language abbrev" : ("full voice name", rate),
+# For example, if you have "ScanSoft Mei-Ling_Full_22kHz"
+# (which reads most Chinese hanzi quite well, but can't read
+# pinyin and sometimes glitches so be careful), you can have
+    # "zh" : ("ScanSoft Mei-Ling_Full_22kHz", 22050),
+# or if you have Loquendo Lisheng (which can pronounce pinyin
+# and the June 2008 release is better than Neospeech Lily
+# although still not perfect) you can have
+    # "zh" : ("Lisheng", 16000),
+# or for Ekho Cantonese you can have:
+    # "zhy"     : ("Ekho Cantonese", 8000), # or 16000 for v4.5+
+    # "zhy-yue" : ("Ekho Cantonese", 8000), # ditto
+    # "cant"    : ("Ekho Cantonese", 8000), # ditto
+# or if you have other voices in other languages, you can
+# use them too.  Note that FULL voice names must be used,
+# exactly as they are shown in the Control Panel under Speech.
+# (You may set 'rate' to 0 for the default of 44100.)
+# Note: if you set an "en" voice here, and eSpeak is also
+# on the system, remember to remove 'en' from "prefer_espeak" above.
+# If you don't set an "en" voice but "en" is not in prefer_espeak,
+# then the voice set in Control Panel will be used for English.
+# If you have Neospeech Lily then that will be used for Chinese ('zh') unless
+# overridden here (although Lily is not always accurate).
+# (can use pinyin with tone numbers, 5 for neutral tone, v or u: for u-umlaut
+#  and if possible put spaces between meaningful words; can also use hanzi)
+}
 
-# Also you need to tell Gradint where to look for your browser's
-# downloaded files.  The following directories will be tried:
+sapiSpeeds = {
+# Here you can change the speeds of SAPI voices.  Speed ranges from
+# -10 (slowest) to +10 (fastest).  For example, to slow down the
+# English SAPI voice and speed up the Chinese, you can have
+# "en": -5, "zh": +3   (but without the # at the beginning)
+}
 
-downloadsDirs = ["../Downloads","..\\Desktop"]
+# MAC OS X VOICES: you can set which voices to use here (if you set
+# more than one voice for a language then the first available one is
+# used; if you don't set a voice for a language then the first detected
+# one is used, unless there's only English voices on the system in which
+# case the one set in System Preferences is used).
+# Non-English voices might not work on older OS X versions.
 
-# If you then tell Gradint to use an MP3 file you have downloaded,
-# Gradint will store it in the synth cache (see below).
+macVoices = {
+# "en":"Alex Vicki",  # (this is an example; remove the first # to use it)
+}
 
-# If you set downloadsDirs = []
-# then Gradint will not check for downloaded files, but will just
-# point the browser to the site.  This might be useful for situations
-# when you just want to check if words are there or not.
+# For Mandarin Chinese, you can also use Yali Cheng's syllables
+#   (see instructions on website) - recommended.
+#   Language abbreviation must be 'zh'; text should use Hanyu Pinyin with
+#   a tone number after each syllable and v or u: for u-umlaut
+#   (and if possible put spaces between meaningful words but
+#   not between syllables within a word).  You can also include hanzi
+#   if eSpeak is present.
+# There are also Cantonese syllables you can download similarly.
 
-# ---- Speech synthesis options ---
+# For Cantonese you can also use Cameron Wong's Ekho program if installed
+# (language abbreviation 'cant' or 'zh-yue' or 'zhy')
+# You can set Ekho's speed from -50 to +100 (percent, default 0) here:
+ekho_speed_delta = 0
+# (Note: If this is not 0, Ekho will be preferred over partials.)
 
-# If you have several speech programs on your system,
-# you can set their relative priorities here.  For example
-# if you like one of your MacOS voices better than eSpeak then
-# you can move MacOS to before eSpeak (in which case MacOS will be
-# used for English and eSpeak for other languages).
-# (Other synths, e.g. Festival, FLite, S60, old-RISCOS, will be
-# automatically added to the end of the list.)
-# (Note: the priority of eSpeak is automatically reduced for
-# most non-English languages, so if you explicity install some
-# other synth for those languages then it will be used instead)
+# OTHER ENGLISH SYNTHESIZERS (language abbreviation must be "en"):
+#
+#    - Festival Lite on Windows (if all else fails) :
+#      put flite.exe in the gradint folder
+#
+#    - Linux: install Festival, or flite if you want a US accent
+#
+#    - S60: the phone's built-in speech can be used
+#
+#    - RISC OS: if for some reason you can't install eSpeak
+#      as mentioned above, you can instead install an older
+#      version of Jonathan Duddington's !Speak, or the even
+#      older "Speech!" utility.  These can be used only for
+#      playing in real-time, not for generating files.
 
-synth_priorities = "eSpeak MacOS SAPI Ekho"
-
-# SAPI is the name of the Windows speech synthesis system,
-# so if you have a Windows voice then it is probably SAPI.
-# More details are in vocab.txt.  Ekho is Cameron Wong's
-# Cantonese synth from eGuideDog and this setting lets Gradint
-# use the Ekho program directly on non-Windows systems (on Windows
-# it needs to be set as a SAPI voice); if you don't have Ekho on your
-# system then Gradint can still use its data as partials (see below)
-# but only if there is no English mixed in with the Cantonese phrases.
-
-# You can also set extra_speech to a list of (language prefix,
-# command), for example:
+# You can also set extra_speech to a list of
+# (language prefix, command), for example:
 # extra_speech=[ ("la","say-latvian"),("de","say-german") ]
 # This will take priority over other speech systems.
 # The commands must be available and must take a text string
@@ -188,47 +202,6 @@ extra_speech = []
 # The %s argument will already be quoted for the shell if applicable.
 
 extra_speech_tofile = []
-
-sapiVoices = {
-# Here you can set extra SAPI 5 voices.  The default voice
-# will be used for English unless overridden here.  If you
-# have Neospeech Lily then that will be used for Chinese unless
-# overridden here (although Lily is not always accurate).
-# Add them in this format but without the # at the beginning:
-    # "language abbrev" : ("full voice name", rate),
-# For example, if you have "ScanSoft Mei-Ling_Full_22kHz"
-# (which reads most Chinese hanzi quite well, but can't read
-# pinyin and sometimes glitches so be careful), you can have
-    # "zh" : ("ScanSoft Mei-Ling_Full_22kHz", 22050),
-# or if you have Loquendo Lisheng (which can pronounce pinyin
-# and the June 2008 release is better than Neospeech Lily
-# although still not perfect) you can have
-    # "zh" : ("Lisheng", 16000),
-# or for Ekho Cantonese you can have:
-    # "zhy"     : ("Ekho Cantonese", 8000), # or 16000 for v4.5+
-    # "zhy-yue" : ("Ekho Cantonese", 8000), # ditto
-    # "cant"    : ("Ekho Cantonese", 8000), # ditto
-# or if you have other voices in other languages, you can
-# use them too.  Note that FULL voice names must be used,
-# exactly as they are shown in the Control Panel under Speech.
-# (You may set 'rate' to 0 for the default of 44100.)
-# All non-ASCII input to gradint MUST be in UTF-8.
-# Note: if you set an "en" voice here, and eSpeak is also
-# on the system, remember to reduce the priority of eSpeak
-# in synth_priorities above.
-}
-
-sapiSpeeds = {
-# Here you can change the speeds of SAPI voices.  Speed ranges from
-# -10 (slowest) to +10 (fastest).  For example, to slow down the
-# English SAPI voice and speed up the Chinese, you can have
-# "en": -5, "zh": +3   (but without the # at the beginning)
-}
-
-# You can also set the speed of the non-SAPI Ekho voice (if you have it)
-# from -50 to +100 (percent, default 0) here:
-ekho_speed_delta = 0
-# (Note: If this is not 0, Ekho will be preferred over partials.)
 
 # Another thing you can do is to selectively override the
 # speech synthesis of certain words.  To do this, set
@@ -463,6 +436,69 @@ partials_are_sporadic = 0
 # like -low, Gradint will offer that option in the GUI.  You can
 # set a default in voiceOption below (blank is normal, or set to "-low" etc)
 voiceOption = ""
+
+# ------- GUI "preset collections" buttons ---------
+
+# If you are giving gradint to your students then you might
+# want to bundle it with a pre-made vocabulary collection.
+# If this collection is large then it might be good to let
+# the student choose which sections to learn first.
+# You can have them do that within the GUI:
+# 1.  Put each section in its own directory (as recorded words or .txt
+# files).  Name each directory with a name that ends with exclude_from_scan
+# (default "_disabled"), e.g. unit1words_disabled, extraWords_disabled, etc.
+# 2.  If any words are to be added to vocab.txt by a section, then create
+# a file add-to-vocab.txt in that directory, with the contents (you'd better
+# include a SET LANGUAGE command).  (You don't have to do this; you could
+# just have sampled words and/or words in .txt files.)
+# 3.  If any files are to be added to the student's prompts directory, these
+# can be placed in an add-to-prompts subdirectory of each section (useful if
+# the student already has a gradint installation and you're adding more presets).
+# Similarly, if any language abbreviations are to be added to the student's
+# otherLanguages and possible_otherLanguages variables, these can be listed
+# in a file called add-to-languages.txt (separated by spaces) in each section.
+# 4.  Create a file short-description.txt for each section.  This should be
+# very short because it will be displayed on a button in the GUI.
+# 5. Optionally create long-description.txt for some sections.  This will be
+# displayed in a yes/no box asking the user to confirm their addition.
+# 6. Put all those _disabled directories into the user's samplesDirectory (or
+# drag into the recorded words folder and restart gradint).  You can also
+# put them in the directory above, to avoid confusing any users who open
+# "recorded words".
+# (If you're a developer and have downloaded the Gradint build environment,
+# you can make a version of Gradint's installation files that bundles your
+# presets, by placing the _disabled directories into Gradint's build
+# directory before typing "make".)
+
+max_extra_buttons = 12
+# - this setting limits the number of "add pre-made collection" buttons that
+# are displayed on the screen at one time.  Set it to 0 to disable this feature.
+
+# ---- Website options ---
+
+mp3web = ""
+mp3webName = ""
+
+# If you use a website that lets you download
+# MP3 or WAV pronunciations of words, you can use this from
+# within the Gradint GUI by setting the above like this:
+# mp3web = "http://www.example.com/search/$Word/$Lang"
+# mp3webName = "Example"
+# ($Word is replaced by the word to look for, and
+# $Lang by the language code)
+
+# Also you need to tell Gradint where to look for your browser's
+# downloaded files.  The following directories will be tried:
+
+downloadsDirs = ["../Downloads","..\\Desktop"]
+
+# If you then tell Gradint to use an MP3 file you have downloaded,
+# Gradint will store it in the synth cache (see below).
+
+# If you set downloadsDirs = []
+# then Gradint will not check for downloaded files, but will just
+# point the browser to the site.  This might be useful for situations
+# when you just want to check if words are there or not.
 
 # ---- Options for outputting lessons to sound files and adding comments ------
 

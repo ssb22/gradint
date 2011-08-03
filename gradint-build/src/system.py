@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9977 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9978 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -221,6 +221,7 @@ def readSettings(f):
    except: return show_warning("Problem decoding utf-8 in "+f)
    try: exec(fdat) in globals()
    except: show_warning("Error in "+f+" ("+exc_info(False)+")")
+synth_priorities = "eSpeak MacOS SAPI Ekho" # old advanced.txt had this instead of prefer_espeak; we can still support it
 dir1 = list2set(dir()+["dir1","f","last_u8strip_found_BOM"])
 for f in configFiles: readSettings(f)
 for d in dir():

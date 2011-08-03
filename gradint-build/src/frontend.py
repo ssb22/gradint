@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9977 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9978 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -875,7 +875,7 @@ def startTk():
                 self.RecordedWordsButton = addButton(self.row4,"",self.showRecordedWords,{"side":"left"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
                 row4right = addRightRow(self.row4)
                 self.EditVocabButton = addButton(row4right,"",self.openVocabFile,{"side":"left"},status="This button lets you edit your\nvocab collection in "+textEditorName)
-                if not GUI_omit_settings: addButton(row4right,"advanced"+dottxt,self.openAdvancedTxt,{"side":"left"},status="Press this button to learn multiple languages\nor change advanced settings for synthesis etc")
+                if not GUI_omit_settings: addButton(row4right,"advanced"+dottxt,self.openAdvancedTxt,{"side":"left"},status="Press this button to change voices,\nlearn multiple languages, etc")
                 self.make_lesson_row()
             else: # no text editor, but can at least have Recorded Words button now we have a built-in manager
                 self.make_lesson_row()

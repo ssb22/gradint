@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9977 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9978 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -64,14 +64,37 @@ def unzip_and_delete(f,specificFiles="",ignore_fail=0):
 
 class OSXSynth_Say(Synth):
     def __init__(self): Synth.__init__(self)
-    def supports_language(self,lang): return lang=="en"
-    def works_on_this_platform(self): return macsound and fileExists("/usr/bin/say")
+    def works_on_this_platform(self):
+        if not (macsound and fileExists("/usr/bin/say")): return False
+        self.voices = self.scanVoices() ; return True
+    def supports_language(self,lang): return lang in self.voices
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
-    def play(self,lang,text): return system("say \"%s\"" % (text.replace('"',''),))
+    def play(self,lang,text): return system("say %s\"%s\"" % (self.voices[lang],text.replace('"','')))
+    # TODO 10.7+ may also support -r rate (WPM), make that configurable in advanced.txt ?
     def makefile(self,lang,text):
         fname = os.tempnam()+extsep+"aiff"
-        system("say -o %s \"%s\"" % (fname,text.replace('"','')))
+        system("say -o %s %s\"%s\"" % (fname,self.voices[lang],text.replace('"','')))
         return aiff2wav(fname)
+    def scanVoices(self):
+        d = {}
+        try: from AppKit import NSSpeechSynthesizer
+        except: return {"en":""} # no -v parameter at all
+        for vocId in NSSpeechSynthesizer.availableVoices():
+            vocAttrib = NSSpeechSynthesizer.attributesForVoice_(vocId)
+            lang = vocAttrib['VoiceLanguage']
+            if lang.startswith("en-"): lang="en" # TODO do any others need hyphen dropping?  careful / check 10.7's Cantonese etc
+            if not lang in d: d[lang]=[]
+            d[lang].append(vocAttrib['VoiceName'].encode('utf-8'))
+        found=0
+        for k,v in d.items()[:]:
+            if k in macVoices:
+                for m in macVoices[k].split():
+                    if m in v:
+                        d[k] = [m] ; found=1 ; break
+            if len(d[k])>1: d[k]=[d[k][0]]
+        if d.keys()==['en'] and not found: return {"en":""} # just use the default
+        for k,v in d.items()[:]: d[k]='-v "'+v[0]+'" '
+        return d
 
 def aiff2wav(fname):
     if not system("sox \"%s\" \"%s\"" % (fname,fname[:-4]+"wav")):
@@ -379,7 +402,7 @@ class ESpeakSynth(Synth):
                     break
         return " ".join(ret)
     def supports_language(self,lang): return espeak_language_aliases.get(lang,lang) in self.languages
-    def not_so_good_at(self,lang): return lang not in ['en'] # 'zh' is sort-of OK, but if the user has explicitly installed another synth for it then had probably better defer to that
+    def not_so_good_at(self,lang): return lang not in prefer_espeak
     def works_on_this_platform(self):
         if len(self.languages.items())==0: return 0
         if winCEsound:
@@ -838,15 +861,16 @@ class GeneralFileSynth(Synth):
                 else: os.rename(f,fname)
                 return fname
 
-all_synth_classes = [GeneralSynth,GeneralFileSynth] # first so user can override
-for s in synth_priorities.split():
-    if s.lower()=="espeak": all_synth_classes.append(ESpeakSynth)
+all_synth_classes = [GeneralSynth,GeneralFileSynth] # at the beginning so user can override
+for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt (see system.py above) but we can still support it
     if s.lower()=="ekho": all_synth_classes.append(EkhoSynth)
+    elif s.lower()=="espeak": all_synth_classes.append(ESpeakSynth)
     elif s.lower()=="macos":
        all_synth_classes.append(OSXSynth_Say)
        all_synth_classes.append(OSXSynth_OSAScript) # (prefer _Say if >=10.3 because it's faster)
     elif s.lower()=="sapi": all_synth_classes.append(PttsSynth)
 all_synth_classes = all_synth_classes + [FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth]
+prefer_espeak = prefer_espeak.split()
 
 viable_synths = []
 warned_about_nosynth = {}
