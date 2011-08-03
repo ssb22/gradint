@@ -149,6 +149,8 @@ sapiSpeeds = {
 
 macVoices = {
 # "en":"Alex Vicki",  # (this is an example; remove the first # to use it)
+# Note: if you want the "en" voice to be used, and eSpeak is also
+# on the system, remember to remove 'en' from "prefer_espeak" above.
 }
 
 # For Mandarin Chinese, you can also use Yali Cheng's syllables
