@@ -112,8 +112,8 @@ sapiVoices = {
 # pinyin and sometimes glitches so be careful), you can have
     # "zh" : ("ScanSoft Mei-Ling_Full_22kHz", 22050),
 # or if you have Loquendo Lisheng (which can pronounce pinyin
-# and the June 2008 release is better than Neospeech Lily
-# although still not perfect) you can have
+# with tone numbers as long as you add punctuation at the end)
+# you can have
     # "zh" : ("Lisheng", 16000),
 # or for Ekho Cantonese you can have:
     # "zhy"     : ("Ekho Cantonese", 8000), # or 16000 for v4.5+
