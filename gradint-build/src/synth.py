@@ -154,7 +154,8 @@ class PttsSynth(Synth):
         if not self.program:
           for i in ["ptts.exe","ptts-offline.exe"]:
             if fileExists(i):
-                if cygwin: self.program='"'+os.getcwd()+cwd_addSep+i+'"' # (don't just do this anyway because some windows systems don't like it)
+                # must keep the full path even on non-cygwin because we're adding ,1 to changeToDirOf (hope we don't hit a Windows version that doesn't like this).  But we can keep relative paths if tempdir_is_curdir. (TODO if this breaks when not tempdir_is_curdir, could try copying ptts.exe to temp, but would need to delete it afterwards)
+                if cygwin or not tempdir_is_curdir: self.program='"'+os.getcwd()+cwd_addSep+i+'"'
                 else: self.program = i
                 self.offlineOnly = 'offline' in i
                 break
@@ -924,6 +925,7 @@ def pinyin_uColon_to_V(pinyin):
 
 class SynthEvent(Event):
     def __init__(self,text,synthesizer,language,is_prompt=0):
+        assert text,"Trying to speak zero-length text"
         self.text = text ; self.synthesizer = synthesizer
         self.modifiedText = self.text
         if language=="en":

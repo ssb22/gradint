@@ -368,10 +368,11 @@ if need_say_where_put_progress:
     progressFileBackup = progressFile[:-3]+"bak"
     pickledProgressFile = progressFile[:-3]+"bin"
     logFile = None # for now
+tempdir_is_curdir = False
 if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam"):
     tempnam_no = 0
     if os.sep in progressFile: tmpPrefix=progressFile[:progressFile.rindex(os.sep)+1]+"gradint-tempfile"
-    else: tmpPrefix="gradint-tempfile"
+    else: tmpPrefix,tempdir_is_curdir="gradint-tempfile",True
     if winCEsound or ((winsound or mingw32) and not os.sep in tmpPrefix and not tmpPrefix.startswith("C:")):
         # put temp files in the current directory, EXCEPT if the current directory contains non-ASCII characters then check C:\TEMP and C:\ first (just in case the non-ASCII characters create problems for command lines etc; gradint *should* be able to cope but it's not possible to test in advance on *everybody's* localised system so best be on the safe side).  TODO check for quotes etc in pathnames too.
         def isAscii():
@@ -386,7 +387,7 @@ if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam"
                     open(t+"gradint-tempfile-test","w")
                     os.unlink(t+"gradint-tempfile-test")
                 except: continue
-                tmpPrefix = t ; break
+                tmpPrefix,tempdir_is_curdir = t,False ; break
         if not tmpPrefix: tmpPrefix = os.getcwd()+os.sep
         tmpPrefix += "gradint-tempfile"
     def tempnam():
