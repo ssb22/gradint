@@ -152,7 +152,7 @@ macVoices = {
 # Note: if you want the "en" voice to be used, and eSpeak is also
 # on the system, remember to remove 'en' from "prefer_espeak" above.
 # Note: The Mac OS 10.7 "Ting-ting" voice can read hanzi, pinyin with tone
-# numbers, and English.
+# numbers (use 5 for neutral tone), and English.
 }
 
 # For Mandarin Chinese, you can also use Yali Cheng's syllables
