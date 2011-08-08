@@ -124,9 +124,9 @@ gradint.cab: $(Common_Files) gradint.py
 	test -e gradint.cab # pocketpc-cab can fail silently if we add too many files, so check the output exists
 	rm -rf PocketPC0
 
-gradint-S60.zip: $(Common_Files) gradint.py
+gradint-S60.zip: $(Common_Files) gradint.py README-S60.txt
 	cp S60.zip gradint-S60.zip
-	zip -9r gradint-S60.zip $(Common_Files)
+	zip -9r gradint-S60.zip $(Common_Files) README-S60.txt
 	zip -d gradint-S60.zip 'samples/utils*' # no point having those on S60
 	mkdir gradint
 	cd gradint && python ../thindown.py s60 < ../gradint.py > gradint.py && zip -9r ../gradint-S60.zip gradint.py && cd ..
