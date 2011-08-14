@@ -682,6 +682,7 @@ def startTk():
             self.Minutes.set(mins)
             addLabel(self.LessonRow,localise("mins"))
             self.MakeLessonButton=addButton(self.LessonRow,localise("Start lesson"),self.makelesson,{"side":"left"},status="Press to create customized lessons\nusing the words in your collection")
+            self.lastOutTo=-1 # so it updates the Start Lesson button if needed
             self.MakeLessonButton.bind('<FocusIn>',(lambda *args:app.after(10,lambda *args:app.MinsEntry.selection_clear())))
         def sync_listbox_etc(self):
             if not hasattr(self,"vocabList"):

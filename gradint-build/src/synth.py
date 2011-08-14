@@ -203,12 +203,17 @@ class PttsSynth(Synth):
     def makefile(self,lang,text):
         fname = os.tempnam()+dotwav
         oldcwd=os.getcwd()
-        if lang in sapiVoices: self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),fname,sapiVoices[lang][1],speed=sapiSpeeds.get(lang,None))
-        elif lang=="en": os.popen(self.program+' -c 1 -w '+changeToDirOf(fname,1)+self.speedParam(sapiSpeeds.get(lang,None))+toNull,"w").write(text+"\n") # (can specify mono but can't specify sample rate if it wasn't mentioned in sapiVoices - might make en synth-cache bigger than necessary but otherwise no great problem)
+        if lang in sapiVoices: r=self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),fname,sapiVoices[lang][1],speed=sapiSpeeds.get(lang,None))
+        elif lang=="en":
+            p=os.popen(self.program+' -c 1 -w '+changeToDirOf(fname,1)+self.speedParam(sapiSpeeds.get(lang,None))+toNull,"w") # (can specify mono but can't specify sample rate if it wasn't mentioned in sapiVoices - might make en synth-cache bigger than necessary but otherwise no great problem)
+            p.write(text+"\n")
+            r=p.close()
         elif lang=='zh':
-            self.sapi_unicode("VW Lily",self.preparePinyinPhrase(text),fname,16000,speed=sapiSpeeds.get(lang,None))
+            r=self.sapi_unicode("VW Lily",self.preparePinyinPhrase(text),fname,16000,speed=sapiSpeeds.get(lang,None))
             self.restore_lily_dict()
+        else: r=0 # shouldn't get here
         os.chdir(oldcwd)
+        assert not r,"ptts.exe failed"
         d = sapi_sox_bug_workaround(read(fname)); open(fname,"wb").write(d)
         if cygwin: os.system("chmod -x '"+fname+"'")
         return fname
