@@ -30,6 +30,7 @@ class Synth(object):
         for v in self.fileCache.values():
             try: os.remove(v)
             except: pass # someone may have removed it already, e.g. cache-synth.py's renaming
+        self.fileCache = {} # essential for the globalEspeakSynth hack (or get crash when try to make multiple lessons to file)
     def makefile_cached(self,lang,text):
         if type(text)==type([]): textKey=repr(text)
         else: textKey=text
