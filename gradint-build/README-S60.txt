@@ -2,7 +2,7 @@ If you want to make your samples quieter to match the lower
 volume of PythonS60's audio.say() command, you can do this
 on Unix (it doesn't matter if this command is repeated) :
 
-find synth-cache samples -name '*.mp3' -exec mp3gain -a -m 12 '{}' ';'
+find synth-cache samples -name '*.mp3' -exec mp3gain -a -m -12 '{}' ';'
 
 and for any partials voices (Yali etc) using audiodata.dat
 (see advanced.txt) you can do something like this (once only) :
