@@ -956,6 +956,15 @@ paranoid_file_management = 0
 
 once_per_day = 0
 
+# If you set disable_once_per_day (below) to 1, the above
+# once_per_day logic will be disabled even if it's on the command line,
+# and Gradint will exit silently if once_per_day is 3 (i.e. run from
+# startup).  This can be used for a "disable running at startup" option.
+# Set disable_once_per_day to 2 if you want the GUI to ask
+# (this is done by the Windows installer).
+
+disable_once_per_day = 0
+
 # Besides altering this file, you can also put assignment
 # statements on the command line of gradint.py.  In that
 # case runInBackground=0 is assumed and

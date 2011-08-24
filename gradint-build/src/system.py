@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9978 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9979 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -395,6 +395,9 @@ if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam"
         return tmpPrefix+str(tempnam_no)
     os.tempnam = os.tmpnam = tempnam
 
+if disable_once_per_day==1:
+  if once_per_day==3: sys.exit()
+  else: once_per_day=0
 if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"): # run every day
     currentDay = None
     # markerFile logic to avoid 2 background copies etc (can't rely on taskkill beyond WinXP)
@@ -519,7 +522,8 @@ except: pass
 
 # make sure unusual locale settings don't make .lower() change utf-8 bytes by mistake:
 try:
-  import locale
+  try: import locale
+  except: import _locale as locale # some S60s
   locale.setlocale(locale.LC_ALL, 'C')
 except: pass
 

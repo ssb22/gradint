@@ -147,4 +147,4 @@ rem start explorer gradint
 rem (actually, since there's only 1 shortcut now,
 rem we might as well just launch it directly)
 cd /D "%HOMEDRIVE%%HOMEPATH%\gradint"
-start gradint-wrapper.exe once_per_day=2
+start gradint-wrapper.exe once_per_day=disable_once_per_day=2

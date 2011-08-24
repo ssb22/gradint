@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9978 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.9979 (c) 2002-2011 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1370,6 +1370,14 @@ fi""")
 
 def gui_event_loop():
     app.todo.set_main_menu = 1 ; braveUser = 0
+    global disable_once_per_day
+    if disable_once_per_day==2:
+      disable_once_per_day = cond(getYN(localise("Do you want Gradint to start by itself and remind you to practise?")),0,1)
+      updateSettingsFile("advanced"+dottxt,{"disable_once_per_day":disable_once_per_day})
+      if disable_once_per_day: # signal the background process to stop next time
+        for f in ["background1"+dottxt,"background2"+dottxt]:
+          try: os.remove(f)
+          except: pass
     if orig_onceperday&2: check_for_slacking()
     while app:
         while not hasattr(app,"menu_response"):
