@@ -522,9 +522,13 @@ except: pass
 
 # make sure unusual locale settings don't make .lower() change utf-8 bytes by mistake:
 try:
-  try: import locale
-  except: import _locale as locale # some S60s
+  import locale
   locale.setlocale(locale.LC_ALL, 'C')
 except: pass
+if not '\xc4'.lower()=='\xc4': # buggy setlocale (e.g. S60) can create portability issues with progress files
+  lTrans="".join([chr(c) for c in range(ord('A'))]+[chr(c) for c in range(ord('a'),ord('z')+1)]+[chr(c) for c in range(ord('Z')+1,256)])
+  def lower(s): return s.translate(lTrans) # (may crash if Unicode)
+else:
+  def lower(s): return s.lower()
 
 # -------------------------------------------------------

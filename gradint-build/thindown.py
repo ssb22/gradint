@@ -94,7 +94,7 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 "def setSoundCollector(sc):",
 "def getAmplify(directory):",
 "def doAmplify(directory,fileList,factor):",
-"def gui_outputTo_end():",
+"def gui_outputTo_end(openDir=True):",
 "def gui_outputTo_start():",
 "def warn_sox_decode():",
 ]

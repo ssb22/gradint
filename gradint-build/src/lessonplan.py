@@ -391,7 +391,7 @@ def denumber_filelists(r,x,y):
 def denumber_synth(z,also_norm_extsep=0):
     zf = z.find("!synth:")
     if zf>-1:
-        z=z[zf:].lower() # so ignores the priority-number it had (because the vocab.txt file might have been re-organised hence changing all the numbers).  Also a .lower() so case changes don't change progress.  (Old versions of gradint said .lower() when parsing vocab.txt, but this can cause problems with things like Mc[A-Z].. in English espeak)
+        z=lower(z[zf:]) # so ignores the priority-number it had (because the vocab.txt file might have been re-organised hence changing all the numbers).  Also a .lower() so case changes don't change progress.  (Old versions of gradint said .lower() when parsing vocab.txt, but this can cause problems with things like Mc[A-Z].. in English espeak)
         if z.endswith(dotwav) or z.endswith(dotmp3): return z[:z.rindex(extsep)] # remove legacy extensions from synth vocab
     elif also_norm_extsep: return z.replace("\\","/").replace(".","/") # so compares equally across platforms with os.sep and extsep differences
     return z
