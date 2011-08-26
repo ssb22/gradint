@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-program_name = "gradint.cgi v1.04 (c) 2011 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.05 (c) 2011 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -27,7 +27,8 @@ if "LD_LIBRARY_PATH" in os.environ: os.environ["LD_LIBRARY_PATH"] = lib_path_add
 else: os.environ["LD_LIBRARY_PATH"] = lib_path_add
 os.environ["ESPEAK_DATA_PATH"] = espeak_data_path
 
-sys.stderr=open("/dev/null","w") ; import gradint
+cginame = os.sep+sys.argv[0] ; cginame=cginame[cginame.rindex(os.sep)+1:]
+sys.stderr=open("/dev/null","w") ; sys.argv = [] ; import gradint
 
 lDic = {}
 for l in gradint.ESpeakSynth().describe_supported_languages().split():
@@ -61,10 +62,10 @@ def main():
        setup_userID()
        gradint.delOrReplace(gradint.ensure_unicode(l2),gradint.ensure_unicode(l1),"","","delete")
        return listVocab(True)
-  if "js" in query:
+  if "js" in query: # just synthesize (js=text jsl=language)
     if "jsl" in query: justSynth(query["js"][0], query["jsl"][0],filetype=filetype)
     else: justSynth(query["js"][0],filetype=filetype)
-  elif "spk" in query:
+  elif "spk" in query: # speak (l1,l2 the langs, l1w,l2w the words)
     gradint.justSynthesize="0"
     if "l2w" in query and query["l2w"][0]:
       gradint.startBrowser=lambda *args:0
@@ -73,7 +74,7 @@ def main():
     if "l1w" in query and query["l1w"][0]: gradint.justSynthesize += "#"+query["l1"][0].replace("#","").replace('"','')+" "+query["l1w"][0].replace("#","").replace('"','')
     if gradint.justSynthesize=="0": return htmlOut('You must type a word in the box before pressing the Speak button.'+backLink) # TODO maybe add a Javascript test to the form also, IF can figure out if window.alert works
     serveAudio(stream = len(gradint.justSynthesize)>100, filetype=filetype)
-  elif "add" in query:
+  elif "add" in query: # add to vocab (l1,l2 the langs, l1w,l2w the words)
     if "l2w" in query and query["l2w"][0] and "l1w" in query and query["l1w"][0]:
       gradint.startBrowser=lambda *args:0
       if query["l2"][0]=="zh": scmsg=gradint.sanityCheck(query["l2w"][0],"zh")
@@ -81,38 +82,52 @@ def main():
       if scmsg: htmlOut(scmsg+''+backLink)
       else: addWord(query["l1w"][0],query["l2w"][0],query["l1"][0],query["l2"][0])
     else: htmlOut('You must type words in both boxes before pressing the Add button.'+backLink) # TODO maybe add a Javascript test to the form also, IF can figure out a way to tell whether window.alert() works or not
-  elif "clang" in query: # change languages
+  elif "bulkadd" in query: # bulk adding, from authoring options
+    dirID = setup_userID()
+    def isOK(x):
+      if x[0]=='W':
+        try:
+          int(x[1:])
+          return True
+        except: pass
+    def mycmp(x,y): return cmp(int(x[1:]),int(y[1:]))
+    keyList = sorted(filter(lambda x:isOK(x),query.keys()),mycmp)
+    for k in keyList:
+      l2w,l1w = query[k][0].split('=',1)
+      addWord(l1w,l2w,query["l1"][0],query["l2"][0],False)
+    redirectHomeKeepCookie(dirID,"&dictionary=1") # '1' is special value for JS-only back link; don't try to link to referer as it might be a generated page
+  elif "clang" in query: # change languages (l1,l2)
     dirID = setup_userID()
     if (gradint.firstLanguage,gradint.secondLanguage) == (query["l1"][0],query["l2"][0]) and not query["clang"][0]=="ignore-unchanged": return htmlOut('You must change the settings before pressing the Change Languages button.'+backLink) # (external scripts can set clang=ignore-unchanged)
     gradint.updateSettingsFile(gradint.settingsFile,{"firstLanguage": query["l1"][0],"secondLanguage":query["l2"][0]})
     redirectHomeKeepCookie(dirID)
-  elif "swaplang" in query: # change languages
+  elif "swaplang" in query: # swap languages
     dirID = setup_userID()
     gradint.updateSettingsFile(gradint.settingsFile,{"firstLanguage": gradint.secondLanguage,"secondLanguage":gradint.firstLanguage})
     redirectHomeKeepCookie(dirID)
-  elif "editsave" in query:
+  elif "editsave" in query: # save 'vocab'
     dirID = setup_userID()
     if "vocab" in query: vocab=query["vocab"][0]
     else: vocab="" # user blanked it
     open(gradint.vocabFile,"w").write(vocab)
     redirectHomeKeepCookie(dirID)
-  elif "edit" in query:
+  elif "edit" in query: # show the edit form
     dirID = setup_userID()
     try: v=open(gradint.vocabFile).read()
     except: v="" # (shouldn't get here unless they hack URLs)
-    htmlOut('<form action="gradint.cgi" method="post"><textarea name="vocab" style="width:100%;height:80%" rows="15" cols="50">'+v+'</textarea><br><input type=submit name=editsave value="Save changes"> | <input type=submit name=dummy value="Cancel"></form>')
-  elif "lesson" in query:
+    htmlOut('<form action="'+cginame+'" method="post"><textarea name="vocab" style="width:100%;height:80%" rows="15" cols="50">'+v+'</textarea><br><input type=submit name=editsave value="Save changes"> | <input type=submit name=dummy value="Cancel"></form>',"Text edit your vocab list")
+  elif "lesson" in query: # make lesson
     setup_userID()
     gradint.maxNewWords = int(query["new"][0]) # (shouldn't need sensible-range check here if got a dropdown; if they really want to hack the URL then ok...)
     gradint.maxLenOfLesson = int(float(query["mins"][0])*60)
     # TODO save those settings for next time also?
     serveAudio(stream = True, inURL = False, filetype=filetype)
-  elif "voNormal" in query:
+  elif "voNormal" in query: # voice option = normal
     setup_userID()
     gradint.voiceOption=""
     gradint.updateSettingsFile(gradint.settingsFile,{"voiceOption":""})
     listVocab(True)
-  elif "vopt" in query:
+  elif "vopt" in query: # set voice option
     setup_userID()
     for v in gradint.guiVoiceOptions:
       if v.lower()=="-"+query["vopt"][0].lower():
@@ -120,7 +135,53 @@ def main():
         gradint.updateSettingsFile(gradint.settingsFile,{"voiceOption":v})
         break
     listVocab(True)
-  else: listVocab(has_userID())
+  elif not isAuthoringOption(query): listVocab(has_userID()) # default screen
+
+def isAuthoringOption(query):
+  # TODO document the ?author=1 option
+  if "author" in query:
+    htmlOut('<form action="'+cginame+'" method="post"><h2>Gradint word list authoring mode</h2>This can help you put word lists on your website. The words will be linked to this Gradint server so your visitors can choose which ones to hear and/or add to their personal lists.<p>Type any text in the box below; use blank lines to separate paragraphs. To embed a word list in your text, type:<br><em>phrase 1</em>=<em>meaning 1</em><br><em>phrase 2</em>=<em>meaning 2</em><br><em>phrase 3</em>=<em>meaning 3</em><br>etc, and <b>make sure there is a blank line before and after the list</b>. Then press <input type=submit name="generate" value="Generate HTML">.<p>Language for phrases: '+langSelect('l2',gradint.secondLanguage)+' and for meanings: '+langSelect('l1',gradint.firstLanguage)+'<p><textarea name="text" style="width:100%;height:80%" rows="15" cols="50"></textarea><br><input type=submit name="generate" value="Generate HTML"></form>',"Word list authoring",links=0)
+    # TODO maybe langSelect for mand+cant together ? (but many wordlists wld be topolect-specific)
+  elif "generate" in query:
+    l1,l2,txt = query["l1"][0],query["l2"][0],query["text"][0]
+    paras = "\n".join([l.strip() for l in txt.replace("\r\n","\n").replace("\r","\n").decode('utf-8').split("\n")]).split("\n\n")
+    need_h5a = False
+    for i in xrange(len(paras)):
+        lines = filter(lambda x:x,paras[i].split("\n")) # filter needed for trailing newline on document
+        if allLinesHaveEquals(lines):
+            paras[i] = authorWordList(lines,l1,l2)
+            need_h5a = True
+        # TODO else some wiki markup for links etc ? (but you can alter the HTML after)
+    if need_h5a: h5astr = h5a()
+    else: h5astr = ""
+    htmlOut(HTML_and_preview(h5astr+encodeAmp('<p>'.join(paras))),"HTML result",links=0)
+  else: return False
+  return True
+def allLinesHaveEquals(lines):
+    if not lines: return False
+    for l in lines:
+        if not '=' in l: return False
+    return True
+def authorWordList(lines,l1,l2):
+    gradintUrl = os.environ["SCRIPT_URI"]
+    r=[] ; count = 0
+    # could have target="gradint" in the following, but it may be in a background tab (target="_blank" not recommended as could accumulate many)
+    r.append('<form action="%s" method="post" accept-charset="utf-8"><table style="margin-left:auto;margin-right:auto;border:thin solid blue"><tr><td colspan=3 style="text-align:center"><em>Click on each word for audio</em></td></tr>' % gradintUrl)
+    for l in lines:
+        l2w,l1w = l.split('=',1)
+        r.append('<tr><td><input type="checkbox" name="W%d" value="%s=%s" checked></td><td>%s</td><td>%s</td></tr>' % (count,l2w,l1w,justsynthLink(l2w.encode('utf-8'),l2).replace('HREF="'+cginame+'?','HREF="'+gradintUrl+'?').decode('utf-8'),justsynthLink(l1w.encode('utf-8'),l1).replace('HREF="'+cginame+'?','HREF="'+gradintUrl+'?').decode('utf-8')))
+        count += 1
+    # could have target="gradint" in the following href, but see comment above
+    r.append('<tr><td colspan=3><input type="submit" name="bulkadd" value="Add selected words"> to your <a href="%s">personal list</a></td></tr></table><input type="hidden" name="l1" value="%s"><input type="hidden" name="l2" value="%s"></form>' % (gradintUrl,l1,l2))
+    return ''.join(r)
+def encodeAmp(uniStr):
+  # HTML-ampersand encode when we don't know if the server will be utf-8 after copy/paste
+  r=[]
+  for c in uniStr:
+    if ord(c)>126: r.append("&#"+str(ord(c))+";")
+    else: r.append(c)
+  return ''.join(r)
+def HTML_and_preview(code): return '<h2>HTML code</h2><textarea style="width:100%%;height:40%%" rows=7 cols=50>%s</textarea><h2>Preview</h2>%s' % (code.replace('&','&amp;').replace('<','&lt;'),code)
 
 def justSynth(text,lang="",filetype=""):
   if lang: lang = lang.replace("#","").replace('"','')+" "
@@ -131,20 +192,23 @@ def justSynth(text,lang="",filetype=""):
 def justsynthLink(text,lang=""): # assumes written function h5a
   if lang in gradint.synth_partials_voices and gradint.guiVoiceOptions: cacheInfo="&curVopt="+gradint.voiceOption
   else: cacheInfo=""
-  return '<A HREF="gradint.cgi?js='+urllib.quote_plus(text)+'&jsl='+urllib.quote_plus(lang)+cacheInfo+'" onClick="javascript:return h5a(this);">'+text+'</A>'
+  return '<A HREF="'+cginame+'?js='+urllib.quote_plus(text)+'&jsl='+urllib.quote_plus(lang)+cacheInfo+'" onClick="javascript:return h5a(this);">'+text+'</A>'
 # TODO if h5a's canPlayType etc works, cld o/p a lesson as a JS web page that does its own 'take out of event stream' and 'progress write-back'.  wld need to code that HERE by inspecting the finished Lesson object, don't call play().
 
-def htmlOut(body_u8):
+def htmlOut(body_u8,title_extra="",links=1):
     print "Content-type: text/html; charset=utf-8" ; print
-    print '<html><head><title>Gradint Web edition</title>'
+    if title_extra: title_extra=": "+title_extra
+    print '<html><head><title>Gradint Web edition'+title_extra+'</title>'
     print '<meta name="viewport" content="width=device-width">'
     print '</head><body>'+body_u8
-    print '<HR>This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="http://people.pwf.cam.ac.uk/ssb22/gradint/">download the full version of Gradint</A>.'
-    if "iPhone" in os.environ.get("HTTP_USER_AGENT","") and gradint.secondLanguage=="zh": print '<p>You can also try the Open University <A HREF="http://itunes.apple.com/gb/app/chinese-characters-first-steps/id441549197?mt=8#">Chinese Characters First Steps</A> iPhone application.'
+    print '<HR>'
+    if links:
+        print 'This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="http://people.pwf.cam.ac.uk/ssb22/gradint/">download the full version of Gradint</A>.'
+        # TODO @ low-priority: Android 3 <input type="file" accept="audio/*;capture=microphone"></input>
+        if "iPhone" in os.environ.get("HTTP_USER_AGENT","") and gradint.secondLanguage=="zh": print '<p>You can also try the Open University <A HREF="http://itunes.apple.com/gb/app/chinese-characters-first-steps/id441549197?mt=8#">Chinese Characters First Steps</A> iPhone application.'
     print '<p>'+program_name[:program_name.index("(")]+"using "+gradint.program_name[:gradint.program_name.index("(")]
-    # TODO @ low-priority: Android 3 <input type="file" accept="audio/*;capture=microphone"></input>
     print "</body></html>"
-backLink = ' <A HREF="gradint.cgi" onClick="javascript:history.go(-1);return false">Back</A>' # TODO may want to add a random= to the non-js HREF
+backLink = ' <A HREF="'+cginame+'" onClick="javascript:history.go(-1);return false">Back</A>' # TODO may want to add a random= to the non-js HREF
 
 def serveAudio(stream=0, filetype="mp3", inURL=1):
   # caller imports gradint (and sets justSynthesize or whatever) first
@@ -176,19 +240,22 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
     os.system("cat "+tempdir+"/serveThis."+filetype)
     os.system("rm -r "+tempdir)
 
-def addWord(l1w,l2w,l1,l2):
-    dirID=setup_userID()
+def addWord(l1w,l2w,l1,l2,out=True):
+    if out: dirID=setup_userID()
     if not (gradint.firstLanguage,gradint.secondLanguage) == (l1,l2):
-      if not ((gradint.firstLanguage,gradint.secondLanguage) == (l2,l1) and "HTTP_REFERER" in os.environ and not "gradint.cgi" in os.environ["HTTP_REFERER"]): gradint.updateSettingsFile(gradint.settingsFile,{"firstLanguage": l1,"secondLanguage":l2})
+      if not ((gradint.firstLanguage,gradint.secondLanguage) == (l2,l1) and "HTTP_REFERER" in os.environ and not cginame in os.environ["HTTP_REFERER"]): gradint.updateSettingsFile(gradint.settingsFile,{"firstLanguage": l1,"secondLanguage":l2})
       gradint.firstLanguage,gradint.secondLanguage = l1,l2
-    if (l1w+"_"+l1,l2w+"_"+l2) in map(lambda x:x[1:],gradint.parseSynthVocab(gradint.vocabFile,forGUI=1)): return htmlOut('This word is already in your list.'+backLink)
+    if (l1w+"_"+l1,l2w+"_"+l2) in map(lambda x:x[1:],gradint.parseSynthVocab(gradint.vocabFile,forGUI=1)):
+      if out: htmlOut('This word is already in your list.'+backLink)
+      return
     gradint.appendVocabFileInRightLanguages().write(l2w+"="+l1w+"\n")
-    if "HTTP_REFERER" in os.environ and not "gradint.cgi" in os.environ["HTTP_REFERER"]: extra="&dictionary="+urllib.quote(os.environ["HTTP_REFERER"])
+    if not out: return
+    if "HTTP_REFERER" in os.environ and not cginame in os.environ["HTTP_REFERER"]: extra="&dictionary="+urllib.quote(os.environ["HTTP_REFERER"])
     else: extra=""
     redirectHomeKeepCookie(dirID,extra)
 
 def redirectHomeKeepCookie(dirID,extra=""):
-    print "Location: gradint.cgi?random="+str(random.random())+"&id="+dirID[dirID.rindex("/")+1:]+extra ; print
+    print "Location: "+cginame+"?random="+str(random.random())+"&id="+dirID[dirID.rindex("/")+1:]+extra ; print
 
 def langSelect(name,curLang):
     curLang = gradint.espeak_language_aliases.get(curLang,curLang)
@@ -201,9 +268,7 @@ def localise(x):
     if r==x: return lDic.get(gradint.espeak_language_aliases.get(x,x),x)
     else: return r.encode('utf-8')
 
-def listVocab(hasList): # main screen
-    firstLanguage,secondLanguage = gradint.firstLanguage, gradint.secondLanguage
-    # TODO button onClick: careful of zh w/out tones, wld need to JS this
+def h5a():
     body = """<script language="Javascript"><!--
 function h5a(link) { if (document.createElement) {
    var ae = document.createElement('audio');
@@ -219,7 +284,11 @@ function h5a(link) { if (document.createElement) {
      return false; }"""
     body += """} return true; }
 //--></script>"""
-    body += '<center><form action="gradint.cgi">'
+    return body
+def listVocab(hasList): # main screen
+    firstLanguage,secondLanguage = gradint.firstLanguage, gradint.secondLanguage
+    # TODO button onClick: careful of zh w/out tones, wld need to JS this
+    body = h5a() + '<center><form action="'+cginame+'">'
     gotVoiceOptions = (gradint.secondLanguage in gradint.synth_partials_voices or gradint.firstLanguage in gradint.synth_partials_voices) and gradint.guiVoiceOptions
     # TODO what if it's in synth_partials_voices but NOT the one that has guiVoiceOptions ? (e.g. Cantonese when both Mandarin voices are installed) (currently displaying 'non-functional' voice option buttons when that happens)
     if gotVoiceOptions:
@@ -230,7 +299,7 @@ function h5a(link) { if (document.createElement) {
     # must have autocomplete=off if capturing keycode 13
     if gotVoiceOptions: cacheInfo="&curVopt="+gradint.voiceOption
     else: cacheInfo=""
-    body += (localise("Word in %s") % localise(secondLanguage))+': <input type=text name=l2w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].spk.click();return false} else return true"> <input type=submit name=spk value="'+localise("Speak")+'" onClick="javascript: if (!document.forms[0].l1w.value && !document.forms[0].l2w.value) return true; else return h5a(\'gradint.cgi?spk=1&l1w=\'+document.forms[0].l1w.value+\'&l2w=\'+document.forms[0].l2w.value+\'&l1=\'+document.forms[0].l1.value+\'&l2=\'+document.forms[0].l2.value+\''+cacheInfo+'\');"><br>'+(localise("Meaning in %s") % localise(firstLanguage))+': <input type=text name=l1w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].add.click();return false} else return true"> <input type=submit name=add value="'+(localise("Add to %s") % localise("vocab.txt").replace(".txt",""))+'"><script language="Javascript"><!--\nvar emptyString="";document.write(\' <input type=submit name=dummy value="'+localise("Clear input boxes")+'" onClick="javascript:document.forms[0].l1w.value=document.forms[0].l2w.value=emptyString;document.forms[0].l2w.focus();return false">\')\n//--></script><p>'+localise("Your first language")+': '+langSelect('l1',firstLanguage)+' '+localise("second")+': '+langSelect('l2',secondLanguage)+' <nobr><input type=submit name=clang value="'+localise("Change languages")+'"><input type=submit name=swaplang value="Swap"></nobr>'
+    body += (localise("Word in %s") % localise(secondLanguage))+': <input type=text name=l2w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].spk.click();return false} else return true"> <input type=submit name=spk value="'+localise("Speak")+'" onClick="javascript: if (!document.forms[0].l1w.value && !document.forms[0].l2w.value) return true; else return h5a(\''+cginame+'?spk=1&l1w=\'+document.forms[0].l1w.value+\'&l2w=\'+document.forms[0].l2w.value+\'&l1=\'+document.forms[0].l1.value+\'&l2=\'+document.forms[0].l2.value+\''+cacheInfo+'\');"><br>'+(localise("Meaning in %s") % localise(firstLanguage))+': <input type=text name=l1w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].add.click();return false} else return true"> <input type=submit name=add value="'+(localise("Add to %s") % localise("vocab.txt").replace(".txt",""))+'"><script language="Javascript"><!--\nvar emptyString="";document.write(\' <input type=submit name=dummy value="'+localise("Clear input boxes")+'" onClick="javascript:document.forms[0].l1w.value=document.forms[0].l2w.value=emptyString;document.forms[0].l2w.focus();return false">\')\n//--></script><p>'+localise("Your first language")+': '+langSelect('l1',firstLanguage)+' '+localise("second")+': '+langSelect('l2',secondLanguage)+' <nobr><input type=submit name=clang value="'+localise("Change languages")+'"><input type=submit name=swaplang value="Swap"></nobr>'
     def htmlize(l,lang):
        if type(l)==type([]) or type(l)==type(()): return htmlize(l[-1],lang)
        if "!synth:" in l: return htmlize(l[l.index("!synth:")+7:l.rfind("_")],lang)
@@ -250,10 +319,12 @@ function h5a(link) { if (document.createElement) {
        else: hasList=""
     else: hasList=""
     if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+' <input type=submit name=lesson value="'+localise("Start lesson")+'"></td></tr></table>'
-    if "dictionary" in query: body += '<p><a href="'+query["dictionary"][0]+'">Back to dictionary</a>' # TODO check for cross-site scripting
+    if "dictionary" in query:
+        if query["dictionary"][0]=="1": body += '<script language="Javascript"><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">Back to referring site</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
+        else: body += '<p><a href="'+query["dictionary"][0]+'">Back to dictionary</a>' # TODO check for cross-site scripting
     if not hasList: hasList="<P>Your word list is empty."
     body += hasList
-    htmlOut(body+'</form></center><script name="Javascript"><!--\ndocument.forms[0].l2w.focus()\n//--></script>')
+    htmlOut(body+'</form></center><script language="Javascript"><!--\ndocument.forms[0].l2w.focus()\n//--></script>')
 
 def has_userID():
     cookie_string = os.environ.get('HTTP_COOKIE',"")
@@ -265,7 +336,8 @@ def has_userID():
 def setup_userID():
     # MUST call before outputting headers (may set cookie)
     # Use the return value of this with -settings.txt, -vocab.txt etc
-    dirName = "cgi-gradint-users"
+    if cginame=="gradint.cgi": dirName = "cgi-gradint-users" # as previous versions
+    else: dirName = cginame+"-users" # TODO document this feature (you can symlink something-else.cgi to gradint.cgi and it will have a separate user directory) (however it still reports gradint.cgi on the footer)
     if not os.path.exists(dirName): os.system("mkdir "+dirName)
     userID = None
     cookie_string = os.environ.get('HTTP_COOKIE',"")
