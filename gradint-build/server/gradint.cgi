@@ -1,6 +1,7 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.05 (c) 2011 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.06 (c) 2011 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -224,7 +225,7 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
       if not gradint.justSynthesize:
         gradint.justSynthesize = "en Problem generating the lesson. Check we have prompts for those languages." ; gradint.main()
   if stream:
-    print "Content-Disposition: attachment; filename=gradint.mp3" # helps with some browsers that can't really do streaming
+    print "Content-disposition: attachment; filename=gradint.mp3" # helps with some browsers that can't really do streaming
     print ; sys.stdout.flush()
     gradint.write_to_stdout = 1
     gradint.outputFile="-."+filetype ; gradint.setSoundCollector(gradint.SoundCollector())
@@ -267,6 +268,11 @@ def localise(x):
     r=gradint.localise(x)
     if r==x: return lDic.get(gradint.espeak_language_aliases.get(x,x),x)
     else: return r.encode('utf-8')
+for k,v in {"Swap":{"zh":u"交换","zh2":u"交換"},
+            "Text edit":{"zh":u"文本编辑"},
+            "Delete":{"zh":u"删除","zh2":u"刪除"},
+            }.items():
+  if not k in gradint.GUI_translations: gradint.GUI_translations[k]=v
 
 def h5a():
     body = """<script language="Javascript"><!--
@@ -299,7 +305,7 @@ def listVocab(hasList): # main screen
     # must have autocomplete=off if capturing keycode 13
     if gotVoiceOptions: cacheInfo="&curVopt="+gradint.voiceOption
     else: cacheInfo=""
-    body += (localise("Word in %s") % localise(secondLanguage))+': <input type=text name=l2w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].spk.click();return false} else return true"> <input type=submit name=spk value="'+localise("Speak")+'" onClick="javascript: if (!document.forms[0].l1w.value && !document.forms[0].l2w.value) return true; else return h5a(\''+cginame+'?spk=1&l1w=\'+document.forms[0].l1w.value+\'&l2w=\'+document.forms[0].l2w.value+\'&l1=\'+document.forms[0].l1.value+\'&l2=\'+document.forms[0].l2.value+\''+cacheInfo+'\');"><br>'+(localise("Meaning in %s") % localise(firstLanguage))+': <input type=text name=l1w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].add.click();return false} else return true"> <input type=submit name=add value="'+(localise("Add to %s") % localise("vocab.txt").replace(".txt",""))+'"><script language="Javascript"><!--\nvar emptyString="";document.write(\' <input type=submit name=dummy value="'+localise("Clear input boxes")+'" onClick="javascript:document.forms[0].l1w.value=document.forms[0].l2w.value=emptyString;document.forms[0].l2w.focus();return false">\')\n//--></script><p>'+localise("Your first language")+': '+langSelect('l1',firstLanguage)+' '+localise("second")+': '+langSelect('l2',secondLanguage)+' <nobr><input type=submit name=clang value="'+localise("Change languages")+'"><input type=submit name=swaplang value="Swap"></nobr>'
+    body += (localise("Word in %s") % localise(secondLanguage))+': <input type=text name=l2w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].spk.click();return false} else return true"> <input type=submit name=spk value="'+localise("Speak")+'" onClick="javascript: if (!document.forms[0].l1w.value && !document.forms[0].l2w.value) return true; else return h5a(\''+cginame+'?spk=1&l1w=\'+document.forms[0].l1w.value+\'&l2w=\'+document.forms[0].l2w.value+\'&l1=\'+document.forms[0].l1.value+\'&l2=\'+document.forms[0].l2.value+\''+cacheInfo+'\');"><br>'+(localise("Meaning in %s") % localise(firstLanguage))+': <input type=text name=l1w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].add.click();return false} else return true"> <input type=submit name=add value="'+(localise("Add to %s") % localise("vocab.txt").replace(".txt",""))+'"><script language="Javascript"><!--\nvar emptyString="";document.write(\' <input type=submit name=dummy value="'+localise("Clear input boxes")+'" onClick="javascript:document.forms[0].l1w.value=document.forms[0].l2w.value=emptyString;document.forms[0].l2w.focus();return false">\')\n//--></script><p>'+localise("Your first language")+': '+langSelect('l1',firstLanguage)+' '+localise("second")+': '+langSelect('l2',secondLanguage)+' <nobr><input type=submit name=clang value="'+localise("Change languages")+'"><input type=submit name=swaplang value="'+localise("Swap")+'"></nobr>'
     def htmlize(l,lang):
        if type(l)==type([]) or type(l)==type(()): return htmlize(l[-1],lang)
        if "!synth:" in l: return htmlize(l[l.index("!synth:")+7:l.rfind("_")],lang)
@@ -309,13 +315,14 @@ def listVocab(hasList): # main screen
        for l in [l2,l1]:
          if type(l)==type([]) or type(l)==type(()) or not "!synth:" in l: return "" # Web-GUI delete in poetry etc not yet supported
          r.append(urllib.quote(l[l.index("!synth:")+7:l.rfind("_")]))
-       return '<TD><input type=submit name="del-%s%%3d%s" value=Delete onClick="javascript: return confirm(\'Really delete this word?\');"></TD>' % tuple(r)
+       r.append(localise("Delete"))
+       return '<TD><input type=submit name="del-%s%%3d%s" value="%s" onClick="javascript: return confirm(\'Really delete this word?\');"></TD>' % tuple(r)
     if hasList:
        gradint.availablePrompts = gradint.AvailablePrompts() # needed before ProgressDatabase()
        # gradint.cache_maintenance_mode=1 # don't transliterate on scan -> NO, including this scans promptsDirectory!
        gradint.ESpeakSynth.update_translit_cache=lambda *args:0 # do it this way instead
        data = gradint.ProgressDatabase().data ; data.reverse()
-       if data: hasList = "<p><TABLE style=\"border: thin solid green\"><caption><nobr>Your word list</NOBR> <NOBR>(click for audio)</NOBR> <input type=submit name=edit value=\"Text edit \""+localise("vocab.txt").replace(".txt","")+"\"></caption><TR><TH>Repeats</TH><TH>"+localise(gradint.secondLanguage)+"</TH><TH>"+localise(gradint.firstLanguage)+"</TH></TR>"+"".join(["<TR><TD>%d</TD><TD>%s</TD><TD>%s</TD>%s" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</TABLE>"
+       if data: hasList = "<p><TABLE style=\"border: thin solid green\"><caption><nobr>Your word list</NOBR> <NOBR>(click for audio)</NOBR> <input type=submit name=edit value=\""+localise("Text edit")+"\"></caption><TR><TH>Repeats</TH><TH>"+localise(gradint.secondLanguage)+"</TH><TH>"+localise(gradint.firstLanguage)+"</TH></TR>"+"".join(["<TR><TD>%d</TD><TD>%s</TD><TD>%s</TD>%s" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</TABLE>"
        else: hasList=""
     else: hasList=""
     if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+' <input type=submit name=lesson value="'+localise("Start lesson")+'"></td></tr></table>'
