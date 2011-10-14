@@ -1,5 +1,6 @@
 There's an article explaining how to set up the Android emulator at
 http://www.linuxjournal.com/article/10940
+(on a real phone, need to go to Application settings and enable Unknown sources)
 
 The Gradint files go into the device's sl4a/scripts directory.
 On the emulator, you can use e.g.:
