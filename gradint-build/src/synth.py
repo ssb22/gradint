@@ -135,6 +135,13 @@ class S60Synth(Synth):
           else: doLabel(text)
         audio.say(text)
 
+class AndroidSynth(Synth):
+    def __init__(self): Synth.__init__(self)
+    def supports_language(self,lang): return lang=="en" # TODO others?
+    def works_on_this_platform(self): return android
+    def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
+    def play(self,lang,text): android.ttsSpeak(text)
+
 if winsound or mingw32: toNull=" > nul"
 else: toNull=" >/dev/null" # stdout only, not stderr, because we want to see any errors that happen
 
@@ -876,7 +883,7 @@ for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt 
        all_synth_classes.append(OSXSynth_Say)
        all_synth_classes.append(OSXSynth_OSAScript) # (prefer _Say if >=10.3 because it's faster)
     elif s.lower()=="sapi": all_synth_classes.append(PttsSynth)
-all_synth_classes = all_synth_classes + [FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth]
+all_synth_classes = all_synth_classes + [FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
 prefer_espeak = prefer_espeak.split()
 
 viable_synths = []

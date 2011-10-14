@@ -50,7 +50,7 @@ def play(event):
           if line2: line2 += ("+ %d old " % old)
           else: line2="%d old words " % old
         elif new: line2 += "words "
-        if line2: line2=cond(app or appuifw,"\n",", ")+line2+"remain"
+        if line2: line2=cond(app or appuifw or android,"\n",", ")+line2+"remain"
         if not lessonStartTime: lessonStartTime = time.time() # the actual time of the FIRST event (don't set it before as there may be delays).  (we're setting this at the END of the 1st event - the extra margin should be ok, and can help with start-of-lesson problems with slow disks.)
         if finishTime and time.time() >= emergency_lessonHold_to: doLabel("%s (finish %s)%s" % (time.strftime("%H:%M",time.localtime(time.time())),time.strftime("%H:%M",time.localtime(finishTime)),line2)) # was %I:%M but don't like leading '0' in PM times.  2nd condition added because might press 'brief interrupt' while playing.
 def doLabel(labelText):
@@ -59,6 +59,7 @@ def doLabel(labelText):
     elif appuifw:
         t=appuifw.Text() ; t.add(labelText)
         appuifw.app.body = t
+    elif android: android.makeToast(labelText) # TODO alternatives?  method to cancel lessons etc would be nice
     elif not (riscos_sound or winCEsound): # (we don't have a way of updating a clock or progress indicator on those)
         global doLabelLastLen
         try: doLabelLastLen
@@ -93,7 +94,7 @@ if ask_teacherMode:
         old_mysleep(1)
 
 def maybe_unicode(label):
-    if app or appuifw:
+    if app or appuifw or android:
         try: return unicode(label,'utf-8')
         except: return label # ??
     else: return repr(label)
@@ -253,6 +254,11 @@ class SampleEvent(Event):
             finally: sound.stop()
             sound.close() # (probably not worth keeping it open for repeats - there may be a limit to how many can be open)
             return
+        elif android:
+            fname = self.file
+            if not fname[0]=='/': fname=os.getcwd()+'/'+fname
+            android.mediaPlay("file://"+fname)
+            return
         elif fileType=="mp3" and madplay_program and not macsound and not playProgram=="aplay":
             oldcwd = os.getcwd()
             play_error = system(madplay_program+' -q -A '+str(soundVolume_dB)+' "'+changeToDirOf(self.file)+'"') # using changeToDirOf because on Cygwin it might be a non-cygwin madplay.exe that someone's put in the PATH.  And keeping the full path to madplay.exe because the PATH may contain relative directories.
@@ -390,10 +396,13 @@ class SoundCollector(object):
         self.rate = 44100 # so ok for oggenc etc
         if out_type=="raw" and write_to_stdout: self.o=sys.stdout
         elif out_type=="ogg": self.o=os.popen("oggenc -o \"%s\" -r -C 1 -q 0 -" % (cond(write_to_stdout,"-",outputFile),),"wb") # oggenc assumes little-endian, which is what we're going to give it
-        elif out_type=="aac": self.o=os.popen("faac -b 32 -P%s -C 1 -o \"%s\" -" % (cond(big_endian,""," -X"),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that faac on big-endian needs the -X removed when we're giving it little-endian.  It SHOULD if the compile is endian-dependent.)
+        elif out_type=="aac":
+            if got_program("neroAacEnc"): self.o=os.popen("sox %s - -t wav - | neroAacEnc -br 32000 -if - -of \"%s\"" % (self.soxParams(),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO optionally use -2pass, on a physical input file like the afconvert code)
+            else: self.o=os.popen("faac -b 32 -P%s -C 1 -o \"%s\" -" % (cond(big_endian,""," -X"),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that faac on big-endian needs the -X removed when we're giving it little-endian.  It SHOULD if the compile is endian-dependent.)
         elif out_type=="mp3": self.o=os.popen("lame -r%s%s -m m --vbr-new -V 9 - \"%s\"" % (lame_endian_parameters(),lame_quiet(),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that old versions of lame won't complain about the --vbr-new switch.  And some very old hardware players may insist on MPEG-1 rather than MPEG-2, which would need different parameters)
         # Older versions of gradint used BladeEnc, with these settings: "BladeEnc -br 48 -mono -rawmono STDIN \"%s\"", but lame gives much smaller files (e.g. 3.1M instead of 11M) - it handles the silences more efficiently for a start).
-        # Typical file sizes for a 30-minute lesson: OGG 2.7M, MP3 3.1M, MP2 3.4M, AAC 3.7M (all +/- at least 0.1M), WAV 152M
+        # Typical file sizes for a 30-minute lesson: OGG 2.7M, neroAacEnc 3.0M at 32000 (you might be able to put up with 1.8M at 18000 or 2.2M at 24000), MP3 3.1M, MP2 3.4M, faac 3.7M, WAV 152M
+        # TODO try AAC+?  aacplusenc wavfile(or -) aacfile kbits, 10,12,14,18,20,24,32,40 (or 48 for stereo), but will need a player to test it
         # (mp2 could possibly be made a bit smaller by decreasing the -5, but don't make it as low as -10)
         elif out_type=="spx":
             self.rate = 32000 # could also use 16000 and -w, or even 8000, but those are not so good for language learning

@@ -66,19 +66,25 @@ if winsound:
 if macsound and __name__=="__main__": os.system("clear 1>&2") # so warnings etc start with a clear terminal (1>&2 just in case using stdout for something else)
 if riscos_sound: sys.stderr.write("Loading Gradint...\n") # in case it takes a while
 
+try: import android
+except: android = 0
+if android:
+    android = android.Android()
+    android.makeToast("Loading Gradint")
+
 wsp = '\t\n\x0b\x0c\r ' # whitespace characters - ALWAYS use .strip(wsp) not .strip(), because someone added \xa0 (iso8859-1 no-break space) to string.whitespace on WinCE Python, and that can break processing of un-decoded UTF8 strings, e.g. a Chinese phrase ending "\xe5\x86\xa0"!  (and assign to string.whitespace does not work around this.)
 # As .split() can't take alternative characters (and re-writing in Python is probably slow), just be careful with using it on un-decoded utf-8 stuff.  (split(None,1) is ok if 1st word won't end in an affected character)
 
 warnings_printed = [] ; app = None
 def show_warning(w):
-    if not app and not appuifw:
+    if not app and not appuifw and not android:
         if winCEsound and len(w)>100: w=w[:100]+"..." # otherwise can hang winCEsound's console (e.g. a long "assuming that" message from justSynthesize)
         sys.stderr.write(w+"\n")
     warnings_printed.append(w+"\n")
 
 def show_info(i,always_stderr=False):
     # == sys.stderr.write(i) with no \n and no error if closed (+ redirect to app or appuifw if exists)
-    if (app or appuifw) and not always_stderr: return doLabel(i)
+    if (app or appuifw or android) and not always_stderr: return doLabel(i)
     if not riscos_sound and not always_stderr and hasattr(sys.stderr,"isatty") and not sys.stderr.isatty(): return # be quiet if o/p is being captured by cron etc (but isatty() might always return false on RISC OS
     if winCEsound and len(i)>101: i=i[:100]+"..."+i[-1] # otherwise can hang winCEsound's console
     if type(i)==type(u""): i=i.encode('utf-8')
@@ -234,7 +240,7 @@ def cond(a,b,c):
     if a: return b
     else: return c
 
-unix = not (winsound or mingw32 or riscos_sound or appuifw or winCEsound)
+unix = not (winsound or mingw32 or riscos_sound or appuifw or android or winCEsound)
 if unix: os.environ["PATH"] = os.environ.get("PATH","/usr/local/bin:/usr/bin:/bin")+cond(macsound,":"+os.getcwd()+"/start-gradint.app:",":")+os.getcwd() # for qtplay and sox, which may be in current directory or may be in start-gradint.app if it's been installed that way, and for lame etc.  Note we're specifying a default PATH because very occasionally it's not set at all when using 'ssh system command' (some versions of DropBear?)
 
 # Any options in the environment?
@@ -369,7 +375,7 @@ if need_say_where_put_progress:
     pickledProgressFile = progressFile[:-3]+"bin"
     logFile = None # for now
 tempdir_is_curdir = False
-if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam"):
+if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam") or android:
     tempnam_no = 0
     if os.sep in progressFile: tmpPrefix=progressFile[:progressFile.rindex(os.sep)+1]+"gradint-tempfile"
     else: tmpPrefix,tempdir_is_curdir="gradint-tempfile",True

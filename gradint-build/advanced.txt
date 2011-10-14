@@ -516,8 +516,8 @@ outputFile = ""
 
 # Depending on the extension you specify, you will need a
 # copy of LAME (for MP3), TooLame (for MP2), oggenc (for
-# OGG), faac (for AAC) or speexenc (for SPX).  On Windows
-# put the .exe in the gradint folder; on other systems you can
+# OGG), neroAacEnc or faac (for AAC) or speexenc (for SPX).
+# On Windows put the .exe in the gradint folder; on other systems
 # put the binary in either the gradint folder or the PATH.
 # You will also need "sox" (you may already have this).
 

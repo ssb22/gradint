@@ -18,7 +18,7 @@
 # installer for giving to someone.
 Extra_Data=partials *_disabled [^g]*.exe
 
-All_Versions=gradint-build.7z gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip servertools.bgz
+All_Versions=gradint-build.7z gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip gradint-android.zip servertools.bgz
 # dropping gradint-noGUI.exe and GUI.exe for now - probably don't need that separation anymore
 
 SHELL=/bin/bash
@@ -132,6 +132,13 @@ gradint-S60.zip: $(Common_Files) gradint.py README-S60.txt
 	cd gradint && python ../thindown.py s60 < ../gradint.py > gradint.py && zip -9r ../gradint-S60.zip gradint.py && cd ..
 	rm -rf gradint
 
+gradint-android.zip: $(Common_Files) gradint.py README-Android.txt
+	zip -9r gradint-android.zip $(Common_Files) README-Android.txt
+	zip -d gradint-android.zip 'samples/utils*'
+	mkdir gradint
+	cd gradint && python ../thindown.py android < ../gradint.py > gradint.py && zip -9r ../gradint-android.zip gradint.py && cd ..
+	rm -rf gradint
+
 gradintcab.zip: gradint.cab
 	zip -9 gradintcab.zip gradint.cab
 	rm gradint.cab
@@ -223,10 +230,11 @@ publish0: $(All_Versions) gradint.py
 
 publish:
 	# do it from /tmp so as to avoid confusing HomeSync if ssh'ing in from a PWF Mac
+	# + include chmod -x in case the PWF can't remember attributes this year
 	rm -rf /tmp/ssb22/gradint0
 	mkdir -p /tmp/ssb22/gradint0
 	cp -r * /tmp/ssb22/gradint0
-	pushd /tmp/ssb22/gradint0 && make publish0 && popd
+	pushd /tmp/ssb22/gradint0 && find . '(' -name '*.txt' -o -name Makefile -o -name '*.zip' -o -name '*.7z' -o -name '*.py' -o -name '*.lnk' -o -name '*.exe' -o -name '*.tbz' -o -name '*copyright' -o -name '*README' -o -name '*.bat' -o -name '*.sfx' -o -name '*.conf' ')' -exec chmod -x '{}' ';' && make publish0 && popd
 	rm -rf /tmp/ssb22/gradint0
 
 gradint-build.7z:

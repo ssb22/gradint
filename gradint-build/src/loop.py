@@ -31,7 +31,7 @@ def doOneLesson(dbase):
             waitOnMessage(msg+interrupt_instructions())
             #time.sleep(5)
             time.sleep(2) # less confusing for beginners
-        elif not app and not appuifw: show_info(msg+interrupt_instructions()+"\n",True)
+        elif not app and not appuifw and not android: show_info(msg+interrupt_instructions()+"\n",True)
         if startFunction: startFunction()
         if app:
             app.setLabel("Starting lesson")

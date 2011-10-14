@@ -12,7 +12,7 @@
 # Start of frontend.py - Tk and other front-ends
 
 def interrupt_instructions():
-    if soundCollector or app or appuifw: return ""
+    if soundCollector or app or appuifw or android: return ""
     elif msvcrt: return "\nPress Space if you have to interrupt the lesson."
     elif riscos_sound: return "\nLesson interruption not yet implemented on RISC OS.  If you stop the program before the end of the lesson, your progress will be lost.  Sorry about that."
     elif winCEsound: return "\nLesson interruption not implemented on\nWinCE without GUI.  Can't stop, sorry!"
@@ -27,6 +27,11 @@ def waitOnMessage(msg):
     if appuifw:
         t=appuifw.Text() ; t.add(u"".join(warnings_printed)+msg) ; appuifw.app.body = t # in case won't fit in the query()  (and don't use note() because it doesn't wait)
         appuifw.query(u""+msg,'query')
+    elif android:
+        # android.notify("Gradint","".join(warnings_printed)+msg) # doesn't work?
+        android.dialogCreateAlert("Gradint","".join(warnings_printed)+msg)
+        android.dialogSetPositiveButtonText("OK")
+        android.dialogShow() ; android.dialogGetResponse()
     elif app:
         if not (winsound or winCEsound or mingw32 or cygwin): show_info(msg2+"\n\nWaiting for you to press OK on the message box... ",True) # in case terminal is in front
         app.todo.alert = "".join(warnings_printed)+msg
@@ -50,6 +55,12 @@ def getYN(msg,defaultIfEof="n"):
     if appuifw:
         appuifw.app.body = None
         return appuifw.query(u""+msg,'query')
+    elif android:
+        android.dialogCreateAlert("Gradint",msg)
+        android.dialogSetPositiveButtonText("Yes") # TODO do we have to localise this ourselves or can we have a platform default?
+        android.dialogSetNegativeButtonText("No")
+        android.dialogShow()
+        return android.dialogGetResponse().result['which'] == 'positive'
     elif app:
         app.todo.question = localise(msg)
         while app and not hasattr(app,"answer_given"): time.sleep(0.5)
@@ -71,7 +82,7 @@ def getYN(msg,defaultIfEof="n"):
 def primitive_synthloop():
     global justSynthesize,warnings_printed
     lang = None
-    interactive = appuifw or winCEsound or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty()
+    interactive = appuifw or winCEsound or android or not hasattr(sys.stdin,"isatty") or sys.stdin.isatty()
     if interactive: interactive=cond(winCEsound and warnings_printed,"(see warnings under this window) Say:","Say: ") # (WinCE uses an input box so need to repeat the warnings if any - but can't because prompt is size-limited, so need to say move the window.)
     else: interactive="" # no prompt on the raw_input (we might be doing outputFile="-" as well)
     while True:
@@ -82,9 +93,13 @@ def primitive_synthloop():
             if justSynthesize: justSynthesize=justSynthesize.encode("utf-8")
             else: break
         else:
-            try: justSynthesize=raw_input(interactive)
-            except EOFError: break
-            if (winCEsound or riscos_sound) and not justSynthesize: break # because no way to send EOF (and we won't be taking i/p from a file)
+            if android:
+              justSynthesize = android.dialogGetInput("Gradint",interactive).result
+              if type(justSynthesize)==type(u""): justSynthesize=justSynthesize.encode("utf-8")
+            else:
+              try: justSynthesize=raw_input(interactive)
+              except EOFError: break
+            if (winCEsound or riscos_sound or android) and not justSynthesize: break # because no way to send EOF (and we won't be taking i/p from a file)
             if interactive and not readline:
               interactive="('a' for again) Say: "
               if justSynthesize=="a": justSynthesize=old_js
@@ -104,6 +119,7 @@ def primitive_synthloop():
                 t=appuifw.Text()
                 t.add(u"".join(warnings_printed))
                 appuifw.app.body = t
+            elif android: waitOnMessage("") # (makeToast doesn't stay around for very long)
             # else they'll have already been printed
             warnings_printed = []
         if not lang: lang=oldLang
@@ -312,7 +328,7 @@ def make_output_row(parent):
     t.pack({"side":"left"})
     if got_program("lame"): addFiletypeButton("mp3")
     if got_windows_encoder: addFiletypeButton("wma")
-    if got_program("faac") or got_program("afconvert"): addFiletypeButton("aac")
+    if got_program("neroAacEnc") or got_program("faac") or got_program("afconvert"): addFiletypeButton("aac")
     if got_program("oggenc"): addFiletypeButton("ogg")
     if got_program("toolame"): addFiletypeButton("mp2")
     if got_program("speexenc"): addFiletypeButton("spx")
@@ -1686,7 +1702,7 @@ def gui_outputTo_start():
         global write_to_stdout ; write_to_stdout = 0
         global out_type ; out_type = app.outputTo.get()
         global need_run_media_encoder
-        if out_type=="wma" or (out_type=="aac" and not got_program("faac")):
+        if out_type=="wma" or (out_type=="aac" and not (got_program("neroAacEnc") or got_program("faac"))):
             need_run_media_encoder = (out_type,outputFile)
             out_type="wav" ; outputFile=os.tempnam()+dotwav
         else: need_run_media_encoder = 0
@@ -1796,7 +1812,7 @@ def rest_of_main():
     elif not app==None: pass # (gets here if WAS 'app' but was closed - DON'T output anything to stderr in this case)
     elif appuifw: appuifw.app.set_exit()
     elif riscos_sound: show_info("You may now close this Task Window.\n")
-    else: show_info("\n") # in case got any \r'd string there - don't want to confuse the next prompt
+    elif not android: show_info("\n") # in case got any \r'd string there - don't want to confuse the next prompt
     RM_running = 0
     if exitStatus: sys.exit(exitStatus)
 

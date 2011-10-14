@@ -126,13 +126,13 @@ class ProgressDatabase(object):
             f.close()
             self.save_binary(data)
           except IOError: # This can happen for example on some PocketPC devices if you reconnect the power during progress save (which is likely if you return the device to the charger when lesson finished)
-            if app or appuifw:
+            if app or appuifw or android:
               if getYN("I/O fault when saving progress. Retry?"): continue
               # TODO else try to restore the backup?
             else: raise
           break
         if not partial: self.saved_completely = 1
-        if not app and not appuifw: show_info("done\n")
+        if not app and not appuifw and not android: show_info("done\n")
     def save_binary(self,data): # save a pickled version if possible (no error if not)
         if not (pickledProgressFile and pickle): return
         try:
@@ -165,7 +165,7 @@ class ProgressDatabase(object):
                   found=1 ; break
             if not found and not self.data[i] == self.oldData[i]: changed = 1
         if changed: self.save(partial=1)
-        elif app==None and not appuifw: show_info("No sequences were fully complete so no changes saved\n")
+        elif app==None and not appuifw and not android: show_info("No sequences were fully complete so no changes saved\n")
         self.promptsData,self.data = curPD,curDat
     def makeLesson(self):
         global maxLenOfLesson

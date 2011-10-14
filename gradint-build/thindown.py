@@ -116,12 +116,21 @@ S60_only = [
 "def s60_main_menu():",
 ]
 
+android_only = [
+"if android:",
+"elif android:",
+"class AndroidSynth(Synth):",
+]
+
 if "s60" in sys.argv: # S60 version
   version = "S60"
-  to_omit = tk_only + desktop_only + winCE_only + not_S60
-elif "wince" in sys.argv:
+  to_omit = tk_only + desktop_only + winCE_only + not_S60 + android_only
+elif "android" in sys.argv: # Android version
+  version = "Android"
+  to_omit = tk_only + desktop_only + winCE_only + S60_only
+elif "wince" in sys.argv: # Windows Mobile version
   version = "WinCE"
-  to_omit = desktop_only + S60_only
+  to_omit = desktop_only + S60_only + android_only
 else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = -1
