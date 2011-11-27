@@ -35,8 +35,12 @@ class MicInput(InputSource):
         try: self.sound = tkSnack.Sound(file=outFile, rate=self.rate, channels=1, encoding="Lin16")
         except: return self.err("Cannot write to sound file '"+outFile+"' with tkSnack")
         try: self.sound.record()
-        except:
-            self.err("sound.record() failed") # e.g. waveInOpen failed on Windows 7 (driver problems?)
+        except: # e.g. waveInOpen failed on Windows 7 (driver problems?)
+            self.err("sound.record() failed")
+            try: self.sound.stop()
+            except: pass
+            try: os.remove(outFile)
+            except: pass
             del self.sound
     def err(self,msg): app.todo.alert=msg
     def stopRec(self):
