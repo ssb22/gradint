@@ -31,12 +31,16 @@ class MicInput(InputSource):
           self.rate = max(rates)
         else: self.rate = None
     def startRec(self,outFile,lastStopRecVal=None):
-        if not self.rate:
-            app.todo.alert="Cannot record on this system (try aoss?)"
-            return
-        self.sound = tkSnack.Sound(file=outFile, rate=self.rate, channels=1, encoding="Lin16")
-        self.sound.record()
-    def stopRec(self): self.sound.stop()
+        if not self.rate: return self.err("Cannot record on this system (try aoss?)")
+        try: self.sound = tkSnack.Sound(file=outFile, rate=self.rate, channels=1, encoding="Lin16")
+        except: return self.err("Cannot write to sound file '"+outFile+"' with tkSnack")
+        try: self.sound.record()
+        except:
+            self.err("sound.record() failed") # e.g. waveInOpen failed on Windows 7 (driver problems?)
+            del self.sound
+    def err(self,msg): app.todo.alert=msg
+    def stopRec(self):
+        if hasattr(self,"sound"): self.sound.stop()
 
 class PlayerInput(InputSource): # play to speakers while recording to various destinations
     def __init__(self,fileToPlay,startNow=True,startTime=0): # (if startNow=False, starts when you start recording)

@@ -967,7 +967,7 @@ def startTk():
                 langs = ESpeakSynth().describe_supported_languages()
                 msg = (localise("To change languages, edit the boxes that say '%s' and '%s', then press the '%s' button.") % (firstLanguage,secondLanguage,localise("Change languages")))+"\n\n"+localise("Recorded words may be in ANY languages, and you may choose your own abbreviations for them.  However if you want to use the computer voice for anything then please use standard abbreviations.")
                 if langs:
-                    if tkMessageBox.askyesno(self.master.title(),msg+"  "+localise("Would you like to see a list of the standard abbreviations for languages that can be computer voiced?")): self.todo.alert = localise("Languages that can be computer voiced:")+"\n"+langs
+                    if tkMessageBox.askyesno(self.master.title(),msg+"  "+localise("Would you like to see a list of the standard abbreviations for languages that can be computer voiced?")): self.todo.alert = localise("Languages with computer voices (some better than others):")+"\n"+langs
                 else: self.todo.alert = msg+"  "+localise("(Sorry, a list of these is not available on this system - check eSpeak installation.)")
                 return
             need_redisplay = "@variants-"+GUI_languages.get(firstLanguage,firstLanguage) in GUI_translations or "@variants-"+GUI_languages.get(firstLanguage1,firstLanguage1) in GUI_translations # if EITHER old or new lang has variants, MUST reconstruct that row.  (TODO also do it anyway to get the "Speaker" etc updated?  but may cause unnecessary flicker if that's no big problem)
