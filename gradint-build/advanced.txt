@@ -111,7 +111,8 @@ sapiVoices = {
 # (which reads most Chinese hanzi quite well, but can't read
 # pinyin and sometimes glitches so be careful), you can have
     # "zh" : ("ScanSoft Mei-Ling_Full_22kHz", 22050),
-# or if you have Loquendo Lisheng (which can pronounce pinyin
+# or if you have Loquendo Lisheng (which has prosody reminiscent
+# of an Italian-Chinese bilingual, and can pronounce pinyin
 # with tone numbers as long as you add punctuation at the end)
 # you can have
     # "zh" : ("Lisheng", 16000),

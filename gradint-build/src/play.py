@@ -359,8 +359,9 @@ def rough_guess_mp3_length(fname):
     # (NB this is only a rough guess because it doesn't support VBR
     # and doesn't even check all sync bits or scan beyond 128 bytes.
     # It should be fairly quick though.)
-    head=open(fname).read(128)
+    head=open(fname).read(256) # 128 was too small for some MP3s
     i=head.find('\xFF')
+    if i==-1: raise IndexError # increase the above read() argument?
     b=ord(head[i+1])
     layer = 4-((b&6)>>1)
     if b&24 == 24: # bits are 11 - MPEG version is 1
