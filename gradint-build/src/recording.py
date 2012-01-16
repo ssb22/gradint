@@ -646,7 +646,8 @@ class RecorderControls(ButtonScrollingMixin):
         if not self.snack_initialized:
             if tkSnack and not tkSnack=="MicOnly":
                 tkSnack.initializeSnack(app)
-                if paranoid_file_management and tkSnack.audio.playLatency()<500: tkSnack.audio.playLatency(500) # at least 500ms latency if we're paranoid_file_management, just in case (since tkSnack.audio.elapsedTime does not account for hold-ups)
+                if paranoid_file_management:
+                    if tkSnack.audio.playLatency()<500: tkSnack.audio.playLatency(500) # at least 500ms latency if we're paranoid_file_management, just in case (since tkSnack.audio.elapsedTime does not account for hold-ups)
             self.snack_initialized = True
         if not hasattr(app,"scanrow"):
             app.scanrow = Tkinter.StringVar(app) # (keep StringVars in app not self to avoid d'tor confusion when close box pressed)

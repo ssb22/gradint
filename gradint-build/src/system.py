@@ -267,13 +267,14 @@ if paranoid_file_management:
   def read(file): return tryIO(lambda x=file:_old_open(x,"rb").read())
   def open(file,mode="r"):
     if "a" in mode:
-        try: dat = open(file,mode.replace("a","r")).read()
+        try: dat = open(file,"rb").read()
         except IOError,err:
             if err.errno==2: dat = "" # no such file or directory
             else: raise
+        if len(dat) < filelen(file): raise IOError("short read")
         try: os.rename(file,file+"~") # just in case!
         except: pass
-        o=open(file,mode.replace("a","w"))
+        o=open(file,"wb")
         o.write(dat)
         return o
     return tryIO(lambda x=file,m=mode:_old_open(x,m))

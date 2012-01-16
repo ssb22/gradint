@@ -242,7 +242,8 @@ class SampleEvent(Event):
           if not fileExists_stat(self.file): break # unlink suceeded and still threw exception ??
     def makesSenseToLog(self): return not self.file.startswith(promptsDirectory) # (NB "not prompts" doesn't necessarily mean it'll be a sample - may be a customised additional comment)
     def play(self): # returns a non-{False,0,None} value on error
-        if paranoid_file_management and not hasattr(self,"isTemp"): open(self.file) # ensure ready for reading
+        if paranoid_file_management:
+            if not hasattr(self,"isTemp"): open(self.file) # ensure ready for reading
         fileType=soundFileType(self.file)
         if soundCollector: soundCollector.addFile(self.file,self.exactLen)
         elif appuifw:

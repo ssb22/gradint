@@ -1602,6 +1602,8 @@ def gui_event_loop():
                 o=appendVocabFileInRightLanguages()
                 o.write(text1+"="+text2+"\n") # was " = " but it slows down parseSynthVocab
                 o.close()
+                if paranoid_file_management:
+                    if filelen(vocabFile)<filelen(vocabFile+"~"): app.todo.alert="Vocab file corruption! You'd better restore the ~ backup."
                 if hasattr(app,"vocabList"): app.vocabList.append((ensure_unicode(text1),ensure_unicode(text2)))
                 app.todo.clear_text_boxes=app.wordsExist=1
         elif menu_response=="delete" or menu_response=="replace":
