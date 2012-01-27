@@ -75,12 +75,14 @@ if android:
 wsp = '\t\n\x0b\x0c\r ' # whitespace characters - ALWAYS use .strip(wsp) not .strip(), because someone added \xa0 (iso8859-1 no-break space) to string.whitespace on WinCE Python, and that can break processing of un-decoded UTF8 strings, e.g. a Chinese phrase ending "\xe5\x86\xa0"!  (and assign to string.whitespace does not work around this.)
 # As .split() can't take alternative characters (and re-writing in Python is probably slow), just be careful with using it on un-decoded utf-8 stuff.  (split(None,1) is ok if 1st word won't end in an affected character)
 
-warnings_printed = [] ; app = None
+warnings_printed = [] ; app = False # False is a hack for "maybe later"
+warnings_toprint = []
 def show_warning(w):
-    if not app and not appuifw and not android:
+    if not app and not app==False and not appuifw and not android:
         if winCEsound and len(w)>100: w=w[:100]+"..." # otherwise can hang winCEsound's console (e.g. a long "assuming that" message from justSynthesize)
         sys.stderr.write(w+"\n")
     warnings_printed.append(w+"\n")
+    if app==False: warnings_toprint.append(w) # may need to output them if app/appuifw/android turns out not to be created
 
 def show_info(i,always_stderr=False):
     # == sys.stderr.write(i) with no \n and no error if closed (+ redirect to app or appuifw if exists)

@@ -1750,11 +1750,15 @@ def gui_outputTo_end(openDir=True):
         except: pass
 
 def main():
-    global useTK,justSynthesize,waitBeforeStart,traceback,appTitle
+    global useTK,justSynthesize,waitBeforeStart,traceback,appTitle,app,warnings_toprint
     if useTK:
         if justSynthesize and not justSynthesize[-1]=='*': appTitle=cond('#' in justSynthesize,"Gradint","Reader") # not "language lesson"
         startTk()
-    else: rest_of_main()
+    else:
+        app = None # not False anymore
+        if not appuifw and not android: # REALLY output them to stderr
+            for w in warnings_toprint: show_warning(w)
+        warnings_toprint = [] ; rest_of_main()
 def rest_of_main():
     global useTK,justSynthesize,waitBeforeStart,traceback,appTitle,saveProgress,RM_running
     exitStatus = 0 ; RM_running = 1
