@@ -98,7 +98,8 @@ def fileToEvent(fname,dirBase=None):
 transTbl = "TRANS"+extsep+"TBL"
 if mp3web: # synth-cache must exist
     if not synthCache: synthCache = "synth-cache"
-    if not isDirectory(synthCache): os.mkdir(synthCache)
+    try: os.mkdir(synthCache)
+    except: pass # already exists, temporarily-dangling symlink, etc
 
 if synthCache:
     # this listdir() call can take ages on rpcemu if it's large
