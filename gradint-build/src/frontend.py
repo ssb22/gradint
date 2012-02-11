@@ -1185,10 +1185,11 @@ if useTK:
             textEditorCommand=explorerCommand="kfmclient exec"
         elif not olpc and got_program("gnome-open"):
             textEditorCommand=explorerCommand="gnome-open"
+        elif got_program("nautilus"): explorerCommand="nautilus"
         elif got_program("rox"):
             # rox is available - try using that to open directories
             # (better not use it for editor as it might not be configured)
-            # (TODO if both rox and gnome-open are available, can we tell which one the user prefers?  currently using gnome-open)
+            # (TODO if both rox and gnome are available, can we tell which one the user prefers?)
             explorerCommand="rox"
         # anyway, see if we can find a nice editor
         for editor in ["leafpad","gedit","nedit","kedit","xedit"]:
@@ -1228,7 +1229,9 @@ def openDirectory(dir,inGuiThread=0):
         elif unix: cmd += "&"
         os.system(cmd)
     else:
-        msg = "Don't know how to start the file explorer.  Please open the %s directory (in %s)" % (dir,os.getcwd())
+        msg = ""
+        if not dir.startswith(os.sep): msg=" (in %s)" % os.getcwd()
+        msg = "Don't know how to start the file explorer.  Please open the %s directory%s" % (dir,msg)
         if inGuiThread: tkMessageBox.showinfo(app.master.title(),msg)
         else: waitOnMessage(msg)
 

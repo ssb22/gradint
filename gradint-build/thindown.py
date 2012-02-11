@@ -60,9 +60,10 @@ not_S60 = [ # but may still need on winCE
 desktop_only = [ # Don't want these on either WinCE or S60:
 'if not extsep==".":', # RISC OS
 "if macsound:","elif macsound:",
-"if unix:",
+"if unix:","elif unix:",
 "if paranoid_file_management:",
 "elif unix and not macsound:",
+"elif unix and hasattr(os,\"popen\"):",
 "def wavToMp3(directory):",
 "def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):",
 "def check_for_slacking():",
