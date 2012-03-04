@@ -620,7 +620,7 @@ class ESpeakSynth(Synth):
         elif unix or winsound or mingw32 or cygwin:
             # Windows command line is not always 100% UTF-8 safe, so we'd better use a pipe.  Unix command line OK but some espeak versions have a length limit.  (No pipes on riscos.)
             p=os.popen(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,espeak_pipe_through),"wb")
-            p.write(text+"\n") ; return p.close()
+            p.write(text.replace(". ",".\n")+"\n") ; return p.close() # (see comment below re adding newlines)
         else: return system(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
     def makefile(self,lang,text,is_winCEhint=0):
         if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_jyutping(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode("utf-8"))
@@ -645,7 +645,8 @@ class ESpeakSynth(Synth):
             else: self.winCE_run(sysCommand+' -f '+fnameIn,fname,fnameIn)
         else:
             # we can make it asynchronously (still need to pipe)
-            sysCommand='echo '+shell_escape(text)+'|'+sysCommand
+            # (add end-of-sentence newlines due to short line buffer in some versions of espeak)
+            sysCommand='echo '+shell_escape(text.replace(". ",".\n"))+'|'+sysCommand
             if not self.theProcess: self.theProcess = os.popen("/bin/bash","w")
             self.theProcess.write('cd "'+os.getcwd()+'"\n'+sysCommand+"\n")
             self.theProcess.flush()
