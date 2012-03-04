@@ -468,6 +468,12 @@ def startTk():
             elif macsound and Tkinter.TkVersion>=8.6: self.master.option_add('*font','System 13') # ok with magnification.  Note >13 causes square buttons.  (Including this line causes "Big print" to work)
             elif WMstandard: self.master.option_add('*font','Helvetica 7') # TODO on ALL WMstandard devices?
             if winsound or cygwin or macsound: self.master.resizable(1,0) # resizable in X direction but not Y (latter doesn't make sense, see below).  (Don't do this on X11 because on some distros it results in loss of automatic expansion as we pack more widgets.)
+            elif unix:
+                import commands
+                if commands.getoutput("xlsatoms|grep COMPIZ").find("COMPIZ")>-1:
+                  # Compiz sometimes has trouble auto-resizing our window (e.g. on Ubuntu 11.10)
+                  self.master.geometry("%dx%d" % (self.winfo_screenwidth(),self.winfo_screenheight()))
+                  self.todo.alert = "Gradint had to maximize itself because your window manager is Compiz which sometimes has trouble handling Tkinter window sizes"
             self.extra_button_callables = []
             self.pack(fill=Tkinter.BOTH,expand=1)
             self.leftPanel = Tkinter.Frame(self)
@@ -1083,7 +1089,7 @@ def startTk():
         appThread(Application)
 
 def hanzi_only(unitext): return u"".join(filter(lambda x:0x3000<ord(x)<0xa700 or ord(x)>=0x10000, list(unitext)))
-def hanzi_and_punc(unitext): return u"".join(filter(lambda x:0x3000<ord(x)<0xa700 or ord(x)>=0x10000 or x in '.,?;":\'()[]!0123456789-', list(remove_tone_numbers(fix_compatibility(unitext)))))
+def hanzi_and_punc(unitext): return u"".join(filter(lambda x:0x3000<ord(x)<0xa700 or ord(x)>=0x10000 or x in '.,?;:\'()[]!0123456789-', list(remove_tone_numbers(fix_compatibility(unitext))))) # no " as it could be from SGML markup
 # (exclusion of 3000 in above is deliberate, otherwise get problems with hanzi spaces being taken out by fix-compat+strip hence a non-functional 'delete non-hanzi' button appears)
 def guiVocabList(parsedVocab):
     # This needs to be fast.  Have tried writing interatively rather than filter and map, and assume stuff is NOT already unicode (so just decode rather than call ensure_unicode) + now assuming no !synth: (but can still run with .txt etc)

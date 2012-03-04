@@ -617,9 +617,9 @@ class ESpeakSynth(Synth):
             finally:
               if hasattr(self,"winCEhint"): os.unlink(self.makefile(lang,"")) # make sure to clean up on interrupt
             return ret
-        elif winsound or mingw32 or cygwin:
-            # Windows command line is not always 100% UTF-8 safe, so we'd better use a pipe.  (Command line ok on other platforms, and must do it on riscos - no pipes.)  (espeak_pipe_through only needs supporting on non-Windows - it's for aplay etc)
-            p=os.popen(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d' % (espeak_language_aliases.get(lang,lang),100*soundVolume),"wb")
+        elif unix or winsound or mingw32 or cygwin:
+            # Windows command line is not always 100% UTF-8 safe, so we'd better use a pipe.  Unix command line OK but some espeak versions have a length limit.  (No pipes on riscos.)
+            p=os.popen(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,espeak_pipe_through),"wb")
             p.write(text+"\n") ; return p.close()
         else: return system(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
     def makefile(self,lang,text,is_winCEhint=0):
@@ -632,7 +632,8 @@ class ESpeakSynth(Synth):
             return fname
         fname = os.tempnam()+dotwav
         oldcwd=os.getcwd()
-        sysCommand = cond(winCEsound,"",self.program)+cond(text.find("</")>-1," -m","")+' -w %s -v%s' % (changeToDirOf(fname,1),espeak_language_aliases.get(lang,lang))
+        sysCommand = cond(winCEsound,"",self.program)+cond(text.find("</")>-1," -m","")+' -v%s -w %s%s' % (espeak_language_aliases.get(lang,lang),cond(unix,"/dev/stdout|cat>",""),changeToDirOf(fname,1))
+        # (Unix use stdout and cat because some espeak versions truncate the output file mid-discourse)
         # (eSpeak wavs are 22.05k 16-bit mono; not much point down-sampling to 16k to save 30% storage at expense of CPU)
         if winsound or mingw32: os.popen(sysCommand,"w").write(text+"\n") # must pipe the text in
         elif riscos_sound: os.system(sysCommand+' '+shell_escape(text))
@@ -643,9 +644,8 @@ class ESpeakSynth(Synth):
                 self.winCE_start(sysCommand+' -f '+fnameIn)
             else: self.winCE_run(sysCommand+' -f '+fnameIn,fname,fnameIn)
         else:
-            # we can make it asynchronously
-            if cygwin: sysCommand='echo "'+text.replace('"','\\"')+'"|'+sysCommand # (still need to pipe)
-            else: sysCommand += (' "'+text.replace('"','\\"')+'"')
+            # we can make it asynchronously (still need to pipe)
+            sysCommand='echo '+shell_escape(text)+'|'+sysCommand
             if not self.theProcess: self.theProcess = os.popen("/bin/bash","w")
             self.theProcess.write('cd "'+os.getcwd()+'"\n'+sysCommand+"\n")
             self.theProcess.flush()
