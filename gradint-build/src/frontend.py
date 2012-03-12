@@ -470,7 +470,7 @@ def startTk():
             if winsound or cygwin or macsound: self.master.resizable(1,0) # resizable in X direction but not Y (latter doesn't make sense, see below).  (Don't do this on X11 because on some distros it results in loss of automatic expansion as we pack more widgets.)
             elif unix:
                 import commands
-                if commands.getoutput("xlsatoms|grep COMPIZ").find("COMPIZ")>-1:
+                if commands.getoutput("xlsatoms|grep COMPIZ_WINDOW").find("COMPIZ")>-1: # (not _COMPIZ_WM_WINDOW_BLUR, that's sometimes present outside Compiz)
                   # Compiz sometimes has trouble auto-resizing our window (e.g. on Ubuntu 11.10)
                   self.master.geometry("%dx%d" % (self.winfo_screenwidth(),self.winfo_screenheight()))
                   if not GUI_always_big_print: self.todo.alert = "Gradint had to maximize itself because your window manager is Compiz which sometimes has trouble handling Tkinter window sizes"
