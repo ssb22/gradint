@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9979 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.998 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -48,6 +48,19 @@ def doOneLesson(dbase):
               if justSaveLesson: break
       if not app and not app==None: break # close box pressed
       if not waitBeforeStart or not getYN(cond(not askAgain_explain and (not dbase or not saveProgress or dbase.saved_completely),"Hear this lesson again?",askAgain_explain+"Start this lesson again?")): break
+
+def disable_lid(restore): # for portable netbooks (like eee), can close lid & keep listening
+  if unix:
+   if app and not outputFile:
+    import commands ; global oldLid,warnedAC
+    try: warnedAC
+    except: warnedAC=0
+    if (not restore) and commands.getoutput("cat /proc/acpi/ac_adapter/AC*/state 2>/dev/null").find("off-line")>-1 and not warnedAC:
+      waitOnMessage("Some quirky Linux battery managers turn speakers off mid-lesson, so AC power is recommended.") ; warnedAC=1 # (TODO what if pull out AC during the lesson without looking at the screen?  Spoken message??)
+    ls = "et org.gnome.settings-daemon.plugins.power lid-close-" ; src=["ac","battery"]
+    if restore and oldLid[0]: return [commands.getoutput("gsettings s"+ls+p+"-action "+q+" 2>/dev/null") for p,q in zip(src,oldLid)]
+    oldLid = [commands.getoutput("gsettings g"+ls+p+"-action 2>/dev/null").replace("'","") for p in src]
+    if oldLid[0]: [commands.getoutput("gsettings s"+ls+p+"-action blank 2>/dev/null") for p in src]
 
 if loadLesson==-1: loadLesson=(fileExists(saveLesson) and time.localtime(os.stat(saveLesson).st_mtime)[:3]==time.localtime()[:3])
 

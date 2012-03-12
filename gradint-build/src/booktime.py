@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9979 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.998 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -294,13 +294,16 @@ class Lesson(object):
         global sequenceIDs_to_cancel ; sequenceIDs_to_cancel = {}
         global copy_of_runner_events ; copy_of_runner_events = []
         global lessonStartTime ; lessonStartTime = 0 # will be set to time.time() on 1st event
-        # make the runner as late as possible
-        if soundCollector: runner = sched.scheduler(collector_time,collector_sleep)
-        else: runner = sched.scheduler(time.time,mysleep)
-        for (t,event) in self.events: copy_of_runner_events.append((event,runner.enter(t,1,play,(event,)),t))
-        # TODO what if Brief Interrupt appears during that events loop and someone presses it (will act as a Cancel and go back to main)
-        try: runner.run()
-        except KeyboardInterrupt: handleInterrupt()
+        disable_lid(0)
+        try:
+          # make the runner as late as possible
+          if soundCollector: runner = sched.scheduler(collector_time,collector_sleep)
+          else: runner = sched.scheduler(time.time,mysleep)
+          for (t,event) in self.events: copy_of_runner_events.append((event,runner.enter(t,1,play,(event,)),t))
+          # TODO what if Brief Interrupt appears during that events loop and someone presses it (will act as a Cancel and go back to main)
+          try: runner.run()
+          except KeyboardInterrupt: handleInterrupt()
+        finally: disable_lid(1)
         runner = None
         if soundCollector: soundCollector.finished()
         if logFileHandle: logFileHandle.close()

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9979 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.998 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -473,7 +473,7 @@ def startTk():
                 if commands.getoutput("xlsatoms|grep COMPIZ").find("COMPIZ")>-1:
                   # Compiz sometimes has trouble auto-resizing our window (e.g. on Ubuntu 11.10)
                   self.master.geometry("%dx%d" % (self.winfo_screenwidth(),self.winfo_screenheight()))
-                  self.todo.alert = "Gradint had to maximize itself because your window manager is Compiz which sometimes has trouble handling Tkinter window sizes"
+                  if not GUI_always_big_print: self.todo.alert = "Gradint had to maximize itself because your window manager is Compiz which sometimes has trouble handling Tkinter window sizes"
             self.extra_button_callables = []
             self.pack(fill=Tkinter.BOTH,expand=1)
             self.leftPanel = Tkinter.Frame(self)

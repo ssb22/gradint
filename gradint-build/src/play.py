@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9979 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.998 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -358,11 +358,14 @@ def rough_guess_mp3_length(fname):
   try:
     maybe_warn_mp3() # in case there's no mp3 player
     # (NB this is only a rough guess because it doesn't support VBR
-    # and doesn't even check all sync bits or scan beyond 128 bytes.
-    # It should be fairly quick though.)
-    head=open(fname).read(256) # 128 was too small for some MP3s
-    i=head.find('\xFF')
-    if i==-1: raise IndexError # increase the above read() argument?
+    # and doesn't even check all sync bits.  It should be fairly quick though.)
+    o = open(fname) ; i = -1
+    while i==-1:
+      head=o.read(512)
+      if len(head)==0: raise IndexError # read the whole file and not found a \xFF byte??
+      i=head.find('\xFF')
+    if i+2 < len(head): head += o.read(3)
+    o.close()
     b=ord(head[i+1])
     layer = 4-((b&6)>>1)
     if b&24 == 24: # bits are 11 - MPEG version is 1

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9979 (c) 2002-2011 Silas S. Brown. GPL v3+.
+# gradint v0.998 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -456,7 +456,17 @@ class ESpeakSynth(Synth):
                 elif c==">": inSsml=0
                 elif not inSsml: l += 1
         else: l=len(text)
-        return quickGuess(l,12)+cond(winCEsound,1.3,0) # TODO need a better estimate.  Overhead on 195MHz Vario (baseline?) >1sec (1.3 seems just about ok)
+        latency = 0
+        if winCEsound: latency = 1.3 # TODO need a better estimate.  Overhead on 195MHz Vario (baseline?) >1sec (1.3 seems just about ok)
+        elif unix:
+          if espeak_pipe_through and not outputFile:
+            if not hasattr(self,"latency"):
+              t = time.time()
+              self.play("en","")
+              self.latency = time.time() - t # 2secs on eeePC Ubuntu 11.10, mostly AFTER the utterance
+              if self.latency > 0.5: sys.stderr.write("espeak_pipe_through latency is "+str(int(self.latency*10)/10.0)+"\n")
+            latency = self.latency
+        return quickGuess(l,12)+latency
     def can_transliterate(self,lang): return espeak_language_aliases.get(lang,lang) in ["zh","zhy","zh-yue"] and not riscos_sound # TODO it's OK on RISC OS if the eSpeak version is recent enough to do --phonout=filename; TODO aliases for zhy (but not usually a problem as can_transliterate is called only for preference)
     def winCE_run(self,parameters,expectedOutputFile,infileToDel=None):
         self.winCE_start(parameters)
