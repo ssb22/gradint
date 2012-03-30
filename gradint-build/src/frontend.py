@@ -124,6 +124,9 @@ def primitive_synthloop():
             warnings_printed = []
         if not lang: lang=oldLang
 
+if android:
+  if not isDirectory("/mnt/sdcard/svox") and not isDirectory("/system/tts/lang_pico"): waitOnMessage("English voice might not be installed. Check under Home > Menu > Settings > Voice output > text to speech > Pico > English")
+
 def startBrowser(url): # true if success
   if winCEsound: return None # user might be paying per byte! + difficult to switch back if no Alt-Tab program
   try:
@@ -1328,6 +1331,25 @@ def s60_viewVocab():
               del vList[sel]
               if not vList: return # empty
           else: vList[sel] = l2+"="+l1
+def android_addVocab():
+  while True:
+    l2 = None
+    while not l2 or sanityCheck(l2.encode('utf-8'),secondLanguage,1):
+      l2 = android.dialogGetInput("Add word","Word in %s" % localise(secondLanguage)).result
+      if not l2: return # cancelled
+    l1 = android.dialogGetInput("Add word","Meaning in %s" % localise(firstLanguage)).result
+    if not l1: return # cancelled
+    # TODO detect duplicates like Tk GUI does?
+    android.makeToast(u"Added "+l2+"="+l1)
+    appendVocabFileInRightLanguages().write((l2+"="+l1+"\n").encode("utf-8"))
+def android_changeLang():
+    global firstLanguage,secondLanguage
+    l1 = android.dialogGetInput("Gradint","Enter your first language",firstLanguage).result
+    if not l1: return # cancelled
+    l2 = android.dialogGetInput("Gradint","Enter your second language",secondLanguage).result
+    if not l2: return # cancelled
+    firstLanguage,secondLanguage = l1.encode('utf-8').lower(),l2.encode('utf-8').lower()
+    updateSettingsFile(settingsFile,{"firstLanguage":firstLanguage,"secondLanguage":secondLanguage})
 
 def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
     langs = [secondLanguage,firstLanguage]
@@ -1352,6 +1374,24 @@ def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
     return found
 
 def maybeCanSynth(lang): return lang in synth_partials_voices or get_synth_if_possible(lang,0) or synthCache
+def android_main_menu():
+  while True:
+    menu=[]
+    if maybeCanSynth(secondLanguage):
+        menu.append((u"Just speak a word",primitive_synthloop))
+        doVocab = maybeCanSynth(firstLanguage)
+        if doVocab: menu.append((u"Add word to my vocab",android_addVocab))
+        menu.append((u"Make lesson from vocab",lesson_loop))
+        # if doVocab: menu.append((u"View/change vocab",android_viewVocab)) # (TODO but lower priority because SL4A has an editor)
+    else: menu.append((u"Make lesson",lesson_loop))
+    menu += [(u"Record word(s) with mic",android_recordWord),(u"Change languages",android_changeLang)]
+    menu.append((u"Quit",None))
+    android.dialogCreateAlert("Gradint","Choose an action")
+    android.dialogSetItems(map (lambda x:x[0], menu))
+    android.dialogShow()
+    function = menu[android.dialogGetResponse().result['item']][1]
+    if function: function()
+    else: break
 def s60_main_menu():
   while True:
     appuifw.app.body = None # NOT text saying version no etc - has distracting blinking cursor
@@ -1785,6 +1825,7 @@ def rest_of_main():
         elif justSynthesize: just_synthesize()
         elif app and waitBeforeStart: gui_event_loop()
         elif appuifw: s60_main_menu()
+        elif android: android_main_menu()
         else: lesson_loop()
     except SystemExit: pass
     except KeyboardInterrupt: pass

@@ -78,7 +78,7 @@ def lesson_loop():
         dbase = ProgressDatabase()
         if not dbase.data:
             msg = "There are no words to put in the lesson."
-            if app or appuifw:
+            if app or appuifw or android:
                 drop_to_synthloop = False
                 msg = localise(msg)+"\n"+localise("Please add some words first.")
             else:

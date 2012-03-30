@@ -121,6 +121,15 @@ android_only = [
 "if android:",
 "elif android:",
 "class AndroidSynth(Synth):",
+"def android_recordWord():",
+"def android_recordFile(language):",
+"def android_main_menu():",
+"def android_addVocab():",
+"def android_changeLang():",
+]
+
+android_or_S60 = [
+"def droidOrS60RecWord(s60_recordFile,inputFunc):",
 ]
 
 if "s60" in sys.argv: # S60 version
@@ -131,7 +140,7 @@ elif "android" in sys.argv: # Android version
   to_omit = tk_only + desktop_only + winCE_only + S60_only
 elif "wince" in sys.argv: # Windows Mobile version
   version = "WinCE"
-  to_omit = desktop_only + S60_only + android_only
+  to_omit = desktop_only + S60_only + android_only + android_or_S60
 else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = -1

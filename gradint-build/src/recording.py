@@ -793,18 +793,39 @@ def doRecWords(): # called from GUI thread
     theRecorderControls.draw()
     app.wordsExist = 1 # well not necessarily, but see comments re "Create word list"
 
-# Functions for recording on S60 phones:
+# Functions for recording on Android and S60 phones:
+
+def android_recordFile(language):
+ fname = os.getcwd()+os.sep+"newfile_"+language+dotwav
+ while True:
+  android.recorderStartMicrophone(fname)
+  android.dialogCreateAlert("Recording",language)
+  android.dialogSetPositiveButtonText("Stop")
+  android.dialogShow() ; android.dialogGetResponse()
+  android.recorderStop()
+  android.mediaPlay("file://"+fname)
+  if not getYN("Are you happy with this?"):
+    os.remove(fname) ; continue
+  return fname
+
+def android_recordWord():
+    if not getYN("Ready to record "+secondLanguage+" word?"): return
+    def ipFunc(prompt,value=u""): return android.dialogGetInput("Gradint",prompt,value).result
+    droidOrS60RecWord(android_recordFile,ipFunc)
 def s60_recordWord():
+    def ipFunc(prompt,value=u""): return appuifw.query(prompt,"text",value)
+    droidOrS60RecWord(s60_recordFile,ipFunc)
+def droidOrS60RecWord(recFunc,inputFunc):
  if secondLanguage==firstLanguage: l1Suffix, l1Display = firstLanguage+"-meaning_"+firstLanguage, "meaning"
  else: l1Suffix, l1Display = firstLanguage, firstLanguage
  while True:
-  l2 = s60_recordFile(secondLanguage)
+  l2 = recFunc(secondLanguage)
   if not l2: return
   l1 = None
   while not l1:
-    if (not maybeCanSynth(firstLanguage)) or getYN("Record "+l1Display+" too? (else computer voice)"): l1 = s60_recordFile(l1Suffix) # (TODO what if maybeCanSynth(secondLanguage) but not first, and we want to combine 2nd-lang synth with 1st-lang recorded? low priority as if recording will prob want to rec L2)
+    if (not maybeCanSynth(firstLanguage)) or getYN("Record "+l1Display+" too? (else computer voice)"): l1 = recFunc(l1Suffix) # (TODO what if maybeCanSynth(secondLanguage) but not first, and we want to combine 2nd-lang synth with 1st-lang recorded? low priority as if recording will prob want to rec L2)
     else:
-       l1txt = appuifw.query(u""+firstLanguage+" text:","text")
+       l1txt = inputFunc(u""+firstLanguage+" text:")
        if l1txt:
           l1 = "newfile_"+firstLanguage+dottxt
           open(l1,"w").write(l1txt.encode("utf-8"))
@@ -820,7 +841,7 @@ def s60_recordWord():
   while inLs("%02d" % c): c += 1
   origPrefix = prefix = u""+("%02d" % c)
   while True:
-    prefix = appuifw.query(u"Filename:","text",prefix)
+    prefix = inputFunc(u"Filename:",prefix)
     if not prefix: # pressed cancel ??
       if getYN("Discard this recording?"):
         os.remove(l1) ; os.remove(l2) ; return
