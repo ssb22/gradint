@@ -45,7 +45,7 @@
 # quotes) on a line by itself, and the line immediately under it will be
 # interpreted normally without being linked into the poem.  This is useful
 # for setting relevant vocabulary to be introduced part-way through learning
-# the poem.
+# the poem.  (In recent versions of Gradint the colon can be omitted.)
 #
 # If you have recordings in one language and you want the
 # equivalents in another language to be synthesized, you can

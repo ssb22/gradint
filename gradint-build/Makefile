@@ -226,7 +226,7 @@ publish0: $(All_Versions) gradint.py
 	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/public_html/gradint/latest-version.txt
 	make clean
 	~/homepage/update
-	ssh -i ~/.srcf/keyfile st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c '. build-sync.sh'"
+	ssh -i ~/.srcf/keyfile ssh.st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c '. build-sync.sh'"
 
 publish:
 	# do it from /tmp so as to avoid confusing HomeSync if ssh'ing in from a PWF Mac

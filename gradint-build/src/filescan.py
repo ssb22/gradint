@@ -266,7 +266,7 @@ def parseSynthVocab(fname,forGUI=0):
             elif l2.startswith("limit off"): doLimit = 0
             elif l2.startswith("begin poetry"): doPoetry,lastPromptAndWord,disablePoem = True,None,False
             elif l2.startswith("end poetry"): doPoetry = lastPromptAndWord = None
-            elif l2.startswith("poetry vocab line:"): doPoetry,lastPromptAndWord = 0,cond(lastPromptAndWord,lastPromptAndWord,0) # not None, in case we're at the very start of a poem (see "just processed"... at end)
+            elif l2.startswith("poetry vocab line"): doPoetry,lastPromptAndWord = 0,cond(lastPromptAndWord,lastPromptAndWord,0) # not None, in case we're at the very start of a poem (see "just processed"... at end)
             else: canProcess=1
             if not canProcess: continue
         elif "#" in l and l.strip(wsp)[0]=='#': continue # guard condition '"#" in l' improves speed
@@ -324,7 +324,7 @@ def parseSynthVocab(fname,forGUI=0):
                     if doLimit: limitedFiles[f]="synth:"+str(limitNo)
                     if doPoetry: lastPromptAndWord = [prompt_L1only,f]
                 elif doPoetry: disablePoem=1 # if one of the lines can't be synth'd, disable the rest of the poem (otherwise get wrongly connected lines, disconnected lines, or re-introduction of isolated lines that were previously part of a poem but can't be synth'd on this platform)
-        if not lastPromptAndWord==None: doPoetry = 1 # just processed a "poetry vocab line:" (lastPromptAndWord is either the real last prompt and word, or 0 if we were at the start)
+        if not lastPromptAndWord==None: doPoetry = 1 # just processed a "poetry vocab line" (lastPromptAndWord is either the real last prompt and word, or 0 if we were at the start)
     return ret
 
 def sanitise_otherLanguages():
