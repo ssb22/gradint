@@ -1186,6 +1186,9 @@ if useTK:
         if got_program("bbedit"):
             textEditorName="bbedit"
             textEditorCommand="bbedit -w" ; textEditorWaits=1
+        elif got_program("edit"): # TextWrangler
+            textEditorName="edit"
+            textEditorCommand="edit -w" ; textEditorWaits=1
         if sys.version.startswith("2.3.5") and "DISPLAY" in os.environ: explorerCommand = None # 'open' doesn't seem to work when running from within Python in X11 on 10.4
         else: explorerCommand="open"
     elif unix:

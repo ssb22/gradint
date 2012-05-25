@@ -7,9 +7,8 @@ import os, py_compile, sys
 # can take more RAM than doing it separately.
 
 f=os.getcwd()+os.sep+"gradint.py"
-a=0
 try: a=open(f)
-except: pass
+except: a=0
 if a:
   print "Compiling gradint..."
   del a
@@ -44,7 +43,8 @@ def moveFiles(srcDir,destDir):
         except:
           if not destDir in fail:
             fail[destDir]=1
-            raw_input("Failed to write to "+destDir)
+            raw_input("Problem writing to "+destDir)
+            raw_input("from "+srcDir)
             raw_input("Please do it manually in Explorer")
             raw_input("or remove Application Lock if on")
     try: os.rmdir(srcDir)

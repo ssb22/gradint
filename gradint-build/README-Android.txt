@@ -33,3 +33,6 @@ mv ../android/gradint.py res/raw/script.py
 mv ../android/advanced.txt ../android/settings.txt ../android/samples ../android/vocab.txt res/raw/
 ant debug
 # now copy bin/Gradint-debug.apk to the device
+
+(Might need to go to Application settings and enable
+Unknown sources, as you probably need for SL4A and Python)
