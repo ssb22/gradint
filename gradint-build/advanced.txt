@@ -148,12 +148,13 @@ sapiSpeeds = {
 # case the one set in System Preferences is used).
 # Non-English voices might not work on older OS X versions.
 
-macVoices = {
-# "en":"Emily Daniel Alex Vicki",  # (this is an example; remove the first # to use it)
 # Note: if you want the "en" voice to be used, and eSpeak is also
 # on the system, remember to remove 'en' from "prefer_espeak" above.
-# Note: The Mac OS 10.7 "Ting-ting" voice can read hanzi, pinyin with tone
-# numbers (use 5 for neutral tone), and English.
+
+macVoices = {
+"en":"Emily Daniel Alex Vicki",
+"zh":"Ting-Ting", # OS 10.7+, can read hanzi, pinyin+tone numbers (5 for neutral) and English
+"cant":"Sin-Ji", # OS 10.7+
 }
 
 # For Mandarin Chinese, you can also use Yali Cheng's syllables
@@ -889,6 +890,21 @@ oss_sound_device = ""
 # was still too high).
 
 soundVolume = 1
+
+# If you want you can completely override the way Gradint
+# tries to play sound on Unix systems by filling in these:
+wavPlayer = ""
+mp3Player = ""
+# If left blank they will be detected automatically.
+# For example if your PC has no speakers and you want to send
+# all sound to a LAN-attached NSLU2 you can do something like
+# wavPlayer = "nc nslu2 8124 -q 0 <"
+# mp3Player = "nc nslu2 8125 -q 0 <"
+# and set up entries in /etc/inetd.conf on the NSLU2 to run
+# appropriate scripts (note that this method does not communicate
+# play failures and delays back to Gradint, so it's up to your
+# scripts to handle these)
+# If soundVolume is not 1, only wavPlayer will be used.
 
 # On non-Windows systems (or on Windows if you are running
 # from the Python source) you can here specify a file to

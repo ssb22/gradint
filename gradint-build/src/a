@@ -1,0 +1,34 @@
+    def scanVoices(self):
+        d = {}
+        try: from AppKit import NSSpeechSynthesizer
+        except: return {"en":""} # no -v parameter at all
+        for vocId in NSSpeechSynthesizer.availableVoices():
+            vocAttrib = NSSpeechSynthesizer.attributesForVoice_(vocId)
+            lang = vocAttrib['VoiceLanguage']
+            if '-' in lang: lang=lang[:lang.index("-")]
+            if not lang in d: d[lang]=[]
+            d[lang].append(vocAttrib['VoiceName'].encode('utf-8'))
+        found=0 ; d2=d.copy()
+        class BreakOut(Exception): pass
+        # First, check for voice matches in same language beginning
+        for k,v in d.items()[:]:
+            if k in macVoices:
+              try:
+                for m in macVoices[k].split():
+                  for vv in v:
+                    if m.lower() == vv.lower():
+                        d2[k] = [vv] ; found=1 ; del macVoices[k] ; raise BreakOut()
+              except BreakOut: pass
+            if len(d2[k])>1: d2[k]=[d2[k][0]]
+        # Then check across languages (e.g. cant -> zh-...)
+        for k,v in macVoices.items():
+         try:
+          for kk,vv in d.items():
+            for m in v.split():
+              for vvv in vv:
+                if m.lower() == vvv.lower():
+                  d2[k] = [vvv] ; found=1 ; raise BreakOut()
+         except BreakOut: pass
+        if d.keys()==['en'] and not found: return {"en":""} # just use the default
+        for k,v in d2.items()[:]: d2[k]='-v "'+v[0]+'" '
+        return d2

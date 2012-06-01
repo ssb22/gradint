@@ -9,6 +9,9 @@
 # the same directory as gradint.py with all the
 # settings.
 
+# For a more advanced version of this, see the
+# actually_generate option in synth-batchconvert-helper.py
+
 import sys,os,time
 langs = sys.argv[1:] ; testMode = False
 if langs and langs[0]=='--test':

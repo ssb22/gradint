@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9981 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9982 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -83,19 +83,33 @@ class OSXSynth_Say(Synth):
         for vocId in NSSpeechSynthesizer.availableVoices():
             vocAttrib = NSSpeechSynthesizer.attributesForVoice_(vocId)
             lang = vocAttrib['VoiceLanguage']
-            if lang.startswith("en-"): lang="en" # TODO do any others need hyphen dropping?  careful / check 10.7's Cantonese etc
+            if '-' in lang: lang=lang[:lang.index("-")]
             if not lang in d: d[lang]=[]
             d[lang].append(vocAttrib['VoiceName'].encode('utf-8'))
-        found=0
+        found=0 ; d2=d.copy()
+        class BreakOut(Exception): pass
+        # First, check for voice matches in same language beginning
         for k,v in d.items()[:]:
             if k in macVoices:
+              try:
                 for m in macVoices[k].split():
-                    if m in v:
-                        d[k] = [m] ; found=1 ; break
-            if len(d[k])>1: d[k]=[d[k][0]]
+                  for vv in v:
+                    if m.lower() == vv.lower():
+                        d2[k] = [vv] ; found=1 ; del macVoices[k] ; raise BreakOut()
+              except BreakOut: pass
+            if len(d2[k])>1: d2[k]=[d2[k][0]]
+        # Then check across languages (e.g. cant -> zh-...)
+        for k,v in macVoices.items():
+         try:
+          for kk,vv in d.items():
+            for m in v.split():
+              for vvv in vv:
+                if m.lower() == vvv.lower():
+                  d2[k] = [vvv] ; found=1 ; raise BreakOut()
+         except BreakOut: pass
         if d.keys()==['en'] and not found: return {"en":""} # just use the default
-        for k,v in d.items()[:]: d[k]='-v "'+v[0]+'" '
-        return d
+        for k,v in d2.items()[:]: d2[k]='-v "'+v[0]+'" '
+        return d2
 
 def aiff2wav(fname):
     if not system("sox \"%s\" \"%s\"" % (fname,fname[:-4]+"wav")):
@@ -788,8 +802,8 @@ def espeak_stdout_works():
 def espeak_volume_ok():
     # if has "zh", should be recent enough
     return "zh" in ESpeakSynth().languages
-if unix and not macsound and not (oss_sound_device=="/dev/sound/dsp" or oss_sound_device=="/dev/dsp"):
-    if playProgram=="aplay" and espeak_stdout_works(): espeak_pipe_through="--stdout|aplay -q" # e.g. NSLU2
+if wavPlayer_override or (unix and not macsound and not (oss_sound_device=="/dev/sound/dsp" or oss_sound_device=="/dev/dsp")):
+    if wavPlayer=="aplay" and espeak_stdout_works(): espeak_pipe_through="--stdout|aplay -q" # e.g. NSLU2
     else: del ESpeakSynth.play # because we have no way of sending it to the alternative device, so do it via a file
     if hasattr(FliteSynth,"play"): del FliteSynth.play
 if hasattr(ESpeakSynth,"play") and (soundVolume<0.04 or (soundVolume<0.1 and not espeak_volume_ok()) or soundVolume>2): del ESpeakSynth.play # old versions of espeak are not very good at less than 10% volume, so generate offline and use sox

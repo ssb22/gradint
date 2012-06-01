@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9981 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9982 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -435,12 +435,12 @@ def optimise_partial_playing(ce):
     for e in ce.eventList[1:]:
         if not soundFileType(e.file)==fileType: return ce # must be all the same type for this optimisation
     s = None
-    if fileType=="mp3" and madplay_program and not macsound and not cygwin: # (don't do this on cygwin because cygwin will require changeToDirOf and that could get awkward)
+    if fileType=="mp3" and mp3Player_is_madplay and not macsound and not cygwin: # (don't do this on cygwin because cygwin will require changeToDirOf and that could get awkward)
         # mp3 probably has encoding gaps etc, but we can try our best
-        if playProgram=="aplay": s=ShellEvent(madplay_program+' -q -A $Vol$'+''.join(map(lambda x:' "'+x.file+'"', ce.eventList))+' -o wav:-|aplay -q',True) # (set retryOnFail=True)
-        else: s=ShellEvent(madplay_program+' -q -A $Vol$'+''.join(map(lambda x:' "'+x.file+'"', ce.eventList)),True)
+        if wavPlayer=="aplay": s=ShellEvent(mp3Player+' -q -A $Vol$'+''.join(map(lambda x:' "'+x.file+'"', ce.eventList))+' -o wav:-|aplay -q',True) # (set retryOnFail=True)
+        else: s=ShellEvent(mp3Player+' -q -A $Vol$'+''.join(map(lambda x:' "'+x.file+'"', ce.eventList)),True)
         s.VolReplace="soundVolume_dB"
-    elif (not fileType=="mp3") and playProgram in ["aplay","sox"]:
+    elif (not fileType=="mp3") and (wavPlayer in ["aplay","sox"] or wavPlayer.strip().endswith("<")):
         # if they're all the same format, we can use sox concatenation (raw, with an unspecified-length wav header at start)
         # (don't try to do that if different formats - the low-end hardware may not take the rate conversion)
         ok=gotSox
@@ -450,9 +450,12 @@ def optimise_partial_playing(ce):
                 if not simplified_header(e.file)==format:
                     ok=False ; break
         if ok:
-            s=ShellEvent('set -o pipefail;('+'&&'.join(['cat "%s" | sox -t %s - -t wav - $Vol$ 2>/dev/null' % (ce.eventList[0].file,fileType)]+['cat "%s" | sox -t %s - -t raw - $Vol$'%(e.file,fileType) for e in ce.eventList[1:]])+')'+sox_ignoreLen+'|'+cond(playProgram=="aplay",'aplay -q','sox -t wav - '+sox_type+' '+oss_sound_device),True)
+            if wavPlayer=="aplay": wpMod="aplay -q"
+            elif wavPlayer.strip().endswith("<"): wpMod=wavPlayer.strip()[:-1] # nc etc
+            else: wpMod='sox -t wav - '+sox_type+' '+oss_sound_device
+            s=ShellEvent('set -o pipefail;('+'&&'.join(['cat "%s" | sox -t %s - -t wav - $Vol$ 2>/dev/null' % (ce.eventList[0].file,fileType)]+['cat "%s" | sox -t %s - -t raw - $Vol$'%(e.file,fileType) for e in ce.eventList[1:]])+')'+sox_ignoreLen+'|'+wpMod,True)
             s.VolReplace="sox_effect"
-        elif playProgram=="aplay" and not sox_effect: s=ShellEvent('aplay -q '+''.join(map(lambda x:' "'+x.file+'"', ce.eventList)),True) # (which is not quite as good but is the next best thing) (and hope they don't then try to re-play a saved lesson with a volume adjustment)
+        elif wavPlayer=="aplay" and not sox_effect: s=ShellEvent('aplay -q '+''.join(map(lambda x:' "'+x.file+'"', ce.eventList)),True) # (which is not quite as good but is the next best thing) (and hope they don't then try to re-play a saved lesson with a volume adjustment)
     if s:
         s.length = ce.length
         s.equivalent_event_list = ce.eventList
@@ -464,7 +467,7 @@ def simplified_header(fname):
     if h: return h[:3]+h[4:]
 def optimise_partial_playing_list(ceList):
     # similar to above, but returns a ShellEvent for a list of ce's that are to be separated by short pauses, or None if can't do this optimisation.  This is because sox on NSLU2's etc has too much latency for the short pauses.
-    if (soundCollector and not saveLesson) or not playProgram=="aplay" or not gotSox: return
+    if (soundCollector and not saveLesson) or not wavPlayer=="aplay" or not gotSox: return
     format = None ; l = [] ; theLen = 0
     for ce in ceList:
         for e in ce.eventList:

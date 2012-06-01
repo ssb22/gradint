@@ -43,6 +43,13 @@ delete_old = 1  # if 1 (and if sporadic) then older cached
 # this script moves them there, as that's how it identifies its
 # "own" mp3/wav files (as opposed to anything else you may have cached).
 
+actually_generate = 0 # if 1, will call gradint to actually
+# generate the cached sound using the default voice.  Might
+# be useful if you need to move it to another machine that
+# doesn't have that voice, and you still want to use sporadic
+# etc (like a more advanced version of cache-synth.py)
+testMode = 0 # if 1 and actually_generate is 1, will play too
+
 # -----------------------------------------
 
 import sys,os,time
@@ -55,6 +62,7 @@ except: pass
 
 sys.argv = []
 import gradint
+from gradint import dottxt,dotwav,dotmp3
 assert gradint.synthCache, "need a synthCache for this to work"
 gradint.cache_maintenance_mode = 1
 try: trans = open(gradint.synthCache+os.sep+gradint.transTbl).read().replace("\n"," ")+" "
@@ -68,12 +76,12 @@ def synth_fileExists(f):
 generating = {}
 fname2txt = {}
 for l in os.listdir(newStuff):
-    if l.endswith(gradint.dottxt) and "_" in l:
+    if l.endswith(dottxt) and "_" in l:
         txt = open(newStuff+os.sep+l).read().decode('utf-16')
         txt = (sporadic+txt,l[l.rindex("_")+1:l.rindex(gradint.extsep)])
         generating[txt] = 1 ; fname2txt[l[:l.rindex(gradint.extsep)]]=txt
 for l in os.listdir(newStuff):
-    if l.endswith(gradint.dotwav) or l.endswith(gradint.dotmp3):
+    if l.endswith(dotwav) or l.endswith(dotmp3):
         k=l[:l.rindex(gradint.extsep)]
         if k in fname2txt: generating[fname2txt[k]]=newStuff+os.sep+l
 del fname2txt # now 'generating' maps (txt,lang) to 1 or filename
@@ -90,7 +98,7 @@ def decache(s):
     generating[(textToSynth.lower(),langToSynth)]=1 # don't re-generate it
     s=textToSynth.lower().encode('utf-8')+"_"+langToSynth
     if delete_old and langToSynth==languageToCache:
-        for ext in [gradint.dottxt,gradint.dotwav,gradint.dotmp3]:
+        for ext in [dottxt,dotwav,dotmp3]:
             if s+ext in scld:
                 os.remove(gradint.synthCache+os.sep+s+ext)
                 del scld[s+ext]
@@ -108,7 +116,7 @@ if sporadic:
         else: decache(prompt)
         decache(target)
 
-count = 0
+count = 0 ; toMove = []
 
 def maybe_cache(s):
     textToSynth,langToSynth = getTxtLang(s)
@@ -116,8 +124,8 @@ def maybe_cache(s):
     if not langToSynth==languageToCache: return
     if hanziOnly and not gradint.fix_compatibility(textToSynth).replace(" ","")==gradint.hanzi_and_punc(textToSynth).replace(" ",""): return
     for txt in [textToSynth, sporadic+textToSynth]:
-      if synth_fileExists((txt.encode('utf-8')+"_"+langToSynth+gradint.dotwav).lower()) or synth_fileExists((txt.encode('utf-8')+"_"+langToSynth+gradint.dotmp3).lower()): return # it's already been done
-      if synth_fileExists(("__rejected_"+txt.encode('utf-8')+"_"+langToSynth+gradint.dotwav).lower()) or synth_fileExists(("__rejected_"+txt.encode('utf-8')+"_"+langToSynth+gradint.dotmp3).lower()): return # it's been rejected
+      if synth_fileExists((txt.encode('utf-8')+"_"+langToSynth+dotwav).lower()) or synth_fileExists((txt.encode('utf-8')+"_"+langToSynth+dotmp3).lower()): return # it's already been done
+      if synth_fileExists(("__rejected_"+txt.encode('utf-8')+"_"+langToSynth+dotwav).lower()) or synth_fileExists(("__rejected_"+txt.encode('utf-8')+"_"+langToSynth+dotmp3).lower()): return # it's been rejected
     textToSynth=sporadic+textToSynth
     k = (textToSynth.lower(),langToSynth)
     if generating.has_key(k):
@@ -126,15 +134,27 @@ def maybe_cache(s):
             fname = textToSynth.lower().encode('utf-8')+'_'+langToSynth+generating[k][generating[k].rindex(gradint.extsep):]
             open(gradint.synthCache+os.sep+fname,"wb").write(open(generating[k],"rb").read())
             scld[fname] = 1
-            #open(gradint.synthCache+os.sep+textToSynth.lower().encode('utf-8')+'_'+langToSynth+gradint.dottxt,"wb").write(open(generating[k][:generating[k].rindex(gradint.extsep)]+gradint.dottxt,"rb").read())
+            #open(gradint.synthCache+os.sep+textToSynth.lower().encode('utf-8')+'_'+langToSynth+dottxt,"wb").write(open(generating[k][:generating[k].rindex(gradint.extsep)]+dottxt,"rb").read())
             os.remove(generating[k])
-            os.remove(generating[k][:generating[k].rindex(gradint.extsep)]+gradint.dottxt)
+            os.remove(generating[k][:generating[k].rindex(gradint.extsep)]+dottxt)
             generating[k]=1
+        return
+    if actually_generate:
+        tm = [gradint.synth_event(langToSynth,textToSynth.encode('utf-8')).getSound(),(textToSynth.encode('utf-8')+"_"+langToSynth+dotwav).lower()]
+        if gradint.got_program("lame"):
+            # we can MP3-encode it (TODO make this optional)
+            n = tm[0][:-len(dotwav)]+dotmp3
+            if not os.system("lame --cbr -h -b 48 -m m \"%s\" \"%s\"" % (tm[0],n)):
+              os.remove(tm[0])
+              tm[0] = n
+              tm[1] = tm[1][:-len(dotwav)]+dotmp3
+        toMove.append(tm)
+        scld[textToSynth.lower().encode('utf-8')+'_'+langToSynth+dotwav] = 1
         return
     generating[k]=1
     global count
-    while gradint.fileExists(newStuff+os.sep+str(count)+"_"+langToSynth+gradint.dottxt): count += 1
-    open(newStuff+os.sep+str(count)+"_"+langToSynth+gradint.dottxt,"w").write(textToSynth[len(sporadic):].encode('utf-16'))
+    while gradint.fileExists(newStuff+os.sep+str(count)+"_"+langToSynth+dottxt): count += 1
+    open(newStuff+os.sep+str(count)+"_"+langToSynth+dottxt,"w").write(textToSynth[len(sporadic):].encode('utf-16'))
     count += 1
 
 print "Checking for new ones"
@@ -143,5 +163,22 @@ for _,s1,s2 in samples+gradint.parseSynthVocab(gradint.vocabFile):
     else: maybe_cache(s1)
     maybe_cache(s2)
 
+if toMove: sys.stderr.write("Renaming\n")
+for tmpfile,dest in toMove:
+    oldDest = dest
+    try:
+        os.rename(tmpfile,gradint.synthCache+os.sep+dest)
+    except OSError: # not a valid filename
+        while gradint.fileExists(gradint.synthCache+os.sep+("__file%d" % count)+dotwav) or gradint.fileExists(gradint.synthCache+os.sep+("__file%d" % count)+dotmp3): count += 1
+        os.rename(tmpfile,gradint.synthCache+os.sep+("__file%d" % count)+dotwav)
+        open(gradint.synthCache+os.sep+gradint.transTbl,"ab").write("__file%d%s %s\n" % (count,dotwav,dest))
+        dest = "__file%d%s" % (count,dotwav)
+    if testMode:
+        print oldDest
+        e=gradint.SampleEvent(gradint.synthCache+os.sep+dest)
+        t=time.time() ; e.play()
+        while time.time() < t+e.length: time.sleep(1) # in case play() is asynchronous
+    
 if count: print "Now convert the files in "+newStuff+" and re-run this script.\nYou might also want to adjust the volume if appropriate, e.g. mp3gain -r -d 6 -c *.mp3"
-else: print "No extra files needed to be made."
+elif not toMove: print "No extra files needed to be made."
+else: print "All done"

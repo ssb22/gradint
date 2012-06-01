@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9981 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9982 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -99,18 +99,21 @@ def maybe_unicode(label):
         except: return label # ??
     else: return repr(label)
 
-madplay_program = 0
-if (winsound or mingw32) and fileExists("madplay.exe"): madplay_program = "madplay.exe"
-elif unix and hasattr(os,"popen"):
-    madplay_program = os.popen("PATH=$PATH:. which madplay 2>/dev/null").read().strip(wsp)
-    if not fileExists(cond(cygwin,madplay_program+".exe",madplay_program)): madplay_program=0 # in case of a Unix 'which' returning error on stdout
-if madplay_program and not winsound and not mingw32: madplay_program='"'+madplay_program+'"' # in case there's spaces etc in the path
+mp3Player_is_madplay = 0
+if not mp3Player: # can we use madplay?
+  if (winsound or mingw32) and fileExists("madplay.exe"): mp3Player = "madplay.exe"
+  elif unix and hasattr(os,"popen"):
+    mp3Player = os.popen("PATH=$PATH:. which madplay 2>/dev/null").read().strip(wsp)
+    if not fileExists(cond(cygwin,mp3Player+".exe",mp3Player)): mp3Player="" # in case of a Unix 'which' returning error on stdout
+  if mp3Player and not winsound and not mingw32: mp3Player='"'+mp3Player+'"' # in case there's spaces etc in the path
+  if mp3Player: mp3Player_is_madplay = 1
+# else leave mp3Player_is_madplay=0, even if there's a "madplay" in the string (as we can't assume we'll be able to use it for conversion and/or add our own parameters etc)
 
 def intor0(v):
     try: return int(v)
     except ValueError: return 0
 
-playProgram = mpg123 = "" ; sox_effect=""
+sox_effect=""
 sox_8bit, sox_16bit, sox_ignoreLen = "-b", "-w", ""
 # Older sox versions (e.g. the one bundled with Windows Gradint) recognise -b and -w only; sox v14+ recognises both that and -1/-2; newer versions recognise only -1/-2.  We check for newer versions if unix.  (TODO riscos / other?)
 soundVolume_dB = math.log(soundVolume)*(-6/math.log(0.5))
@@ -128,11 +131,12 @@ if unix:
     gotSox=0
     if got_program("sox"): show_warning("SOX found, but it can't handle WAV files. Ubuntu users please install libsox-fmt-all.")
 else: gotSox = got_program("sox")
+wavPlayer_override = not (not wavPlayer)
 if winsound or mingw32:
-    # in winsound can use PlaySound() but better not use it for LONGER sounds - find a playProgram anyway for those (see self.length condition in play() method below)
+    # in winsound can use PlaySound() but better not use it for LONGER sounds - find a wavPlayer anyway for those (see self.length condition in play() method below)
     # (TODO sndrec32.exe loads the whole of the file into memory before playing.  but mplayer/mplay32 sometimes halts on a yes/no dialogue about settings, and Media Player can't take files on command line so needs correct file association and executable permissions.  And many of the freeware command-line players have the same limitations as winsound.)
     # TODO now that we (usually) have tkSnack bundled with the Windows version, can we try that also (with file=) before sndrec32?
-    if fileExists(os.environ.get("windir","C:\\Windows")+"\\system32\\sndrec32.exe"): playProgram = "start /min sndrec32 /play /close" # TODO could also use ShellExecute or some other utility to make it completely hidden
+    if not wavPlayer and fileExists(os.environ.get("windir","C:\\Windows")+"\\system32\\sndrec32.exe"): wavPlayer = "start /min sndrec32 /play /close" # TODO could also use ShellExecute or some other utility to make it completely hidden
 elif unix and not macsound:
     sox_type = "-t ossdsp -s "+sox_16bit # (we will check that sox can do ossdsp below) (always specify 16-bit because if we're adjusting the volume of 8-bit wav's then we could lose too many bits in the adjustment unless we first convert to 16-bit)
     if not soundVolume==1: sox_effect=" vol "+str(soundVolume)
@@ -149,24 +153,24 @@ elif unix and not macsound:
                 if dsp=="/dev/audio": sox_type="-t sunau -s "+sox_16bit
                 break
     if sox_formats.find("-q")>-1: sox_type="-q "+sox_type
-    # Try to find playProgram (and maybe mpg123, for use if no madplay or mp3-playing playProgram)
-    if oss_sound_device and not cygwin and gotSox: playProgram = "sox"
-    elif cygwin and got_program("sndrec32"): # XP's Sound Recorder (vista's is called soundreorder.exe but won't do this) (+ don't have to worry about the >2G memory bug as not applicable to playing)
-        playProgram = "sndrec32 /play /close" # prefer this to esdplay due to cygwin esdplay delaying every other call and being asynchronous
-        if got_program("cmd"): playProgram = "cmd /c start /min "+playProgram # TODO could also use ShellExecute or some other utility to make it completely hidden
-    elif cygwin and oss_sound_device and got_program("play"): playProgram = "play" # this is part of sox, but it'll be the sox installed in cygwin rather than any sox.exe in gradint directory from Windows version
-    else:
+    if not wavPlayer:
+      if oss_sound_device and not cygwin and gotSox: wavPlayer = "sox"
+      elif cygwin and got_program("sndrec32"): # XP's Sound Recorder (vista's is called soundreorder.exe but won't do this) (+ don't have to worry about the >2G memory bug as not applicable to playing)
+        wavPlayer = "sndrec32 /play /close" # prefer this to esdplay due to cygwin esdplay delaying every other call and being asynchronous
+        if got_program("cmd"): wavPlayer = "cmd /c start /min "+wavPlayer # TODO could also use ShellExecute or some other utility to make it completely hidden
+      elif cygwin and oss_sound_device and got_program("play"): wavPlayer = "play" # this is part of sox, but it'll be the sox installed in cygwin rather than any sox.exe in gradint directory from Windows version
+      else:
         otherPrograms = ["aplay","esdplay","auplay","wavp","playmus","mplayer","playwave","alsaplayer"] # alsaplayer is a last resort because the text-mode version may or may not be installed; hopefully they'll have alsa-utils installed which includes 'aplay'. (playwave has been known to clip some files)
         for otherProgram in otherPrograms:
             if got_program(otherProgram):
-                playProgram = otherProgram
+                wavPlayer = otherProgram
                 break
-    if not cygwin and not madplay_program:
+    if not cygwin and not mp3Player:
         for mpg in ["mpg123","mpg321","mad123","mplayer"]:
             if got_program(mpg):
-                mpg123 = mpg ; break
-    if not playProgram and not outputFile: show_warning("Warning: no known "+cond(mpg123,"non-MP3 ","")+"sound-playing command found on this system\n  (checked for sox with /dev/dsp etc, also checked for play "+" ".join(otherPrograms)+")\n - expect problems with realtime lessons"+cond(mpg123," unless everything is MP3",""))
-may_need_mp3_warning = ((playProgram or winsound or riscos_sound or mingw32) and not (mpg123 or gotSox or madplay_program))
+                mp3Player = mpg ; break
+    if not wavPlayer and not outputFile: show_warning("Warning: no known "+cond(mp3Player,"non-MP3 ","")+"sound-playing command found on this system\n  (checked for sox with /dev/dsp etc, also checked for play "+" ".join(otherPrograms)+")\n - expect problems with realtime lessons"+cond(mp3Player," unless everything is MP3",""))
+may_need_mp3_warning = ((wavPlayer or winsound or riscos_sound or mingw32) and not (mp3Player or gotSox))
 def maybe_warn_mp3():
     global may_need_mp3_warning
     if may_need_mp3_warning:
@@ -198,7 +202,7 @@ def changeToDirOf(file,winsound_also=0):
 def system(cmd):
     # Don't call os.system for commands like sound playing, because if you do then any Control-C interrupt will go to that rather than to gradint as we want, and it will pop up a large blank console window in Windows GUI-only version
     if riscos_sound or not hasattr(os,"popen"): return os.system(cmd) # no popen
-    if unix and ';' in cmd: cmd='/bin/bash -c "'+cmd.replace('\\','\\\\').replace('"','\\"').replace('$','\\$')+'"' # not /bin/sh if it's complex
+    if unix and (';' in cmd or '<' in cmd): cmd='/bin/bash -c "'+cmd.replace('\\','\\\\').replace('"','\\"').replace('$','\\$')+'"' # not /bin/sh if it's complex
     try: r=os.popen(cmd)
     except: return os.system(cmd) # too many file descriptors open or something
     r.read() ; return r.close()
@@ -260,9 +264,9 @@ class SampleEvent(Event):
             if not fname[0]=='/': fname=os.getcwd()+'/'+fname
             android.mediaPlay("file://"+fname)
             return
-        elif fileType=="mp3" and madplay_program and not macsound and not playProgram=="aplay":
+        elif fileType=="mp3" and mp3Player_is_madplay and not macsound and not wavPlayer=="aplay":
             oldcwd = os.getcwd()
-            play_error = system(madplay_program+' -q -A '+str(soundVolume_dB)+' "'+changeToDirOf(self.file)+'"') # using changeToDirOf because on Cygwin it might be a non-cygwin madplay.exe that someone's put in the PATH.  And keeping the full path to madplay.exe because the PATH may contain relative directories.
+            play_error = system(mp3Player+' -q -A '+str(soundVolume_dB)+' "'+changeToDirOf(self.file)+'"') # using changeToDirOf because on Cygwin it might be a non-cygwin madplay.exe that someone's put in the PATH.  And keeping the full path to madplay.exe because the PATH may contain relative directories.
             os.chdir(oldcwd)
             return play_error
         elif winCEsound and fileType=="mp3":
@@ -271,7 +275,7 @@ class SampleEvent(Event):
             if not fname[0]=="\\": fname=os.getcwd()+cwd_addSep+fname # must be full path
             r=not ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u""+fname)))
             time.sleep(self.length) # exactLen may not be enough
-        elif (winsound and not (self.length>10 and playProgram)) or winCEsound: # (don't use winsound for long files if another player is available - it has been known to stop prematurely)
+        elif (winsound and not (self.length>10 and wavPlayer)) or winCEsound: # (don't use winsound for long files if another player is available - it has been known to stop prematurely)
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
             else: file=self.file
             try:
@@ -297,16 +301,16 @@ class SampleEvent(Event):
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (TODO find a RISC OS program that can play the MP3s directly?)
             else: file=self.file
             system("PlayIt_Play \"%s\"" % (file,))
-        elif playProgram.find('sndrec32')>-1:
+        elif wavPlayer.find('sndrec32')>-1:
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
             else: file=self.file
             oldDir = os.getcwd()
             t=time.time()
-            os.system(playProgram+' "'+changeToDirOf(file)+'"') # don't need to call our version of system() here
-            if playProgram.find("start")>-1: time.sleep(max(0,self.length-(time.time()-t))) # better do this - don't want events overtaking each other if there are delays.  exactLen not always enough.  (but do subtract the time already taken, in case command extensions have been disabled and "start" is synchronous.)
+            os.system(wavPlayer+' "'+changeToDirOf(file)+'"') # don't need to call our version of system() here
+            if wavPlayer.find("start")>-1: time.sleep(max(0,self.length-(time.time()-t))) # better do this - don't want events overtaking each other if there are delays.  exactLen not always enough.  (but do subtract the time already taken, in case command extensions have been disabled and "start" is synchronous.)
             os.chdir(oldDir)
-        elif fileType=="mp3" and mpg123 and not sox_effect and not (playProgram=="aplay" and madplay_program): return system(mpg123+' "'+self.file+'"')
-        elif playProgram=="sox":
+        elif fileType=="mp3" and mp3Player and not sox_effect and not (wavPlayer=="aplay" and mp3Player_is_madplay): return system(mp3Player+' "'+self.file+'"')
+        elif wavPlayer=="sox":
             # To make it more difficult:
             # sox v12.x (c. 2001) - bug when filenames contain 2 spaces together, and needs input from re-direction in this case
             # sox 14.0 on Cygwin - bug when input is from redirection, unless using cat | ..
@@ -324,18 +328,20 @@ class SampleEvent(Event):
                 if timeDiff==0 and self.exactLen < 1.5: return 0 # (we'll let that one off for systems that have limited clock precision)
                 if not app: show_info("play didn't take long enough - maybe ") # .. problem playing sound
                 return 1
-        elif playProgram=="aplay" and ((not fileType=="mp3") or madplay_program or gotSox):
-            if madplay_program and fileType=="mp3": return system(madplay_program+' -q -A '+str(soundVolume_dB)+' "'+self.file+'" -o wav:-|aplay -q') # changeToDirOf() not needed because this won't be cygwin (hopefully)
+        elif wavPlayer=="aplay" and ((not fileType=="mp3") or mp3Player_is_madplay or gotSox):
+            if mp3Player_is_madplay and fileType=="mp3": return system(mp3Player+' -q -A '+str(soundVolume_dB)+' "'+self.file+'" -o wav:-|aplay -q') # changeToDirOf() not needed because this won't be cygwin (hopefully)
             elif gotSox and (sox_effect or fileType=="mp3"): return system('cat "'+self.file+'" | sox -t '+fileType+' - -t wav '+sox_16bit+' - '+sox_effect+' 2>/dev/null|aplay -q') # (make sure o/p is 16-bit even if i/p is 8-bit, because if sox_effect says "vol 0.1" or something then applying that to 8-bit would lose too many bits)
             # (2>/dev/null to suppress sox "can't seek to fix wav header" problems, but don't pick 'au' as the type because sox wav->au conversion can take too long on NSLU2 (probably involves rate conversion))
             else: return system('aplay -q "'+self.file+'"')
         # May also be able to support alsa directly with sox (aplay not needed), if " alsa" is in sox -h's output and there is /dev/snd/pcmCxDxp (e.g. /dev/snd/pcmC0D0p), but sometimes it doesn't work, so best stick with aplay
         # TODO: auplay can take -volume (int 0-100) and stdin; check esdplay capabilities also
-        elif fileType=="mp3" and mpg123: return system(mpg123+' "'+self.file+'"')
-        elif playProgram:
-            if fileType=="mp3" and not playProgram=="mplayer": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
+        elif fileType=="mp3" and mp3Player and not sox_effect: return system(mp3Player+' "'+self.file+'"')
+        elif wavPlayer:
+            if fileType=="mp3" and not wavPlayer=="mplayer": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
             else: file=self.file
-            return system(playProgram+' "'+file+'"')
+            if sox_effect and wavPlayer.strip().endswith("<"): return system('sox "%s" -t wav - %s | %s' % (file,sox_effect,wavPlayer.strip()[:-1]))
+            return system(wavPlayer+' "'+file+'"')
+        elif fileType=="mp3" and mp3Player: return system(mp3Player+' "'+self.file+'"') # ignore sox_effect
         else: show_warning("Don't know how to play \""+self.file+'" on this system')
 
 br_tab=[(0 , 0 , 0 , 0 , 0),
@@ -608,9 +614,9 @@ def decode_mp3(file):
         os.system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
         data=read("tmp0") ; os.unlink("tmp0")
         return data
-    elif madplay_program or got_program("mpg123"):
+    elif mp3Player_is_madplay or got_program("mpg123"):
         oldDir = os.getcwd()
-        if madplay_program: d=os.popen(madplay_program+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-","rb").read()
+        if mp3Player_is_madplay: d=os.popen(mp3Player+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-","rb").read()
         else: d=os.popen("mpg123 -q -w - \""+changeToDirOf(file)+"\"","rb").read()
         os.chdir(oldDir)
         # fix length (especially if it's mpg123)
