@@ -70,13 +70,13 @@ class OSXSynth_Say(Synth):
         self.voices = self.scanVoices() ; return True
     def supports_language(self,lang): return lang in self.voices
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
-    def play(self,lang,text): return system("say %s\"%s\"" % (self.voices[lang],self.preprocess(lang,text).replace('"','')))
+    def play(self,lang,text): return system("say %s\"%s\"" % (self.voices[lang],self.transliterate(lang,text).replace('"','')))
     # TODO 10.7+ may also support -r rate (WPM), make that configurable in advanced.txt ?
     def makefile(self,lang,text):
         fname = os.tempnam()+extsep+"aiff"
-        system("say -o %s %s\"%s\"" % (fname,self.voices[lang],self.preprocess(lang,text).replace('"','')))
+        system("say -o %s %s\"%s\"" % (fname,self.voices[lang],self.transliterate(lang,text).replace('"','')))
         return aiff2wav(fname)
-    def preprocess(self,lang,text):
+    def transliterate(self,lang,text,forPartials=0):
         if not self.voices[lang]=='-v "Ting-Ting" ': return text
         # The hanzi-to-pinyin conversion in the Ting-Ting voice is not always as good as eSpeak's, but it can be controlled with pinyin.
         ut = ensure_unicode(text)
@@ -84,6 +84,10 @@ class OSXSynth_Say(Synth):
         es = ESpeakSynth()
         if not es.works_on_this_platform() or not es.supports_language('zh'): return text
         return es.transliterate('zh',text,0)
+    def can_transliterate(self,lang):
+        if not self.voices.get(lang,0)=='-v "Ting-Ting" ': return 0
+        es = ESpeakSynth()
+        return es.works_on_this_platform() and es.supports_language('zh')
     def scanVoices(self):
         d = {}
         try: from AppKit import NSSpeechSynthesizer
