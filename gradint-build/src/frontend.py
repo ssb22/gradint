@@ -202,12 +202,17 @@ def addLabel(row,label):
 def CXVMenu(e): # callback for right-click
     e.widget.focus()
     m=Tkinter.Menu(None, tearoff=0, takefocus=0)
-    ctrl=cond(macsound,"<Command-","<Control-")
-    m.add_command(label="Cut",command=(lambda e=e: e.widget.event_generate(ctrl+'x>')))
-    m.add_command(label="Copy",command=(lambda e=e: e.widget.event_generate(ctrl+'-c>')))
-    m.add_command(label="Paste",command=(lambda e=e: e.widget.event_generate(ctrl+'-v>')))
-    m.add_command(label="Delete",command=(lambda e=e: e.widget.event_generate('<Delete>')))
-    m.add_command(label="Select All",command=(lambda e=e: selectAll(e)))
+    if macsound:
+        cut,copy,paste = "<<Cut>>","<<Copy>>","<<Paste>>"
+    else:
+        ctrl="<Control-"
+        cut,copy,paste = ctrl+'x>',ctrl+'c>',ctrl+'v>'
+    def evgen(e,cmd): e.widget.event_generate(cmd)
+    funclist = [("Paste",paste),("Delete",'<Delete>')]
+    if not macsound:
+        funclist = [("Cut",cut),("Copy",copy)]+funclist # doesn't work reliably on Mac Tk
+    for l,cmd in funclist: m.add_command(label=l,command=(lambda e=e,c=cmd: e.widget.after(10,evgen,e,c)))
+    m.add_command(label="Select All",command=(lambda e=e: e.widget.after(10,selectAll,e)))
     m.tk_popup(e.x_root-3, e.y_root+3,entry="0")
 def selectAll(e):
     e.widget.event_generate('<Home>')
@@ -221,7 +226,9 @@ def addTextBox(row,wide=0):
     text = Tkinter.StringVar(row)
     entry = Tkinter.Entry(row,textvariable=text)
     entry.bind('<ButtonRelease-3>',CXVMenu)
-    if macsound: entry.bind('<Control-ButtonRelease-1>',CXVMenu)
+    if macsound:
+        entry.bind('<Control-ButtonRelease-1>',CXVMenu)
+        entry.bind('<ButtonRelease-2>',CXVMenu)
     if winCEsound:
       if WMstandard: # non-numeric inputs no good on WMstandard Tkinter
         def doRawInput(text,entry):
