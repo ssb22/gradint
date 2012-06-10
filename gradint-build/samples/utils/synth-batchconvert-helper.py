@@ -140,7 +140,7 @@ def maybe_cache(s):
             generating[k]=1
         return
     if actually_generate:
-        tm = [gradint.synth_event(langToSynth,textToSynth.encode('utf-8')).getSound(),(textToSynth.encode('utf-8')+"_"+langToSynth+dotwav).lower()]
+        tm = [gradint.synth_event(langToSynth,textToSynth[len(sporadic):].encode('utf-8')).getSound(),(textToSynth.encode('utf-8')+"_"+langToSynth+dotwav).lower()]
         if gradint.got_program("lame"):
             # we can MP3-encode it (TODO make this optional)
             n = tm[0][:-len(dotwav)]+dotmp3

@@ -588,6 +588,7 @@ class ESpeakSynth(Synth):
           delete_last_r_if_blank = 0
           thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
           for l in dat.strip(wsp).split("\n"):
+              # print "Debugger:",l.strip()
               # get en_words for fix_pinyin (and for making sure we embed them in cant)
               lWords = l.split()
               if lWords: int0 = intor0(lWords[0])
@@ -601,7 +602,7 @@ class ESpeakSynth(Synth):
                       en_words[r[-1]]=1
                   thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
               # end of getting en_words
-              if lang=="zh" and not lastWasBlank and r and (l.startswith("Replace") or l.startswith("Translate") or l.startswith("Found")): r[-1]+="," # (because not-blank is probably the line of phonemes)
+              if lang=="zh" and r and ((not lastWasBlank and (l.startswith("Replace") or l.startswith("Translate") or l.startswith("Found"))) or l.find("';'")>1 or l.find("','")>1): r[-1]+="," # (because not-blank is probably the line of phonemes)
               elif not lang=="zh" and l.startswith("_|") and r: r[-1] += "," # works for zh-yue
               if delete_last_r_if_blank and not l: r=r[:-1] # "Translate" followed by blank line is probably corner-brackets or something; don't want that confusing the transliteration (especially if it's for partials)
               delete_last_r_if_blank = 0
