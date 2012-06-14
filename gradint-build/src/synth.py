@@ -67,14 +67,17 @@ class OSXSynth_Say(Synth):
     def __init__(self): Synth.__init__(self)
     def works_on_this_platform(self):
         if not (macsound and fileExists("/usr/bin/say")): return False
-        self.voices = self.scanVoices() ; return True
+        global osxSayVoicesScan
+        try: osxSayVoicesScan # singleton
+        except: osxSayVoicesScan = self.scanVoices()
+        self.voices = osxSayVoicesScan ; return True
     def supports_language(self,lang): return lang in self.voices
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
     def play(self,lang,text): return system("say %s\"%s\"" % (self.voices[lang],self.transliterate(lang,text).replace('"','')))
     # TODO 10.7+ may also support -r rate (WPM), make that configurable in advanced.txt ?
     def makefile(self,lang,text):
         fname = os.tempnam()+extsep+"aiff"
-        system("say -o %s %s\"%s\"" % (fname,self.voices[lang],self.transliterate(lang,text).replace('"','')))
+        system("say %s-o %s \"%s\"" % (self.voices[lang],fname,self.transliterate(lang,text).replace('"','')))
         return aiff2wav(fname)
     def transliterate(self,lang,text,forPartials=0):
         if not self.voices[lang]=='-v "Ting-Ting" ': return text
@@ -132,6 +135,7 @@ def aiff2wav(fname):
     return fname
 
 class OSXSynth_OSAScript(Synth):
+    # for old Macs that don't have a "say" command
     def __init__(self): Synth.__init__(self)
     def supports_language(self,lang): return lang=="en"
     def works_on_this_platform(self): return macsound and fileExists("/usr/bin/osascript")
@@ -141,7 +145,6 @@ class OSXSynth_OSAScript(Synth):
         fname = os.tempnam()+extsep+"aiff"
         os.popen("osascript","w").write('say "%s" saving to "%s"\n' % (text,fname))
         return aiff2wav(fname)
-# TODO: if the user has installed an OS X voice that supports another language, can use say -v voicename  ( or 'using \"voicename\"' for the osascript version )  (but I have no access to a suitably-configured Mac for testing this)
 
 class OldRiscosSynth(Synth):
     def __init__(self): Synth.__init__(self)
