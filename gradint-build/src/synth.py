@@ -97,6 +97,7 @@ class OSXSynth_Say(Synth):
         except: return {"en":""} # no -v parameter at all
         for vocId in NSSpeechSynthesizer.availableVoices():
             vocAttrib = NSSpeechSynthesizer.attributesForVoice_(vocId)
+            if not ('VoiceLanguage' in vocAttrib and 'VoiceName' in vocAttrib): continue
             lang = vocAttrib['VoiceLanguage']
             if '-' in lang: lang=lang[:lang.index("-")]
             if not lang in d: d[lang]=[]
