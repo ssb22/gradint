@@ -1047,7 +1047,10 @@ def startTk():
             self.menu_response="add"
         def zap_newlines(self): # in case someone pastes in text that contains newlines, better not keep them when adding to vocab
             text1,text2 = asUnicode(self.Text1.get()),asUnicode(self.Text2.get())
-            t1,t2 = text1.replace("\n"," ").replace("\r","").strip(wsp), text2.replace("\n"," ").replace("\r","").strip(wsp)
+            # (also remove the simple visual markup that Wenlin sometimes adds)
+            t1,t2=text1,text2
+            for zap in ["\n","\r","<b>","</b>","<i>","</i>","<u>","</u>"]: t1,t2=t1.replace(zap,""),t2.replace(zap,"")
+            t1,t2 = t1.strip(wsp), t2.strip(wsp)
             if not t1==text1: self.Text1.set(t1)
             if not t2==text2: self.Text2.set(t2)
         def getEncoder(self,*args):

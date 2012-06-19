@@ -119,6 +119,7 @@ rem (deliberately saying "press any key" ourselves not from 'pause', otherwise t
 
 mkdir "%USERPROFILE%\Desktop\gradint"
 copy /Y shortcuts\*.* "%USERPROFILE%\Desktop\gradint"
+if exist "%AppData%\Microsoft\Windows\Start Menu\Programs\Startup" goto win8
 mkdir "%USERPROFILE%\Start Menu\Programs\gradint"
 copy /Y shortcuts\*.* "%USERPROFILE%\Start Menu\Programs\gradint"
 
@@ -126,10 +127,18 @@ rem Install startup once-per-day thing
 mkdir "%USERPROFILE%\Start Menu\Programs\Startup"
 copy /Y startup\*.* "%USERPROFILE%\Start Menu\Programs\Startup"
 
+goto win8skip
+:win8
+copy /Y startup\*.* "%AppData%\Microsoft\Windows\Start Menu\Programs\Startup"
+mkdir "%AppData%\Microsoft\Windows\Start Menu\Programs\gradint"
+copy /Y shortcuts\*.* "%AppData%\Microsoft\Windows\Start Menu\Programs\gradint"
+:win8skip
+
 cd /D "%USERPROFILE%\Desktop"
 goto end
+
 :PRC
-rem This is a special case for Chinese (Simplified) Windows, configured to use the "Chinese (PRC)" locale for legacy apps (which means these strings should be gb2312 coded).
+rem This is a special case for Chinese (Simplified) Windows (XP etc), configured to use the "Chinese (PRC)" locale for legacy apps (which means these strings should be gb2312 coded).
 rem (You can get the names of Start Menu etc folders coded in the current locale by doing dir > file.txt at a command prompt and inspecting file.txt)
 mkdir "%USERPROFILE%\×ÀÃæ\gradint"
 ren shortcuts\uninstall.bat "shortcuts\ÅÅ³ý.bat"

@@ -32,6 +32,19 @@ taskkill /f /im gradint-wrapper.exe 2>nul >nul
 cd /D "%HOMEDRIVE%%HOMEPATH%"
 rmdir /S /Q gradint
 cd /D "%USERPROFILE%"
+rmdir /S /Q "Desktop\gradint"
+if exist "%AppData%\Microsoft\Windows\Start Menu\Programs\Startup" goto win8
 del "Start Menu\Programs\Startup\Run gradint once per day.bat"
-rmdir /S /Q "Start Menu\Programs\gradint" "Desktop\gradint"
-rem (TODO - Chinese Windows shortcuts also - see setup.bat)
+rmdir /S /Q "Start Menu\Programs\gradint"
+
+rem This is a special case for Chinese (Simplified) Windows (XP etc), configured to use the "Chinese (PRC)" locale for legacy apps (which means these strings should be gb2312 coded).
+if not exist "%USERPROFILE%\「开始」菜单" goto end
+rmdir /S /Q "%USERPROFILE%\桌面\gradint" "%USERPROFILE%\「开始」菜单\程序\gradint"
+del "%USERPROFILE%\「开始」菜单\程序\启动\Run gradint once per day.bat"
+goto end
+
+:win8
+del "%AppData%\Microsoft\Windows\Start Menu\Programs\Startup\Run gradint once per day.bat"
+rmdir /S /Q "%AppData%\Microsoft\Windows\Start Menu\Programs\gradint"
+
+:end
