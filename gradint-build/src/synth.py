@@ -991,7 +991,6 @@ class SynthEvent(Event):
             # (note - this code is NOT used for partials synth, only for passing to espeak etc.  see elsewhere for partials synth)
             self.modifiedText = pinyin_uColon_to_V(self.modifiedText) # includes .lower()
             # and put space between every syllable of w, if it's one word only (the Lily voice seems to stand a better chance of getting it right that way, and occasionally other voices do too, e.g. "chang2yuan3" in at least some versions of eSpeak, not to mention Loquendo Lisheng
-            if synthesizer.__class__==PttsSynth: self.modifiedText = self.modifiedText.replace("-"," ") # for Lily, Lisheng etc.  NB replace hyphen with space not with "", otherwise can get problems with phrases like "wang4en1-fu4yi4".  DON'T do this with other synths - may want to use hyphens for word-boundary disambiguation.
             for t in ["1","2","3","4","5"]: self.modifiedText = self.modifiedText.replace(t+"-",t+" ") # for Lily, Lisheng etc.  NB replace hyphen with space not with "", otherwise can get problems with phrases like "wang4en1-fu4yi4".  DON'T do it except after tone marks, because for hanzi we might want to use hyphens for word-boundary disambiguation.
             if (not " " in self.modifiedText) and ("1" in self.modifiedText or "2" in self.modifiedText or "3" in self.modifiedText or "4" in self.modifiedText or "5" in self.modifiedText):
                 self.modifiedText=fix_pinyin(self.modifiedText,[]) # better call that before doing the following (in case any digits in the wrong place)
