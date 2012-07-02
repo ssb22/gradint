@@ -118,11 +118,6 @@ if sporadic:
 
 count = 0 ; toMove = []
 
-def rename(old,new):
-    # don't use os.rename - can get problems cross-device
-    open(new,"wb").write(open(old,"rb").read())
-    os.remove(old)
-
 def maybe_cache(s):
     textToSynth,langToSynth = getTxtLang(s)
     if not textToSynth: return
@@ -135,10 +130,12 @@ def maybe_cache(s):
     k = (textToSynth.lower(),langToSynth)
     if generating.has_key(k):
         if not generating[k]==1: # a file already exists
+            # don't use os.rename - can get problems cross-device
             fname = textToSynth.lower().encode('utf-8')+'_'+langToSynth+generating[k][generating[k].rindex(gradint.extsep):]
-            rename(generating[k],gradint.synthCache+os.sep+fname)
+            open(gradint.synthCache+os.sep+fname,"wb").write(open(generating[k],"rb").read())
             scld[fname] = 1
-            #rename(generating[k][:generating[k].rindex(gradint.extsep)]+dottxt,gradint.synthCache+os.sep+textToSynth.lower().encode('utf-8')+'_'+langToSynth+dottxt)
+            #open(gradint.synthCache+os.sep+textToSynth.lower().encode('utf-8')+'_'+langToSynth+dottxt,"wb").write(open(generating[k][:generating[k].rindex(gradint.extsep)]+dottxt,"rb").read())
+            os.remove(generating[k])
             os.remove(generating[k][:generating[k].rindex(gradint.extsep)]+dottxt)
             generating[k]=1
         return
@@ -170,10 +167,10 @@ if toMove: sys.stderr.write("Renaming\n")
 for tmpfile,dest in toMove:
     oldDest = dest
     try:
-        rename(tmpfile,gradint.synthCache+os.sep+dest)
+        os.rename(tmpfile,gradint.synthCache+os.sep+dest)
     except OSError: # not a valid filename
         while gradint.fileExists(gradint.synthCache+os.sep+("__file%d" % count)+dotwav) or gradint.fileExists(gradint.synthCache+os.sep+("__file%d" % count)+dotmp3): count += 1
-        rename(tmpfile,gradint.synthCache+os.sep+("__file%d" % count)+dotwav)
+        os.rename(tmpfile,gradint.synthCache+os.sep+("__file%d" % count)+dotwav)
         open(gradint.synthCache+os.sep+gradint.transTbl,"ab").write("__file%d%s %s\n" % (count,dotwav,dest))
         dest = "__file%d%s" % (count,dotwav)
     if testMode:
