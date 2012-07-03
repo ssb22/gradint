@@ -1246,6 +1246,7 @@ def openDirectory(dir,inGuiThread=0):
         if not dir[0]=="\\": dir=os.getcwd()+cwd_addSep+dir # must be absolute
         ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u"\\Windows\\fexplore",Parameters=u""+dir)))
     elif explorerCommand:
+        if ' ' in dir: dir='"'+dir+'"'
         cmd = explorerCommand+" "+dir
         if winsound or mingw32: cmd="start "+cmd # (not needed on XP but is on Vista)
         elif unix: cmd += "&"
