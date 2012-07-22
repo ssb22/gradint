@@ -42,7 +42,7 @@ def doOneLesson(dbase):
           else: dbase.save()
           if dbase.saved_completely and app: app.setNotFirstTime() # dbase.saved_completely could have been done by EITHER of the above (e.g. overlapping partial saves)
           if saveLesson:
-              if compress_progress_file: pickle.Pickler(os.popen('gzip -9 > "'+saveLesson+'"','wb'),-1).dump(lesson)
+              if compress_progress_file: pickle.Pickler(os.popen('gzip -9 > "'+saveLesson+'"','wb'),-1).dump(lesson) # TODO: paranoid_file_management ? (c.f. saveProgress)
               else: pickle.Pickler(open(saveLesson,"wb"),-1).dump(lesson)
               saveLesson = None # so saves only the first when doing multiple lessons
               if justSaveLesson: break

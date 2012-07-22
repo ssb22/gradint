@@ -43,7 +43,7 @@ def setup_samplesDir_ifNec(d=0): # if the user doesn't have a samples directory,
   if not d: d=samplesDirectory
   if not isDirectory(d):
     os.mkdir(d)
-    if fileExists(user0[0]+os.sep+"README"+dottxt): open(d+os.sep+"README"+dottxt,'wb').write(read(user0[0]+os.sep+"README"+dottxt))
+    if fileExists(user0[0]+os.sep+"README"+dottxt): write(d+os.sep+"README"+dottxt,read(user0[0]+os.sep+"README"+dottxt))
 
 def get_userNames(): # list of unicode user names or []
   ret=[]

@@ -295,7 +295,7 @@ class SampleEvent(Event):
             try: unicode(self.file,"ascii")
             except UnicodeDecodeError: # qtplay can't always handle non-ASCII
               t=os.tempnam()+self.file[self.file.rindex(extsep):]
-              open(t,"w").write(open(self.file).read())
+              write(t,open(self.file).read())
               ret=system("qtplay \"%s\"" % (t,))
               os.remove(t)
               return ret
@@ -646,7 +646,7 @@ class Mp3FileCache(object):
     def decode_mp3_to_tmpfile(self,file):
         if not file in self.fileCache:
             self.fileCache[file] = os.tempnam()+dotwav
-            open(self.fileCache[file],"wb").write(decode_mp3(file))
+            write(self.fileCache[file],decode_mp3(file))
         return self.fileCache[file]
 theMp3FileCache = Mp3FileCache()
 

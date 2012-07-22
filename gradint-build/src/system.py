@@ -222,6 +222,7 @@ def exc_info(inGradint=True):
     return w
 
 def read(fname): return open(fname,"rb").read()
+def write(fname,data): open(fname,"wb").write(data)
 def readSettings(f):
    try: fdat = u8strip(read(f)).replace("\r","\n")
    except: return show_warning("Warning: Could not load "+f)
@@ -264,10 +265,20 @@ if paranoid_file_management:
     for tries in range(10)+["last"]:
         try: return func()
         except IOError,err:
-            if tries=="last" or not err.errno in [5,13]: raise
+            if tries=="last" or not err.errno in [5,13,None]: raise
             time.sleep(0.5)
   def read(file): return tryIO(lambda x=file:_old_open(x,"rb").read())
-  def open(file,mode="r"):
+  def _write(fn,data):
+    tryIO(lambda x=fn,y=data:_old_open(x,"wb").write(data))
+    time.sleep(0.5)
+    if not filelen(fn)==len(data):
+      # might be a version of curlftpfs that can't shorten files - try delete and restart (although this can erase permissions info)
+      os.remove(fn)
+      tryIO(lambda x=fn,y=data:_old_open(x,"wb").write(data))
+      if not filelen(fn)==len(data): raise IOError("wrong length")
+    if not read(fn)==data: raise IOError("verification failure")
+  def write(fn,data): return tryIO(lambda x=fn,y=data:_write(x,data))
+  def open(file,mode="r",forAppend=0):
     if "a" in mode:
         try: dat = open(file,"rb").read()
         except IOError,err:
@@ -276,10 +287,15 @@ if paranoid_file_management:
         if len(dat) < filelen(file): raise IOError("short read")
         try: os.rename(file,file+"~") # just in case!
         except: pass
-        o=open(file,"wb")
+        o=open(file,"wb",1)
         o.write(dat)
         return o
-    return tryIO(lambda x=file,m=mode:_old_open(x,m))
+    r=tryIO(lambda x=file,m=mode:_old_open(x,m))
+    if "w" in mode and not forAppend and filelen(file): # it's not truncating (see _write above)
+        r.close()
+        os.unlink(file)
+        r=tryIO(lambda x=file,m=mode:_old_open(x,m))
+    return r
 
 # Different extension separators again
 if not extsep==".":

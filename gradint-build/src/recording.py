@@ -57,7 +57,7 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
             if filelen(fileToPlay)<1048576:
                 # only small - copy to temp 1st
                 self.fileToDel = os.tempnam()+fileToPlay[fileToPlay.rfind(extsep):]
-                open(self.fileToDel,"wb").write(read(fileToPlay))
+                write(self.fileToDel,read(fileToPlay))
                 fileToPlay=self.fileToDel
             else: open(fileToPlay)
         if fileToPlay.lower().endswith(dotwav) and filelen(fileToPlay)<1048576: self.sound=tkSnack.Sound(load=fileToPlay) # in-memory if <1M (saves problems with Windows keeping them open even after object deleted), TODO is this still needed now that .destroy() is called properly?  (but might be a good idea to keep it in anyway)

@@ -109,13 +109,15 @@ class ProgressDatabase(object):
                 import shutil
                 shutil.copy2(progressFile,progressFileBackup) # preserve timestamp etc if shutil is available
             except:
-                try:
-                    open(progressFileBackup,'wb').write(read(progressFile))
+                try: write(progressFileBackup,read(progressFile))
                 except IOError: pass # maybe progressFile not made yet
             progressFileBackup = None
         while True:
           try:
-            if compress_progress_file: f=os.popen('gzip -9 > "'+progressFile+'"','w')
+            if compress_progress_file:
+              if paranoid_file_management: fn=os.tempnam() # on some ftpfs setups gzip can fail causing silent corruption
+              else: fn=progressFile
+              f=os.popen('gzip -9 > "'+fn+'"','w')
             else: f = open(progressFile,'w')
             f.write(progressFileHeader)
             f.write("firstLanguage=\"%s\"\nsecondLanguage=\"%s\"\n# otherLanguages=%s\n" % (firstLanguage,secondLanguage,otherLanguages)) # Note: they're declared "global" above (and otherLanguages commented out here for now, since may add to it in advanced.txt) (Note also save_binary below.)
@@ -124,6 +126,7 @@ class ProgressDatabase(object):
             f.write("self.promptsData=") ; pprint.PrettyPrinter(indent=2,width=60,stream=f).pprint(self.promptsData)
             prettyPrintLongList(f,"self.unavail",self.unavail)
             f.close()
+            if compress_progress_file and paranoid_file_management: write(progressFile,read(fn)),os.remove(fn)
             self.save_binary(data)
           except IOError: # This can happen for example on some PocketPC devices if you reconnect the power during progress save (which is likely if you return the device to the charger when lesson finished)
             if app or appuifw or android:
@@ -136,9 +139,14 @@ class ProgressDatabase(object):
     def save_binary(self,data): # save a pickled version if possible (no error if not)
         if not (pickledProgressFile and pickle): return
         try:
-            if compress_progress_file: f=os.popen('gzip -9 > "'+pickledProgressFile+'"','wb')
+            if compress_progress_file:
+              if paranoid_file_management: fn=os.tempnam()
+              else: fn=pickledProgressFile # TODO near-duplicate code with above
+              f=os.popen('gzip -9 > "'+fn+'"','wb')
             else: f = open(pickledProgressFile,'wb')
             pickle.Pickler(f,-1).dump(("self.data,self.promptsData,self.unavail,firstLanguage,secondLanguage = tup", (data,self.promptsData,self.unavail,firstLanguage,secondLanguage)))
+            f.close()
+            if compress_progress_file and paranoid_file_management: write(pickledProgressFile,read(fn)),os.remove(fn)
         except IOError: pass # OK if not got permissions to do it (NB need to catch the write as well because popen won't throw, and don't have to worry about a corrupted partial binary because loader would ignore it)
     def savePartial(self,filesNotPlayed):
         curPD,curDat = self.promptsData, self.data[:] # in case want to save a more complete one later

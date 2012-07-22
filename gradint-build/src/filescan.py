@@ -74,7 +74,7 @@ def import_recordings(destDir=None):
                     try:
                         import shutil
                         shutil.copy2(importDir+os.sep+f,destDir+os.sep+f)
-                    except: open(destDir+os.sep+f,"wb").write(read(importDir+os.sep+f))
+                    except: write(destDir+os.sep+f,read(importDir+os.sep+f))
                     os.remove(importDir+os.sep+f)
                 numFound += 1
     if numFound: open(destDir+os.sep+"settings"+dottxt,"w").write("firstLanguage=\""+firstLanguage+"\"\nsecondLanguage=\""+secondLanguage+"\"\n")

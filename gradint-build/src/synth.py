@@ -228,7 +228,7 @@ class PttsSynth(Synth):
     def sapi_unicode(self,voice,unicode_string,toFile=None,sampleRate=None,speed=None):
         # Speaks unicode_string in 'voice'.  toFile (if present) must be something that was returned by tempnam.  May change the current directory.
         if voice=="Ekho Cantonese": unicode_string = preprocess_chinese_numbers(fix_compatibility(unicode_string),isCant=2) # hack to duplicate the functionality of EkhoSynth
-        unifile=os.tempnam() ; open(unifile,"wb").write(codecs.utf_16_encode(unicode_string)[0])
+        unifile=os.tempnam() ; write(unifile,codecs.utf_16_encode(unicode_string)[0])
         if not toFile: extra=""
         else:
             extra=' -w '+changeToDirOf(toFile,1)+' -c 1'
@@ -252,7 +252,7 @@ class PttsSynth(Synth):
         else: r=0 # shouldn't get here
         os.chdir(oldcwd)
         assert not r,"ptts.exe failed"
-        d = sapi_sox_bug_workaround(read(fname)); open(fname,"wb").write(d)
+        d = sapi_sox_bug_workaround(read(fname)); write(fname,d)
         if cygwin: os.system("chmod -x '"+fname+"'")
         return fname
     def preparePinyinPhrase(self,pinyin):
@@ -286,9 +286,9 @@ class PttsSynth(Synth):
             kVal="_%d" % count ; count += 1 # better not make kVal too long otherwise the voice can insert awkward pauses
             dicWrite.append('"%s","%s","p"\r\n' % (kVal,p2))
             rVal.append(p.replace(p2,kVal)) # (leave in full stops etc; assumes p2 is a substring of p, which is why hyphens are taken out before stripPunc)
-        open(self.lily_file,"wb").write(''.join(dicWrite))
+        write(self.lily_file,''.join(dicWrite))
         return ''.join(rVal).replace('@','') # (WITHOUT spaces, otherwise pauses far too much)
-    def restore_lily_dict(self): open(self.lily_file,"wb").write(self.old_lily_data) # done ASAP rather than on finalise, because need to make sure it happens (don't leave the system in an inconsistent state for long)
+    def restore_lily_dict(self): write(self.lily_file,self.old_lily_data) # done ASAP rather than on finalise, because need to make sure it happens (don't leave the system in an inconsistent state for long)
 def sapi_sox_bug_workaround(wavdata):
     # SAPI writes an 'EVNT' block after the sound data, and some versions of sox don't recognise this.  NB this hack is not very portable (relies on SAPI5 guaranteeing to write exactly one EVNT chunk and the bytes 'EVNT' never occur inside it, otherwise would need proper parsing)
     f=wavdata.rfind("EVNT")
