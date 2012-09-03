@@ -1,6 +1,11 @@
 #!/bin/bash
 # Sync gradint build environment to SVN
-wget -N http://people.pwf.cam.ac.uk/ssb22/gradint/gradint-build.7z || exit 1
+# (and Accessibility CSS Generator as well)
+cd css-generator
+wget -N http://people.ds.cam.ac.uk/ssb22/css/css-generate.py
+svn commit -m "Update css-generate.py"
+cd ..
+wget -N http://people.ds.cam.ac.uk/ssb22/gradint/gradint-build.7z || exit 1
 rm -rf gradint
 7z x gradint-build.7z || exit 1
 diff -r gradint-build gradint|grep "^Only in gradint-build"|grep -v \\.svn|sed -e 's,Only in ,svn del ",' -e 's,: ,/,' -e 's/$/"/'|bash
