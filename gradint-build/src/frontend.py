@@ -1368,7 +1368,11 @@ def android_changeLang():
 def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
     langs = [secondLanguage,firstLanguage]
     v=u8strip(read(vocabFile)).replace("\r\n","\n").replace("\r","\n")
-    o=open(vocabFile,"w") ; found = 0
+    if paranoid_file_management:
+        fname = os.tempnam()
+        o = open(fname,"w")
+    else: o=open(vocabFile,"w")
+    found = 0
     if last_u8strip_found_BOM: o.write('\xef\xbb\xbf') # re-write it
     v=v.split("\n")
     if v and not v[-1]: v=v[:-1] # don't add an extra blank line at end
@@ -1385,6 +1389,9 @@ def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
                 else: o.write(newL1.encode("utf-8")+"="+newL2.encode("utf-8")+"\n")
         else: o.write(l+"\n")
     o.close()
+    if paranoid_file_management:
+        write(vocabFile,read(fname))
+        os.remove(fname)
     return found
 
 def maybeCanSynth(lang): return lang in synth_partials_voices or get_synth_if_possible(lang,0) or synthCache
