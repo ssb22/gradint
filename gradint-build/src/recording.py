@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9982 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9983 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -337,9 +337,37 @@ class RecorderControls(ButtonScrollingMixin):
         else: self.coords2buttons[(row,col)].grid(row=row,column=0,columnspan=colspan,sticky="w")
     def addLabel(self,row,col,utext):
         if (row,col) in self.coords2buttons: self.coords2buttons[(row,col)].grid_forget()
-        self.coords2buttons[(row,col)] = self.makeLabel_lenLimit(utext)
-        self.coords2buttons[(row,col)].grid(row=row,column=col,sticky="w")
-        if col==0: self.coords2buttons[(row,col)].bind('<Button-1>',lambda *args:self.startRename(row,col,utext))
+        rc = self.coords2buttons[(row,col)] = self.makeLabel_lenLimit(utext)
+        rc.grid(row=row,column=col,sticky="w")
+        if col==0:
+            rc.bind('<Button-1>',lambda *args:self.startRename(row,col,utext))
+            def contextMenu(e): # TODO: document this?
+                m=Tkinter.Menu(None, tearoff=0, takefocus=0)
+                m.add_command(label="Rename",command=lambda *args:self.startRename(row,col,utext))
+                if self.currentDir.startswith(samplesDirectory): m.add_command(label="Add extra revision",command=lambda *args:self.addRevision(utext))
+                # TODO: Delete?
+                m.tk_popup(e.x_root-3, e.y_root+3,entry="0")
+            rc.bind('<ButtonRelease-3>',contextMenu)
+            if macsound:
+                rc.bind('<Control-ButtonRelease-1>',contextMenu)
+                rc.bind('<ButtonRelease-2>',contextMenu)
+    def addRevision(self,filename):
+        # c.f. gui_event_loop menu_response=="add" when already in vocabList
+        app.set_watch_cursor = 1
+        d = ProgressDatabase(0)
+        found = 0
+        curDir = self.currentDir[len(samplesDirectory)+len(os.sep):]
+        if curDir: curDir += os.sep
+        for item in d.data: # TODO: don't run this loop in the GUI thread!
+            if not item[2].startswith(curDir+filename.encode('utf-8')+"_"): continue
+            if not item[0]: break # not done yet
+            newItem0 = reviseCount(item[0])
+            if tkMessageBox.askyesno(filename,localise("Repeat count is %d. Reduce this to %d for extra revision?" % (item[0],newItem0))):
+                d.data.remove(item)
+                d.data.append((newItem0,item[1],item[2]))
+                d.save()
+            found = 1 ; break
+        if not found: tkMessageBox.showinfo(filename,localise("Repeat count is 0, so we cannot reduce it for extra revision."))
     def makeLabel_lenLimit(self,utext): return Tkinter.Label(self.grid,text=utext,wraplength=int(self.ourCanvas.winfo_screenwidth()/(1+len(self.languagesToDraw))))
     def addSynthLabel(self,filename,row,col):
         try: ftext = ensure_unicode(u8strip(read(filename).strip(wsp)))
@@ -486,7 +514,7 @@ class RecorderControls(ButtonScrollingMixin):
         recFilename = filename
         if recFilename.lower().endswith(dotmp3): recFilename=recFilename[:-len(dotmp3)]+dotwav # always record in WAV; can compress to MP3 after
         if state: # exists
-            if not tkSnack or tkSnack=="MicOnly": self.addButton(row,2+3*languageNo,text=localise("Play"),command=(lambda e=None,f=filename:(self.doStop(),SampleEvent(f).play())))  # but if got full tkSnack, might as well use setInputSource instead to be consistent with the non-_ version:
+            if not tkSnack or tkSnack=="MicOnly" or wavPlayer_override: self.addButton(row,2+3*languageNo,text=localise("Play"),command=(lambda e=None,f=filename:(self.doStop(),SampleEvent(f).play())))  # but if got full tkSnack, might as well use setInputSource instead to be consistent with the non-_ version:
             else: self.addButton(row,2+3*languageNo,text=localise("Play"),command=(lambda e=None,f=filename:(self.doStop(),theISM.setInputSource(PlayerInput(f,not self.syncFlag)),self.setSync(False))))
             if tkSnack and (state==2 or self.always_enable_rerecord):
                 self.addButton(row,3+3*languageNo,text=localise("Re-record"),command=(lambda e=None,f=recFilename,r=row,l=languageNo:self.doRecord(f,r,l,needToUpdatePlayButton=(not filename==recFilename))))
@@ -783,6 +811,13 @@ class RecorderControls(ButtonScrollingMixin):
         else: msg="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it."
         Tkinter.Label(self.frame,text=msg,wraplength=cond(hasattr(app,"isBigPrint") or olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
         # (Don't worry about making the text files editable - editable filenames should be enough + easier to browse the result outside Gradint; can include both languages in the filename if you like - hope the users figure this out as we don't want to make the instructions too complex)
+
+def reviseCount(num):
+    # suggested reduction for revision
+    thresholds=[1,2,knownThreshold,reallyKnownThreshold,meaningTestThreshold,randomDropThreshold,randomDropThreshold2] ; thresholds.sort() ; thresholds.reverse()
+    for i in range(len(thresholds)-1):
+        if num>thresholds[i]: return thresholds[i+1]
+    return 0
 
 def doRecWords(): # called from GUI thread
     if hasattr(app,"LessonRow"): app.thin_down_for_lesson() # else recorderMode

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9982 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9983 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -17,6 +17,7 @@ import sys
 tk_only = [ # we want these on WinCE but not S60:
 # note: comments are stripped BEFORE checking against this list
 "def words_exist():",
+"def reviseCount(num):", # used only in Tk for now
 "if mp3web:",
 "class InputSourceManager(object):",
 "class ButtonScrollingMixin(object):",

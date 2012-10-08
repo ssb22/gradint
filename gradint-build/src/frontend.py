@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9982 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9983 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1647,13 +1647,8 @@ def gui_event_loop():
               for item in listToCheck:
                 if (item[1]==l1find or (type(item[1])==type([]) and l1find in item[1])) and item[2]=="!synth:"+lang2.encode('utf-8')+"_"+secondLanguage:
                     if not item[0]: break # not done yet - as not-found
+                    newItem0 = reviseCount(item[0])
                     app.unset_watch_cursor = 1
-                    # suggested reduction:
-                    thresholds=[1,2,knownThreshold,reallyKnownThreshold,meaningTestThreshold,randomDropThreshold,randomDropThreshold2] ; thresholds.sort() ; thresholds.reverse()
-                    newItem0 = 0
-                    for i in range(len(thresholds)-1):
-                        if item[0]>thresholds[i]:
-                            newItem0=thresholds[i+1] ; break
                     if getYN(msg+" "+localise("Repeat count is %d. Reduce this to %d for extra revision?" % (item[0],newItem0))):
                         app.set_watch_cursor = 1
                         listToCheck.remove(item)
