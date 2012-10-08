@@ -276,7 +276,7 @@ if paranoid_file_management:
       os.remove(fn)
       tryIO(lambda x=fn,y=data:_old_open(x,"wb").write(data))
       if not filelen(fn)==len(data): raise IOError("wrong length")
-    if not read(fn)==data: raise IOError("verification failure")
+    if not read(fn)==data: raise IOError("verification failure on "+repr(fn))
   def write(fn,data): return tryIO(lambda x=fn,y=data:_write(x,data))
   def open(file,mode="r",forAppend=0):
     if "a" in mode:
