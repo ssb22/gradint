@@ -290,16 +290,16 @@ class SampleEvent(Event):
                     time.sleep(self.exactLen) # if async.  Async seems to be better at avoiding crashes on some handhelds.
             except RuntimeError: return 1
         elif macsound:
-          if got_afplay: return system("afplay \"%s\"" % (self.file,))
-          else:
-            try: unicode(self.file,"ascii")
-            except UnicodeDecodeError: # qtplay can't always handle non-ASCII
-              t=os.tempnam()+self.file[self.file.rindex(extsep):]
-              write(t,open(self.file).read())
-              ret=system("qtplay \"%s\"" % (t,))
-              os.remove(t)
-              return ret
-            return system("qtplay \"%s\"" % (self.file,))
+          if got_afplay: player="afplay"
+          else: player="qtplay"
+          try: unicode(self.file,"ascii")
+          except UnicodeDecodeError: # Mac command line can't always handle non-ASCII
+            t=os.tempnam()+self.file[self.file.rindex(extsep):]
+            write(t,open(self.file).read())
+            ret=system(player+" \"%s\"" % (t,))
+            os.remove(t)
+            return ret
+          return system(player+" \"%s\"" % (self.file,))
         elif riscos_sound:
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (TODO find a RISC OS program that can play the MP3s directly?)
             else: file=self.file
