@@ -88,8 +88,10 @@ del fname2txt # now 'generating' maps (txt,lang) to 1 or filename
 
 def getTxtLang(s):
     if '!synth:' in s and "_" in s: return gradint.textof(s).decode('utf-8'),gradint.languageof(s)
-    elif s.endswith(gradint.extsep+"txt"): return gradint.readText(s).decode('utf-8'), gradint.languageof(s)
-    else: return None,None
+    elif s.endswith(gradint.extsep+"txt"):
+        langToSynth = gradint.languageof(s)
+        if langToSynth==languageToCache: return gradint.readText(s).decode('utf-8'), langToSynth # else don't bother reading the file (it might be over ftpfs)
+    return None,None
 
 def decache(s):
     textToSynth,langToSynth = getTxtLang(s)
