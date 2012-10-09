@@ -154,7 +154,8 @@ if not tkSnack:
                 MacStartRecording()
             def stopRec(self):
                 MacStopRecording()
-                os.rename(MacRecordingFile,self.fileToWrite)
+                try: os.rename(MacRecordingFile,self.fileToWrite)
+                except: write(self.fileToWrite,read(MacRecordingFile)), os.remove(MacRecordingFile) # because there's a cross-device link problem or something
         tkSnack = "MicOnly"
   elif unix and useTK and isDirectory("/dev/snd") and got_program("arecord"): # no tkSnack, but can record via ALSA (but no point doing the tests if not useTK)
     del MicInput
@@ -340,18 +341,28 @@ class RecorderControls(ButtonScrollingMixin):
         rc = self.coords2buttons[(row,col)] = self.makeLabel_lenLimit(utext)
         rc.grid(row=row,column=col,sticky="w")
         if col==0:
-            rc.bind('<Button-1>',lambda *args:self.startRename(row,col,utext))
+          rc.bind('<Button-1>',lambda *args:self.startRename(row,col,utext))
+          if not winCEsound:
             def contextMenu(e): # TODO: document this?
                 m=Tkinter.Menu(None, tearoff=0, takefocus=0)
                 m.add_command(label="Rename",command=lambda *args:self.startRename(row,col,utext))
                 if self.currentDir.startswith(samplesDirectory): m.add_command(label="Add extra revision",command=lambda *args:self.addRevision(utext))
-                # TODO: Delete?
+                m.add_command(label="Delete",command=lambda *args:self.delete(utext))
                 m.tk_popup(e.x_root-3, e.y_root+3,entry="0")
             rc.bind('<ButtonRelease-3>',contextMenu)
             if macsound:
                 rc.bind('<Control-ButtonRelease-1>',contextMenu)
                 rc.bind('<ButtonRelease-2>',contextMenu)
-    def addRevision(self,filename):
+    if not winCEsound:
+      def delete(self,filename):
+        toDel = [] ; fs=filename.encode('utf-8')
+        for f in os.listdir(self.currentDir):
+            if f.startswith(fs): toDel.append(f)
+        if not toDel: return tkMessageBox.showinfo(filename,"No files found") # shouldn't happen
+        if tkMessageBox.askyesno(filename,"Really delete "+" ".join(toDel)+"?"):
+            for d in toDel: os.remove(self.currentDir+os.sep+d)
+            self.undraw() ; self.draw() # TODO incremental update? (need to check really does affect just that row; careful with variants, synth, etc)
+      def addRevision(self,filename):
         # c.f. gui_event_loop menu_response=="add" when already in vocabList
         app.set_watch_cursor = 1
         d = ProgressDatabase(0)

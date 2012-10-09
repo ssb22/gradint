@@ -106,6 +106,10 @@ winCE_only = [
 "if winCEsound:",
 ]
 
+not_winCE = [
+"if not winCEsound:",
+]
+
 S60_only = [
 "class S60Synth(Synth):",
 "if appuifw:",
@@ -141,7 +145,7 @@ elif "android" in sys.argv: # Android version
   to_omit = tk_only + desktop_only + winCE_only + S60_only
 elif "wince" in sys.argv: # Windows Mobile version
   version = "WinCE"
-  to_omit = desktop_only + S60_only + android_only + android_or_S60
+  to_omit = desktop_only + S60_only + android_only + android_or_S60 + not_winCE
 else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = -1
