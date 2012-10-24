@@ -623,7 +623,9 @@ class ESpeakSynth(Synth):
                       if l[8]==' ': letter=l[7]
                       else: letter=l[8]
                       if forPartials: r.append("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1".split()[ord(letter)-ord('a')])
-                      else: r.append(letter)
+                      else: # a letter in something we're transliterating for a pinyin-driven unit-selection synth
+                          r.append(letter)
+                          en_words[r[-1]]=1
                       foundLetter = 1
                   elif not lang=="zh" and l.startswith("Found: ") and (ord(l[7])>127 or (l[7]=="'" and ord(l[8])>127)): # (espeak 1.40 puts in l[7], 1.44 surrounds in quotes)
                       r.append(l[l.index("[")+1:l.index("]")])
