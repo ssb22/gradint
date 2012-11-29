@@ -1,5 +1,21 @@
 @echo off
 
+rem   This is Gradint's setup file for Windows.
+rem   If you are seeing this, when you expected
+rem   the Gradint installer to be running, then
+rem   it probably means your copy of Windows has
+rem   an incorrect file association.  That will
+rem   affect other programs, not just Gradint.
+rem   To fix the incorrect association, try
+rem   running regedit and deleting the key:
+rem   Hkey_Current_User\Software\Microsoft\Microsoft\Windows\CurrentVersion\Explorer\FileExts\.bat
+rem   then restart your system and the Gradint
+rem   installer should work normally.
+rem   This problem has been reported on some
+rem   (but not all) Windows 7 setups.
+
+rem --------------------------------------------
+
 rem Find a good place to put Gradint.  On Windows 9x this can be C:\Program Files.  On XP/NT/etc we'd better check for different home directories.  Also check where the profile is.
 
 if not exist "%HOMEDRIVE%%HOMEPATH%" set HOMEDRIVE=C:
