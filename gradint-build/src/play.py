@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9983 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9984 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -120,14 +120,16 @@ soundVolume_dB = math.log(soundVolume)*(-6/math.log(0.5))
 if unix:
   if macsound: got_afplay = got_program("afplay") # 10.5+, use in preference to the bundled qtplay which requires PowerPC or Rosetta
   sox_formats=os.popen("sox --help 2>&1").read() # NOT .lower() yet
-  if sox_formats.lower().startswith("sox: sox v"): soxMaj = intor0(sox_formats[10:sox_formats.index('.')])
-  elif sox_formats.startswith("sox:      SoX v\n"): soxMaj=15 # guess (broken HomeBrew install)
+  sf2 = ' '.join(sox_formats.lower().split())
+  if sf2.startswith("sox: sox v"):
+    if sf2[10]=='\n': soxMaj=15 # guess (broken HomeBrew install)
+    else: soxMaj = intor0(sf2[10:sf2.index('.')])
   else: soxMaj=0
   if soxMaj>=14:
     sox_8bit, sox_16bit = "-1", "-2" # see comment above
-    if soxMaj==14 and sox_formats[13]<'3': pass
+    if soxMaj==14 and sf2[13]<'3': pass
     else: sox_ignoreLen = "|sox --ignore-length -t wav - -t wav - 2>/dev/null"
-  if sox_formats.lower().find("wav")>-1: gotSox=1
+  if sf2.find("wav")>-1: gotSox=1
   else:
     gotSox=0
     if got_program("sox"): show_warning("SOX found, but it can't handle WAV files. Ubuntu users please install libsox-fmt-all.")

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9983 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9984 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1518,7 +1518,7 @@ def gui_event_loop():
                         if time.time() < t+3: waitOnMessage(textEditorName+" returned control to Gradint in less than 3 seconds.  Perhaps you already had an instance running and it loaded the file remotely.  Press OK when you have finished editing the file.")
                         newContents = read(fileToEdit)
                         if not newContents==oldContents:
-                            if paranoid_file_management: open(app.fileToEdit,"w").write(newContents)
+                            if paranoid_file_management: write(app.fileToEdit,newContents)
                             if app.fileToEdit==vocabFile:
                                 app.wordsExist=1 ; del app.vocabList # re-read
                             else: waitOnMessage("The changes you made to "+app.fileToEdit+" will take effect when you quit Gradint and start it again.")

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9983 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9984 (c) 2002-2012 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -405,6 +405,14 @@ class ESpeakSynth(Synth):
                 langList = os.listdir(self.place+os.sep+"voices")
             except: self.place = None
             if langList: break
+        if unix: # espeak might know where its data is
+          if not self.place:
+            import commands
+            versionLine = (filter(lambda x:x,os.popen("(speak --help||espeak --help) 2>/dev/null").read().split("\n"))+[""])[0]
+            if versionLine.find("Data at:"):
+              self.place = versionLine[versionLine.index("Data at:")+8:].strip()
+              try: langList = os.listdir(self.place+os.sep+"voices")
+              except: self.place = None
         for l in langList[:]:
             if l in ["default","!v","mb"]: langList.remove(l)
             elif isDirectory(self.place+os.sep+"voices"+os.sep+l):
@@ -413,11 +421,12 @@ class ESpeakSynth(Synth):
             else: self._add_lang(l,l)
         self.theProcess = None
         self.translitCache = {}
-        if pickle and fileExists(espeakTranslitCacheFile):
+        if self.place:
+          if pickle and fileExists(espeakTranslitCacheFile):
             try: placeStat,tc = pickle.Unpickler(open(espeakTranslitCacheFile,"rb")).load()
             except: placeStat,tc = (),{}
             if placeStat==tuple(os.stat(self.place)): self.translitCache = tc # otherwise regenerate it because eSpeak installation has changed (TODO if you overwrite an existing _dict file in-place, it might not update the stat() of espeak-data and the cache might not be re-generated when it should; espeak's --compile seems ok though)
-        if self.place: self.place=self.place[:self.place.rindex(os.sep)] # drop the \espeak-data, so can be used in --path=
+          self.place=self.place[:self.place.rindex(os.sep)] # drop the \espeak-data, so can be used in --path=
     def _add_lang(self,lang,fname):
         if "~" in lang: return # emacs backup files
         self.languages[lang]=fname
