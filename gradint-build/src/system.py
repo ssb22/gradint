@@ -518,15 +518,9 @@ def check_for_interrupts(): # used on platforms where thread.interrupt_main won'
 # If forking, need to do so BEFORE importing any Tk module (we can't even verify Tk exists 1st)
 if outputFile or justSynthesize or appuifw or not (winsound or winCEsound or mingw32 or macsound or riscos_sound or cygwin or "DISPLAY" in os.environ): useTK = 0
 if useTK and runInBackground and not (winsound or mingw32) and hasattr(os,"fork") and not "gradint_no_fork" in os.environ:
-    import fcntl, termios
     if os.fork(): sys.exit()
-    os.setpgid(0,0)
+    os.setsid()
     if os.fork(): sys.exit()
-    try: tty = os.open("/dev/tty", os.O_RDWR)
-    except: tty = None
-    if not tty==None:
-        fcntl.ioctl(tty, termios.TIOCNOTTY, 0)
-        os.close(tty)
     devnull = os.open("/dev/null", os.O_RDWR)
     for fd in range(3): os.dup2(devnull,fd)
 else: runInBackground = 0
