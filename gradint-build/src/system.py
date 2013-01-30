@@ -188,7 +188,7 @@ if not fileExists(configFiles[0]):
         os.chdir(s)
   if not fileExists(configFiles[0]) and sys.argv and (os.sep in sys.argv[0] or (os.sep=='\\' and '/' in sys.argv[0])):
     # try the sys.argv[0] directory, in case THAT works
-    if os.sep=="\\" and '/' in sys.argv[0] and fileExists(sys.argv[0].replace('/','\\')): sys.argv[0]=sys.argv[0].replace('/','\\') # hack for some Windows Python builds accepting / in command line but reporting os.sep as \
+    if os.sep=="\\" and '/' in sys.argv[0] and fileExists(sys.argv[0].replace('/','\\')): sys.argv[0]=sys.argv[0].replace('/','\\') # hack for some Windows Python builds accepting slash in command line but reporting os.sep as backslash
     os.chdir(starting_directory)
     os.chdir(sys.argv[0][:sys.argv[0].rfind(os.sep)])
   if not fileExists(configFiles[0]):
