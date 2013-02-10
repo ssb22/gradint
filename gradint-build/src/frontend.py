@@ -1468,9 +1468,8 @@ def gui_event_loop():
       disable_once_per_day = cond(getYN(localise("Do you want Gradint to start by itself and remind you to practise?")),0,1)
       updateSettingsFile("advanced"+dottxt,{"disable_once_per_day":disable_once_per_day})
       if disable_once_per_day: # signal the background process to stop next time
-        for f in ["background1"+dottxt,"background2"+dottxt]:
-          try: os.remove(f)
-          except: pass
+        try: os.remove("background"+dottxt)
+        except: pass
     if orig_onceperday&2: check_for_slacking()
     while app:
         while not hasattr(app,"menu_response"):

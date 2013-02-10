@@ -58,6 +58,9 @@ rem copy all program files, even the ones that have never been changed, in case 
 tskill gradint-wrapper 2>nul
 taskkill /f /im gradint-wrapper.exe 2>nul >nul
 cd gradint
+rem clean up after old versions
+if exist background1.txt del background1.txt
+if exist background2.txt del background2.txt
 rem support bundles
 for /D %%g in (*_disabled) do xcopy /I %%g "%HOMEDRIVE%%HOMEPATH%\gradint\%%g" /S
 rem support users who install yali BEFORE gradint

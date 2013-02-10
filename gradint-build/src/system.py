@@ -425,14 +425,16 @@ if disable_once_per_day==1:
   else: once_per_day=0
 if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"): # run every day
     currentDay = None
-    # markerFile logic to avoid 2 background copies etc (can't rely on taskkill beyond WinXP)
-    # (however this doesn't protect against uninstall + immediate reinstall)
-    markerFile,toDel="background1"+dottxt,"background2"+dottxt
-    if fileExists(markerFile): markerFile,toDel=toDel,markerFile
-    try: os.remove(toDel)
-    except OSError: pass
-    open(markerFile,"w").write("(delete this file to make the background process quit on next check)\n")
-    while fileExists(markerFile):
+    # markerFile logic to avoid 2+ background copies (can't rely on taskkill beyond WinXP)
+    myID = str(time.time())
+    try: myID += str(os.getpid())
+    except: pass
+    markerFile="background"+dottxt
+    open(markerFile,"w").write(myID)
+    def reador0(f):
+        try: return read(f)
+        except: return 0
+    while reador0(markerFile)==myID:
      if not currentDay == time.localtime()[:3]: # first run of day
       currentDay = time.localtime()[:3]
       if __name__=="__main__": # can do it by importing gradint
