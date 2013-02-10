@@ -372,10 +372,11 @@ def asUnicode(x): # for handling the return value of Tkinter entry.get()
         except: return x.decode("iso-8859-1") # TODO can we get what it actually IS? (on German WinXP, sys.getdefaultencoding==ascii and locale==C but Tkinter still returns Latin1)
 
 def setupScrollbar(parent,rowNo):
+    onLeft = winCEsound or olpc or (winsound and hasattr(app,"isBigPrint")) # window placement on Vista can sometimes end up too far to the right in big print recordings manager
     s = Tkinter.Scrollbar(parent,takefocus=0)
-    s.grid(row=rowNo,column=cond(winCEsound or olpc,0,1),sticky="ns"+cond(winCEsound or olpc,"w","e"))
+    s.grid(row=rowNo,column=cond(onLeft,0,1),sticky="ns"+cond(onLeft,"w","e"))
     c=Tkinter.Canvas(parent,bd=0,width=200,height=100,yscrollcommand=s.set)
-    c.grid(row=rowNo,column=cond(winCEsound or olpc,1,0),sticky="nsw")
+    c.grid(row=rowNo,column=cond(onLeft,1,0),sticky="nsw")
     s.config(command=c.yview)
     scrolledFrame=Tkinter.Frame(c) ; c.create_window(0,0,window=scrolledFrame,anchor="nw")
     # Mousewheel binding.  TODO the following bind_all assumes only one scrolledFrame on screen at once (redirect all mousewheel events to the frame; necessary as otherwise they'll go to buttons etc)
