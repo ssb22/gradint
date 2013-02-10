@@ -833,7 +833,10 @@ class RecorderControls(ButtonScrollingMixin):
         
         if winCEsound and not tkSnack: msg="Click on filenames at left to rename; click synthesized text to edit it"
         else: msg="Choose a word and start recording. Then press space to advance (see control at top). You can also browse and manage previous recordings. Click on filenames at left to rename (multi-line pastes are allowed); click synthesized text to edit it."
-        Tkinter.Label(self.frame,text=msg,wraplength=cond(hasattr(app,"isBigPrint") or olpc or winCEsound,self.ourCanvas.winfo_screenwidth(),min(int(self.ourCanvas.winfo_screenwidth()*.7),512))).grid(columnspan=2) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
+        if olpc or winCEsound: labelwidth = self.ourCanvas.winfo_screenwidth()
+        elif hasattr(app,"isBigPrint"): labelwidth = self.ourCanvas.winfo_screenwidth()-50 # allow for borders on Windows (TODO: is 50px always right?)
+        else: labelwidth=min(int(self.ourCanvas.winfo_screenwidth()*.7),512) # (512-pixel max. so the column isn't too wide to read on wide screens, TODO increase if the font is large)
+        Tkinter.Label(self.frame,text=msg,wraplength=labelwidth).grid(columnspan=2)
         # (Don't worry about making the text files editable - editable filenames should be enough + easier to browse the result outside Gradint; can include both languages in the filename if you like - hope the users figure this out as we don't want to make the instructions too complex)
 
 def reviseCount(num):
