@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99851 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.99852 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -683,8 +683,8 @@ class RecorderControls(ButtonScrollingMixin):
         if self.currentDir==samplesDirectory: app.master.title(localise("Recordings manager"))
         else: app.master.title(localise("Recordings manager: ")+filename2unicode((os.sep+self.currentDir)[(os.sep+self.currentDir).rindex(os.sep)+1:]))
         if hasattr(app,"isBigPrint") and winsound:
-            # Vista sometimes has window placement problems
-            try: app.master.geometry("%dx%d+0+0" % (app.winfo_screenwidth(),app.winfo_screenheight()))
+            # Vista sometimes has window placement problems here
+            try: app.master.geometry("+0+0")
             except: pass
         if not self.snack_initialized:
             if tkSnack and not tkSnack=="MicOnly":
