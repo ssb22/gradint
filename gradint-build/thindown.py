@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9984 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9985 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -61,6 +61,7 @@ not_S60 = [ # but may still need on winCE
 desktop_only = [ # Don't want these on either WinCE or S60:
 'if not extsep==".":', # RISC OS
 "if macsound:","elif macsound:",
+"if app.isBigPrint and macsound:",
 "if unix:","elif unix:",
 "if paranoid_file_management:",
 "elif unix and not macsound:",

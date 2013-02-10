@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9984 (c) 2002-2012 Silas S. Brown. GPL v3+.
+# gradint v0.9985 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -379,8 +379,10 @@ def setupScrollbar(parent,rowNo):
     s.config(command=c.yview)
     scrolledFrame=Tkinter.Frame(c) ; c.create_window(0,0,window=scrolledFrame,anchor="nw")
     # Mousewheel binding.  TODO the following bind_all assumes only one scrolledFrame on screen at once (redirect all mousewheel events to the frame; necessary as otherwise they'll go to buttons etc)
-    scrolledFrame.bind_all('<Button-4>',lambda *args:c.yview("scroll","-1","units"))
-    scrolledFrame.bind_all('<Button-5>',lambda *args:c.yview("scroll","1","units"))
+    app.ScrollUpHandler = lambda *args:c.yview("scroll","-1","units")
+    app.ScrollDownHandler = lambda *args:c.yview("scroll","1","units")
+    scrolledFrame.bind_all('<Button-4>',app.ScrollUpHandler)
+    scrolledFrame.bind_all('<Button-5>',app.ScrollDownHandler)
     # DON'T bind <MouseWheel> on Windows - our version of Tk will segfault when it occurs. See http://mail.python.org/pipermail/python-bugs-list/2005-May/028768.html but we can't patch our library.zip's Tkinter anymore (TODO can we use newer Tk DLLs and ensure setup.bat updates them?)
     return scrolledFrame, c
 
@@ -472,6 +474,7 @@ def startTk():
             Tkinter.Frame.__init__(self, master)
             class EmptyClass: pass
             self.todo = EmptyClass() ; self.toRestore = []
+            self.ScrollUpHandler = self.ScrollDownHandler = lambda *args:True
             global app ; app = self
             make_extra_buttons_waiting_list()
             if olpc: self.master.option_add('*font',cond(extra_buttons_waiting_list,'Helvetica 9','Helvetica 14'))
@@ -516,10 +519,9 @@ def startTk():
                 largeNominalSize = int(nominalSize*self.Label.winfo_screenheight()/approx_lines_per_screen_when_large/pixelSize)
                 if largeNominalSize >= nominalSize+3:
                     self.bigPrintFont = f % largeNominalSize
+                    self.bigPrintMult = largeNominalSize*1.0/nominalSize
                     if GUI_always_big_print:
-                        self.master.option_add('*font',self.bigPrintFont)
-                        self.Label["font"]=self.bigPrintFont
-                        del self.bigPrintFont ; self.isBigPrint=1
+                        self.bigPrint0()
                 else: self.after(100,self.check_window_position) # (needs to happen when window is already drawn if you want it to preserve the X co-ordinate)
             except: pass # wrong font format or something - can't do it
             if winCEsound and ask_teacherMode: self.Label["font"]="Helvetica 16" # might make it slightly easier
@@ -820,12 +822,16 @@ def startTk():
             self.Label.pack() ; self.CancelRow.pack()
             self.Label["text"] = "Working..." # (to be replaced by time indication on real-time, not on output-to-file)
             self.Cancel["text"] = localise("Quit")
-        def bigPrint(self,*args):
-            self.thin_down_for_lesson()
+        def bigPrint0(self):
             self.master.option_add('*font',self.bigPrintFont)
-            self.Version["font"]=self.Label["font"]=self.bigPrintFont
+            self.master.option_add('*Scrollbar*width',int(16*self.bigPrintMult)) # (works on some systems; usually ineffective on Mac)
+            self.Label["font"]=self.bigPrintFont
             del self.bigPrintFont # (TODO do we want an option to undo it?  or would that take too much of the big print real-estate.)
             self.isBigPrint=1
+        def bigPrint(self,*args):
+            self.thin_down_for_lesson()
+            self.Version["font"]=self.bigPrintFont
+            self.bigPrint0()
             if self.rightPanel: # oops, need to re-construct it
                 global extra_buttons_waiting_list
                 extra_buttons_waiting_list = []
