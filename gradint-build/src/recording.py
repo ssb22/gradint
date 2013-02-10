@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9985 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.99851 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -701,7 +701,7 @@ class RecorderControls(ButtonScrollingMixin):
         else:
           r = Tkinter.Frame(self.frame)
           r.grid(row=1,sticky="e",columnspan=2)
-          if app.isBigPrint and macsound:
+          if hasattr(app,"isBigPrint") and macsound:
               # Try to make up for the fact that we can't always increase the width of the scrollbar (and the keyboard often loses focus).  Add extra up/down buttons. (TODO: does any other platform need this?)
               r2 = Tkinter.Frame(r)
               r2.pack({"side":"right"})
