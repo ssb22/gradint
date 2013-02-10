@@ -682,6 +682,10 @@ class RecorderControls(ButtonScrollingMixin):
         else: self.languagesToDraw = [secondLanguage,firstLanguage] # each lang cn take 3 columns, starting at column 1 (DO need to regenerate this every draw - languages may have changed!)
         if self.currentDir==samplesDirectory: app.master.title(localise("Recordings manager"))
         else: app.master.title(localise("Recordings manager: ")+filename2unicode((os.sep+self.currentDir)[(os.sep+self.currentDir).rindex(os.sep)+1:]))
+        if hasattr(app,"isBigPrint") and winsound:
+            # Vista sometimes has window placement problems
+            try: app.master.geometry("%dx%d+0+0" % (app.winfo_screenwidth(),app.winfo_screenheight()))
+            except: pass
         if not self.snack_initialized:
             if tkSnack and not tkSnack=="MicOnly":
                 tkSnack.initializeSnack(app)

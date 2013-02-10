@@ -439,11 +439,10 @@ if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"): # run every day
       currentDay = time.localtime()[:3]
       if __name__=="__main__": # can do it by importing gradint
         sys._gradint_innerImport = 1
-        try:
-            try: reload(gradint)
-            except NameError: import gradint
-            gradint.orig_onceperday = once_per_day
-            gradint.main()
+        try: reload(gradint)
+        except NameError: import gradint
+        gradint.orig_onceperday = once_per_day
+        try: gradint.main()
         except SystemExit: pass
       elif winsound and fileExists("gradint-wrapper.exe"): # in this setup we can do it by recursively calling gradint-wrapper.exe
         s=" ".join(sys.argv[1:])
@@ -456,6 +455,8 @@ if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"): # run every day
         show_warning("Not doing once_per_day&2 logic because not running as main program")
         # (DO need to be able to re-init the module - they might change advanced.txt etc)
         break
+      if len(sys.argv)>1: sys.argv.append(";")
+      sys.argv.append("disable_once_per_day=0") # don't let a disable_once_per_day=2 in argv result in repeated questioning
      time.sleep(3600) # delay 1 hour at a time (in case hibernated)
 if once_per_day&1 and fileExists(progressFile) and time.localtime(os.stat(progressFile).st_mtime)[:3]==time.localtime()[:3]: sys.exit() # already run today
 try: orig_onceperday

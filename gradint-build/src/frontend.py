@@ -372,7 +372,7 @@ def asUnicode(x): # for handling the return value of Tkinter entry.get()
         except: return x.decode("iso-8859-1") # TODO can we get what it actually IS? (on German WinXP, sys.getdefaultencoding==ascii and locale==C but Tkinter still returns Latin1)
 
 def setupScrollbar(parent,rowNo):
-    onLeft = winCEsound or olpc or (winsound and hasattr(app,"isBigPrint")) # window placement on Vista can sometimes end up too far to the right in big print recordings manager
+    onLeft = winCEsound or olpc
     s = Tkinter.Scrollbar(parent,takefocus=0)
     s.grid(row=rowNo,column=cond(onLeft,0,1),sticky="ns"+cond(onLeft,"w","e"))
     c=Tkinter.Canvas(parent,bd=0,width=200,height=100,yscrollcommand=s.set)

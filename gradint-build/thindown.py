@@ -62,6 +62,7 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 'if not extsep==".":', # RISC OS
 "if macsound:","elif macsound:",
 'if hasattr(app,"isBigPrint") and macsound:',
+'if hasattr(app,"isBigPrint") and winsound:',
 "if unix:","elif unix:",
 "if paranoid_file_management:",
 "elif unix and not macsound:",
