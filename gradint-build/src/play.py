@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99852 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.99853 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -122,7 +122,7 @@ if unix:
   sox_formats=os.popen("sox --help 2>&1").read() # NOT .lower() yet
   sf2 = ' '.join(sox_formats.lower().split())
   if sf2.startswith("sox: sox v"):
-    if sf2[10]=='\n': soxMaj=15 # guess (broken HomeBrew install)
+    if sf2[10]==' ': soxMaj=15 # guess (broken HomeBrew install)
     else: soxMaj = intor0(sf2[10:sf2.index('.')])
   else: soxMaj=0
   if soxMaj>=14:
