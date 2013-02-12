@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99853 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.99855 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -766,7 +766,7 @@ class RecorderControls(ButtonScrollingMixin):
                     elif fileExists(self.currentDir+os.sep+fname+os.sep+shortDescriptionName): description=u8strip(read(self.currentDir+os.sep+fname+os.sep+shortDescriptionName)).strip(wsp)
                     else: description=None
                     if description:
-                        ll = Tkinter.Label(self.grid,text="     "+description,wraplength=self.ourCanvas.winfo_screenwidth())
+                        ll = Tkinter.Label(self.grid,text="     "+description,wraplength=self.ourCanvas.winfo_screenwidth()-50) # allow for borders on Windows (TODO: is 50px always right?)
                         ll.grid(row=curRow,column=0,columnspan=1+3*len(self.languagesToDraw),sticky="w")
                         curRow += 1
                     if not flwr=="prompts": hadDirectories = True
