@@ -825,7 +825,8 @@ def startTk():
             self.Cancel["text"] = localise("Quit")
         def bigPrint0(self):
             self.master.option_add('*font',self.bigPrintFont)
-            self.master.option_add('*Scrollbar*width',int(16*self.bigPrintMult)) # (works on some systems; usually ineffective on Mac)
+            self.sbarWidth = int(16*self.bigPrintMult)
+            self.master.option_add('*Scrollbar*width',self.sbarWidth) # (works on some systems; usually ineffective on Mac)
             self.Label["font"]=self.bigPrintFont
             del self.bigPrintFont # (TODO do we want an option to undo it?  or would that take too much of the big print real-estate.)
             self.isBigPrint=1

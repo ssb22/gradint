@@ -766,7 +766,9 @@ class RecorderControls(ButtonScrollingMixin):
                     elif fileExists(self.currentDir+os.sep+fname+os.sep+shortDescriptionName): description=u8strip(read(self.currentDir+os.sep+fname+os.sep+shortDescriptionName)).strip(wsp)
                     else: description=None
                     if description:
-                        ll = Tkinter.Label(self.grid,text="     "+description,wraplength=self.ourCanvas.winfo_screenwidth()-50) # allow for borders on Windows (TODO: is 50px always right?)
+                        try: sbarWidth = app.sbarWidth
+                        except: sbarWidth = 16 # default
+                        ll = Tkinter.Label(self.grid,text="     "+description,wraplength=self.ourCanvas.winfo_screenwidth()-sbarWidth-50) # allow for borders on Windows (TODO: is 50px always right?)
                         ll.grid(row=curRow,column=0,columnspan=1+3*len(self.languagesToDraw),sticky="w")
                         curRow += 1
                     if not flwr=="prompts": hadDirectories = True
