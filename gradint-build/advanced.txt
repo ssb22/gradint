@@ -945,6 +945,7 @@ justSaveLesson = 0
 # progressFile is large and is kept on a Flash storage
 # device with slow write speed.  (binary progress files and
 # saved lessons are also compressed when this is set.)
+# If using fusecompress then you might not need this.
 
 compress_progress_file = 0
 
