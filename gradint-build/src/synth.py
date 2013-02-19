@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99855 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.9986 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -553,11 +553,20 @@ class ESpeakSynth(Synth):
     def transliterate(self,lang,text,forPartials=1):
         if lang=="zh" and text in self.translitCache: return self.translitCache[text] # (TODO add "and forPartials"? but don't need to bother with this extra condition on slow systems)
         return self.transliterate_multiple(lang,[text],forPartials)[0] # and don't cache it - could be experimental, and we don't want cache to grow indefinitely
+    if unix:
+        def check_dicts(self,lang):
+            if not hasattr(self,"dictsChecked"): self.dictsChecked = {}
+            if lang in self.dictsChecked or not lang in ["zh","zhy","ru"]: return
+            if filelen(self.place+os.sep+"espeak-data"+os.sep+lang+"_dict")<100000: show_warning("Warning: the eSpeak on this system has only a short dictionary for language '"+lang+"' - please install eSpeak's additional data.")
+            self.dictsChecked[lang]=1
+    else:
+        def check_dicts(self,lang): pass
     def transliterate_multiple(self,lang,textList,forPartials=1,keepIndexList=0):
       # Call eSpeak once for multiple transliterations, for greater efficiency (especially on systems where launching a process is expensive e.g. WinCE).
       # Note: Don't make textList TOO long, because the resulting data must fit on the (RAM)disk and in memory.
       retList = [] ; write_to_espeak = [] ; indexList = []
       split_token = "^^^" # must be something not defined in the _rules files
+      self.check_dicts(lang)
       for text in textList: # DON'T escape_jyutping (treat as en words)
         if lang=="zh":
          if keepIndexList: # making the cache - can we go a bit faster?
@@ -645,6 +654,7 @@ class ESpeakSynth(Synth):
       return retList
     def escape_jyutping(self,text): return re.sub(r"([abcdefghjklmnopstuwz][a-z]*[1-7])",r"[[\1]]",text) # TODO what if user already escaped it?
     def play(self,lang,text):
+        self.check_dicts(lang)
         if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_jyutping(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode("utf-8"))
         elif lang=="zh": text=fix_commas(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode('utf-8'))
         if winCEsound: # need to play via makefile, and careful not to leave too many tempfiles or take too long
@@ -675,6 +685,7 @@ class ESpeakSynth(Synth):
             p.write(text.replace(". ",".\n")+"\n") ; return p.close() # (see comment below re adding newlines)
         else: return system(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
     def makefile(self,lang,text,is_winCEhint=0):
+        self.check_dicts(lang)
         if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_jyutping(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode("utf-8"))
         elif lang=="zh": text=fix_commas(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode('utf-8'))
         if hasattr(self,"winCEhint"): # waiting for a previous async one that was started with is_winCEhint=1
