@@ -155,6 +155,7 @@ macVoices = {
 "en":"Emily Daniel Alex Vicki",
 "zh":"Ting-Ting", # OS 10.7+, can read hanzi, pinyin+tone numbers (5 for neutral) and English
 "cant":"Sin-Ji", # OS 10.7+
+"jp":"Kyoko", # OS 10.7+ (alias of "ja")
 }
 
 # For Mandarin Chinese, you can also use Yali Cheng's syllables
