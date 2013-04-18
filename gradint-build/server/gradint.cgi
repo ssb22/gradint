@@ -200,7 +200,7 @@ def htmlOut(body_u8,title_extra="",links=1):
     print "Content-type: text/html; charset=utf-8" ; print
     if title_extra: title_extra=": "+title_extra
     print '<html><head><title>Gradint Web edition'+title_extra+'</title>'
-    print '<meta name="viewport" content="width=device-width">'
+    print '<meta name="mobileoptimized" content="0"><meta name="viewport" content="width=device-width">'
     print '</head><body>'+body_u8
     print '<HR>'
     if links:
