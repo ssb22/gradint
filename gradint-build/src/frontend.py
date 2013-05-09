@@ -106,7 +106,7 @@ def primitive_synthloop():
         oldLang = lang
         if justSynthesize: lang = just_synthesize(interactive,lang)
         # and see if it transliterates:
-        if justSynthesize and lang and not "#" in justSynthesize:
+        if justSynthesize and lang and not '#' in justSynthesize:
             if justSynthesize.startswith(lang+" "):
                 t = transliterates_differently(justSynthesize[len(lang+" "):],lang)
                 if t: t=lang+" "+t
@@ -1332,7 +1332,7 @@ def s60_viewVocab():
       if action==0 or action==1:
         doLabel("Speaking...")
         justSynthesize = secondLanguage+" "+l2.encode('utf-8')
-        if action==1: justSynthesize += ("#"+firstLanguage+" "+l1.encode('utf-8'))
+        if action==1: justSynthesize += ('#'+firstLanguage+" "+l1.encode('utf-8'))
         just_synthesize()
         justSynthesize = ""
       elif action==5: pass
@@ -1552,7 +1552,8 @@ def gui_event_loop():
             text1 = asUnicode(app.Text1.get()).encode('utf-8') ; text2 = asUnicode(app.Text2.get()).encode('utf-8')
             if not text1 and not text2: app.todo.alert=u"Before pressing the "+localise("Speak")+u" button, you need to type the text you want to hear into the box."
             else:
-              msg=sanityCheck(text1,secondLanguage)
+              if text1.startswith('#'): msg="" # see below
+              else: msg=sanityCheck(text1,secondLanguage)
               if msg: app.todo.alert=u""+msg
               else:
                 app.set_watch_cursor = 1 ; app.toRestore = []
@@ -1560,7 +1561,8 @@ def gui_event_loop():
                 def doControl(text,lang,control):
                     global justSynthesize
                     restoreTo = asUnicode(control.get())
-                    if text:
+                    if text.startswith('#'): justSynthesize += text # hack for direct control of just_synthesize from the GUI (TODO document it in advanced.txt? NB we also bypass the GUI transliteration in the block below)
+                    elif text:
                         if can_be_synthesized("!synth:"+text+"_"+lang): justSynthesize += ("#"+lang+" "+text)
                         else: app.todo.alert="Cannot find a synthesizer that can say '"+text+"' in language '"+lang+"' on this system"
                         t=transliterates_differently(text,lang)

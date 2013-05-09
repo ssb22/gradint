@@ -75,7 +75,7 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 "def decode_mp3(file):",
 "class Mp3FileCache(object):",
 "class OSXSynth_Say(Synth):",
-"def aiff2wav(fname):",
+"def aiff2wav(fname):", # (used only on Mac)
 "class OSXSynth_OSAScript(Synth):",
 "class OldRiscosSynth(Synth):",
 "class PttsSynth(Synth):",

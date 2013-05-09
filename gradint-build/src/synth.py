@@ -132,7 +132,7 @@ def aiff2wav(fname):
         # good, we converted it to wav
         os.remove(fname)
         fname=fname[:-4]+"wav"
-    # else just return aiff and hope for the best (TODO won't work with cache-synth)
+    # else just return aiff and hope for the best (TODO won't work with cache-synth; TODO can get here when 'say' gave empty output, e.g. just a dot, and the returned aiff might raise IOError when constructing a SampleEvent)
     return fname
 
 class OSXSynth_OSAScript(Synth):
@@ -1132,7 +1132,7 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
           ret=can_be_synthesized(fname)
           if ret: return fileToEvent(fname)
           else: show_warning("Can't say "+repr(fname)) # previous warnings should have said why (e.g. partials-only language)
-      for line in justSynthesize.split("#"):
+      for line in justSynthesize.split('#'):
         line = line.strip(wsp) ; l = line.split(None,1)
         if extsep in line and fileExists(line): event = fileToEvent(line,"")
         elif extsep in line and fileExists(abspath_from_start(line)): event = fileToEvent(abspath_from_start(line),"")
@@ -1163,7 +1163,7 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
                         show_warning("Can't say %s in %s" % (repr(text),repr(lang)))
                         lastLanguage=lang ; continue
                     # otherwise, user might have omitted lang by mistake
-                    show_warning("Assuming %s was meant to be synthesized in language '%s'" % (cond("#" in justSynthesize or len(repr(line))<10,"that '"+repr(line)+"'","this line"),lastLanguage))
+                    show_warning("Assuming %s was meant to be synthesized in language '%s'" % (cond('#' in justSynthesize or len(repr(line))<10,"that '"+repr(line)+"'","this line"),lastLanguage))
                     if callSanityCheck and sanityCheck(line,lastLanguage,1): return
                     event = checkCanSynth("!synth:"+line+"_"+lastLanguage)
                 else:

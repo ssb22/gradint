@@ -269,7 +269,7 @@ def parseSynthVocab(fname,forGUI=0):
             elif l2.startswith("poetry vocab line"): doPoetry,lastPromptAndWord = 0,cond(lastPromptAndWord,lastPromptAndWord,0) # not None, in case we're at the very start of a poem (see "just processed"... at end)
             else: canProcess=1
             if not canProcess: continue
-        elif "#" in l and l.strip(wsp)[0]=='#': continue # guard condition '"#" in l' improves speed
+        elif '#' in l and l.strip(wsp)[0]=='#': continue # guard condition "'#' in l" improves speed
         if forGUI: strCount=""
         else:
             strCount = "%05d!synth:" % (count,)
