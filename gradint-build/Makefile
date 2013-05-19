@@ -15,7 +15,9 @@
 # but if present will be included in all versions.
 # Use this for bundling Gradint with partials-synths,
 # preset-collections, encoders, whatever, into one
-# installer for giving to someone.
+# installer for giving to someone.  Note that you can
+# support both Windows and Linux using a single bundle
+# with win2linux.sh (see comments at top of that script)
 Extra_Data=partials *_disabled [^g]*.exe
 
 All_Versions=gradint-build.7z gradint.exe gradint.tbz gradint.bgz gradint.zip gradintcab.zip gradint-S60.zip gradint-android.zip servertools.bgz

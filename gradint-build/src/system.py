@@ -191,6 +191,11 @@ if not fileExists(configFiles[0]):
     if os.sep=="\\" and '/' in sys.argv[0] and fileExists(sys.argv[0].replace('/','\\')): sys.argv[0]=sys.argv[0].replace('/','\\') # hack for some Windows Python builds accepting slash in command line but reporting os.sep as backslash
     os.chdir(starting_directory)
     os.chdir(sys.argv[0][:sys.argv[0].rfind(os.sep)])
+  if not fileExists(configFiles[0]): # argv[0] might be a symlink
+    os.chdir(starting_directory)
+    try: rp = os.path.realpath(sys.argv[0])
+    except: rp = 0 # e.g. no os.path, or no os.path.realpath
+    if rp: os.chdir(rp[:rp.rfind(os.sep)])
   if not fileExists(configFiles[0]):
     # Finally, try the module pathname, in case some other Python program has imported us without changing directory.  Apparently we need to get this from an exception.
     try: raise 0
