@@ -27,12 +27,15 @@
 # You can also put the 7za, espeak and deb files into a
 # bin/ subdirectory.
 
+export DoneDeb=0
 if ! test "$(echo *.deb)" == "*.deb"; then
   echo "Installing *.deb (with --force-depends)"
   sudo dpkg --force-depends -i *.deb
+  export DoneDeb=1
 elif ! test "$(echo bin/*.deb)" == "bin/*.deb"; then
   echo "Installing bin/*.deb (with --force-depends)"
   sudo dpkg --force-depends -i bin/*.deb
+  export DoneDeb=1
 fi
 # TODO: if got internet, sudo apt-get update ; sudo apt-get -f install
 if test -f espeak || test -f bin/espeak; then
@@ -57,6 +60,7 @@ if python -c 'import tkinter'; then
  if test -e ~/Desktop && ! test -e ~/Desktop/Gradint; then
   echo "Creating symlink on Desktop"
   ln -s "$(pwd)/gradint.py" ~/Desktop/Gradint
+  # TODO: what about the menus of various front-ends? (might need to make .desktop files in .local/share/applications or something)
  else echo "Not creating symlink on desktop" # TODO: cater for more possibilities
  fi
 else echo "Warning: no tkinter on this system; gradint will be command-line only" ; echo -n "Press Enter: " ; read # TODO: if internet, try sudo apt-get install python-tk
@@ -64,3 +68,12 @@ fi
 echo "Copying espeak-data to /usr/share/"
 sudo cp -r espeak/espeak-data /usr/share/ && rm -rf espeak
 echo "win2linux.sh finished"
+if test $DoneDeb == 1; then
+  echo
+  echo "WARNING: Have installed packages with dpkg --force-depends."
+  echo "If you're connected to the Internet, you might now wish to do:"
+  echo "  sudo apt-get update ; sudo apt-get -f install"
+  echo "or if the machine will later be connected to the"
+  echo "Internet without you, you might wish to do:"
+  echo "  (echo apt-get update; echo apt-get -yf install) | sudo at -M midnight"
+fi
