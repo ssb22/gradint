@@ -97,8 +97,11 @@ class OSXSynth_Say(Synth):
         except: return {"en":""} # no -v parameter at all
         for vocId in NSSpeechSynthesizer.availableVoices():
             vocAttrib = NSSpeechSynthesizer.attributesForVoice_(vocId)
-            if not ('VoiceLanguage' in vocAttrib and 'VoiceName' in vocAttrib): continue
-            lang = vocAttrib['VoiceLanguage']
+            if not 'VoiceName' in vocAttrib: continue
+            if not 'VoiceLanguage' in vocAttrib:
+                lang={"Damayanti":"id","Maged":"ar","Stine":"nb"}.get(vocAttrib['VoiceName'],None) # TODO: can sometimes use VoiceLocaleIdentifier instead, dropping the _ part (but can't even do that with Damayanti on 10.7)
+                if not lang: continue # TODO: output VoiceName in a warning?
+            else: lang = vocAttrib['VoiceLanguage']
             if '-' in lang: lang=lang[:lang.index("-")]
             if not lang in d: d[lang]=[]
             d[lang].append(vocAttrib['VoiceName'].encode('utf-8'))
