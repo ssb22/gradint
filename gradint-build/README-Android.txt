@@ -18,7 +18,7 @@ so this is only for reference.  Requires an Android SDK installation.
 
 cd /tmp
 wget http://android-scripting.googlecode.com/hg/android/script_for_android_template.zip
-wget http://people.pwf.cam.ac.uk/ssb22/gradint/gradint-android.zip
+wget http://people.ds.cam.ac.uk/ssb22/gradint/gradint-android.zip
 mkdir android
 cd android
 unzip ../gradint-android.zip

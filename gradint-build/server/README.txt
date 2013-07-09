@@ -18,3 +18,5 @@ samples.cgi - CGI script to browse a samples directory
 or that the site is not publically viewable)
 
 espeak.cgi - script that lets a Web user play with espeak options
+
+Other files - see description at the top of the file
