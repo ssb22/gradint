@@ -107,6 +107,13 @@ def annogen_reannotate(input_c,annotate_func):
     # o() and o2() call; should we group and degroup it
     # so it has access to the whole phrase?
 
+    # (Could also post-process annogen's output, but the
+    # result would run slower than an altered C program.
+    # Could integrate 2+ annotations into the same program
+    # but that would make it larger and slow down loading
+    # etc - not so good if only one of the annotations is
+    # going to be used at any one time.)
+
     global dryrun_mode ; dryrun_mode = True
     for m in re.finditer(r'o2?\("([^"]*)","[^"]*"(,"[^"]*")?\);',input_c): get_jyutping(m.groups()[0])
     dryrun_mode = False
