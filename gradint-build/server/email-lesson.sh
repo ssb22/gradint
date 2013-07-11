@@ -143,7 +143,7 @@ do echo "mail sending failed; retrying in 62 seconds"; sleep 62; done; fi
     unset Send_Podcast_Instead
     if test -s email_lesson_users/$U/podcasts-to-send; then
       export Send_Podcast_Instead="$(head -1 email_lesson_users/$U/podcasts-to-send)"
-      export NumLines=$(echo $(cat email_lesson_users/$U/podcasts-to-send|wc -l)-1|bc)
+      export NumLines=$[$(cat email_lesson_users/$U/podcasts-to-send|wc -l)-1]
       tail -$NumLines email_lesson_users/$U/podcasts-to-send > email_lesson_users/$U/podcasts-to-send2
       mv email_lesson_users/$U/podcasts-to-send email_lesson_users/$U/podcasts-to-send.old
       mv email_lesson_users/$U/podcasts-to-send2 email_lesson_users/$U/podcasts-to-send
@@ -163,7 +163,7 @@ do echo "mail sending failed; retrying in 62 seconds"; sleep 62; done; fi
         $MailProg -s gradint-to-ssh-failed,-will-retry $ADMIN_EMAIL < $TMPDIR/__stderr
         # (no spaces in subj so no need to decide whether to single or double quote)
         # (don't worry about mail errors - if net is totally down that's ok, admin needs to know if it's a gradint bug causing infinite loop)
-        sleep $ToSleep ; export ToSleep=$(echo $ToSleep*1.5|bc) # (increasing-time retries)
+        sleep $ToSleep ; export ToSleep=$[$ToSleep*1.5] # (increasing-time retries)
       done
       rm $TMPDIR/__stderr
       if test "a$Use_M3U" == ayes; then

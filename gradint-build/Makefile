@@ -196,7 +196,7 @@ gradint-installer.command: gradint.tbz
 gradint.dmg: gradint-installer.command
 	if test -d /Volumes/Gradint; then diskutil eject /Volumes/Gradint; fi
 	if test -e gradint.dmg; then rm gradint.dmg; fi
-	hdiutil create -megabytes $$(echo $$(du -h gradint-installer.command | sed -e 's/\..*//')+1|bc) -fs HFS+ -volname Gradint gradint
+	hdiutil create -megabytes $$[$$(du -h gradint-installer.command | sed -e 's/\..*//')+1] -fs HFS+ -volname Gradint gradint
 	open gradint.dmg
 	while ! cp gradint-installer.command /Volumes/Gradint/; do echo Retrying ; sleep 1 ; done # 'open' might delay
 	chmod +x /Volumes/Gradint/gradint-installer.command
