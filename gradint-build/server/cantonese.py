@@ -3,7 +3,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# (c) 2013 Silas S. Brown.  License: GPL
+# v1.1 (c) 2013 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
@@ -69,7 +69,7 @@ def jyutping_to_yale_TeX(j):
     for i in range(len(syl)):
       if syl[i] in "aeiou":
         vowel=i ; break
-    if not vowel:
+    if vowel==None:
       ret.append(syl.upper()) ; continue # English word or letter in the Chinese?
     if syl[vowel:vowel+2] == "aa" and (len(syl)<vowel+2 or syl[vowel+2] in "123456"):
       syl=syl[:vowel]+syl[vowel+1:] # final aa -> a
