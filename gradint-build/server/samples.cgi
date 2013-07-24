@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Gradint online samples browser v1.0 (c) 2011 Silas S. Brown.  License: GPL
+# Gradint online samples browser v1.1 (c) 2011,2013 Silas S. Brown.  License: GPL
 
 # Works as an "indexing" CGI.
 # To set up in Apache, make .htaccess with:
@@ -27,6 +27,10 @@
 if ! test "a$REQUEST_URI" == a; then
   cd "/home/ssb22/public_html/$(echo "$REQUEST_URI"|sed -e 's/?.*//')"
 fi # else assume the server put us in the right directory, like mathopd does
+
+if echo "$SERVER_SOFTWARE"|grep Apache >/dev/null; then
+  echo "Status: 200 OK" # overriding the 403
+fi # (mathopd doesn't need this, and not tested with all mathopd versions)
 
 export Filename="$(pwd|sed -e 's,.*/,,').zip"
 
