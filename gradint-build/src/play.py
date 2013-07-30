@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9986 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.9987 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -464,9 +464,9 @@ class SoundCollector(object):
             t1 = self.tell()
             self.addSilence(betweenBeeps/2.0)
             if riscos_sound:
-                os.system(beepCmd() % (self.soxParams(),"tmp0"))
+                os.system(beepCmd(self.soxParams(),"tmp0"))
                 data=read("tmp0") ; os.unlink("tmp0")
-            else: data=os.popen((beepCmd() % (self.soxParams(),"-")),"rb").read()
+            else: data=os.popen(beepCmd(self.soxParams(),"-"),"rb").read()
             outfile_writeBytes(self.o,data)
             self.theLen += len(data)
             self.addSilence(betweenBeeps/2.0)
@@ -525,11 +525,15 @@ beepType = 0
 beepCmds = ["sox -t nul - %s %s synth trapetz 880 trim 0 0:0.05",
 "sox -t nul - %s %s synth sine 440 trim 0 0:0.05"]*3+["sox -t nul - %s %s synth trapetz 440 trim 0 0:0.05",
 "sox -t nul - %s %s synth sine 440 trim 0 0:0.05"]*2+["sox -t nul - %s %s synth 220 trim 0 0:0.05"]
-def beepCmd():
+def beepCmd(soxParams,fname):
   global beepType
   r = beepCmds[beepType]
   beepType += 1
   if beepType==len(beepCmds): beepType=0
+  if unix:
+      # not all versions of sox support -t nul; /dev/zero is safer on Unix
+      r=r.replace("-t nul -","%s /dev/zero" % (soxParams,))
+  r = r % (soxParams,fname)
   return r
 
 # -----------------------------------------------------
@@ -563,7 +567,7 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,) # S=script P=params for sox (ignor
         while gap > betweenBeeps+0.05:
             t1 = self.tell()
             self.addSilence(betweenBeeps/2.0)
-            self.commands.append(beepCmd() % ("$P","-"))
+            self.commands.append(beepCmd("$P","-"))
             self.seconds += 0.05
             self.addSilence(betweenBeeps/2.0)
             gap -= (self.tell()-t1)
