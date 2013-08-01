@@ -8,3 +8,10 @@ support dual architecture, so I wrote my own gcc commands to do it.  There
 were lots of warnings, especially about GSM.  I wasn't worried about that
 because Gradint doesn't use that functionality.  But be careful about using
 this SOX binary elsewhere, especially for GSM-related processing.
+
+This version of sox does NOT run on OS X 10.8 (it complains about missing
+libltdl.7.dylib).  I can't do anything about that until I have access to a
+10.8 machine with compiler chain, plus I'd be worried about losing backward
+compatibility with PowerPC machines which I no longer have available to test.
+Might end up having to ship Gradint with two separate sox binaries :-(
+see TODO comment in play.py

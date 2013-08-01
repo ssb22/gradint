@@ -132,7 +132,11 @@ if unix:
   if sf2.find("wav")>-1: gotSox=1
   else:
     gotSox=0
-    if got_program("sox"): show_warning("SOX found, but it can't handle WAV files. Ubuntu users please install libsox-fmt-all.")
+    if got_program("sox"):
+      if macsound: xtra=". (If you're on 10.8 Mountain Lion, try downloading a more recent sox binary from sox.sourceforge.net and putting it inside Gradint.app, but that will break compatibility with older PowerPC Macs.)" # TODO: ship TWO binaries? but we don't want the default gradint to get too big. See sox.README for more notes.
+      elif cygwin: xtra=""
+      else: xtra=". Ubuntu users please install libsox-fmt-all."
+      show_warning("SoX found but can't handle WAV, so you won't be able to write lessons to files for later"+xtra)
 else: gotSox = got_program("sox")
 wavPlayer_override = not (not wavPlayer)
 if winsound or mingw32:
