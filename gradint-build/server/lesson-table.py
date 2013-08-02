@@ -40,7 +40,7 @@ for tries,l1,l2 in newProg.data:
   count += 1
 del newProg,opd
 changes.sort()
-print '<html><head><meta http_equiv="Content-type" value="text/html; charset=utf-8"><title>Gradint lesson report</title></head><body><h2>Gradint lesson report</h2><table border><tr><th>Repeats before</th><th>Repeats today</th><th>Question</th><th>Answer</th></tr>' # (have Question/Answer order rather than Word/Meaning, because if it's L2-only poetry then the question is the previous line, which is not exactly "meaning")
+print '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title></head><body><h2>Gradint lesson report</h2><table border><tr><th>Repeats before</th><th>Repeats today</th><th>Question</th><th>Answer</th></tr>' # (have Question/Answer order rather than Word/Meaning, because if it's L2-only poetry then the question is the previous line, which is not exactly "meaning")
   
 had_h5a = False
 def h5aCode(filename):
