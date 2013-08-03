@@ -208,7 +208,7 @@ class ProgressDatabase(object):
                 try:
                     l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),fileToEvent(c,""))])
                 except StretchedTooFar:
-                    sys.stderr.write("Was trying to add %s\n" % (c,))
+                    show_info(("Was trying to add %s\n" % (c,)),True)
                     raise
         # Add note on "long pause", for beginners
         longpause = "longpause_"+firstLanguage

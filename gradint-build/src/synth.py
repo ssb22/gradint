@@ -506,7 +506,7 @@ class ESpeakSynth(Synth):
               t = time.time()
               self.play("en","")
               self.latency = time.time() - t # 2secs on eeePC Ubuntu 11.10, mostly AFTER the utterance
-              if self.latency > 0.5: sys.stderr.write("espeak_pipe_through latency is "+str(int(self.latency*10)/10.0)+"\n")
+              if self.latency > 0.5: show_info("espeak_pipe_through latency is "+str(int(self.latency*10)/10.0)+"\n",True)
             latency = self.latency
         return quickGuess(l,12)+latency
     def can_transliterate(self,lang): return espeak_language_aliases.get(lang,lang) in ["zh","zhy","zh-yue"] and not riscos_sound # TODO it's OK on RISC OS if the eSpeak version is recent enough to do --phonout=filename; TODO aliases for zhy (but not usually a problem as can_transliterate is called only for preference)
