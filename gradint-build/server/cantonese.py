@@ -100,34 +100,6 @@ def superscript_digits_UTF8(j):
 
 import sys
 
-def annogen_reannotate(input_c,annotate_func):
-    # re-annotates any annogen o() and o2() calls
-    
-    # TODO: annotate_func is called separately for each
-    # o() and o2() call; should we group and degroup it
-    # so it has access to the whole phrase?
-
-    # (Could also post-process annogen's output, but the
-    # result would run slower than an altered C program.
-    # Could integrate 2+ annotations into the same program
-    # but that would make it larger and slow down loading
-    # etc - not so good if only one of the annotations is
-    # going to be used at any one time.)
-
-    global dryrun_mode ; dryrun_mode = True
-    for m in re.finditer(r'o2?\("([^"]*)","[^"]*"(,"[^"]*")?\);',input_c): get_jyutping(m.groups()[0])
-    dryrun_mode = False
-
-    i = 0 ; out = []
-    for m in re.finditer(r'(o2?)\("([^"]*)","[^"]*"(,"[^"]*")?\);',input_c):
-      out.append(input_c[i:m.start()])
-      rest = m.groups()[2]
-      if not rest: rest = ""
-      out.append(m.groups()[0]+'("'+m.groups()[1]+'","'+annotate_func(m.groups()[1])+'"'+rest+');')
-      i = m.end()
-    out.append(input_c[i:])
-    return "".join(out)
-
 def import_gradint():
     global gradint
     try: return gradint
@@ -139,5 +111,10 @@ def import_gradint():
     return gradint
 
 if __name__ == "__main__":
-    # command-line use: redo annotator.c on stdin to S.Lau
-    sys.stdout.write(annogen_reannotate(sys.stdin.read(),lambda h:superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(get_jyutping(h,0))))))
+    # command-line use: output Lau for each line of stdin
+    lines = sys.stdin.read().replace("\r\n","\n").split("\n")
+    if lines and not lines[-1]: del lines[-1]
+    dryrun_mode = True
+    for l in lines: get_jyutping(l)
+    dryrun_mode = False
+    for l in lines: print superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(get_jyutping(l,0))))
