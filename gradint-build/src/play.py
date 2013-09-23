@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9987 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.9988 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -114,7 +114,7 @@ def intor0(v):
     except ValueError: return 0
 
 sox_effect=""
-sox_8bit, sox_16bit, sox_ignoreLen = "-b", "-w", ""
+sox_8bit, sox_16bit, sox_ignoreLen, sox_signed = "-b", "-w", "", "-s"
 # Older sox versions (e.g. the one bundled with Windows Gradint) recognise -b and -w only; sox v14+ recognises both that and -1/-2; newer versions recognise only -1/-2.  We check for newer versions if unix.  (TODO riscos / other?)
 soundVolume_dB = math.log(soundVolume)*(-6/math.log(0.5))
 if unix:
@@ -126,9 +126,10 @@ if unix:
     else: soxMaj = intor0(sf2[10:sf2.index('.')])
   else: soxMaj=0
   if soxMaj>=14:
-    sox_8bit, sox_16bit = "-1", "-2" # see comment above
     if soxMaj==14 and sf2[13]<'3': pass
     else: sox_ignoreLen = "|sox --ignore-length -t wav - -t wav - 2>/dev/null"
+    if soxMaj==14 and sf2[13]<'4': sox_8bit, sox_16bit = "-1", "-2" # see comment above
+    else: sox_8bit, sox_16bit, sox_signed = "-b 8", "-b 16", "-e signed-integer" # TODO: check if 14.3 accepts these also (at least 14.4 complains -2 etc is deprecated)
   if sf2.find("wav")>-1: gotSox=1
   else:
     gotSox=0
@@ -157,7 +158,7 @@ elif unix and not macsound:
         for dsp in dsps_to_check:
             if fileExists_stat(dsp):
                 oss_sound_device = dsp
-                if dsp=="/dev/audio": sox_type="-t sunau -s "+sox_16bit
+                if dsp=="/dev/audio": sox_type="-t sunau "+sox_signed+" "+sox_16bit
                 break
     if sox_formats.find("-q")>-1: sox_type="-q "+sox_type
     if not wavPlayer:
@@ -190,7 +191,7 @@ sox_same_endian = sox_little_endian = ""
 if gotSox and unix:
     # should only have to run this test if macsound (don't bother on NSLU2's etc):
     # (wav is little-endian, so if it doesn't pass the string through then it interpreted the i/p as big-endian)
-    if macsound and os.popen('echo "This is a test" | sox -t raw -r 8000 '+sox_16bit+' -s -c 1 - -t wav - 2>/dev/null').read().find("This is a test")==-1:
+    if macsound and os.popen('echo "This is a test" | sox -t raw -r 8000 '+sox_16bit+' '+sox_signed+' -c 1 - -t wav - 2>/dev/null').read().find("This is a test")==-1:
         sox_little_endian = " -x"
         if not big_endian: sox_same_endian = " -x"
     elif big_endian: sox_little_endian = " -x"
@@ -438,7 +439,7 @@ class SoundCollector(object):
         self.silences = []
     def soxParams(self):
         # Have 16-bit mono, signed, little-endian
-        return ("-t raw "+sox_16bit+" -s -r %d -c 1" % (self.rate,))+sox_little_endian
+        return ("-t raw "+sox_16bit+" "+sox_signed+" -r %d -c 1" % (self.rate,))+sox_little_endian
     def tell(self):
         # How many seconds have we had?  (2 because 16-bit)
         return 1.0*self.theLen/self.rate/2
@@ -552,8 +553,8 @@ class ShSoundCollector(object):
         else: self.o = open(outputFile,"wb")
         start = """#!/bin/bash
 if echo "$0"|grep / >/dev/null; then export S="$0"; else export S=$(which "$0"); fi
-export P="-t raw %s -s -r 44100 -c 1"
-tail -1 "$S" | bash\nexit\n""" % (sox_16bit,) # S=script P=params for sox (ignore endian issues because the wav header it generates below will specify the same as its natural endian-ness)
+export P="-t raw %s %s -r 44100 -c 1"
+tail -1 "$S" | bash\nexit\n""" % (sox_16bit,sox_signed) # S=script P=params for sox (ignore endian issues because the wav header it generates below will specify the same as its natural endian-ness)
         outfile_writeBytes(self.o,start)
         self.bytesWritten = len(start) # need to keep a count because it might be stdout
         self.commands.append("sox $P - -t wav - </dev/null 2>/dev/null") # get the wav header with unspecified length

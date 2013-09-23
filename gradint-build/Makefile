@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9987 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.9988 (c) 2002-2013 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -221,6 +221,8 @@ gradint.zip: $(Riscos_Files) riscos.zip
 
 publish0: $(All_Versions) gradint.py
 	scp -C -i ~/.srcf/keyfile gradint.py wa.eguidedog.net:gradint/
+	scp -C -i ~/.srcf/keyfile gradint.py st0rage.org:gradint/
+	scp -C -i ~/.srcf/keyfile gradint.py shell.srcf.ucam.org:gradint/
 	mv $(All_Versions) ~/public_html/gradint/
 	cp vocab.txt advanced.txt ~/public_html/gradint/
 	cp samples/README.txt ~/public_html/gradint/samples-readme.txt
