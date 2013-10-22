@@ -67,7 +67,7 @@ def fileToEvent(fname,dirBase=None):
         variantFiles[dirBase+fname]=variantFiles[dirBase+fname][1:]+[variantFiles[dirBase+fname][0]] # cycle through the random order of variants
         fname=variantFiles[dirBase+fname][0]
     if fname.lower().endswith(dottxt) and "_" in fname: fname = "!synth:"+u8strip(read(dirBase+fname)).strip(wsp)+'_'+lang
-    if fname.find("!synth:")>-1:
+    if fname.find("!synth:")>=0:
         s = synthcache_lookup(fname)
         if type(s)==type([]): # trying to synth from partials
             if filter(lambda x:not type(x)==type([]), s): # but not completely (switching between partials and synth in a long text), this is more tricky:
@@ -228,7 +228,7 @@ def filename2unicode(f):
     def u8_or_raw(s):
         try: return unicode(s,"utf-8")
         except UnicodeDecodeError: return unicode(s,"latin1") # (actually should try the local codepage on Windows for correct display, but at least this stops a crash)
-    if f.find("_u")>-1 or f.find("_U")>-1:
+    if f.find("_u")>=0 or f.find("_U")>=0:
         try: return unicode(f.replace("_u","\\u").replace("_U","\\u"),"unicode_escape")
         except UnicodeDecodeError: # oops, need to be more careful
             ret = []
@@ -320,9 +320,9 @@ if partialsDirectory and isDirectory(partialsDirectory):
                 if partials_raw_mode:
                     if not f.endswith(extsep+"raw"): return
                 elif not f.endswith(dotwav) or f.endswith(dotmp3): return
-                if f.find("-s")>-1 or f.find("-i")>-1: start.append(f) # 'start' or 'initial'
-                elif not "-" in f or f.find('-m')>-1: mid.append(f)
-                elif f.find('-e')>-1 or f.find('-f')>-1: end.append(f) # 'end' or 'finish'
+                if f.find("-s")>=0 or f.find("-i")>=0: start.append(f) # 'start' or 'initial'
+                elif not "-" in f or f.find('-m')>=0: mid.append(f)
+                elif f.find('-e')>=0 or f.find('-f')>=0: end.append(f) # 'end' or 'finish'
             for f in files: addFile(f)
             def byReverseLength(a,b): return len(b)-len(a)
             start.sort(byReverseLength) ; mid.sort(byReverseLength) ; end.sort(byReverseLength) # important if there are some files covering multiple syllables (and do it to start,mid,end not to files initially, so as to catch files within audiodata.dat also)
@@ -332,7 +332,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
                 for i in l:
                     if "-" in i: key=i[:i.index("-")]
                     else: key=i[:i.rindex(extsep)]
-                    if key.find("_u")>-1 or key.find("_U")>-1: # a unicode partial with a portable filename?
+                    if key.find("_u")>=0 or key.find("_U")>=0: # a unicode partial with a portable filename?
                         key = filename2unicode(key).encode('utf-8')
                     l2.append((key,i))
                     kLen=min(kLen,len(key))

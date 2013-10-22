@@ -372,7 +372,7 @@ espeak_language_aliases = { "cant":"zhy" }
 class SimpleZhTransliterator(object): # if not got eSpeak on system
     def can_transliterate(self,lang): return lang=="zh"
     def transliterate(self,lang,text,forPartials=1,from_espeak=0):
-        if lang=="zh" and not text.find("</")>-1: # (not </ - don't do this if got SSML)
+        if lang=="zh" and text.find("</")==-1: # (not </ - don't do this if got SSML)
             text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode("utf-8")
             found=0
             for t in text:
@@ -411,8 +411,8 @@ class ESpeakSynth(Synth):
         if unix: # espeak might know where its data is
           if not self.place:
             import commands
-            versionLine = (filter(lambda x:x,os.popen("(speak --help||espeak --help) 2>/dev/null").read().split("\n"))+[""])[0]
-            if versionLine.find("Data at:"):
+            versionLine = (filter(lambda x:x.strip(),os.popen("(speak --help||espeak --help) 2>/dev/null").read().split("\n"))+[""])[0]
+            if versionLine.find("Data at:")>=0:
               self.place = versionLine[versionLine.index("Data at:")+8:].strip()
               try: langList = os.listdir(self.place+os.sep+"voices")
               except: self.place = None
@@ -450,7 +450,7 @@ class ESpeakSynth(Synth):
             line=""
             for t in range(10):
                 line=o.readline()
-                if line.find("name")>-1:
+                if line.find("name")>=0:
                     lname = line.split()[1].replace("_test","").replace("-test","").replace("-experimental","").replace("-expertimental","") # (delete the -test etc for more screen real-estate, as this is used only for explaining what the language abbreviations mean)
                     if not lname: continue
                     lname=lname[0].upper()+lname[1:]
@@ -491,7 +491,7 @@ class ESpeakSynth(Synth):
             self.program = loc+"espeak"
             return got_program("espeak")
     def guess_length(self,lang,text):
-        if text.find("</")>-1: # might be SSML - don't count inside <...>
+        if text.find("</")>=0: # might be SSML - don't count inside <...>
             l=inSsml=0
             for c in text:
                 if c=="<": inSsml=1
@@ -684,9 +684,9 @@ class ESpeakSynth(Synth):
             return ret
         elif unix or winsound or mingw32 or cygwin:
             # Windows command line is not always 100% UTF-8 safe, so we'd better use a pipe.  Unix command line OK but some espeak versions have a length limit.  (No pipes on riscos.)
-            p=os.popen(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,espeak_pipe_through),"wb")
+            p=os.popen(self.program+cond(text.find("</")>=0," -m","")+' -v%s -a%d %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,espeak_pipe_through),"wb")
             p.write(text.replace(". ",".\n")+"\n") ; return p.close() # (see comment below re adding newlines)
-        else: return system(self.program+cond(text.find("</")>-1," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
+        else: return system(self.program+cond(text.find("</")>=0," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
     def makefile(self,lang,text,is_winCEhint=0):
         self.check_dicts(lang)
         if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_jyutping(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode("utf-8"))
@@ -698,7 +698,7 @@ class ESpeakSynth(Synth):
             return fname
         fname = os.tempnam()+dotwav
         oldcwd=os.getcwd()
-        sysCommand = cond(winCEsound,"",self.program)+cond(text.find("</")>-1," -m","")+' -v%s -w %s%s' % (espeak_language_aliases.get(lang,lang),cond(unix,"/dev/stdout|cat>",""),changeToDirOf(fname,1))
+        sysCommand = cond(winCEsound,"",self.program)+cond(text.find("</")>=0," -m","")+' -v%s -w %s%s' % (espeak_language_aliases.get(lang,lang),cond(unix,"/dev/stdout|cat>",""),changeToDirOf(fname,1))
         # (Unix use stdout and cat because some espeak versions truncate the output file mid-discourse)
         # (eSpeak wavs are 22.05k 16-bit mono; not much point down-sampling to 16k to save 30% storage at expense of CPU)
         if winsound or mingw32: os.popen(sysCommand,"w").write(text+"\n") # must pipe the text in
@@ -778,8 +778,8 @@ def remove_tone_numbers(utext): # for hanzi_and_punc to take out numbers that ca
 def preprocess_chinese_numbers(utext,isCant=0): # isCant=1 for Cantonese, 2 for hanzi (and if 1 or 2, also assumes input may be jyutping not just pinyin)
     # Hack for reading years digit by digit:
     for year in ["nian2",u"\u5e74"]: # TODO also " nian2" to catch that? what of multiple spaces?
-        while utext.find(year)>=4 and 1200 < intor0(utext[utext.find(year)-4:utext.find(year)]) < 2300: # TODO is that range right?
-            yrStart = utext.find(year)-4
+        while utext.find(year)>=4 and 1200 < intor0(utext[utext.index(year)-4:utext.index(year)]) < 2300: # TODO is that range right?
+            yrStart = utext.index(year)-4
             utext = utext[:yrStart] + " ".join(list(utext[yrStart:yrStart+4]))+" "+utext[yrStart+4:]
     # End of hack for reading years
     i=0

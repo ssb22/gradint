@@ -120,10 +120,10 @@ def getLsDic(directory):
     for file in ls:
         filelower = file.lower()
         # in lsDic if it's in the list (any extension); =filename if it's an extension we know about; =None if it's a directory (in which case the key is the full filename), ottherwise =""
-        if has_variants and file.find("_",file.find("_")+1)>-1: languageOverride=file[file.find("_")+1:file.find("_",file.find("_")+1)]
+        if has_variants and file.find("_",file.find("_")+1)>=0: languageOverride=file[file.find("_")+1:file.find("_",file.find("_")+1)]
         else: languageOverride=None
         if filelower.endswith(dottxt) and (file+extsep)[:file.rfind(extsep)] in lsDic: continue # don't let a .txt override a recording if both exist
-        if (filelower.endswith(dottxt) and file.find("_")>-1 and can_be_synthesized(file,directory,languageOverride)) or filelower.endswith(dotwav) or filelower.endswith(dotmp3): val = file
+        if (filelower.endswith(dottxt) and file.find("_")>=0 and can_be_synthesized(file,directory,languageOverride)) or filelower.endswith(dotwav) or filelower.endswith(dotmp3): val = file
         else:
             val = ""
             if filelower.endswith(extsep+"zip"): show_warning("Warning: Ignoring "+file+" (please unpack it first)") # so you can send someone a zip file for their recorded words folder and they'll know what's up if they don't unpack it
@@ -138,7 +138,7 @@ def getLsDic(directory):
         for k,v in lsDic.items():
             # check for _lang_variant.ext and take out the _variant,
             # but keep them in variantFiles dict for fileToEvent to put back
-            if not v or (not directory==promptsDirectory and v.find("_explain_")>-1): continue # don't get confused by that
+            if not v or (not directory==promptsDirectory and v.find("_explain_")>=0): continue # don't get confused by that
             last_ = v.rfind("_")
             if last_==-1: continue
             penult_ = v.rfind("_",0,last_)

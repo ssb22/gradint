@@ -324,7 +324,7 @@ def subst_some_synth_for_synthcache(events):
             if type(synthCache_test_mode)==type([]):
                 found=0
                 for str in synthCache_test_mode:
-                    if (re and re.search(str,cache_fname)) or cache_fname.find(str)>-1:
+                    if (re and re.search(str,cache_fname)) or cache_fname.find(str)>=0:
                         found=1 ; break
                 if found: continue
             lang = languageof(cache_fname)

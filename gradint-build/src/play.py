@@ -130,7 +130,7 @@ if unix:
     else: sox_ignoreLen = "|sox --ignore-length -t wav - -t wav - 2>/dev/null"
     if soxMaj==14 and sf2[13]<'4': sox_8bit, sox_16bit = "-1", "-2" # see comment above
     else: sox_8bit, sox_16bit, sox_signed = "-b 8", "-b 16", "-e signed-integer" # TODO: check if 14.3 accepts these also (at least 14.4 complains -2 etc is deprecated)
-  if sf2.find("wav")>-1: gotSox=1
+  if sf2.find("wav")>=0: gotSox=1
   else:
     gotSox=0
     if got_program("sox"):
@@ -153,14 +153,14 @@ elif unix and not macsound:
         # (need a warning here, because if using 'aplay' then sox o/p is 2>/dev/null (see below) so a missing sox won't be obvious)
     if not oss_sound_device:
         dsps_to_check = []
-        if sox_formats.find("ossdsp")>-1: dsps_to_check += ["/dev/sound/dsp","/dev/dsp"]
-        if sox_formats.find("sunau")>-1: dsps_to_check += ["/dev/audio"]
+        if sox_formats.find("ossdsp")>=0: dsps_to_check += ["/dev/sound/dsp","/dev/dsp"]
+        if sox_formats.find("sunau")>=0: dsps_to_check += ["/dev/audio"]
         for dsp in dsps_to_check:
             if fileExists_stat(dsp):
                 oss_sound_device = dsp
                 if dsp=="/dev/audio": sox_type="-t sunau "+sox_signed+" "+sox_16bit
                 break
-    if sox_formats.find("-q")>-1: sox_type="-q "+sox_type
+    if sox_formats.find("-q")>=0: sox_type="-q "+sox_type
     if not wavPlayer:
       if oss_sound_device and not cygwin and gotSox: wavPlayer = "sox"
       elif cygwin and got_program("sndrec32"): # XP's Sound Recorder (vista's is called soundreorder.exe but won't do this) (+ don't have to worry about the >2G memory bug as not applicable to playing)
@@ -311,13 +311,13 @@ class SampleEvent(Event):
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (TODO find a RISC OS program that can play the MP3s directly?)
             else: file=self.file
             system("PlayIt_Play \"%s\"" % (file,))
-        elif wavPlayer.find('sndrec32')>-1:
+        elif wavPlayer.find('sndrec32')>=0:
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
             else: file=self.file
             oldDir = os.getcwd()
             t=time.time()
             os.system(wavPlayer+' "'+changeToDirOf(file)+'"') # don't need to call our version of system() here
-            if wavPlayer.find("start")>-1: time.sleep(max(0,self.length-(time.time()-t))) # better do this - don't want events overtaking each other if there are delays.  exactLen not always enough.  (but do subtract the time already taken, in case command extensions have been disabled and "start" is synchronous.)
+            if wavPlayer.find("start")>=0: time.sleep(max(0,self.length-(time.time()-t))) # better do this - don't want events overtaking each other if there are delays.  exactLen not always enough.  (but do subtract the time already taken, in case command extensions have been disabled and "start" is synchronous.)
             os.chdir(oldDir)
         elif fileType=="mp3" and mp3Player and not sox_effect and not (wavPlayer=="aplay" and mp3Player_is_madplay): return system(mp3Player+' "'+self.file+'"')
         elif wavPlayer=="sox":
@@ -511,11 +511,11 @@ def lame_endian_parameters():
   # lame 3.98+ has changed the default of -x and introduced explicit --big-endian and --little-endian.
   # (Note: None of this would be needed if we give lame a WAV input, as email-lesson.sh does.  But lame 3.97 on Windows faults on wav inputs.)
   lameVer = os.popen("lame --version").read()
-  if lameVer.find("version ")>-1:
+  if lameVer.find("version ")>=0:
     lameVer = lameVer[lameVer.index("version "):].split()[1]
     if lameVer and '.' in lameVer and (lameVer[0]>'3' or intor0(lameVer[2:4])>97):
       # Got 3.98+ - explicitly tell it the endianness (but check for alpha releases first - some of them don't deal with either this or the 3.97 behaviour very well)
-      if lameVer.find("alpha")>-1 and lameVer[0]=="3" and intor0(lameVer[2:4])==98: show_warning("Warning: You have a 3.98 alpha release of LAME.\nIf the MP3 file is white noise, try a different LAME version.")
+      if lameVer.find("alpha")>=0 and lameVer[0]=="3" and intor0(lameVer[2:4])==98: show_warning("Warning: You have a 3.98 alpha release of LAME.\nIf the MP3 file is white noise, try a different LAME version.")
       return " --little-endian"
   # otherwise fall-through to older lame behaviour:
   if big_endian: return "" # TODO are we sure we don't need -x on lame 3.97 PPC as well?

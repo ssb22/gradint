@@ -55,7 +55,7 @@ def disable_lid(restore): # for portable netbooks (like eee), can close lid & ke
     import commands ; global oldLid,warnedAC
     try: warnedAC
     except: warnedAC=0
-    if (not restore) and commands.getoutput("cat /proc/acpi/ac_adapter/AC*/state 2>/dev/null").find("off-line")>-1 and not warnedAC:
+    if (not restore) and commands.getoutput("cat /proc/acpi/ac_adapter/AC*/state 2>/dev/null").find("off-line")>=0 and not warnedAC:
       waitOnMessage("Some quirky Linux battery managers turn speakers off mid-lesson, so AC power is recommended.") ; warnedAC=1 # (TODO what if pull out AC during the lesson without looking at the screen?  Spoken message??)
     ls = "et org.gnome.settings-daemon.plugins.power lid-close-" ; src=["ac","battery"]
     if restore and oldLid[0]: return [commands.getoutput("gsettings s"+ls+p+"-action "+q+" 2>/dev/null") for p,q in zip(src,oldLid)]

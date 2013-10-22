@@ -221,7 +221,7 @@ def exc_info(inGradint=True):
     while tbObj and hasattr(tbObj,"tb_next") and tbObj.tb_next: tbObj=tbObj.tb_next
     if tbObj and hasattr(tbObj,"tb_lineno"): w += (" at line "+str(tbObj.tb_lineno))
     if inGradint:
-        if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and not tbObj.tb_frame.f_code.co_filename.find("gradint"+extsep+"py")>-1: w += (" in "+tbObj.tb_frame.f_code.co_filename+"\n")
+        if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and not tbObj.tb_frame.f_code.co_filename.find("gradint"+extsep+"py")>=0: w += (" in "+tbObj.tb_frame.f_code.co_filename+"\n")
         else: w += (" in "+program_name[:program_name.index("(c)")]+"\n")
     del tbObj
     return w
@@ -326,7 +326,7 @@ for p in [progressFile,progressFileBackup,pickledProgressFile]:
         sys.exit(1)
 
 # Check for RISC OS pre-1970 clock problem (actually quite likely if testing on the rpcemu emulator without setting the clock)
-if riscos_sound and hex(int(time.time())).find("0xFFFFFFFF")>-1 and not outputFile:
+if riscos_sound and hex(int(time.time())).find("0xFFFFFFFF")>=0 and not outputFile:
     sys.stderr.write("ERROR: time.time() is not usable - gradint cannot run interactively.\n")
     sys.stderr.write("This error can be caused by the RISC OS clock being at 1900 (the Unix time functions start at 1970).\nClose this task window, set the clock and try again.\n")
     sys.exit()

@@ -445,7 +445,7 @@ class RecorderControls(ButtonScrollingMixin):
         if hasattr(self,"renameToCancel"):
           rr,cc = self.renameToCancel
           self.cancelRename(rr,cc)
-        if self.has_variants and filename.find(" (")>-1:
+        if self.has_variants and filename.find(" (")>=0:
             app.todo.alert=self.renamevar_msg
             return
         self.renameToCancel = (row,col)
@@ -479,7 +479,7 @@ class RecorderControls(ButtonScrollingMixin):
                 if row==self.addMoreRow: self.addMore()
                 elif not (row,col) in self.coords2buttons: row += 1 # skip extra row if there are notes
                 origName=self.coords2buttons[(row,col)]["text"]
-            if self.has_variants and origName.find(" (")>-1:
+            if self.has_variants and origName.find(" (")>=0:
                 app.todo.alert=self.renamevar_msg
                 break
             if len(newNames)>1 and not '0'<=newName[0]<='9': # multiline paste and not numbered - we'd better keep the original number
@@ -561,7 +561,7 @@ class RecorderControls(ButtonScrollingMixin):
                 self.gridLabel(lang,self.addMoreRow)
             self.addMoreRow += 2 ; self.maxPrefix += 1
         self.add_addMore_button()
-    def gridLabel(self,lang,row): Tkinter.Label(self.grid,text=" "+localise(cond(lang.find("-meaning_")>-1,"meaning",lang))+": ").grid(row=row,column=1+3*self.languagesToDraw.index(lang))
+    def gridLabel(self,lang,row): Tkinter.Label(self.grid,text=" "+localise(cond(lang.find("-meaning_")>=0,"meaning",lang))+": ").grid(row=row,column=1+3*self.languagesToDraw.index(lang))
     def doRecord(self,filename,row,languageNo,needToUpdatePlayButton=False):
         if not tkSnack: return tkMessageBox.showinfo(app.master.title(),localise("Sorry, cannot record on this computer because the tkSnack library (python-tksnack) is not installed."))
         theISM.startRecording(filename)
@@ -749,7 +749,7 @@ class RecorderControls(ButtonScrollingMixin):
         for fname in l:
             flwr = fname.lower() ; isMeaning=0
             if firstLanguage==secondLanguage and firstLanguage+"-meaning_"+secondLanguage in fname: isMeaning,languageOverride = True, firstLanguage+"-meaning_"+secondLanguage # hack for re-loading a dir of word+meaning in same language.  TODO hope not combining -meaning_ with variants
-            elif self.has_variants and fname.find("_",fname.find("_")+1)>-1 and not fname.find("_explain_")>-1: languageOverride=fname[fname.find("_")+1:fname.find("_",fname.find("_")+1)]
+            elif self.has_variants and fname.find("_",fname.find("_")+1)>=0 and not fname.find("_explain_")>=0: languageOverride=fname[fname.find("_")+1:fname.find("_",fname.find("_")+1)]
             else: languageOverride=None
             if isDirectory(self.currentDir+os.sep+fname):
                  if not flwr in ["zips","utils","advanced utilities"]: # NOT "prompts", that can be browsed
