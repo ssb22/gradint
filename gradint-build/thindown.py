@@ -173,4 +173,4 @@ for l in sys.stdin.xreadlines():
     omitted[code]=1
   else: print l
 for o in to_omit:
-  if not o in omitted: sys.stderr.write("Warning: line not matched: "+o+"\n")
+  if not o in omitted: sys.stderr.write("Warning: line not matched: "+o+"\n(This might be because it was in a block that was already omitted by another rule)\n") # TODO: check for that and suppress this message?
