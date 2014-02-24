@@ -490,9 +490,17 @@ elif macsound:
     elif fileExists_stat("../Gradint 2.app/deleteme"):
        import thread ; thread.start_new_thread(lambda *x:(time.sleep(2),os.system('rm -rf "../Gradint 2.app"')),())
 
+try:
+    import distutils
+    import distutils.spawn as DUtil
+except: DUtil = None
 def got_program(prog):
     # Test to see if the program 'prog' is on the system, as portable as possible.  NB some Unix 'which' output an error to stdout instead of stderr, so check the result exists.
-    return (winsound and fileExists(prog+".exe")) or (unix and fileExists_stat(os.popen("which "+prog+" 2>/dev/null").read().strip(wsp)))
+    if winsound: return fileExists(prog+".exe")
+    elif unix:
+        if DUtil: prog = distutils.spawn.find_executable(prog)
+        else: prog = os.popen("which "+prog+" 2>/dev/null").read().strip(wsp)
+        return prog and fileExists_stat(prog)
 
 def win2cygwin(path): # convert Windows path to Cygwin path
     if path[1]==":": return "/cygdrive/"+path[0].lower()+path[2:].replace("\\","/")
