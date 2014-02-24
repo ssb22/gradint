@@ -490,15 +490,12 @@ elif macsound:
     elif fileExists_stat("../Gradint 2.app/deleteme"):
        import thread ; thread.start_new_thread(lambda *x:(time.sleep(2),os.system('rm -rf "../Gradint 2.app"')),())
 
-try:
-    import distutils
-    import distutils.spawn as DUtil
-except: DUtil = None
 def got_program(prog):
     if winsound:
         return fileExists(prog+".exe")
     elif unix:
-        if DUtil:
+        try:
+            import distutils.spawn
             if ":." in ":"+os.environ.get("PATH",""):
                 prog = distutils.spawn.find_executable(prog)
             else: # at least some distutils assume that . is in the PATH even when it isn't, so
@@ -513,7 +510,8 @@ def got_program(prog):
                   if done:
                     prog = distutils.spawn.find_executable(prog)
                     os.chdir(oldCwd)
-        else: # not DUtil
+        except ImportError:
+            # fall back to running 'which' in a shell (probably slower if got_program is called repeatedly)
             prog = os.popen("which "+prog+" 2>/dev/null").read().strip(wsp)
             if not fileExists_stat(prog): prog=None # some Unix 'which' output an error to stdout instead of stderr, so check the result exists
         return prog
