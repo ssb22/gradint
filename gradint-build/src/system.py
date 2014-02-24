@@ -495,12 +495,28 @@ try:
     import distutils.spawn as DUtil
 except: DUtil = None
 def got_program(prog):
-    # Test to see if the program 'prog' is on the system, as portable as possible.  NB some Unix 'which' output an error to stdout instead of stderr, so check the result exists.
-    if winsound: return fileExists(prog+".exe")
+    if winsound:
+        return fileExists(prog+".exe")
     elif unix:
-        if DUtil: prog = distutils.spawn.find_executable(prog)
-        else: prog = os.popen("which "+prog+" 2>/dev/null").read().strip(wsp)
-        return prog and fileExists_stat(prog)
+        if DUtil:
+            if ":." in ":"+os.environ.get("PATH",""):
+                prog = distutils.spawn.find_executable(prog)
+            else: # at least some distutils assume that . is in the PATH even when it isn't, so
+                oldCwd = os.getcwd()
+                pList = os.environ.get("PATH","").split(':')
+                if pList:
+                  done=0
+                  for p in pList:
+                    try: os.chdir(p)
+                    except: continue
+                    done=1 ; break
+                  if done:
+                    prog = distutils.spawn.find_executable(prog)
+                    os.chdir(oldCwd)
+        else: # not DUtil
+            prog = os.popen("which "+prog+" 2>/dev/null").read().strip(wsp)
+            if not fileExists_stat(prog): prog=None # some Unix 'which' output an error to stdout instead of stderr, so check the result exists
+        return prog
 
 def win2cygwin(path): # convert Windows path to Cygwin path
     if path[1]==":": return "/cygdrive/"+path[0].lower()+path[2:].replace("\\","/")
