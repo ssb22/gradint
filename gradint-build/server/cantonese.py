@@ -3,7 +3,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.1 (c) 2013 Silas S. Brown.  License: GPL
+# v1.11 (c) 2013-14 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
@@ -24,7 +24,7 @@ def get_jyutping(hanzi,mustWork=1):
       vals = espeak.transliterate_multiple("zhy",jyutping_dryrun,0)
       assert len(jyutping_dryrun)==len(vals)
       for k,v in zip(jyutping_dryrun,vals):
-        jyutping_cache[k]=v
+        jyutping_cache[k]=v.replace("7","1").lower() # see below
       jyutping_dryrun = set()
   if hanzi in jyutping_cache: jyutping = jyutping_cache[hanzi]
   else: jyutping_cache[hanzi] = jyutping = espeak.transliterate("zhy",hanzi,forPartials=0).replace("7","1").lower() # .lower() needed because espeak sometimes randomly capitalises e.g. 2nd hanzi of 'hypocrite' (Mandarin xuwei de ren)

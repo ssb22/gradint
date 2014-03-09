@@ -157,7 +157,7 @@ class OldRiscosSynth(Synth):
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
     def play(self,lang,text): return system("sayw %s" % (text,))
 
-class S60Synth(Synth):
+class S60Synth(Synth): # TODO: figure out if S60 Python can call external programs; might be able to use eSpeak http://pvagner.webranet.sk/espeak/espeak.sisx
     def __init__(self): Synth.__init__(self)
     def supports_language(self,lang): return lang=="en" # (audio.say always uses English even when other languages are installed on the device)
     def works_on_this_platform(self): return appuifw and hasattr(audio,"say")
