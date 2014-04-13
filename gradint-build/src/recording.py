@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9988 (c) 2002-2013 Silas S. Brown. GPL v3+.
+# gradint v0.9989 (c) 2002-2014 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -209,7 +209,7 @@ def wavToMp3(directory):
 
 def makeMp3Zips(baseDir,outDir,zipNo=0,direc=None):
     zipSplitThreshold = 5*1048576 # to be safe (as will split when it goes OVER that)
-    if baseDir==outDir: return zipNo # omit
+    if baseDir==outDir or baseDir.endswith(extsep+"zip"): return zipNo # omit the output dir, plus any existing ZIP files
     elif not direc:
         for f in os.listdir(baseDir): zipNo = makeMp3Zips(baseDir,outDir,zipNo,f)
     elif isDirectory(baseDir+os.sep+direc): zipNo = makeMp3Zips(baseDir+os.sep+direc,outDir,zipNo)
@@ -437,7 +437,7 @@ class RecorderControls(ButtonScrollingMixin):
             numZips = makeMp3Zips(self.currentDir,self.currentDir+os.sep+"zips")
             if numZips:
                 openDirectory(self.currentDir+os.sep+"zips",1)
-                if numZips>1: app.todo.alert=localise("Please send the %d zip files as %d separate messages, in case one very large message doesn't get through.") % (zipNo,zipNo)
+                if numZips>1: app.todo.alert=localise("Please send the %d zip files as %d separate messages, in case one very large message doesn't get through.") % (numZips,numZips)
                 else: app.todo.alert=localise("You may now send the zip file by email.")
             else: app.todo.alert=localise("No recordings found")
         self.undraw() ; self.draw()
@@ -830,7 +830,7 @@ class RecorderControls(ButtonScrollingMixin):
         addButton(r2,localise("Record from file"),self.do_recordFromFile,"left")
         if got_program("lame"): self.CompressButton = addButton(r2,localise("Compress all"),self.all2mp3_or_zip,"left") # was "Compress all recordings" but it takes too much width
         # TODO else can we see if it's possible to get the encoder on the fly, like in the main screen? (would need some restructuring)
-        elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = addButton(r2,localise("Zip for email"),lambda *args:self.all2mp3_or_zip,"left")
+        elif got_program("zip") and (explorerCommand or winCEsound): self.CompressButton = addButton(r2,localise("Zip for email"),lambda *args:self.all2mp3_or_zip(),"left")
         addButton(r2,localise(cond(recorderMode,"Quit","Back to main menu")),self.finished,"left")
         
         if winCEsound and not tkSnack: msg="Click on filenames at left to rename; click synthesized text to edit it"
