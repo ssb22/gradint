@@ -86,7 +86,7 @@ def jyutping_to_yale_TeX(j):
 
 def superscript_digits_TeX(j):
   # for jyutping and Sidney Lau
-  for digit in "123456789": j=j.replace(digit,r"$^"+digit+r"$\hspace{0pt}")
+  for digit in "123456789": j=j.replace(digit,r"\raisebox{-0.3ex}{$^"+digit+r"$}\hspace{0pt}")
   return j
 
 def superscript_digits_HTML(j):
