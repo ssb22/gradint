@@ -1893,7 +1893,10 @@ def rest_of_main():
     elif not app==None: pass # (gets here if WAS 'app' but was closed - DON'T output anything to stderr in this case)
     elif appuifw: appuifw.app.set_exit()
     elif riscos_sound: show_info("You may now close this Task Window.\n")
-    elif not android: show_info("\n") # in case got any \r'd string there - don't want to confuse the next prompt
+    elif not android:
+        try:
+            doLabelLastLen ; show_info("\n") # if got any \r'd string there - don't want to confuse the next prompt
+        except NameError: pass # no doLabelLastLen - no \r
     RM_running = 0
     if exitStatus: sys.exit(exitStatus)
 
