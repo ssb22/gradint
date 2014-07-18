@@ -364,6 +364,7 @@ if macsound:
     elif sys.version[:5] == "2.5.1": # 10.5
       if not tkpatch(): Tk_might_display_wrong_hanzi="10.5"
     elif sys.version[:5] == "2.6.1": tkpatch() # 10.6 (still has Tk8.5, hanzi ok but other problems)
+    elif sys.version[:5] == "2.7.5": tkpatch() # 10.9 (problems with "big print" button if don't do this) (TODO: import platform and check platform.mac_ver()[0].startswith('10.9') first? as future releases might now have same Python version and we haven't tested them against this patch; also check 10.7 and 10.8 aren't Python 2.7.5)
   if Tk_might_display_wrong_hanzi: wrong_hanzi_message = "NB: In Mac OS "+Tk_might_display_wrong_hanzi+", Chinese\ncan display wrongly here." # so they don't panic when it does
 
 # Handle keeping progress file and temp directories etc if we're running from a live CD
