@@ -105,7 +105,7 @@ elif unix and hasattr(os,"popen"):
   if not fileExists(cond(cygwin,madplay_path+".exe",madplay_path)): madplay_path="" # in case of a Unix 'which' returning error on stdout
   if madplay_path and not winsound and not mingw32: madplay_path='"'+madplay_path+'"' # in case there's spaces etc in the path
 else: madplay_path = None
-if madplay_path and not mp3Player: mp3Player==madplay_path
+if madplay_path and not mp3Player: mp3Player=madplay_path
 
 def intor0(v):
     try: return int(v)
@@ -218,8 +218,9 @@ if unix:
     os.setpgrp()
     import signal
     def siggrp(sigNo,*args):
-        os.killpg(os.getpgrp(),sigNo)
-        os.abort() # in case still here
+        signal.signal(sigNo,signal.SIG_IGN)
+        os.killpg(os.getpgrp(),sigNo) # players etc
+        raise KeyboardInterrupt # clean up, rm tempfiles etc
     signal.signal(signal.SIGTERM,siggrp)
   except: pass
 else: signal=0
@@ -450,9 +451,9 @@ class SoundCollector(object):
         byteNo = sampleNo*2 # since 16-bit
         outfile_writeBytes(self.o,"\0"*byteNo)
         self.theLen += byteNo
-    def addFile(self,file,length):
+    def addFile(self,file,length): # length ignored in this version
         fileType=soundFileType(file)
-        if fileType=="mp3": file,fileType = theMp3FileCache.decode_mp3_to_tmpfile(file),"wav" # in case the system needs madplay rather than sox
+        if fileType=="mp3": file,fileType = theMp3FileCache.decode_mp3_to_tmpfile(file),"wav" # in case the system needs madplay etc rather than sox
         if riscos_sound:
             os.system("sox -t %s \"%s\" %s tmp0" % (fileType,file,self.soxParams()))
             handle=open("tmp0","rb")
@@ -620,7 +621,7 @@ def warn_sox_decode():
     if not warned_about_sox_decode and not sox_ignoreLen:
         show_warning("Had to use sox to decode MP3 (as no madplay etc); some versions of sox truncate the end of MP3s") # but 14.3+ (sox_ignoreLen set) should be OK
         warned_about_sox_decode = 1
-def decode_mp3(file):
+def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes it's always small enough to read the whole thing into RAM (should be true if it's 1 word though, and decode_mp3 isn't usually used unless we're making a lesson file rather than running something in justSynthesize)
     if riscos_sound:
         warn_sox_decode()
         os.system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
