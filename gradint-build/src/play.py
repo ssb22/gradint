@@ -99,15 +99,13 @@ def maybe_unicode(label):
         except: return label # ??
     else: return repr(label)
 
-mp3Player_is_madplay = 0
-if not mp3Player: # can we use madplay?
-  if (winsound or mingw32) and fileExists("madplay.exe"): mp3Player = "madplay.exe"
-  elif unix and hasattr(os,"popen"):
-    mp3Player = os.popen("PATH=$PATH:. which madplay 2>/dev/null").read().strip(wsp)
-    if not fileExists(cond(cygwin,mp3Player+".exe",mp3Player)): mp3Player="" # in case of a Unix 'which' returning error on stdout
-  if mp3Player and not winsound and not mingw32: mp3Player='"'+mp3Player+'"' # in case there's spaces etc in the path
-  if mp3Player: mp3Player_is_madplay = 1
-# else leave mp3Player_is_madplay=0, even if there's a "madplay" in the string (as we can't assume we'll be able to use it for conversion and/or add our own parameters etc)
+if (winsound or mingw32) and fileExists("madplay.exe"): madplay_path = "madplay.exe"
+elif unix and hasattr(os,"popen"):
+  madplay_path = os.popen("PATH=$PATH:. which madplay 2>/dev/null").read().strip(wsp)
+  if not fileExists(cond(cygwin,madplay_path+".exe",madplay_path)): madplay_path="" # in case of a Unix 'which' returning error on stdout
+  if madplay_path and not winsound and not mingw32: madplay_path='"'+madplay_path+'"' # in case there's spaces etc in the path
+else: madplay_path = None
+if madplay_path and not mp3Player: mp3Player==madplay_path
 
 def intor0(v):
     try: return int(v)
@@ -274,7 +272,7 @@ class SampleEvent(Event):
             if not fname[0]=='/': fname=os.getcwd()+'/'+fname
             android.mediaPlay("file://"+fname)
             return
-        elif fileType=="mp3" and mp3Player_is_madplay and not macsound and not wavPlayer=="aplay":
+        elif fileType=="mp3" and madplay_path and mp3Player==madplay_path and not macsound and not wavPlayer=="aplay":
             oldcwd = os.getcwd()
             play_error = system(mp3Player+' -q -A '+str(soundVolume_dB)+' "'+changeToDirOf(self.file)+'"') # using changeToDirOf because on Cygwin it might be a non-cygwin madplay.exe that someone's put in the PATH.  And keeping the full path to madplay.exe because the PATH may contain relative directories.
             os.chdir(oldcwd)
@@ -319,7 +317,7 @@ class SampleEvent(Event):
             os.system(wavPlayer+' "'+changeToDirOf(file)+'"') # don't need to call our version of system() here
             if wavPlayer.find("start")>=0: time.sleep(max(0,self.length-(time.time()-t))) # better do this - don't want events overtaking each other if there are delays.  exactLen not always enough.  (but do subtract the time already taken, in case command extensions have been disabled and "start" is synchronous.)
             os.chdir(oldDir)
-        elif fileType=="mp3" and mp3Player and not sox_effect and not (wavPlayer=="aplay" and mp3Player_is_madplay): return system(mp3Player+' "'+self.file+'"')
+        elif fileType=="mp3" and mp3Player and not sox_effect and not (wavPlayer=="aplay" and mp3Player==madplay_path): return system(mp3Player+' "'+self.file+'"')
         elif wavPlayer=="sox":
             # To make it more difficult:
             # sox v12.x (c. 2001) - bug when filenames contain 2 spaces together, and needs input from re-direction in this case
@@ -338,8 +336,8 @@ class SampleEvent(Event):
                 if timeDiff==0 and self.exactLen < 1.5: return 0 # (we'll let that one off for systems that have limited clock precision)
                 if not app: show_info("play didn't take long enough - maybe ") # .. problem playing sound
                 return 1
-        elif wavPlayer=="aplay" and ((not fileType=="mp3") or mp3Player_is_madplay or gotSox):
-            if mp3Player_is_madplay and fileType=="mp3": return system(mp3Player+' -q -A '+str(soundVolume_dB)+' "'+self.file+'" -o wav:-|aplay -q') # changeToDirOf() not needed because this won't be cygwin (hopefully)
+        elif wavPlayer=="aplay" and ((not fileType=="mp3") or madplay_path or gotSox):
+            if madplay_path and fileType=="mp3": return system(madplay_path+' -q -A '+str(soundVolume_dB)+' "'+self.file+'" -o wav:-|aplay -q') # changeToDirOf() not needed because this won't be cygwin (hopefully)
             elif gotSox and (sox_effect or fileType=="mp3"): return system('cat "'+self.file+'" | sox -t '+fileType+' - -t wav '+sox_16bit+' - '+sox_effect+' 2>/dev/null|aplay -q') # (make sure o/p is 16-bit even if i/p is 8-bit, because if sox_effect says "vol 0.1" or something then applying that to 8-bit would lose too many bits)
             # (2>/dev/null to suppress sox "can't seek to fix wav header" problems, but don't pick 'au' as the type because sox wav->au conversion can take too long on NSLU2 (probably involves rate conversion))
             else: return system('aplay -q "'+self.file+'"')
@@ -628,9 +626,9 @@ def decode_mp3(file):
         os.system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
         data=read("tmp0") ; os.unlink("tmp0")
         return data
-    elif mp3Player_is_madplay or got_program("mpg123"):
+    elif madplay_path or got_program("mpg123"):
         oldDir = os.getcwd()
-        if mp3Player_is_madplay: d=os.popen(mp3Player+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-","rb").read()
+        if madplay_path: d=os.popen(madplay_path+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-","rb").read()
         else: d=os.popen("mpg123 -q -w - \""+changeToDirOf(file)+"\"","rb").read()
         os.chdir(oldDir)
         # fix length (especially if it's mpg123)

@@ -435,7 +435,7 @@ def optimise_partial_playing(ce):
     for e in ce.eventList[1:]:
         if not soundFileType(e.file)==fileType: return ce # must be all the same type for this optimisation
     s = None
-    if fileType=="mp3" and mp3Player_is_madplay and not macsound and not cygwin: # (don't do this on cygwin because cygwin will require changeToDirOf and that could get awkward)
+    if fileType=="mp3" and madplay_path and mp3Player==madplay_path and not macsound and not cygwin: # (don't do this on cygwin because cygwin will require changeToDirOf and that could get awkward)
         # mp3 probably has encoding gaps etc, but we can try our best
         if wavPlayer=="aplay": s=ShellEvent(mp3Player+' -q -A $Vol$'+''.join(map(lambda x:' "'+x.file+'"', ce.eventList))+' -o wav:-|aplay -q',True) # (set retryOnFail=True)
         else: s=ShellEvent(mp3Player+' -q -A $Vol$'+''.join(map(lambda x:' "'+x.file+'"', ce.eventList)),True)
