@@ -227,11 +227,9 @@ extra_speech_tofile = []
 # not allow in filenames, then you can make a TRANS.TBL file
 # inside the synthCache directory (the first word of each
 # line is the real filename and the rest of the line is the
-# filename that you want gradint to see).  On RISC OS this
-# should be called TRANS/TBL, and remember to specify /wav
-# rather than .wav in its contents.  It is also advisable
-# not to include spaces in any of the real filenames on RISC
-# OS, because RISC OS Python can't always cope.
+# filename that you want gradint to see).
+# On RISC OS, try not to include spaces in any of the real
+# filenames, because RISC OS Python can't always cope.
 
 synthCache = ""
 

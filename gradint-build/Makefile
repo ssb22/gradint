@@ -215,6 +215,7 @@ servertools.bgz: server
 gradint.zip: $(Riscos_Files) riscos.zip
 	mkdir \!gradint
 	cp -r $(Riscos_Files) \!gradint
+	cd \!gradint && for F in samples/README.txt samples/prompts/README.txt vocab.txt advanced.txt; do sed -e 's,\.wav,/wav,g' -e 's,\.mp3,/mp3,g' -e 's,\.txt,/txt,g' -e 's,\.py\.,/py.,g' -e 's,\.py$$,/py,g' -e 's,TRANS\.TBL,TRANS/TBL,g' -e 's,samples/utils/,samples.utils.,g' -e 's,samples/,samples.,g' < $$F > n && mv n $$F ; done && cd .. # TODO: even in the suggested bash command lines?  and what of .cdr .au (but be cautious about 'overzealous' search/replace)
 	cp riscos.zip gradint.zip # the existing zip file has the right RISC OS filetype for the Obey file (difficult to do on non-RISCOS systems)
 	zip -9 -r gradint.zip \!gradint/* # update with gradint sources
 	rm -rf \!gradint

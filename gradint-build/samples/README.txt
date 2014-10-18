@@ -9,7 +9,6 @@ languages (e.g. en=English, la=Latvian, zh=Zhongwen, etc)
 and 'name' is any name you like but must be consistent
 across abbreviations.  The abbreviations must be the same as
 the ones that are used in settings.txt (and advanced.txt).
-(RISC OS users should replace '.' with '/'.)
 
 If you don't already have a tool for recording and editing
 sound files, try Audacity at http://audacity.sourceforge.net/
