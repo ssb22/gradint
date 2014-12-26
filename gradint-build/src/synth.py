@@ -1125,7 +1125,7 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
     called_synth = 0
     # we re-generate the lesson on each repeat, so sporadic-synthcache stuff works
     global repeatMode ; repeatMode = 1
-    while repeatMode:
+    while repeatMode and not repeatMode=="interrupted":
       repeatMode = 0
       less = Lesson()
       lastStartTime = lastEndTime = lastWasDelay = 0
@@ -1184,5 +1184,6 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
       global dbase ; dbase = None # for handleInterrupt
       less.play()
     startAnnouncement,endAnnouncement,logFile = oldStart,oldEnd,oldLogfile
+    if repeatMode=="interrupted": sys.exit(1) # better tell the calling script
     if not called_synth: return None
     return lastLanguage

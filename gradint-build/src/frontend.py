@@ -167,7 +167,7 @@ def handleInterrupt(): # called only if there was an interrupt while the runner 
         # cancelledEvent = runner.queue[0][-1][0] worked in python 2.3, but sched implementation seems to have changed in python 2.5 so we're using copy_of_runner_events instead
         if hasattr(cancelledEvent,"wordToCancel") and cancelledEvent.wordToCancel: cancelledFiles.append(cancelledEvent.wordToCancel)
     if not app and needCountItems and cancelledFiles: show_info("(%d cancelled items)...\n" % len(cancelledFiles))
-    global repeatMode ; repeatMode = 0 # so Ctrl-C on justSynth-with-R works
+    global repeatMode ; repeatMode = "interrupted"
 
 tkNumWordsToShow = 10 # the default number of list-box items
 
@@ -1852,7 +1852,7 @@ def rest_of_main():
         elif appuifw: s60_main_menu()
         elif android: android_main_menu()
         else: lesson_loop()
-    except SystemExit: pass
+    except SystemExit,e: exitStatus = e.code
     except KeyboardInterrupt: pass
     except PromptException,prEx:
         waitOnMessage("\nProblem finding prompts:\n"+prEx.message+"\n")
