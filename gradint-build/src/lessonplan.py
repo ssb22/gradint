@@ -121,7 +121,7 @@ class ProgressDatabase(object):
             else: f = open(progressFile,'w')
             f.write(progressFileHeader)
             f.write("firstLanguage=\"%s\"\nsecondLanguage=\"%s\"\n# otherLanguages=%s\n" % (firstLanguage,secondLanguage,otherLanguages)) # Note: they're declared "global" above (and otherLanguages commented out here for now, since may add to it in advanced.txt) (Note also save_binary below.)
-            if self.didScan: f.write("# collection=%d done=%d left=%d lessonsLeft=%d\n" % (len(self.data),len(data),len(self.data)-len(data),(len(self.data)-len(data)+maxNewWords-1)/maxNewWords))
+            if self.didScan and maxNewWords: f.write("# collection=%d done=%d left=%d lessonsLeft=%d\n" % (len(self.data),len(data),len(self.data)-len(data),(len(self.data)-len(data)+maxNewWords-1)/maxNewWords))
             prettyPrintLongList(f,"self.data",data)
             f.write("self.promptsData=") ; pprint.PrettyPrinter(indent=2,width=60,stream=f).pprint(self.promptsData)
             prettyPrintLongList(f,"self.unavail",self.unavail)
