@@ -221,7 +221,6 @@ gradint.zip: $(Riscos_Files) riscos.zip
 	rm -rf \!gradint
 
 publish0: $(All_Versions) gradint.py
-	scp -C -i ~/.srcf/keyfile gradint.py wa.eguidedog.net:gradint/
 	scp -C -i ~/.srcf/keyfile gradint.py st0rage.org:gradint/
 	scp -C -i ~/.srcf/keyfile gradint.py shell.srcf.ucam.org:gradint/
 	mv $(All_Versions) ~/public_html/gradint/

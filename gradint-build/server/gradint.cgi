@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.06 (c) 2011 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.07 (c) 2011,2015 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -291,12 +291,18 @@ function h5a(link) { if (document.createElement) {
     body += """} return true; }
 //--></script>"""
     return body
+def hasVoiceOptions(l):
+    if not l in gradint.synth_partials_voices: return False
+    if not gradint.guiVoiceOptions: return False
+    try: voices = os.listdir(gradint.partialsDirectory+os.sep+l)
+    except: voices = []
+    for v in voices:
+        if "-" in v and v[:v.index("-")] in voices: return True
 def listVocab(hasList): # main screen
     firstLanguage,secondLanguage = gradint.firstLanguage, gradint.secondLanguage
     # TODO button onClick: careful of zh w/out tones, wld need to JS this
     body = h5a() + '<center><form action="'+cginame+'">'
-    gotVoiceOptions = (gradint.secondLanguage in gradint.synth_partials_voices or gradint.firstLanguage in gradint.synth_partials_voices) and gradint.guiVoiceOptions
-    # TODO what if it's in synth_partials_voices but NOT the one that has guiVoiceOptions ? (e.g. Cantonese when both Mandarin voices are installed) (currently displaying 'non-functional' voice option buttons when that happens)
+    gotVoiceOptions = (hasVoiceOptions(gradint.secondLanguage) or hasVoiceOptions(gradint.firstLanguage))
     if gotVoiceOptions:
       body += 'Voice option: <input type=submit name=voNormal value="Normal"'+gradint.cond(gradint.voiceOption=="",' disabled="disabled"',"")+'>'
       for v in gradint.guiVoiceOptions: body += ' | <input type=submit name=vopt value="'+v[1].upper()+v[2:]+'"'+gradint.cond(gradint.voiceOption==v,' disabled="disabled"',"")+'>'
