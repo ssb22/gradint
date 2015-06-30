@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.07 (c) 2011,2015 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.071 (c) 2011,2015 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -220,10 +220,18 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
     print "Expires: Wed, 1 Dec 2036 23:59:59 GMT"
   gradint.out_type = filetype
   def mainOrSynth():
+    try: oldProgress = open(gradint.progressFile).read() # protect against browsers that try to fetch twice: set progress file to a temp one and delay copying it back to the real one (so you don't get lesson 2 if re-loading lesson 1 within seconds)
+    except: oldProgress = None
+    tempdir = commands.getoutput("mktemp -d")
+    if oldProgress: open(tempdir+'/progress.txt','w').write(oldProgress)
+    oldProgFile, gradint.progressFile = gradint.progressFile, tempdir+'/progress.txt'
     try: gradint.main()
     except SystemExit:
       if not gradint.justSynthesize:
         gradint.justSynthesize = "en Problem generating the lesson. Check we have prompts for those languages." ; gradint.main()
+    gradint.progressFile = oldProgFile
+    gradint.time.sleep(20) ; open(gradint.progressFile,'w').write(open(tempdir+'/progress.txt').read())
+    os.system("rm -r "+tempdir)
   if stream:
     print "Content-disposition: attachment; filename=gradint.mp3" # helps with some browsers that can't really do streaming
     print ; sys.stdout.flush()
@@ -331,7 +339,7 @@ def listVocab(hasList): # main screen
        if data: hasList = "<p><TABLE style=\"border: thin solid green\"><caption><nobr>Your word list</NOBR> <NOBR>(click for audio)</NOBR> <input type=submit name=edit value=\""+localise("Text edit")+"\"></caption><TR><TH>Repeats</TH><TH>"+localise(gradint.secondLanguage)+"</TH><TH>"+localise(gradint.firstLanguage)+"</TH></TR>"+"".join(["<TR><TD>%d</TD><TD>%s</TD><TD>%s</TD>%s" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</TABLE>"
        else: hasList=""
     else: hasList=""
-    if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+' <input type=submit name=lesson value="'+localise("Start lesson")+'"></td></tr></table>'
+    if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson")+"""" onClick="if(h5a('"""+cginame+'?lesson='+str(random.random())+"""&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value)) return true; else { document.forms[0].lesson.value='Please wait while the lesson starts to play'; document.forms[0].lesson.disabled=1; return false}"></td></tr></table>"""
     if "dictionary" in query:
         if query["dictionary"][0]=="1": body += '<script language="Javascript"><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">Back to referring site</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
         else: body += '<p><a href="'+query["dictionary"][0]+'">Back to dictionary</a>' # TODO check for cross-site scripting
