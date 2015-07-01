@@ -134,8 +134,8 @@ gradint-S60.zip: $(Common_Files) gradint.py README-S60.txt
 	cd gradint && python ../thindown.py s60 < ../gradint.py > gradint.py && zip -9r ../gradint-S60.zip gradint.py && cd ..
 	rm -rf gradint
 
-gradint-android.zip: $(Common_Files) gradint.py README-Android.txt
-	zip -9r gradint-android.zip $(Common_Files) README-Android.txt
+gradint-android.zip: $(Common_Files) gradint.py
+	zip -9r gradint-android.zip $(Common_Files)
 	zip -d gradint-android.zip 'samples/utils*'
 	mkdir gradint
 	cd gradint && python ../thindown.py android < ../gradint.py > gradint.py && zip -9r ../gradint-android.zip gradint.py && cd ..

@@ -66,8 +66,10 @@ if winsound:
 if macsound and __name__=="__main__": os.system("clear 1>&2") # so warnings etc start with a clear terminal (1>&2 just in case using stdout for something else)
 if riscos_sound: sys.stderr.write("Loading Gradint...\n") # in case it takes a while
 
-try: import android
-except: android = 0
+try: import androidhelper as android
+except:
+  try: import android
+  except: android = 0
 if android:
     android = android.Android()
     android.makeToast("Loading Gradint")

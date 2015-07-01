@@ -862,7 +862,7 @@ def doRecWords(): # called from GUI thread
 def android_recordFile(language):
  fname = os.getcwd()+os.sep+"newfile_"+language+dotwav
  while True:
-  android.recorderStartMicrophone(fname)
+  android.recorderStartMicrophone(fname) # TODO: python-for-android's MediaRecorderFacade.java startAudioRecording uses default output format and encoder, which likely means that so-called .wav file is really a .3gp file.  Have worked around in pcmlen for now, but don't know if the assumptions made there are universal, plus we don't want to name these files .wav if they're not really .wav
   android.dialogCreateAlert("Recording",language)
   android.dialogSetPositiveButtonText("Stop")
   android.dialogShow() ; android.dialogGetResponse()
