@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.071 (c) 2011,2015 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.072 (c) 2011,2015 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -13,12 +13,17 @@ program_name = "gradint.cgi v1.071 (c) 2011,2015 Silas S. Brown.  GPL v3+"
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
 
-gradint_dir = "/home/ssb22/gradint" # include samples/prompts
-path_add = "/home/ssb22/gradint/bin" # include sox, lame, espeak, maybe oggenc
-lib_path_add = "/home/ssb22/gradint/lib"
-espeak_data_path = "/home/ssb22/gradint"
+gradint_dir = "$HOME/gradint" # include samples/prompts
+path_add = "$HOME/gradint/bin" # include sox, lame, espeak, maybe oggenc
+lib_path_add = "$HOME/gradint/lib"
+espeak_data_path = "$HOME/gradint"
 
 import os, os.path, sys, commands, cgi, cgitb, urllib ; cgitb.enable()
+home = os.environ.get("HOME","")
+gradint_dir = gradint_dir.replace("$HOME",home)
+path_add = path_add.replace("$HOME",home)
+lib_path_add = lib_path_add.replace("$HOME",home)
+espeak_data_path = espeak_data_path.replace("$HOME",home)
 import Cookie, random
 if "QUERY_STRING" in os.environ and "&" in os.environ["QUERY_STRING"] and ";" in os.environ["QUERY_STRING"]: os.environ["QUERY_STRING"]=os.environ["QUERY_STRING"].replace(";","%3B") # for dictionary sites to add words that contain semicolon
 query = cgi.parse()
@@ -30,6 +35,8 @@ os.environ["ESPEAK_DATA_PATH"] = espeak_data_path
 
 cginame = os.sep+sys.argv[0] ; cginame=cginame[cginame.rindex(os.sep)+1:]
 sys.stderr=open("/dev/null","w") ; sys.argv = [] ; import gradint
+
+gradint.waitOnMessage = lambda *args:False
 
 lDic = {}
 for l in gradint.ESpeakSynth().describe_supported_languages().split():
@@ -220,18 +227,21 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
     print "Expires: Wed, 1 Dec 2036 23:59:59 GMT"
   gradint.out_type = filetype
   def mainOrSynth():
-    try: oldProgress = open(gradint.progressFile).read() # protect against browsers that try to fetch twice: set progress file to a temp one and delay copying it back to the real one (so you don't get lesson 2 if re-loading lesson 1 within seconds)
-    except: oldProgress = None
-    tempdir = commands.getoutput("mktemp -d")
-    if oldProgress: open(tempdir+'/progress.txt','w').write(oldProgress)
-    oldProgFile, gradint.progressFile = gradint.progressFile, tempdir+'/progress.txt'
+    oldProgress = tempdir = None
+    if not gradint.justSynthesize:
+      try: oldProgress = open(gradint.progressFile).read() # protect against browsers that try to fetch twice: set progress file to a temp one and delay copying it back to the real one (so you don't get lesson 2 if re-loading lesson 1 within seconds), TODO: can we make the new progress pending and the JS tells the cgi when the lesson actually finished playing?
+      except: pass
+      tempdir = commands.getoutput("mktemp -d")
+      if oldProgress: open(tempdir+'/progress.txt','w').write(oldProgress)
+      oldProgFile, gradint.progressFile = gradint.progressFile, tempdir+'/progress.txt'
     try: gradint.main()
     except SystemExit:
       if not gradint.justSynthesize:
         gradint.justSynthesize = "en Problem generating the lesson. Check we have prompts for those languages." ; gradint.main()
-    gradint.progressFile = oldProgFile
-    gradint.time.sleep(20) ; open(gradint.progressFile,'w').write(open(tempdir+'/progress.txt').read())
-    os.system("rm -r "+tempdir)
+    if not gradint.justSynthesize:
+      gradint.progressFile = oldProgFile
+      gradint.time.sleep(20) ; open(gradint.progressFile,'w').write(open(tempdir+'/progress.txt').read())
+    if tempdir: os.system("rm -r "+tempdir)
   if stream:
     print "Content-disposition: attachment; filename=gradint.mp3" # helps with some browsers that can't really do streaming
     print ; sys.stdout.flush()
