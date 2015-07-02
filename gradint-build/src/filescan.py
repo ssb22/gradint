@@ -340,6 +340,7 @@ sanitise_otherLanguages()
 class PromptException(Exception):
     def __init__(self,message): self.message = message
     def __repr__(self): return self.message
+auto_advancedPrompt=0 # used by gradint.cgi
 class AvailablePrompts(object):
     reservedPrefixes = list2set(map(lambda x:x.lower(),["whatmean","meaningis","repeatAfterMe","sayAgain","longPause","begin","end",firstLanguage,secondLanguage] + possible_otherLanguages))
     def __init__(self):
@@ -380,7 +381,7 @@ class AvailablePrompts(object):
                 else: raise PromptException("Can't find "+prefix+"_"+language+", "+prefix+"_"+firstLanguage+" or "+prefix+"_"+secondLanguage)
         elif not beginnerPrompt:
             # Must use advancedPrompt
-            if (not self.user_is_advanced) and cond(language==secondLanguage,advancedPromptThreshold,advancedPromptThreshold2): raise PromptException("Prompt '%s' is too advanced; need '%s_%s' (unless you set %s=0 in advanced%stxt)" % (advancedPrompt,prefix,firstLanguage,cond(language==secondLanguage,"advancedPromptThreshold","advancedPromptThreshold2"),extsep))
+            if (not self.user_is_advanced) and not auto_advancedPrompt and cond(language==secondLanguage,advancedPromptThreshold,advancedPromptThreshold2): raise PromptException("Prompt '%s' is too advanced; need '%s_%s' (unless you set %s=0 in advanced%stxt)" % (advancedPrompt,prefix,firstLanguage,cond(language==secondLanguage,"advancedPromptThreshold","advancedPromptThreshold2"),extsep))
             r=[self.lsDic[advancedPrompt]]
         elif promptsData.get(advancedPrompt,0) >= cond(language==secondLanguage,advancedPromptThreshold,advancedPromptThreshold2): r=[self.lsDic[advancedPrompt]]
         elif promptsData.get(advancedPrompt,0) >= cond(language==secondLanguage,transitionPromptThreshold,transitionPromptThreshold2): r=[self.lsDic[advancedPrompt], self.lsDic[beginnerPrompt]]

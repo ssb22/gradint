@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.072 (c) 2011,2015 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.073 (c) 2011,2015 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -34,25 +34,29 @@ else: os.environ["LD_LIBRARY_PATH"] = lib_path_add
 os.environ["ESPEAK_DATA_PATH"] = espeak_data_path
 
 cginame = os.sep+sys.argv[0] ; cginame=cginame[cginame.rindex(os.sep)+1:]
-sys.stderr=open("/dev/null","w") ; sys.argv = [] ; import gradint
+sys.stderr=open("/dev/null","w") ; sys.argv = []
+gradint = None
+def reinit_gradint(): # if calling again, also redo setup_userID after
+    global gradint,lDic
+    if gradint: gradint = reload(gradint)
+    else: import gradint
+    gradint.waitOnMessage = lambda *args:False
+    lDic = {}
+    for l in gradint.ESpeakSynth().describe_supported_languages().split():
+        abbr,name = l.split("=")
+        lDic[abbr]=name
+    # Try to work out probable default language:
+    lang = os.environ.get("HTTP_ACCEPT_LANGUAGE","")
+    if lang:
+        for c in [',',';','-']:
+            if c in lang: lang=lang[:lang.index(c)]
+        if not lang in lDic: lang=""
+    if lang:
+        gradint.firstLanguage = lang
+        if not lang=="en": gradint.secondLanguage="en"
+    elif " zh-" in os.environ.get("HTTP_USER_AGENT",""): gradint.firstLanguage,gradint.secondLanguage = "zh","en" # Chinese iPhone
 
-gradint.waitOnMessage = lambda *args:False
-
-lDic = {}
-for l in gradint.ESpeakSynth().describe_supported_languages().split():
-    abbr,name = l.split("=")
-    lDic[abbr]=name
-
-# Try to work out probable default language:
-lang = os.environ.get("HTTP_ACCEPT_LANGUAGE","")
-if lang:
- for c in [',',';','-']:
-   if c in lang: lang=lang[:lang.index(c)]
- if not lang in lDic: lang=""
-if lang:
- gradint.firstLanguage = lang
- if not lang=="en": gradint.secondLanguage="en"
-elif " zh-" in os.environ.get("HTTP_USER_AGENT",""): gradint.firstLanguage,gradint.secondLanguage = "zh","en" # Chinese iPhone
+reinit_gradint()
 
 def main():
   if has_userID(): setup_userID() # always, even for justSynth, as it may include a voice selection (TODO consequently being called twice in many circumstances, could make this more efficient)
@@ -143,6 +147,11 @@ def main():
         gradint.updateSettingsFile(gradint.settingsFile,{"voiceOption":v})
         break
     listVocab(True)
+  elif "lFinish" in query:
+    dirID = setup_userID()
+    try: os.rename(gradint.progressFile+'-new',gradint.progressFile)
+    except: pass # probably a duplicate GET
+    redirectHomeKeepCookie(dirID)
   elif not isAuthoringOption(query): listVocab(has_userID()) # default screen
 
 def isAuthoringOption(query):
@@ -227,21 +236,22 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
     print "Expires: Wed, 1 Dec 2036 23:59:59 GMT"
   gradint.out_type = filetype
   def mainOrSynth():
-    oldProgress = tempdir = None
-    if not gradint.justSynthesize:
-      try: oldProgress = open(gradint.progressFile).read() # protect against browsers that try to fetch twice: set progress file to a temp one and delay copying it back to the real one (so you don't get lesson 2 if re-loading lesson 1 within seconds), TODO: can we make the new progress pending and the JS tells the cgi when the lesson actually finished playing?
+    oldProgress = None ; rollback = False
+    if not gradint.justSynthesize and 'h5a' in query:
+      try: oldProgress = open(gradint.progressFile).read()
       except: pass
-      tempdir = commands.getoutput("mktemp -d")
-      if oldProgress: open(tempdir+'/progress.txt','w').write(oldProgress)
-      oldProgFile, gradint.progressFile = gradint.progressFile, tempdir+'/progress.txt'
+      rollback = True
     try: gradint.main()
     except SystemExit:
       if not gradint.justSynthesize:
-        gradint.justSynthesize = "en Problem generating the lesson. Check we have prompts for those languages." ; gradint.main()
-    if not gradint.justSynthesize:
-      gradint.progressFile = oldProgFile
-      gradint.time.sleep(20) ; open(gradint.progressFile,'w').write(open(tempdir+'/progress.txt').read())
-    if tempdir: os.system("rm -r "+tempdir)
+        o1,o2 = gradint.write_to_stdout,gradint.outputFile
+        reinit_gradint() ; setup_userID()
+        gradint.write_to_stdout,gradint.outputFile = o1,o2
+        gradint.setSoundCollector(gradint.SoundCollector())
+        gradint.justSynthesize = "en Problem generating the lesson. Check we have prompts for those languages." ; gradint.main() ; oldProgress = None
+    if rollback: # roll back pending lFinish
+      os.rename(gradint.progressFile,gradint.progressFile+'-new')
+      if oldProgress: open(gradint.progressFile,'w').write(oldProgress)
   if stream:
     print "Content-disposition: attachment; filename=gradint.mp3" # helps with some browsers that can't really do streaming
     print ; sys.stdout.flush()
@@ -294,18 +304,16 @@ for k,v in {"Swap":{"zh":u"交换","zh2":u"交換"},
 
 def h5a():
     body = """<script language="Javascript"><!--
-function h5a(link) { if (document.createElement) {
+function h5a(link,endFunc) { if (document.createElement) {
    var ae = document.createElement('audio');
-   if (ae.canPlayType && function(s){return s!="" && s!="no"}(ae.canPlayType('audio/mpeg'))) {
-     if (link.href) ae.setAttribute('src', link.href);
-     else ae.setAttribute('src', link);
-     ae.play();
-     return false; }"""
-    if gradint.got_program("oggenc"): body += """else if (ae.canPlayType && function(s){return s!="" && s!="no"}(ae.canPlayType('audio/ogg'))) {
-     if (link.href) ae.setAttribute('src', link.href+"&filetype=ogg");
-     else ae.setAttribute('src', link+"&filetype=ogg");
-     ae.play();
-     return false; }"""
+   function cp(t,lAdd) { if(ae.canPlayType && function(s){return s!="" && s!="no"}(ae.canPlayType(t))) {
+       if (link.href) ae.setAttribute('src', link.href+lAdd);
+       else ae.setAttribute('src', link+lAdd);
+       if (typeof endFunc !== 'undefined') ae.addEventListener("ended", endFunc, false);
+       ae.play(); return true;
+    } return false; }
+   if (cp('audio/mpeg','')) return false;"""
+    if gradint.got_program("oggenc"): body += """else if (cp('audio/ogg',"&filetype=ogg")) return false;"""
     body += """} return true; }
 //--></script>"""
     return body
@@ -349,7 +357,7 @@ def listVocab(hasList): # main screen
        if data: hasList = "<p><TABLE style=\"border: thin solid green\"><caption><nobr>Your word list</NOBR> <NOBR>(click for audio)</NOBR> <input type=submit name=edit value=\""+localise("Text edit")+"\"></caption><TR><TH>Repeats</TH><TH>"+localise(gradint.secondLanguage)+"</TH><TH>"+localise(gradint.firstLanguage)+"</TH></TR>"+"".join(["<TR><TD>%d</TD><TD>%s</TD><TD>%s</TD>%s" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</TABLE>"
        else: hasList=""
     else: hasList=""
-    if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson")+"""" onClick="if(h5a('"""+cginame+'?lesson='+str(random.random())+"""&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value)) return true; else { document.forms[0].lesson.value='Please wait while the lesson starts to play'; document.forms[0].lesson.disabled=1; return false}"></td></tr></table>"""
+    if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson")+"""" onClick="if(h5a('"""+cginame+'?lesson='+str(random.random())+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){location.href='"""+cginame+'?lFinish='+str(random.random())+"""'})) return true; else { document.forms[0].lesson.value='Please wait while the lesson starts to play'; document.forms[0].lesson.disabled=1; return false}"></td></tr></table>"""
     if "dictionary" in query:
         if query["dictionary"][0]=="1": body += '<script language="Javascript"><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">Back to referring site</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
         else: body += '<p><a href="'+query["dictionary"][0]+'">Back to dictionary</a>' # TODO check for cross-site scripting
@@ -391,6 +399,7 @@ def setup_userID():
     gradint.settingsFile = userID+"-settings.txt"
     if need_write: gradint.updateSettingsFile(gradint.settingsFile,{'firstLanguage':gradint.firstLanguage,'secondLanguage':gradint.secondLanguage})
     else: gradint.readSettings(gradint.settingsFile)
+    gradint.auto_advancedPrompt=1 # prompt in L2 if we don't have L1 prompts on the server, what else can we do...
     return userID
 
 main()
