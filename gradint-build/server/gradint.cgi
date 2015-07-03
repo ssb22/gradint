@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.073 (c) 2011,2015 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.074 (c) 2011,2015 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@ path_add = "$HOME/gradint/bin" # include sox, lame, espeak, maybe oggenc
 lib_path_add = "$HOME/gradint/lib"
 espeak_data_path = "$HOME/gradint"
 
-import os, os.path, sys, commands, cgi, cgitb, urllib ; cgitb.enable()
+import os, os.path, sys, commands, cgi, cgitb, urllib, time ; cgitb.enable()
 home = os.environ.get("HOME","")
 gradint_dir = gradint_dir.replace("$HOME",home)
 path_add = path_add.replace("$HOME",home)
@@ -151,6 +151,8 @@ def main():
     dirID = setup_userID()
     try: os.rename(gradint.progressFile+'-new',gradint.progressFile)
     except: pass # probably a duplicate GET
+    try: os.remove(gradint.progressFile+'-ts') # the timestamp file
+    except: pass
     redirectHomeKeepCookie(dirID)
   elif not isAuthoringOption(query): listVocab(has_userID()) # default screen
 
@@ -238,9 +240,27 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
   def mainOrSynth():
     oldProgress = None ; rollback = False
     if not gradint.justSynthesize and 'h5a' in query:
+      # TODO: if os.environ.get('HTTP_RANGE','')=='bytes=0-1' then that'll be '\xff' for mp3 but would need to stop the web server from adding a Content-Length etc (flush stdout and wait indefinitely for server to terminate the cgi process??)
       try: oldProgress = open(gradint.progressFile).read()
       except: pass
       rollback = True
+      if 'lesson' in query: random.seed(query['lesson'][0]) # so clients that re-GET same lesson from partway through can work
+      if os.environ.get('HTTP_X_PLAYBACK_SESSION_ID',''): # seen on iOS: assumes the stream is a live broadcast and reconnecting to it continues where it left off.  TODO: cache the mp3 output? (but don't delay the initial response)  Recalculating for now with sox trim:
+        if os.path.exists(gradint.progressFile+'-ts'):
+         trimTo = time.time() - os.stat(gradint.progressFile+'-ts').st_mtime
+         if trimTo < gradint.maxLenOfLesson:
+          cin,cout = os.popen2("sox "+(gradint.soundCollector.soxParams()+' - ')*2+" trim "+str(int(trimTo)))
+          gradint.soundCollector.o,copyTo = cin,gradint.soundCollector.o
+          def copyStream(a,b):
+            while True:
+              try: x = a.read(1024)
+              except EOFError: break
+              b.write(x)
+            b.close()
+          import thread ; thread.start_new(copyStream,(cout,copyTo))
+         else: open(gradint.progressFile+'-ts','w') # previous one was abandoned, restart
+        else: open(gradint.progressFile+'-ts','w') # create 1st one
+      # end of if HTTP_X_PLAYBACK_SESSION_ID
     try: gradint.main()
     except SystemExit:
       if not gradint.justSynthesize:
