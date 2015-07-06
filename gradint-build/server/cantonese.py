@@ -3,7 +3,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.11 (c) 2013-14 Silas S. Brown.  License: GPL
+# v1.12 (c) 2013-15 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
@@ -36,7 +36,7 @@ espeak = 0
 def jyutping_to_lau(j):
   j = j.lower().replace("j","y").replace("z","j")
   for k,v in jlRep: j=j.replace(k,v)
-  return j.lower()
+  return j.lower().replace("aa","a").replace("ohek","euk") # private communication 2015-07, partially confirmed w. publications
 jlRep = [(unchanged,unchanged.upper()) for unchanged in "aai aau aam aang aan aap aat aak ai au am ang an ap at ak a ei eng ek e iu im ing in ip it ik i oi ong on ot ok ung uk".split()] + [("eoi","UI"),("eon","UN"),("eot","UT"),("eok","EUK"),("oeng","EUNG"),("oe","EUH"),("c","ch"),("ou","O"),("o","OH"),("yu","UE"),("u","OO")]
 jlRep.sort(lambda a,b:len(b[0])-len(a[0]))
 # u to oo includes ui to ooi, un to oon, ut to oot
@@ -54,7 +54,7 @@ import re
 def hyphenate_ping_or_lau_syl_list(sList,groupLens=None):
     if type(sList) in [str,unicode]:
         sList = ping_or_lau_to_syllable_list(sList)
-    if not groupLens: groupLens = [len(sList)]
+    if not groupLens: groupLens = [1]*len(sList) # don't hyphenate at all if we don't know
     else: assert sum(groupLens) == len(sList)
     r = [] ; start = 0
     for g in groupLens:
