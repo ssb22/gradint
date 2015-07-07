@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9989 (c) 2002-2014 Silas S. Brown. GPL v3+.
+# gradint v0.99891 (c) 2002-2015 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -20,6 +20,9 @@ tk_only = [ # we want these on WinCE but not S60:
 "def reviseCount(num):", # used only in Tk for now
 "if mp3web:",
 "class InputSourceManager(object):",
+"class InputSource(object):",
+"class MicInput(InputSource):",
+"class PlayerInput(InputSource):",
 "class ButtonScrollingMixin(object):",
 "class RecorderControls(ButtonScrollingMixin):",
 "def doRecWords():",
@@ -37,7 +40,9 @@ tk_only = [ # we want these on WinCE but not S60:
 "def make_output_row(parent):",
 "def select_userNumber(N,updateGUI=1):",
 "def select_userNumber2(N):",
-"def updateUserRow(fromMainMenu=0):",
+"def updateUserRow(fromMainMenu=0):","def get_userNames():",
+"def set_userName(N,unicodeName):",
+"def wrapped_set_userName(N,unicodeName):",
 "def renameUser(i,radioButton,parent,cancel=0):",
 "def deleteUser(i):",
 "def setupScrollbar(parent,rowNo):",
@@ -51,19 +56,63 @@ tk_only = [ # we want these on WinCE but not S60:
 "if useTK:",
 "def openDirectory(dir,inGuiThread=0):",
 "def gui_event_loop():",
+"def makeButton(parent,text,command):",
 ]
 
-not_S60 = [ # but may still need on winCE
+not_S60_or_android = [ # but may still need on winCE
 "if winsound:",
 "if winsound or mingw32:",
+"class ESpeakSynth(Synth):","def espeak_volume_ok():",
+'if winCEsound or ((winsound or mingw32) and not os.sep in tmpPrefix and not tmpPrefix.startswith("C:")):',
+'def got_program(prog):', # as no non-winsound/unix
+'if useTK and runInBackground and not (winsound or mingw32) and hasattr(os,"fork") and not "gradint_no_fork" in os.environ:',
+'def maybe_warn_mp3():',
+'elif (cygwin or ((winsound or mingw32) and winsound_also)) and os.sep in file:',
+'elif (winsound and not (self.length>10 and wavPlayer)) or winCEsound:',
+"elif wavPlayer.find('sndrec32')>=0:",
+'elif wavPlayer:', # it'll take appuifw/android 1st
+'if winsound or mingw32 or cygwin:',
+'elif winsound or mingw32 or cygwin:',
+'for s in synth_priorities.split():', # Ekho/eSpeak/MacOS/SAPI not available on S60/Android (well, not that we can yet call into)
+'def import_recordings(destDir=None):', # TODO: document in advanced.txt that this option is non-functional on S60/Android?  (code WOULD work if suitably configured, but unlikely to be used and we need to save size)
+"elif msvcrt:",
+]
+
+not_android = [
+"if not app and not app==False and not appuifw and not android:",
+"elif not android:",
+"def fileExists(f):", # assume we got os.path
+"def fileExists_stat(f):",
+"def isDirectory(directory):",
+"for p in [progressFile,progressFileBackup,pickledProgressFile]:", # this 'sanity check' is not likely to be a problem on Android, and we could do with saving the space
+"if need_say_where_put_progress:", # ditto
+'def check_for_interrupts():','if emulated_interruptMain:','if emulated_interruptMain or winCEsound:','def handleInterrupt():', # no current way to do this on Android (unlike S60/WinCE)
+r"if not '\xc4'.lower()=='\xc4':", # this workaround is not needed on Android
+r"if not fileExists(configFiles[0]) and sys.argv and (os.sep in sys.argv[0] or (os.sep=='\\' and '/' in sys.argv[0])):", # that logic not likely to work on Android (but we do need the rest of that block)
+"def guiVocabList(parsedVocab):", # not yet available on Android (unlike S60, TODO?)
+]
+
+riscos_only = [
+"elif riscos_sound:",
+'if riscos_sound and hex(int(time.time())).find("0xFFFFFFFF")>=0 and not outputFile:',
+"class OldRiscosSynth(Synth):",
+'if not extsep==".":', # RISC OS
+]
+
+mac_only = [
+'if macsound and "_" in os.environ:',
+"if macsound:","elif macsound:",
+'if hasattr(app,"isBigPrint") and macsound:',
 ]
 
 desktop_only = [ # Don't want these on either WinCE or S60:
-'if not extsep==".":', # RISC OS
-"if macsound:","elif macsound:",
-'if hasattr(app,"isBigPrint") and macsound:',
 'if hasattr(app,"isBigPrint") and winsound:',
 "if unix:","elif unix:",
+'elif unix and useTK and isDirectory("/dev/snd") and got_program("arecord"):',
+"if unix and (';' in cmd or '<' in cmd):",
+'elif wavPlayer=="sox":',
+'elif wavPlayer=="aplay" and ((not fileType=="mp3") or madplay_path or gotSox):',
+"def win2cygwin(path):","elif cygwin:",
 "if paranoid_file_management:",
 "elif unix and not macsound:",
 "elif unix and hasattr(os,\"popen\"):",
@@ -77,7 +126,6 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 "class OSXSynth_Say(Synth):",
 "def aiff2wav(fname):", # (used only on Mac)
 "class OSXSynth_OSAScript(Synth):",
-"class OldRiscosSynth(Synth):",
 "class PttsSynth(Synth):",
 "def sapi_sox_bug_workaround(wavdata):",
 "class FliteSynth(Synth):",
@@ -90,8 +138,16 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 "class ShellEvent(Event):",
 # And the following are desktop only because they need sox:
 "if gotSox and unix:",
-"class SoundCollector(object):",
+"class SoundCollector(object):","if soundCollector:",
+"def outfile_writeBytes(o,bytes):",
+"def outfile_close(o):",
+"def outfile_writeFile(o,handle,filename):",
 "class ShSoundCollector(object):",
+"def outfile_write_error():",
+"def lame_quiet():",
+"def beepCmd(soxParams,fname):",
+"def collector_time():",
+"def collector_sleep(s):",
 "def dd_command(offset,length):",
 "def lame_endian_parameters():",
 "if outputFile:",
@@ -101,11 +157,17 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 "def gui_outputTo_end(openDir=True):",
 "def gui_outputTo_start():",
 "def warn_sox_decode():",
+'if disable_once_per_day==1:',
+'if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"):',
+'def optimise_partial_playing(ce):',
+'def optimise_partial_playing_list(ceList):',
 ]
 
 winCE_only = [
 "if use_unicode_filenames:",
-"if winCEsound:",
+"if winCEsound:",'elif winCEsound:',
+'if winCEsound and __name__=="__main__":',
+'elif winCEsound and fileType=="mp3":',
 ]
 
 not_winCE = [
@@ -114,7 +176,7 @@ not_winCE = [
 
 S60_only = [
 "class S60Synth(Synth):",
-"if appuifw:",
+"if appuifw:","elif appuifw:",
 "def s60_recordWord():",
 "def s60_recordFile(language):",
 "def s60_addVocab():",
@@ -141,19 +203,19 @@ android_or_S60 = [
 
 if "s60" in sys.argv: # S60 version
   version = "S60"
-  to_omit = tk_only + desktop_only + winCE_only + not_S60 + android_only
+  to_omit = tk_only + desktop_only + winCE_only + not_S60_or_android + android_only + riscos_only + mac_only
 elif "android" in sys.argv: # Android version
   version = "Android"
-  to_omit = tk_only + desktop_only + winCE_only + S60_only
+  to_omit = tk_only + desktop_only + winCE_only + S60_only + not_S60_or_android + not_android + riscos_only + mac_only
 elif "wince" in sys.argv: # Windows Mobile version
   version = "WinCE"
-  to_omit = desktop_only + S60_only + android_only + android_or_S60 + not_winCE
+  to_omit = desktop_only + S60_only + android_only + android_or_S60 + not_winCE + riscos_only + mac_only
 else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = -1
-lCount = -1
-omitted = {} ; inTripleQuotes=0
+lCount = -1 ; inTripleQuotes=0 ; orig = []
 for l in sys.stdin.xreadlines():
+  orig.append(l)
   lCount += 1
   if lCount==2: print "\n# NOTE: this version has been automatically TRIMMED for "+version+" (some non-"+version+" code taken out)\n"
   l=l.rstrip()
@@ -166,11 +228,16 @@ for l in sys.stdin.xreadlines():
   if (len(l.split('"""'))%2) == 0: inTripleQuotes = not inTripleQuotes
   if indentLevel<0 or indentLevel==len(l) or (revertToIndent>=0 and (indentLevel>revertToIndent or was_inTripleQuotes)): continue
   revertToIndent = -1
-  code = (l+"#")[:l.find("#")].strip()
-  if code in to_omit and not was_inTripleQuotes:
+  code0 = (l+"#")[:l.find("#")].rstrip()
+  code = code0.lstrip()
+  if (code in to_omit or (':' in code and code[:code.index(':')+1] in to_omit)) and not was_inTripleQuotes:
+    if ':' in code and code[:code.index(':')+1] in to_omit: code = code[:code.index(':')+1]
     print " "*indentLevel+code+" pass # trimmed"
     revertToIndent = indentLevel
-    omitted[code]=1
-  else: print l
+  elif not code:
+    if "#    " in l or lCount < 2: print l # keep start and GPL comments
+  elif ('"' in code and '"' in l[len(code):]) or ("'" in code and "'" in l[len(code):]): print l # perhaps # was in a string, keep it
+  else: print code0
+orig = "".join(orig)
 for o in to_omit:
-  if not o in omitted: sys.stderr.write("Warning: line not matched: "+o+"\n(This might be because it was in a block that was already omitted by another rule)\n") # TODO: check for that and suppress this message?
+  if not o in orig: sys.stderr.write("Warning: line not matched: "+o)

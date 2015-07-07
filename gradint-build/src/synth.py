@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.9989 (c) 2002-2014 Silas S. Brown. GPL v3+.
+# gradint v0.99891 (c) 2002-2015 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -589,6 +589,15 @@ class ESpeakSynth(Synth):
         else: retList.append(None)
       if keepIndexList: self.lastIndexList = indexList
       if not indexList: return retList
+      overruns = [] # elements that need to be merged with their following elements (duplicates allowed because indices change after each merge), used when we're transliterating very long texts (not usually as part of a lesson) because some versions of espeak truncate very long lines
+      i = 0
+      while i < len(write_to_espeak):
+          if len(write_to_espeak[i]) > 500:
+              x = write_to_espeak[i].decode('utf-8')
+              write_to_espeak[i] = x[:150].encode('utf-8')
+              write_to_espeak.insert(i+1,x[150:].encode('utf-8'))
+              overruns.append(i-len(overruns))
+          i += 1
       fname = os.tempnam()
       open(fname,"w").write((".\n"+split_token+" ").join(write_to_espeak))
       oldcwd=os.getcwd()
@@ -599,11 +608,14 @@ class ESpeakSynth(Synth):
       else: data=os.popen(self.program+' -v%s -q -X -f %s%s' % (espeak_language_aliases.get(lang,lang),changeToDirOf(fname,1),cond(unix," 2>&1","")),"rb").read() # popen2 might not work, so had better do it this way:
       os.chdir(oldcwd) ; os.remove(fname)
       data = data.replace("\r\n","\n").split("\nTranslate '"+split_token+"'\n")
-      if len(data)==2*len(indexList)-1:
+      if len(data)==2*(len(indexList)+len(overruns))-1:
         # split points are doubled - better take every ODD item.  (NB the text in between is NOT necessarily blank - espeak can flush its sentence cache there)
         d2 = []
         for i in xrange(0,len(data),2): d2.append(data[i])
         data = d2
+      for o in overruns:
+          data[o] += data[o+1]
+          del data[o+1]
       if not len(data)==len(indexList):
           if not (winsound or macsound): show_warning("Warning: eSpeak's transliterate returned wrong number of items (%d instead of %d).  Falling back to separate runs for each item (slower)." % (len(data),len(indexList)))
           return None
