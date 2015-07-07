@@ -138,7 +138,8 @@ gradint-android.zip: $(Common_Files) gradint.py
 	zip -9r gradint-android.zip $(Common_Files)
 	zip -d gradint-android.zip 'samples/utils*'
 	mkdir gradint
-	cd gradint && python ../thindown.py android < ../gradint.py > gradint.py && zip -9r ../gradint-android.zip gradint.py && cd ..
+	echo 'import gradint0;gradint0.main()' > gradint/gradint.py # QPython tends to load faster if we have a simple wrapper script
+	cd gradint && python ../thindown.py android < ../gradint.py > gradint0 .py && zip -9r ../gradint-android.zip gradint*.py && cd ..
 	rm -rf gradint
 
 gradintcab.zip: gradint.cab
