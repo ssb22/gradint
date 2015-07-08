@@ -54,6 +54,7 @@ import re
 def hyphenate_ping_or_lau_syl_list(sList,groupLens=None):
     if type(sList) in [str,unicode]:
         sList = ping_or_lau_to_syllable_list(sList)
+    if not groupLens and '--hyphenate-all' in sys.argv: groupLens = [len(sList)] # this might be suitable for re-annotating hanzi+pinyin to Cantonese in annogen.py's --reannotator option, although it would be better if spacing could be copied from the pinyin for cases where the pinyin line is spaced but the hanzi line is not
     if not groupLens: groupLens = [1]*len(sList) # don't hyphenate at all if we don't know
     else: assert sum(groupLens) == len(sList)
     r = [] ; start = 0
