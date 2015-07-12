@@ -901,9 +901,11 @@ def droidOrS60RecWord(recFunc,inputFunc):
     for ext in [dotwav,dotmp3,dottxt]:
       for l in [firstLanguage,secondLanguage]:
         if prefix+"_"+l+ext in ls: return 1
-  c = 1
-  while inLs("%02d" % c): c += 1
-  origPrefix = prefix = u""+("%02d" % c)
+  global recCount
+  try: recCount += 1
+  except: recCount = 1
+  while inLs("%02d" % recCount): recCount += 1
+  origPrefix = prefix = u""+("%02d" % recCount)
   while True:
     prefix = inputFunc(u"Filename:",prefix)
     if not prefix: # pressed cancel ??

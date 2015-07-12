@@ -41,18 +41,19 @@ def play(event):
         if hasattr(event,"sequenceID"): sequenceIDs_to_cancel[event.sequenceID]=True # TODO what if its last event has "endseq" attribute, do we want to decrement wordsLeft early?
     if hasattr(event,"endseq"): wordsLeft[event.endseq] -= 1
     del copy_of_runner_events[0]
-    if soundCollector: doLabel("%d%% completed" % (soundCollector.tell()*100/lessonLen))
-    else:
-        line2 = "" # report what you'd lose if you cancel now (in case you're deciding whether to answer the phone etc)
-        new,old=wordsLeft[True],wordsLeft[False]
-        if new: line2="%d new " % new
-        if old:
-          if line2: line2 += ("+ %d old " % old)
-          else: line2="%d old words " % old
-        elif new: line2 += "words "
-        if line2: line2=cond(app or appuifw or android,"\n",", ")+line2+"remain"
-        if not lessonStartTime: lessonStartTime = time.time() # the actual time of the FIRST event (don't set it before as there may be delays).  (we're setting this at the END of the 1st event - the extra margin should be ok, and can help with start-of-lesson problems with slow disks.)
-        if finishTime and time.time() >= emergency_lessonHold_to: doLabel("%s (finish %s)%s" % (time.strftime("%H:%M",time.localtime(time.time())),time.strftime("%H:%M",time.localtime(finishTime)),line2)) # was %I:%M but don't like leading '0' in PM times.  2nd condition added because might press 'brief interrupt' while playing.
+    if soundCollector: return doLabel("%d%% completed" % (soundCollector.tell()*100/lessonLen))
+    line2 = "" # report what you'd lose if you cancel now (in case you're deciding whether to answer the phone etc), + say how many already cancelled (for diagnosing results of interruptions caused by phone events etc on those platforms)
+    new,old=wordsLeft[True],wordsLeft[False]
+    if new: line2="%d new " % new
+    if old:
+      if line2: line2 += ("+ %d old " % old)
+      else: line2="%d old words " % old
+    elif new: line2 += "words "
+    if line2:
+      line2=cond(app or appuifw or android,"\n",", ")+line2+"remain"
+      if cancelledFiles: line2 += "\n("+str(len(cancelledFiles))+" cancelled)"
+    if not lessonStartTime: lessonStartTime = time.time() # the actual time of the FIRST event (don't set it before as there may be delays).  (we're setting this at the END of the 1st event - the extra margin should be ok, and can help with start-of-lesson problems with slow disks.)
+    if finishTime and time.time() >= emergency_lessonHold_to: doLabel("%s (finish %s)%s" % (time.strftime("%H:%M",time.localtime(time.time())),time.strftime("%H:%M",time.localtime(finishTime)),line2)) # was %I:%M but don't like leading '0' in PM times.  2nd condition added because might press 'brief interrupt' while playing.
 def doLabel(labelText):
     labelText = ensure_unicode(labelText)
     if app: app.setLabel(labelText)
