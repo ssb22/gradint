@@ -898,9 +898,8 @@ def droidOrS60RecWord(recFunc,inputFunc):
   if not l1: continue
   ls = list2set(os.listdir(samplesDirectory))
   def inLs(prefix):
-    for ext in [dotwav,dotmp3,dottxt]:
-      for l in [firstLanguage,secondLanguage]:
-        if prefix+"_"+l+ext in ls: return 1
+    for l in ls:
+        if ls.startswith(prefix) and len(ls) > len(prefix) and ls[len(prefix)] not in "0123456789": return True
   global recCount
   try: recCount += 1
   except: recCount = 1
@@ -910,7 +909,7 @@ def droidOrS60RecWord(recFunc,inputFunc):
     prefix = inputFunc(u"Filename:",prefix)
     if not prefix: # pressed cancel ??
       if getYN("Discard this recording?"):
-        os.remove(l1) ; os.remove(l2) ; return
+        recCount-=1;os.remove(l1);os.remove(l2);return
       else:
         prefix = origPrefix ; continue
     if not inLs(prefix) or getYN("File exists.  overwrite?"): break

@@ -1808,7 +1808,7 @@ def gui_outputTo_end(openDir=True):
             elif t=="aac": cmd="afconvert \""+o+"\" -d aac \""+f+"\"" # could also use "afconvert file.wav -d samr file.amr", but amr is bigger than aac and not as good; don't know if anyone has a device that plays amr but not aac.
             else: assert 0
             if cygwin:
-                assert not "'" in cmd, "apostrophees in pathnames could cause trouble on cygwin"
+                assert not "'" in cmd, "apostrophes in pathnames could cause trouble on cygwin"
                 cmd="echo '"+cmd+" && exit' | cmd" # seems the only way to get it to work on cygwin
             system(cmd)
             os.remove(outputFile)
