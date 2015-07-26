@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99891 (c) 2002-2015 Silas S. Brown. GPL v3+.
+# gradint v0.99892 (c) 2002-2015 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -231,7 +231,7 @@ publish0: $(All_Versions) gradint.py
 	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/public_html/gradint/latest-version.txt
 	make clean
 	~/homepage/update
-	ssh -i ~/.srcf/keyfile ssh.st0rage.org "sleep 60;cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c '. build-sync.sh'"
+	ssh -i ~/.srcf/keyfile ssh.st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c 'sleep 60;. build-sync.sh'"
 
 publish:
 	# do it from /tmp so as to avoid confusing HomeSync if ssh'ing in from a PWF Mac

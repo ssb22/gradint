@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99891 (c) 2002-2015 Silas S. Brown. GPL v3+.
+# gradint v0.99892 (c) 2002-2015 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -899,7 +899,7 @@ def droidOrS60RecWord(recFunc,inputFunc):
   ls = list2set(os.listdir(samplesDirectory))
   def inLs(prefix):
     for l in ls:
-        if ls.startswith(prefix) and len(ls) > len(prefix) and ls[len(prefix)] not in "0123456789": return True
+        if l.startswith(prefix) and len(l) > len(prefix) and l[len(prefix)] not in "0123456789": return True
   global recCount
   try: recCount += 1
   except: recCount = 1

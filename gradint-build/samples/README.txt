@@ -14,11 +14,6 @@ If you don't already have a tool for recording and editing
 sound files, try Audacity at http://audacity.sourceforge.net/
 - look for its "export selection as WAV" function.
 
-If you want to keep your recordings as MP3 files instead of
-WAV files, you MUST read the section "IMPORTANT NOTES ABOUT MP3"
-at the bottom of this document, to get it to work properly.
-You still need to split them up into words or phrases.
-
 Every word or phrase must have a first-language version and
 a foreign-language version (but see later in this file if
 you want to use foreign-language prompts or if you are
@@ -128,13 +123,10 @@ file, and Gradint's code to do this is rather basic and gets
 VBR files all wrong.  I suggest encoding at CBR 48-kbit
 (should be adequate for speech if the encoder is good).
 If you're using Lame, try these parameters: --cbr -b 48 -h -m m
+However, recent versions of Lame can code VBR in such a way
+that the correct duration is read from the first frame.
 
-Non-Windows users, please also read the notes below:
-
-MAC OS: Mac OS gradint can play MP3s IN REAL TIME ONLY
-without assistance, but if you want to output to a file then
-you'll need to obtain madplay (as a command), or a version of
-sox that has been compiled with MP3 support.
+Non-Windows/Mac users, please also read the notes below:
 
 LINUX / UNIX / CYGWIN : You need to obtain either madplay or
 a version of sox that has been compiled with MP3 support.

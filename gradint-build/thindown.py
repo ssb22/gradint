@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99891 (c) 2002-2015 Silas S. Brown. GPL v3+.
+# gradint v0.99892 (c) 2002-2015 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -103,6 +103,7 @@ mac_only = [
 'if macsound and "_" in os.environ:',
 "if macsound:","elif macsound:",
 'if hasattr(app,"isBigPrint") and macsound:',
+'elif macsound and got_program("afconvert"):',
 ]
 
 desktop_only = [ # Don't want these on either WinCE or S60:
@@ -198,7 +199,7 @@ android_only = [
 ]
 
 android_or_S60 = [
-"def droidOrS60RecWord(s60_recordFile,inputFunc):",
+"def droidOrS60RecWord(recFunc,inputFunc):",
 ]
 
 if "s60" in sys.argv: # S60 version

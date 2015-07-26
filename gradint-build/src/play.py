@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99891 (c) 2002-2015 Silas S. Brown. GPL v3+.
+# gradint v0.99892 (c) 2002-2015 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -623,8 +623,12 @@ def dd_command(offset,length):
 warned_about_sox_decode = 0
 def warn_sox_decode():
     global warned_about_sox_decode
-    if not warned_about_sox_decode and not sox_ignoreLen:
-        show_warning("Had to use sox to decode MP3 (as no madplay etc); some versions of sox truncate the end of MP3s") # but 14.3+ (sox_ignoreLen set) should be OK
+    if not warned_about_sox_decode:
+        r = []
+        if macsound: r.append("the sox bundled with Mac Gradint was not compiled with MP3 support (please install madplay or a better sox)") # (or upgrade to a version of Mac OS that has afconvert)
+        if not sox_ignoreLen: r.append("some versions of sox truncate the end of MP3s (please upgrade sox or install madplay/mpg123)") # sox 14.3+ (sox_ignoreLen set) should be OK
+        if r: r.insert(0,"Had to use sox to decode MP3")
+        if r: show_warning('; '.join(r))
         warned_about_sox_decode = 1
 def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes it's always small enough to read the whole thing into RAM (should be true if it's 1 word though, and decode_mp3 isn't usually used unless we're making a lesson file rather than running something in justSynthesize)
     if riscos_sound:
@@ -641,6 +645,12 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
         wavLen = len(d)-8 ; datLen = wavLen-36 # assumes no other chunks
         if datLen<0: raise IOError("decode_mp3 got bad wav") # better than ValueError for the chr() in the following line
         return d[:4] + chr(wavLen&0xFF)+chr((wavLen>>8)&0xFF)+chr((wavLen>>16)&0xFF)+chr(wavLen>>24) + d[8:40] + chr(datLen&0xFF)+chr((datLen>>8)&0xFF)+chr((datLen>>16)&0xFF)+chr(datLen>>24) + d[44:]
+    elif macsound and got_program("afconvert"):
+        tfil = os.tempnam()+dotwav
+        system("afconvert -f WAVE -d I16@44100 \""+file+"\" \""+tfil+"\"")
+        if compress_SH and gotSox: dat = os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ","rb").read()
+        else: dat = open(tfil).read()
+        os.unlink(tfil) ; return dat
     elif unix:
         if gotSox:
             warn_sox_decode()
