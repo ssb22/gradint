@@ -1418,7 +1418,8 @@ def android_main_menu():
     android.dialogCreateAlert("Gradint","Choose an action")
     android.dialogSetItems(map (lambda x:x[0], menu))
     android.dialogShow()
-    function = menu[android.dialogGetResponse().result['item']][1]
+    try: function = menu[android.dialogGetResponse().result['item']][1]
+    except KeyError: break # no 'item'
     if function: function()
     else: break
 def s60_main_menu():
