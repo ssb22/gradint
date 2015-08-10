@@ -60,7 +60,8 @@ def getYN(msg,defaultIfEof="n"):
         android.dialogSetPositiveButtonText("Yes") # TODO do we have to localise this ourselves or can we have a platform default?
         android.dialogSetNegativeButtonText("No")
         android.dialogShow()
-        return android.dialogGetResponse().result['which'] == 'positive'
+        try: return android.dialogGetResponse().result['which'] == 'positive'
+        except KeyError: return 0 # or raise SystemExit, no 'which'
     elif app:
         app.todo.question = localise(msg)
         while app and not hasattr(app,"answer_given"): time.sleep(0.5)
