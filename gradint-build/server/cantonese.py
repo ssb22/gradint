@@ -3,7 +3,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.12 (c) 2013-15 Silas S. Brown.  License: GPL
+# v1.13 (c) 2013-15 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
@@ -15,6 +15,7 @@ def get_jyutping(hanzi,mustWork=1):
       if not espeak.works_on_this_platform(): # must call
           raise Exception("espeak.works_on_this_platform")
       assert espeak.supports_language("zhy")
+
   global jyutping_dryrun
   if dryrun_mode:
       jyutping_dryrun.add(hanzi)
@@ -32,6 +33,24 @@ def get_jyutping(hanzi,mustWork=1):
   elif not jyutping.strip(): jyutping=""
   return jyutping
 espeak = 0
+
+def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
+  # U+4E3A/70BA, when wei2 in Mandarin, is wai4 in Cantonese, but when wei4 in Mandarin, is wai6 in Cantonese.  So if we have good quality (proof-read etc) Mandarin pinyin, can use it to improve the automatic Cantonese transcription.  (TODO: can any other Cantonese words with multiple readings benefit from known Mandarin pinyin in this way?)
+  if type(hanzi)==str: hanzi = hanzi.decode('utf-8')
+  hanzi = hanzi.replace(u"\u70ba",u"\u4e3a")
+  if not u"\u4e3a" in hanzi: return jyutping
+  if type(pinyin)==str: pinyin = pinyin.decode('utf-8')
+  pinyin = re.findall('[A-Za-z]*[1-5]',espeak.transliterate("zh",pinyin,forPartials=0)) # TODO: dryrun_mode ?  (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
+  if not len(pinyin)==len(hanzi): return jyutping # can't fix
+  i = 0 ; tones = re.finditer('[1-7]',jyutping) ; j2 = []
+  for h,p in zip(list(hanzi),pinyin):
+    try: j = tones.next().end()
+    except StopIteration: raise Exception("Ran out of tones in "+jyutping+" when zipping "+repr(hanzi)+'/'+repr(pinyin))
+    j2.append(jyutping[i:j]) ; i = j
+    if h==u"\u4e3a" and p[:-1].lower()=='wei':
+      if p.endswith('2'): j2[-1]=j2[-1][:-1]+'4'
+      elif p.endswith('4'): j2[-1]=j2[-1][:-1]+'6'
+  return "".join(j2)+jyutping[i:]
 
 def jyutping_to_lau(j):
   j = j.lower().replace("j","y").replace("z","j")
@@ -112,10 +131,19 @@ def import_gradint():
     return gradint
 
 if __name__ == "__main__":
-    # command-line use: output Lau for each line of stdin
+    # command-line use: output Lau for each line of stdin;
+    # if there's a # in the line, assume it's hanzi#pinyin
+    # (for annogen.py --reannotator="##python cantonese.py")
     lines = sys.stdin.read().replace("\r\n","\n").split("\n")
     if lines and not lines[-1]: del lines[-1]
     dryrun_mode = True
-    for l in lines: get_jyutping(l)
+    for l in lines:
+      if '#' in l: l=l[:l.index('#')]
+      get_jyutping(l)
     dryrun_mode = False
-    for l in lines: print superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(get_jyutping(l,0))))
+    for l in lines:
+      if '#' in l: l,pinyin = l.split('#')
+      else: pinyin = None
+      jyutping = get_jyutping(l,0)
+      if pinyin: jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
+      print superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
