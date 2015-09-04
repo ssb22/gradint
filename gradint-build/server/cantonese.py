@@ -7,6 +7,7 @@
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
+import re
 
 def get_jyutping(hanzi,mustWork=1):
   global espeak
@@ -35,10 +36,9 @@ def get_jyutping(hanzi,mustWork=1):
 espeak = 0
 
 def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
-  # U+4E3A/70BA, when wei2 in Mandarin, is wai4 in Cantonese, but when wei4 in Mandarin, is wai6 in Cantonese.  So if we have good quality (proof-read etc) Mandarin pinyin, can use it to improve the automatic Cantonese transcription.  (TODO: can any other Cantonese words with multiple readings benefit from known Mandarin pinyin in this way?)
+  # If we have good quality (proof-read etc) Mandarin pinyin, this can sometimes improve the automatic Cantonese transcription
   if type(hanzi)==str: hanzi = hanzi.decode('utf-8')
-  hanzi = hanzi.replace(u"\u70ba",u"\u4e3a")
-  if not u"\u4e3a" in hanzi: return jyutping
+  if not re.search(py2j_chars,hanzi): return jyutping
   if type(pinyin)==str: pinyin = pinyin.decode('utf-8')
   pinyin = re.findall('[A-Za-z]*[1-5]',espeak.transliterate("zh",pinyin,forPartials=0)) # TODO: dryrun_mode ?  (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
   if not len(pinyin)==len(hanzi): return jyutping # can't fix
@@ -47,10 +47,62 @@ def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
     try: j = tones.next().end()
     except StopIteration: raise Exception("Ran out of tones in "+jyutping+" when zipping "+repr(hanzi)+'/'+repr(pinyin))
     j2.append(jyutping[i:j]) ; i = j
-    if h==u"\u4e3a" and p[:-1].lower()=='wei':
-      if p.endswith('2'): j2[-1]=j2[-1][:-1]+'4'
-      elif p.endswith('4'): j2[-1]=j2[-1][:-1]+'6'
+    if h in py2j and p.lower() in py2j[h]: j2[-1]=j2[-1][:re.search("[A-Za-z]*[1-7]$",j2[-1]).start()]+py2j[h][p.lower()]
   return "".join(j2)+jyutping[i:]
+py2j={
+u"\u4E2D":{"zhong1":"zung1","zhong4":"zung3"},
+u"\u4E3A\u70BA":{"wei2":"wai4","wei4":"wai6"},
+u"\u4E50\u6A02":{"le4":"lok6","yue4":"ngok6"},
+u"\u4EB2\u89AA":{"qin1":"can1","qing4":"can3"},
+u"\u4F20\u50B3":{"chuan2":"cyun4","zhuan4":"zyun6"},
+u"\u4FBF":{"bian4":"pin4","pian2":"bin6"},
+u"\u5047":{"jia3":"gaa2","jia4":"gaa3"},
+u"\u5174\u8208":{"xing1":"hing1","xing4":"hing3"},
+u"\u5207":{"qie4":"cai3","qie1":"cit3"},
+u"\u521B\u5275":{"chuang1":"cong1","chuang4":"cong3"},
+u"\u53EA":{"zhi1":"zek3","zhi3":"zi2"},
+u"\u53F7\u865F":{"hao4":"hou6","hao2":"hou4"},
+u"\u548C":{"he2":"wo4","he4":"wo6"},
+u"\u54BD":{"yan1":"jin1","yan4":"jin3","ye4":"jit3"},
+u"\u5708":{"juan4":"gyun6","quan1":"hyun1"},
+u"\u597D":{"hao3":"hou2","hao4":"hou3"},
+u"\u5C06\u5C07":{"jiang1":"zoeng1","jiang4":"zoeng3"},
+u"\u5C11":{"shao3":"siu2","shao4":"siu3"},
+u"\u5DEE":{"cha4":"caa1","cha1":"caa1","chai1":"caai1"},
+u"\u5F37\u5F3A":{"qiang2":"koeng4","qiang3":"koeng5"},
+u"\u62C5\u64D4":{"dan1":"daam1","dan4":"daam3"},
+u"\u6323\u6399":{"zheng4":"zaang6","zheng1":"zang1"},
+u"\u6570\u6578":{"shu3":"sou2","shu4":"sou3"},
+u"\u671D":{"chao2":"ciu4","zhao1":"ziu1"},
+u"\u6ED1":{"hua2":"waat6","gu3":"gwat1"},
+u"\u6F02":{"piao1":"piu1","piao3 piao4":"piu3"},
+u"\u76DB":{"sheng4":"sing6","cheng2":"sing4"},
+u"\u76F8":{"xiang1":"soeng1","xiang4":"soeng3"},
+u"\u770B":{"kan4":"hon3","kan1":"hon1"},
+u"\u79CD\u7A2E":{"zhong3":"zung2","zhong4":"zung3"},
+u"\u7EF7\u7E43":{"beng1":"bang1","beng3":"maang1"},
+u"\u8208":{"xing1":"hing1","xing4":"hing3"},
+u"\u843D":{"luo1 luo4 lao4":"lok6","la4":"laai6"},
+u"\u8457":{"zhu4":"zyu3","zhuo2":"zoek3","zhuo2 zhao2 zhao1 zhe5":"zoek6"},
+u"\u8981":{"yao4":"jiu3","yao1":"jiu1"},
+u"\u89C1\u898B":{"jian4":"gin3","xian4":"jin6"},
+u"\u89C9\u89BA":{"jue2":"gok3","jiao4":"gaau3"},
+u"\u8B58\u8BC6":{"shi2 shi4":"sik1","zhi4":"zi3"},
+u"\u8ABF\u8C03":{"diao4":"diu6","tiao2":"tiu4"},
+u"\u91CF":{"liang2":"loeng4","liang4":"loeng6"},
+u"\u9577\u957F":{"chang2":"coeng4","zhang3":"zoeng2"},
+u"\u9593\u95F4":{"jian1":"gaan1","jian4":"gaan3"},
+u"\u96BE\u96E3":{"nan2":"naan4","nan4":"naan6"}}
+for k in py2j.keys()[:]:
+  if len(k)>1:
+    for c in list(k): py2j[c]=py2j[k]
+    del py2j[k]
+for _,v in py2j.items():
+  for k in v.keys()[:]:
+    if len(k.split())>1:
+      for w in k.split(): v[w]=v[k]
+      del v[k]
+py2j_chars = re.compile(u'['+''.join(py2j.keys())+']')
 
 def jyutping_to_lau(j):
   j = j.lower().replace("j","y").replace("z","j")
@@ -68,7 +120,6 @@ def ping_or_lau_to_syllable_list(j):
   j = re.sub(r"[^a-zA-Z0-9]"," ",j)
   for digit in "123456789": j=j.replace(digit,digit+" ")
   return j.split()
-import re
 
 def hyphenate_ping_or_lau_syl_list(sList,groupLens=None):
     if type(sList) in [str,unicode]:
