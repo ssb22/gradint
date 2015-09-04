@@ -211,7 +211,7 @@ def justSynth(text,lang="",filetype=""):
 def justsynthLink(text,lang=""): # assumes written function h5a
   if lang in gradint.synth_partials_voices and gradint.guiVoiceOptions: cacheInfo="&curVopt="+gradint.voiceOption
   else: cacheInfo=""
-  return '<A HREF="'+cginame+'?js='+urllib.quote_plus(text)+'&jsl='+urllib.quote_plus(lang)+cacheInfo+'" onClick="javascript:return h5a(this);">'+text+'</A>'
+  return '<A HREF="'+cginame+'?js='+urllib.quote_plus(text)+'&jsl='+urllib.quote_plus(lang)+cacheInfo+'" onClick="return h5a(this);">'+text+'</A>'
 # TODO if h5a's canPlayType etc works, cld o/p a lesson as a JS web page that does its own 'take out of event stream' and 'progress write-back'.  wld need to code that HERE by inspecting the finished Lesson object, don't call play().
 
 def htmlOut(body_u8,title_extra="",links=1):
@@ -227,7 +227,7 @@ def htmlOut(body_u8,title_extra="",links=1):
         if "iPhone" in os.environ.get("HTTP_USER_AGENT","") and gradint.secondLanguage=="zh": print '<p>You can also try the Open University <A HREF="http://itunes.apple.com/gb/app/chinese-characters-first-steps/id441549197?mt=8#">Chinese Characters First Steps</A> iPhone application.'
     print '<p>'+program_name[:program_name.index("(")]+"using "+gradint.program_name[:gradint.program_name.index("(")]
     print "</body></html>"
-backLink = ' <A HREF="'+cginame+'" onClick="javascript:history.go(-1);return false">Back</A>' # TODO may want to add a random= to the non-js HREF
+backLink = ' <A HREF="'+cginame+'" onClick="history.go(-1);return false">Back</A>' # TODO may want to add a random= to the non-js HREF
 
 def serveAudio(stream=0, filetype="mp3", inURL=1):
   # caller imports gradint (and sets justSynthesize or whatever) first
@@ -357,7 +357,7 @@ def listVocab(hasList): # main screen
     # must have autocomplete=off if capturing keycode 13
     if gotVoiceOptions: cacheInfo="&curVopt="+gradint.voiceOption
     else: cacheInfo=""
-    body += (localise("Word in %s") % localise(secondLanguage))+': <input type=text name=l2w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].spk.click();return false} else return true"> <input type=submit name=spk value="'+localise("Speak")+'" onClick="javascript: if (!document.forms[0].l1w.value && !document.forms[0].l2w.value) return true; else return h5a(\''+cginame+'?spk=1&l1w=\'+document.forms[0].l1w.value+\'&l2w=\'+document.forms[0].l2w.value+\'&l1=\'+document.forms[0].l1.value+\'&l2=\'+document.forms[0].l2.value+\''+cacheInfo+'\');"><br>'+(localise("Meaning in %s") % localise(firstLanguage))+': <input type=text name=l1w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].add.click();return false} else return true"> <input type=submit name=add value="'+(localise("Add to %s") % localise("vocab.txt").replace(".txt",""))+'"><script language="Javascript"><!--\nvar emptyString="";document.write(\' <input type=submit name=dummy value="'+localise("Clear input boxes")+'" onClick="javascript:document.forms[0].l1w.value=document.forms[0].l2w.value=emptyString;document.forms[0].l2w.focus();return false">\')\n//--></script><p>'+localise("Your first language")+': '+langSelect('l1',firstLanguage)+' '+localise("second")+': '+langSelect('l2',secondLanguage)+' <nobr><input type=submit name=clang value="'+localise("Change languages")+'"><input type=submit name=swaplang value="'+localise("Swap")+'"></nobr>'
+    body += (localise("Word in %s") % localise(secondLanguage))+': <input type=text name=l2w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].spk.click();return false} else return true"> <input type=submit name=spk value="'+localise("Speak")+'" onClick="if (!document.forms[0].l1w.value && !document.forms[0].l2w.value) return true; else return h5a(\''+cginame+'?spk=1&l1w=\'+document.forms[0].l1w.value+\'&l2w=\'+document.forms[0].l2w.value+\'&l1=\'+document.forms[0].l1.value+\'&l2=\'+document.forms[0].l2.value+\''+cacheInfo+'\');"><br>'+(localise("Meaning in %s") % localise(firstLanguage))+': <input type=text name=l1w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].add.click();return false} else return true"> <input type=submit name=add value="'+(localise("Add to %s") % localise("vocab.txt").replace(".txt",""))+'"><script language="Javascript"><!--\nvar emptyString="";document.write(\' <input type=submit name=dummy value="'+localise("Clear input boxes")+'" onClick="document.forms[0].l1w.value=document.forms[0].l2w.value=emptyString;document.forms[0].l2w.focus();return false">\')\n//--></script><p>'+localise("Your first language")+': '+langSelect('l1',firstLanguage)+' '+localise("second")+': '+langSelect('l2',secondLanguage)+' <nobr><input type=submit name=clang value="'+localise("Change languages")+'"><input type=submit name=swaplang value="'+localise("Swap")+'"></nobr>'
     def htmlize(l,lang):
        if type(l)==type([]) or type(l)==type(()): return htmlize(l[-1],lang)
        if "!synth:" in l: return htmlize(l[l.index("!synth:")+7:l.rfind("_")],lang)
@@ -368,7 +368,7 @@ def listVocab(hasList): # main screen
          if type(l)==type([]) or type(l)==type(()) or not "!synth:" in l: return "" # Web-GUI delete in poetry etc not yet supported
          r.append(urllib.quote(l[l.index("!synth:")+7:l.rfind("_")]))
        r.append(localise("Delete"))
-       return '<TD><input type=submit name="del-%s%%3d%s" value="%s" onClick="javascript: return confirm(\'Really delete this word?\');"></TD>' % tuple(r)
+       return '<TD><input type=submit name="del-%s%%3d%s" value="%s" onClick="return confirm(\'Really delete this word?\');"></TD>' % tuple(r)
     if hasList:
        gradint.availablePrompts = gradint.AvailablePrompts() # needed before ProgressDatabase()
        # gradint.cache_maintenance_mode=1 # don't transliterate on scan -> NO, including this scans promptsDirectory!
