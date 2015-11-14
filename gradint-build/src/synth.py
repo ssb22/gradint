@@ -170,7 +170,7 @@ class S60Synth(Synth): # TODO: figure out if S60 Python can call external progra
 
 class AndroidSynth(Synth):
     def __init__(self): Synth.__init__(self)
-    def supports_language(self,lang): return lang=="en" # TODO others?
+    def supports_language(self,lang): return lang==systemVoice # TODO others? (but ttsSpeak can't set language)
     def works_on_this_platform(self): return android
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
     def play(self,lang,text): android.ttsSpeak(text)

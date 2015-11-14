@@ -173,6 +173,15 @@ macVoices = {
 ekho_speed_delta = 0
 # (Note: If this is not 0, Ekho will be preferred over partials.)
 
+# ANDROID: set the language of your system's default voice
+# (the SL4A module that Gradint uses can't find out for you)
+# - normally "en", but some China-modified Android phones
+# should set this to "zh" and avoid using pinyin (however I
+# have not been able to actually test if SL4A can correctly
+# pass a Unicode string to their synths, so perhaps it should
+# be set to None and ensure you have recorded prompts)
+systemVoice = "en"
+
 # OTHER ENGLISH SYNTHESIZERS (language abbreviation must be "en"):
 #
 #    - Festival Lite on Windows (if all else fails) :
