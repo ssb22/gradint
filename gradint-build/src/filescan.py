@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99892 (c) 2002-2015 Silas S. Brown. GPL v3+.
+# gradint v0.99893 (c) 2002-2016 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -337,9 +337,10 @@ sanitise_otherLanguages()
 # Prompt file syntax: word_language.wav
 # or: word_language_2.wav .. (alternatives chosen at random)
 # ('word' can also be a language name)
-class PromptException(Exception):
+class MessageException(Exception):
     def __init__(self,message): self.message = message
     def __repr__(self): return self.message
+class PromptException(MessageException): pass
 auto_advancedPrompt=0 # used by gradint.cgi
 class AvailablePrompts(object):
     reservedPrefixes = list2set(map(lambda x:x.lower(),["whatmean","meaningis","repeatAfterMe","sayAgain","longPause","begin","end",firstLanguage,secondLanguage] + possible_otherLanguages))
@@ -359,7 +360,7 @@ class AvailablePrompts(object):
                 theList = self.getPromptList(p,promptsData,language)
                 return theList
             except PromptException: pass
-        raise PromptException("Can't find a non-reserved prompt suitable for language '%s'" % (language))
+        raise PromptException("Can't find a non-reserved prompt suitable for language '%s'. Try creating tryToSay_%s%s etc in %s" % (language,language,dotwav,promptsDirectory))
     def getPromptList(self,prefix,promptsData,language):
         # used for introducing foreign-language prompts to
         # beginners.  language is the suffix of the language we're *learning*.

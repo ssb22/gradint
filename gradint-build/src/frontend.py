@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99892 (c) 2002-2015 Silas S. Brown. GPL v3+.
+# gradint v0.99893 (c) 2002-2016 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1859,6 +1859,8 @@ def rest_of_main():
     except PromptException,prEx:
         waitOnMessage("\nProblem finding prompts:\n"+prEx.message+"\n")
         exitStatus = 1
+    except MessageException,mEx:
+        waitOnMessage(mEx.message+"\n") ; exitStatus = 1
     except:
         w="\nSomething has gone wrong with my program.\nThis is not your fault.\nPlease let me know what it says.\nThanks.  Silas\n"+exc_info()
         try: import traceback

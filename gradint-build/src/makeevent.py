@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99892 (c) 2002-2015 Silas S. Brown. GPL v3+.
+# gradint v0.99893 (c) 2002-2016 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -66,7 +66,10 @@ def fileToEvent(fname,dirBase=None):
     if dirBase+fname in variantFiles:
         variantFiles[dirBase+fname]=variantFiles[dirBase+fname][1:]+[variantFiles[dirBase+fname][0]] # cycle through the random order of variants
         fname=variantFiles[dirBase+fname][0]
-    if fname.lower().endswith(dottxt) and "_" in fname: fname = "!synth:"+u8strip(read(dirBase+fname)).strip(wsp)+'_'+lang
+    if fname.lower().endswith(dottxt) and "_" in fname:
+        ftxt = u8strip(read(dirBase+fname)).strip(wsp)
+        if not ftxt: raise MessageException("File "+fname+" in "+dirBase+" has no text in it; please fix this") # nicer message than catching it at a lower level
+        fname = "!synth:"+ftxt+'_'+lang
     if fname.find("!synth:")>=0:
         s = synthcache_lookup(fname)
         if type(s)==type([]): # trying to synth from partials
