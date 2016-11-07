@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99893 (c) 2002-2016 Silas S. Brown. GPL v3+.
+# gradint v0.99894 (c) 2002-2016 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -376,11 +376,14 @@ def rough_guess_mp3_length(fname):
     # (NB this is only a rough guess because it doesn't support VBR
     # and doesn't even check all sync bits.  It should be fairly quick though.)
     o = open(fname) ; i = -1
-    while i==-1:
+    while True:
       head=o.read(512)
       if len(head)==0: raise IndexError # read the whole file and not found a \xFF byte??
       i=head.find('\xFF')
-    if i+2 < len(head): head += o.read(3)
+      if i==-1: continue
+      if i+2 < len(head): head += o.read(3)
+      if ord(head[i+1]) >= 0xE0: break # valid frame header starts w. 11 1-bits (not just 8: some files with embedded images could throw that off)
+      o.seek(i+2)
     o.close()
     b=ord(head[i+1])
     layer = 4-((b&6)>>1)
