@@ -375,17 +375,16 @@ def rough_guess_mp3_length(fname):
     maybe_warn_mp3() # in case there's no mp3 player
     # (NB this is only a rough guess because it doesn't support VBR
     # and doesn't even check all sync bits.  It should be fairly quick though.)
-    o = open(fname) ; i = -1
+    o = open(fname,"rb") ; i = -1
     while True:
       head=o.read(512)
       if len(head)==0: raise IndexError # read the whole file and not found a \xFF byte??
       i=head.find('\xFF')
       if i==-1: continue
       if i+2 < len(head): head += o.read(3)
-      if ord(head[i+1]) >= 0xE0: break # valid frame header starts w. 11 1-bits (not just 8: some files with embedded images could throw that off)
-      o.seek(i+2)
-    o.close()
-    b=ord(head[i+1])
+      o.seek(o.tell()-len(head)+i+2) ; b=ord(head[i+1])
+      if b >= 0xE0: break # valid frame header starts w. 11 1-bits (not just 8: some files with embedded images could throw that off)
+    s = o.tell() ; o.close()
     layer = 4-((b&6)>>1)
     if b&24 == 24: # bits are 11 - MPEG version is 1
       column = layer-1 # MPEG 1 layer 1, 2 or 3
@@ -393,7 +392,7 @@ def rough_guess_mp3_length(fname):
     else: column = 4 # MPEG 2+ layer 2+
     bitrate = br_tab[ord(head[i+2])>>4][column]
     if bitrate==0: bitrate=48 # reasonable guess for speech
-    return filelen(fname)*8.0/(bitrate*1000)
+    return (filelen(fname)-s)*8.0/(bitrate*1000)
   except IndexError: raise Exception("Invalid MP3 header in file "+repr(fname))
 
 def filelen(fname):
