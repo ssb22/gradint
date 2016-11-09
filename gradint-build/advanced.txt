@@ -669,6 +669,7 @@ transitionPromptThreshold = 10 # after repeating a prompt
 advancedPromptThreshold = 20 # ONLY use target-language prompt
 transitionPromptThreshold2 = 2 # for 3rd, 4th etc languages
 advancedPromptThreshold2 = 5
+veryExperiencedThreshold = 1000 # total repetitions until fewer prompts are used
 limit_words = max(1,int(maxNewWords * 0.4)) # num words to
 # include from limited directories.  Done separately for
 # EACH limited directory, but limits deeper in the tree are

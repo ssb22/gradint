@@ -322,7 +322,7 @@ class ProgressDatabase(object):
             covered = 0
             for timesDone,promptFile,zhFile in self.data:
                 if timesDone: covered += 1
-            x = (covered > 1000) # arbitrary
+            x = (covered > veryExperiencedThreshold)
             self.cached_very_experienced = x
         return x
     def message(self):
