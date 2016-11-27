@@ -20,7 +20,8 @@ made in near-broadcasting-studio conditions.
 
 manual-splitter.py (Unix only but not too difficult to
 modify for other systems) - a helper script so that you can
-use Audacity (or another sound editor) to split the file.
+use Audacity (or another sound editor) to split the file
+in non-realtime.  (Realtime splitting can be done in Gradint.)
 Use the "export selection as wav" command (you can assign a
 hot-key to it), and you don't have to type in a different
 filename each time because this script can run in the

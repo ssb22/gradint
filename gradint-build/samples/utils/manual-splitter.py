@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Like splitter.py, but lets you use Audacity etc to split in non-realtime.
+# Like Gradint's "record from file", but lets you use Audacity etc to split in non-realtime.
 # You must export the segments in order.
 
 # ('mv && increment count' in a loop: ok as long as in same dir so no complicatns w cross-device & still-open)
