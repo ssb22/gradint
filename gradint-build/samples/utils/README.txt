@@ -18,10 +18,6 @@ autosplit.py - splits a long recording into individual files
 completely automatically, but only if the recording has been
 made in near-broadcasting-studio conditions.
 
-strip0.py - strips absolute silence off the beginning and
-end of audio files (only useful if you're dealing with files
-from a textbook CD or something)
-
 manual-splitter.py (Unix only but not too difficult to
 modify for other systems) - a helper script so that you can
 use Audacity (or another sound editor) to split the file.

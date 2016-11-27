@@ -4,13 +4,12 @@ import os, struct, sndhdr, sys
 try: import winsound
 except: winsound=None
 macsound = (sys.platform.find("mac")>=0 or sys.platform.find("darwin")>=0)
-if macsound: sys.stderr.write("Warning: You need to have qtplay (from gradint or wherever) in your PATH for this to work\n")
 
 # python 3+:
 try: input
 except: input=lambda x:eval(raw_input(x))
 
-startCount = 1   # or 0, or 485 or whatever
+startCount = 0   # or however many WAVs already exist (should be even)
 
 threshold = 10 # 3 is too low for recorded sound, but if using speech synth you might want to set it to 1
 shortestSilence = 0.3
@@ -18,17 +17,29 @@ shortestSound = 0.4
 
 if len(sys.argv)>1: exec(" ".join(sys.argv[1:])) # so you can override the above on the command line
 
+sox_8bit, sox_16bit, sox_32bit, sox_signed, sox_unsigned = "-b", "-w", "-l", "-s", "-u"
+if not winsound: # adapted from gradint (see comments there)
+  sox_formats=os.popen("sox --help 2>&1").read()
+  sf2 = ' '.join(sox_formats.lower().split())
+  if sf2.startswith("sox: sox v"):
+    if sf2[10]==' ': soxMaj=15
+    else: soxMaj = int(sf2[10:sf2.index('.')])
+  else: soxMaj=0
+  if soxMaj>=14:
+    if soxMaj==14 and sf2[13]<'4': sox_8bit, sox_16bit, sox_32bit = "-1", "-2", "-4"
+    else: sox_8bit, sox_16bit, sox_32bit, sox_signed, sox_unsigned = "-b 8", "-b 16", "-b 32", "-e signed-integer", "-e unsigned-integer" # TODO: check the last one
+
 def autosplit(filename,lang1,lang2,threshold):
     (wtype,rate,channels,wframes,bits) = sndhdr.what(filename)
     if bits==8:
-        soxBits="-b -u"
+        soxBits=sox_8bit+" "+sox_unsigned
         structBits="B"
     elif bits==16:
-        soxBits="-w -s"
+        soxBits=sox_16bit+" "+sox_signed
         structBits="h"
         threshold *= 256
     elif bits==32:
-        soxBits="-l -s"
+        soxBits=sox_32bit+" "+sox_signed
         structBits="i"
         threshold *= (256 * 256 * 256)
     else: raise Exception("Unsupported bits per sample")
@@ -47,7 +58,8 @@ def autosplit(filename,lang1,lang2,threshold):
         (sounding, bytes) = nextSample()
         if inSilence and not sounding and bytes: continue
         elif bytes:
-            dataToWriteout.append(bytes)
+            if dataToWriteout or sounding:
+                dataToWriteout.append(bytes)
             if sounding: numSilences = inSilence = 0
             else: numSilences += 1
         if numSilences >= int(shortestSilence*rate) or not bytes:
@@ -64,8 +76,9 @@ def autosplit(filename,lang1,lang2,threshold):
                 open(fname, "wb").write(''.join(dataToWriteout))
                 os.system("sox %s \"%s\" \"%s.wav\"" % (soxParams,fname,fname))
                 os.unlink(fname)
+                print fname+".wav"
                 if winsound: winsound.PlaySound(fname+".wav",winsound.SND_FILENAME)
-                elif macsound: os.system("qtplay "+fname+".wav")
+                elif macsound: os.system("afplay "+fname+".wav")
                 else: os.system("play "+fname+".wav")
             # Anyway, clear the output buffer
             dataToWriteout = []
