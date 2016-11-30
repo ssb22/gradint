@@ -483,7 +483,7 @@ class ESpeakSynth(Synth):
             self.program="speak"
             if riscos_sound: return True # we've already confirmed <eSpeak$dir> works in the constructor
             import commands
-            loc=commands.getoutput("locale -a|grep -i 'utf-*8$'|head -1").strip(wsp)
+            loc=commands.getoutput("locale -a 2>/dev/null|grep -i 'utf-*8$'|head -1").strip(wsp)
             if loc: loc="LC_CTYPE="+loc+" " # in case espeak can't find a utf-8 locale by itself
             self.program=loc+"speak"
             if got_program("speak"): return True
