@@ -422,7 +422,7 @@ class SoundCollector(object):
     def __init__(self):
         self.rate = 44100 # so ok for oggenc etc
         if out_type=="raw" and write_to_stdout: self.o=sys.stdout
-        elif out_type=="ogg": self.o=os.popen("oggenc -o \"%s\" -r -C 1 -q 0 -" % (cond(write_to_stdout,"-",outputFile),),"wb") # oggenc assumes little-endian, which is what we're going to give it
+        elif out_type=="ogg": self.o=os.popen(oggenc()+" -o \"%s\" -r -C 1 -q 0 -" % (cond(write_to_stdout,"-",outputFile),),"wb") # oggenc assumes little-endian, which is what we're going to give it
         elif out_type=="aac":
             if got_program("neroAacEnc"): self.o=os.popen("sox %s - -t wav - | neroAacEnc -br 32000 -if - -of \"%s\"" % (self.soxParams(),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO optionally use -2pass, on a physical input file like the afconvert code)
             else: self.o=os.popen("faac -b 32 -P%s -C 1 -o \"%s\" -" % (cond(big_endian,""," -X"),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that faac on big-endian needs the -X removed when we're giving it little-endian.  It SHOULD if the compile is endian-dependent.)
@@ -510,7 +510,13 @@ def outfile_writeFile(o,handle,filename):
     if not filename.startswith(partialsDirectory+os.sep): assert theLen, "No data when reading "+filename+": check for sox crash" # (but allow empty partials e.g. r5.  TODO if it's from EkhoSynth it could be a buggy version of Ekho)
     return theLen
 def outfile_write_error(): raise IOError("Error writing to outputFile: either you are missing an encoder for "+out_type+", or the disk is full or something.")
-
+def oggenc(): # 2016: some Windows builds are now called oggenc2
+    global cached_oggenc
+    try: return cached_oggenc
+    except: pass
+    if got_program("oggenc"): cached_oggenc = "oggenc"
+    else: cached_oggenc = "oggenc2"
+    return cached_oggenc
 def lame_endian_parameters():
   # The input to lame will always be little-endian regardless of which architecture we're on and what kind of sox build we're using.
   # lame 3.97 has -x (swap endian) parameter, needed with little-endian i/p on little-endian architecture

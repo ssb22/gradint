@@ -340,7 +340,7 @@ def make_output_row(parent):
     if got_program("lame"): addFiletypeButton("mp3")
     if got_windows_encoder: addFiletypeButton("wma")
     if got_program("neroAacEnc") or got_program("faac") or got_program("afconvert"): addFiletypeButton("aac")
-    if got_program("oggenc"): addFiletypeButton("ogg")
+    if got_program("oggenc") or got_program("oggenc2"): addFiletypeButton("ogg")
     if got_program("toolame"): addFiletypeButton("mp2")
     if got_program("speexenc"): addFiletypeButton("spx")
     addFiletypeButton("wav")
