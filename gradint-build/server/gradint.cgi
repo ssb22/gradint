@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.075 (c) 2011,2015 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.076 (c) 2011,2015,2017 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,12 @@ espeak_data_path = "$HOME/gradint"
 
 import os, os.path, sys, commands, cgi, cgitb, urllib, time ; cgitb.enable()
 home = os.environ.get("HOME","")
+if not home:
+  try:
+    import pwd
+    home = os.path.expanduser("~{0}".format(pwd.getpwuid(os.getuid())[0]))
+  except: home=0
+  if not home: home = ".." # assume we're in public_html
 gradint_dir = gradint_dir.replace("$HOME",home)
 path_add = path_add.replace("$HOME",home)
 lib_path_add = lib_path_add.replace("$HOME",home)
