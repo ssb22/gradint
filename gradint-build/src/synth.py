@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99894 (c) 2002-2016 Silas S. Brown. GPL v3+.
+# gradint v0.99895 (c) 2002-2017 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -986,11 +986,15 @@ def get_synth_if_possible(language,warn=1,to_transliterate=False):
         for synth in viable_synths:
             if synth.supports_language(language) and synth.can_transliterate(language): return synth
         if language=="zh": return simpleZhTransliterator # in case haven't got eSpeak
-    for synth in viable_synths:
+    for synth in viable_synths: # find a good one ?
         if synth.supports_language(language) and not synth.not_so_good_at(language):
             getsynth_cache[language]=synth ; return synth
-    for synth in viable_synths:
+    for synth in viable_synths: # OK, not-so-good one ?
         if synth.supports_language(language):
+            if warn and language not in synth_partials_voices and not language==firstLanguage and language in ["zh","cant"] and not language in warned_about_nosynth:
+                # Some people fail to install Yali etc because web advertising taught them to ignore sidebars :-(
+                warned_about_nosynth[language] = 1
+                show_warning("You don't have "+cond(language=="zh","Yali Cheng's Mandarin","Cameron Wong's Cantonese")+" voice installed, only a more basic robot voice. Please see the sidebar on the Gradint website for downloads.")
             getsynth_cache[language]=synth ; return synth
     if (not warn) or language not in [firstLanguage,secondLanguage]+possible_otherLanguages: return None # without printing a warning
     if not language in warned_about_nosynth:
