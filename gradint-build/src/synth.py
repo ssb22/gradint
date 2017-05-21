@@ -995,7 +995,7 @@ def get_synth_if_possible(language,warn=1,to_transliterate=False):
                 # Some people fail to install Yali etc because web advertising taught them to ignore sidebars :-(
                 warned_about_nosynth[language] = 1
                 show_warning("You don't have "+cond(language=="zh","Yali Cheng's Mandarin","Cameron Wong's Cantonese")+" voice installed, only a more basic robot voice. Please see the sidebar on the Gradint website for downloads.")
-                if app: waitOnMessage(" In the meantime, you'll have to bear with this....")
+                if app: waitOnMessage("In the meantime, you'll have to bear with this....")
                 getsynth_cache[language]=synth # only if warn (otherwise wait until we're called again, then warn)
             return synth
     if (not warn) or language not in [firstLanguage,secondLanguage]+possible_otherLanguages: return None # without printing a warning
