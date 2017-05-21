@@ -86,7 +86,7 @@ recorder.exe: $(Common_Files) gradint.py
 	rm -rf windows0/gradint/samples/utils windows0/gradint/samples/prompts windows0/gradint/samples/README.txt
 	rm -f windows0/gradint/madplay.exe windows0/gradint/sox.exe windows0/gradint/ptts.exe
 	zip -0 windows0/gradint/library.zip gradint.py
-	cp extras/lame.exe extras/zip.exe windows0/gradint/
+	cp extras/zip.exe windows0/gradint/ # 2017-05: moved lame.exe from extras/ to windows/gradint.7z as patents have expired
 	mv windows0/gradint windows0/recorder
 	echo $$'@echo off\ncd recorder\ngradint-wrapper.exe recorderMode=1\nif not exist ..\\recorder.bat copy runme.bat ..\\recorder.bat\nif exist ..\\recorder.exe del ..\\recorder.exe\nexit' > windows0/recorder/runme.bat
 	# (replace the .exe with a .bat in case they try to open it again from desktop and get confused by unzip's "overwrite" prompt)
