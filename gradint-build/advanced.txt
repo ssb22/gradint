@@ -144,8 +144,8 @@ sapiSpeeds = {
 # MAC OS X VOICES: you can set which voices to use here (if you set
 # more than one voice for a language then the first available one is
 # used; if you don't set a voice for a language then the first detected
-# one is used, unless there's only English voices on the system in which
-# case the one set in System Preferences is used).
+# voice supporting that language is used, unless there's only English
+# voices on the system in which case the one set in System Preferences is used).
 # Non-English voices might not work on older OS X versions.
 
 # Note: if you want the "en" voice to be used, and eSpeak is also
@@ -155,7 +155,8 @@ macVoices = {
 "en":"Emily Daniel Alex Vicki",
 "zh":"Ting-Ting", # OS 10.7+, can read hanzi, pinyin+tone numbers (5 for neutral) and English
 "cant":"Sin-Ji", # OS 10.7+
-"jp":"Kyoko", # OS 10.7+ (alias of "ja")
+"jp":"Kyoko", # OS 10.7+ ("ja" will auto-detect, but we're adding the alias "jp")
+"ind":"Damayanti", # OS 10.7+ ("id" will auto-detect: we're adding "ind")
 }
 
 # For Mandarin Chinese, you can also use Yali Cheng's syllables

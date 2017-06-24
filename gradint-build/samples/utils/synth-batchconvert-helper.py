@@ -8,7 +8,7 @@
 # words in vocab.txt etc, and rename the resulting *.mp3 or *.wav
 # files into the synth cache.
 
-# Should be useful if you are on Linux and want to run a
+# Should be useful if you are not on Windows and want to run a
 # non-English speech synth in the Windows Emulator (since
 # ptts can have trouble, but tools like TextAloud still work).
 # Note: This script currently assumes that the filesystem
@@ -43,9 +43,10 @@ delete_old = 1  # if 1 (and if sporadic) then older cached
 # this script moves them there, as that's how it identifies its
 # "own" mp3/wav files (as opposed to anything else you may have cached).
 
-actually_generate = 0 # if 1, will call gradint to actually
-# generate the cached sound using the default voice.  Might
-# be useful if you need to move it to another machine that
+actually_generate = 0 # if 1, will call gradint to generate
+# the cached sound using its choice of voice for that language,
+# instead of relying on your use of TextAloud etc.
+# Might be useful if you need to move it to another machine that
 # doesn't have that voice, and you still want to use sporadic
 # etc (like a more advanced version of cache-synth.py)
 testMode = 0 # if 1 and actually_generate is 1, will play too
