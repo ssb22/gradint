@@ -3,7 +3,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.13 (c) 2013-15 Silas S. Brown.  License: GPL
+# v1.14 (c) 2013-15,2017 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
@@ -124,6 +124,14 @@ def ping_or_lau_to_syllable_list(j):
 def hyphenate_ping_or_lau_syl_list(sList,groupLens=None):
     if type(sList) in [str,unicode]:
         sList = ping_or_lau_to_syllable_list(sList)
+    return hyphenate_syl_list(sList,groupLens)
+def hyphenate_yale_syl_list(sList,groupLens=None):
+    # (if sList is a string, the syllables must be space-separated,
+    #  which will be the case if to_yale functions below are used)
+    if type(sList) in [str,unicode]: sList = sList.split()
+    return hyphenate_syl_list(sList,groupLens)
+def hyphenate_syl_list(sList,groupLens=None):
+    assert type(sList) == list
     if not groupLens and '--hyphenate-all' in sys.argv: groupLens = [len(sList)] # this might be suitable for re-annotating hanzi+pinyin to Cantonese in annogen.py's --reannotator option, although it would be better if spacing could be copied from the pinyin for cases where the pinyin line is spaced but the hanzi line is not
     if not groupLens: groupLens = [1]*len(sList) # don't hyphenate at all if we don't know
     else: assert sum(groupLens) == len(sList)
@@ -133,7 +141,7 @@ def hyphenate_ping_or_lau_syl_list(sList,groupLens=None):
         start += g
     return " ".join(r)
     
-def jyutping_to_yale_TeX(j):
+def jyutping_to_yale_TeX(j): # returns space-separated syllables
   ret=[]
   for syl in ping_or_lau_to_syllable_list(j.lower().replace("eo","eu").replace("oe","eu").replace("j","y").replace("yyu","yu").replace("z","j").replace("c","ch")):
     vowel=None
@@ -151,9 +159,17 @@ def jyutping_to_yale_TeX(j):
     if syl[-1] in "456":
       syl=syl[:lastVowel+1]+"h"+syl[lastVowel+1:-1]+str(int(syl[-1])-3)
     if syl[-1] in "123":
-      ret.append(syl[:vowel]+[r"\`",r"\'",r""][int(syl[-1])-1]+syl[vowel:-1]) # TODO do we want \= in the 3rd one?  what if it's over an i ?
+      ret.append((syl[:vowel]+[r"\`",r"\'",r"\="][int(syl[-1])-1]+syl[vowel:-1]).replace(r"\=i",r"\=\i{}").replace(r"\=I",r"\=\I{}"))
     else: ret.append(syl.upper()) # English word or letter in the Chinese?
   return ' '.join(ret)
+
+def jyutping_to_yale_u8(j): # returns space-separated syllables
+  import unicodedata
+  def mysub(z,l):
+    for x,y in l:
+      z = re.sub(re.escape(x)+r"(.)",r"\1"+y,z)
+    return z
+  return unicodedata.normalize('NFC',mysub(unicode(jyutping_to_yale_TeX(j).replace(r"\i{}","i").replace(r"\I{}","I")),[(r"\`",u"\u0300"),(r"\'",u"\u0301"),(r"\=",u"\u0304")])).encode('utf-8')
 
 def superscript_digits_TeX(j):
   # for jyutping and Sidney Lau
@@ -182,7 +198,8 @@ def import_gradint():
     return gradint
 
 if __name__ == "__main__":
-    # command-line use: output Lau for each line of stdin;
+    # command-line use: output Lau for each line of stdin
+    # (or Yale if there's a --yale in sys.argv);
     # if there's a # in the line, assume it's hanzi#pinyin
     # (for annogen.py --reannotator="##python cantonese.py")
     lines = sys.stdin.read().replace("\r\n","\n").split("\n")
@@ -197,4 +214,5 @@ if __name__ == "__main__":
       else: pinyin = None
       jyutping = get_jyutping(l,0)
       if pinyin: jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
-      print superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
+      if "--yale" in sys.argv: hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))
+      else: print superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
