@@ -12,7 +12,7 @@
 # program to "thin down" the gradint .py for low memory environments
 # by taking out some of the code that's unused on that platform
 
-import sys
+import sys, re
 
 tk_only = [ # we want these on WinCE but not S60:
 # note: comments are stripped BEFORE checking against this list
@@ -45,6 +45,7 @@ tk_only = [ # we want these on WinCE but not S60:
 "def wrapped_set_userName(N,unicodeName):",
 "def renameUser(i,radioButton,parent,cancel=0):",
 "def deleteUser(i):",
+"def addUserToFname(fname,userNo):",
 "def setupScrollbar(parent,rowNo):",
 "def focusButton(button):",
 "def bindUpDown(o,alsoLeftRight=False):",
@@ -57,6 +58,11 @@ tk_only = [ # we want these on WinCE but not S60:
 "def openDirectory(dir,inGuiThread=0):",
 "def gui_event_loop():",
 "def makeButton(parent,text,command):",
+"def vocabLinesWithLangs():",
+"if Tk_might_display_wrong_hanzi:",
+"def setup_samplesDir_ifNec(d=0):",
+"def filename2unicode(f):",
+"def unicode2filename(u):",
 ]
 
 not_S60_or_android = [ # but may still need on winCE
@@ -93,6 +99,7 @@ r"if not fileExists(configFiles[0]) and sys.argv and (os.sep in sys.argv[0] or (
 ]
 
 riscos_only = [
+"if riscos_sound:",
 "elif riscos_sound:",
 'if riscos_sound and hex(int(time.time())).find("0xFFFFFFFF")>=0 and not outputFile:',
 "class OldRiscosSynth(Synth):",
@@ -100,6 +107,7 @@ riscos_only = [
 ]
 
 mac_only = [
+'if macsound and __name__=="__main__":',
 'if macsound and "_" in os.environ:',
 "if macsound:","elif macsound:",
 'if hasattr(app,"isBigPrint") and macsound:',
@@ -109,10 +117,12 @@ mac_only = [
 desktop_only = [ # Don't want these on either WinCE or S60:
 'if hasattr(app,"isBigPrint") and winsound:',
 "if unix:","elif unix:",
+"def disable_lid(restore):",
 'elif unix and useTK and isDirectory("/dev/snd") and got_program("arecord"):',
 "if unix and (';' in cmd or '<' in cmd):",
 'elif wavPlayer=="sox":',
 'elif wavPlayer=="aplay" and ((not fileType=="mp3") or madplay_path or gotSox):',
+"def simplified_header(fname):",
 "def win2cygwin(path):","elif cygwin:",
 "if paranoid_file_management:",
 "elif unix and not macsound:",
@@ -140,6 +150,7 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 # And the following are desktop only because they need sox:
 "if gotSox and unix:",
 "class SoundCollector(object):","if soundCollector:",
+"def oggenc():",
 "def outfile_writeBytes(o,bytes):",
 "def outfile_close(o):",
 "def outfile_writeFile(o,handle,filename):",
@@ -160,6 +171,7 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 "def warn_sox_decode():",
 'if disable_once_per_day==1:',
 'if once_per_day&2 and not hasattr(sys,"_gradint_innerImport"):',
+'if once_per_day&1 and fileExists(progressFile) and time.localtime(os.stat(progressFile).st_mtime)[:3]==time.localtime()[:3]:',
 'def optimise_partial_playing(ce):',
 'def optimise_partial_playing_list(ceList):',
 ]
@@ -169,6 +181,7 @@ winCE_only = [
 "if winCEsound:",'elif winCEsound:',
 'if winCEsound and __name__=="__main__":',
 'elif winCEsound and fileType=="mp3":',
+"if WMstandard:",
 ]
 
 not_winCE = [
@@ -176,6 +189,7 @@ not_winCE = [
 ]
 
 S60_only = [
+'if sys.platform.find("ymbian")>-1:',
 "class S60Synth(Synth):",
 "if appuifw:","elif appuifw:",
 "def s60_recordWord():",
@@ -211,34 +225,57 @@ elif "android" in sys.argv: # Android version
 elif "wince" in sys.argv: # Windows Mobile version
   version = "WinCE"
   to_omit = desktop_only + S60_only + android_only + android_or_S60 + not_winCE + riscos_only + mac_only
+elif "core" in sys.argv: # experimental "core code only" for 'minimal embedded porting' starting point (no UI, no synth, limited file I/O; you'll probably have to load up the event data yourself)
+  version = "core"
+  to_omit = tk_only + not_S60_or_android + not_android + riscos_only + mac_only + desktop_only + winCE_only + S60_only + android_only + android_or_S60 + ["def main():","def rest_of_main():",'if __name__=="__main__":',"def transliterates_differently(text,lang):","def primitive_synthloop():","def appendVocabFileInRightLanguages():",'def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):',"def sanityCheck(text,language,pauseOnError=0):","def localise(s):","def singular(number,s):","def readText(l):","def asUnicode(x):","def updateSettingsFile(fname,newVals):","def clearScreen():","def startBrowser(url):",'def getYN(msg,defaultIfEof="n"):',"def waitOnMessage(msg):","def interrupt_instructions():","def parseSynthVocab(fname,forGUI=0):","def scanSamples_inner(directory,retVal,doLimit):","def getLsDic(directory):","def check_has_variants(directory,ls):","def exec_in_a_func(x):","def scanSamples(directory=None):","def synth_from_partials(text,lang,voice=None,isStart=1):","def partials_langname(lang):","if partialsDirectory and isDirectory(partialsDirectory):",'for zipToCheck in ["yali-voice","yali-lower","cameron-voice"]:','def stripPuncEtc(text):','def can_be_synthesized(fname,dirBase=None,lang=None):','def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=None):','def textof(fname):','if synthCache and transTbl in synthCache_contents:','if synthCache:','class Partials_Synth(Synth):','def abspath_from_start(p):','class SynthEvent(Event):','def pinyin_uColon_to_V(pinyin):','def synth_event(language,text,is_prompt=0):','def get_synth_if_possible(language,warn=1,to_transliterate=False):','if wavPlayer_override or (unix and not macsound and not (oss_sound_device=="/dev/sound/dsp" or oss_sound_device=="/dev/dsp")):','def fix_compatibility(utext):','def read_chinese_number(num):','def preprocess_chinese_numbers(utext,isCant=0):','def intor0(v):','def fix_pinyin(pinyin,en_words):','def fix_commas(text):','def shell_escape(text):','class SimpleZhTransliterator(object):','def sort_out_pinyin_3rd_tones(pinyin):','def ensure_unicode(text):','def unzip_and_delete(f,specificFiles="",ignore_fail=0):','class Synth(object):','def quickGuess(letters,lettersPerSec):',"def changeToDirOf(file,winsound_also=0):",'if app or appuifw or android:','def subst_some_synth_for_synthcache(events):','def decide_subst_synth(cache_fname):','if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam") or android:','if len(sys.argv)>1:','def readSettings(f):','def exc_info(inGradint=True):','if not fileExists(configFiles[0]):','def u8strip(d):',]
 else: assert 0, "Unrecognised version on command line"
 
-revertToIndent = -1
+revertToIndent = lastIndentLevel = indentLevel = -1
 lCount = -1 ; inTripleQuotes=0 ; orig = []
+suppressed_if = 0
 for l in sys.stdin.xreadlines():
   orig.append(l)
   lCount += 1
   if lCount==2: print "\n# NOTE: this version has been automatically TRIMMED for "+version+" (some non-"+version+" code taken out)\n"
   l=l.rstrip()
   assert not "\t" in l, "can't cope with tabs"
-  indentLevel=-1
+  lastIndentLevel,indentLevel = indentLevel,-1
   for i in range(len(l)):
     if not l[i]==" ":
       indentLevel = i ; break
   was_inTripleQuotes = inTripleQuotes
   if (len(l.split('"""'))%2) == 0: inTripleQuotes = not inTripleQuotes
   if indentLevel<0 or indentLevel==len(l) or (revertToIndent>=0 and (indentLevel>revertToIndent or was_inTripleQuotes)): continue
-  revertToIndent = -1
+  justRevertedI,revertToIndent = revertToIndent,-1
   code0 = (l+"#")[:l.find("#")].rstrip()
   code = code0.lstrip()
   if (code in to_omit or (':' in code and code[:code.index(':')+1] in to_omit)) and not was_inTripleQuotes:
     if ':' in code and code[:code.index(':')+1] in to_omit: code = code[:code.index(':')+1]
-    print " "*indentLevel+code+" pass # trimmed"
+    if code.startswith("def "): code=re.sub(r"\([^)][^)][^)]+\)",r"(*_)",code)
+    if code.startswith("elif "): pass # can always remove those lines completely, even if will be followed by an 'else'
+    elif code.startswith("if "):
+      suppressed_if = (indentLevel <= lastIndentLevel)
+      if not suppressed_if: print " "*indentLevel+"pass # trimmed" # just in case there's nothing else in the block
+    else:
+      print " "*indentLevel+code+" pass # trimmed"
+      suppressed_if=0
     revertToIndent = indentLevel
   elif not code:
     if "#    " in l or lCount < 2: print l # keep start and GPL comments
-  elif ('"' in code and '"' in l[len(code):]) or ("'" in code and "'" in l[len(code):]): print l # perhaps # was in a string, keep it
-  else: print code0
+  else:
+    if suppressed_if and indentLevel==justRevertedI:
+      if code.startswith("elif "):
+        l = l.replace("elif","if",1)
+        code0 = code0.replace("elif","if",1)
+      elif code=="else:":
+        l = l.replace("else:","if 1: # trimmed",1)
+        code0 = code0.replace("else:","if 1: # trimmed",1)
+      elif code.startswith("else:"):
+        l = re.subn(r"else:\s*","",l,1)[0]
+        code0 = re.subn(r"else:\s*","",code0,1)[0]
+    suppressed_if=0
+    if ('"' in code and '"' in l[len(code):]) or ("'" in code and "'" in l[len(code):]): print l # perhaps # was in a string, keep it
+    else: print code0
 orig = "".join(orig)
 for o in to_omit:
   if not o in orig: sys.stderr.write("Warning: line not matched: "+o)

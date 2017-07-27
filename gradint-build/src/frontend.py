@@ -383,9 +383,15 @@ def setupScrollbar(parent,rowNo):
     # Mousewheel binding.  TODO the following bind_all assumes only one scrolledFrame on screen at once (redirect all mousewheel events to the frame; necessary as otherwise they'll go to buttons etc)
     app.ScrollUpHandler = lambda *args:c.yview("scroll","-1","units")
     app.ScrollDownHandler = lambda *args:c.yview("scroll","1","units")
-    scrolledFrame.bind_all('<Button-4>',app.ScrollUpHandler)
-    scrolledFrame.bind_all('<Button-5>',app.ScrollDownHandler)
-    # DON'T bind <MouseWheel> on Windows - our version of Tk will segfault when it occurs. See http://mail.python.org/pipermail/python-bugs-list/2005-May/028768.html but we can't patch our library.zip's Tkinter anymore (TODO can we use newer Tk DLLs and ensure setup.bat updates them?)
+    if macsound:
+        def ScrollHandler(event):
+            if event.delta>0: app.ScrollUpHandler()
+            else: app.ScrollDownHandler()
+        scrolledFrame.bind_all('<MouseWheel>',ScrollHandler)
+        # DON'T bind <MouseWheel> on Windows - our version of Tk will segfault when it occurs. See http://mail.python.org/pipermail/python-bugs-list/2005-May/028768.html but we can't patch our library.zip's Tkinter anymore (TODO can we use newer Tk DLLs and ensure setup.bat updates them?)
+    else: # for X11:
+        scrolledFrame.bind_all('<Button-4>',app.ScrollUpHandler)
+        scrolledFrame.bind_all('<Button-5>',app.ScrollDownHandler)
     return scrolledFrame, c
 
 # GUI presets buttons:
@@ -1280,7 +1286,7 @@ def sanityCheck(text,language,pauseOnError=0): # text is utf-8; returns error me
             if t in "12345": return # got tone numbers
             if t not in "0123456789. ": allDigits = False
         if allDigits: return
-        return "Pinyin needs tones.  Please go back and add tone numbers to "+text+"."+cond(startBrowser("http://www.pristine.com.tw/lexicon.php?query="+fix_pinyin(text,[]).replace("1","1 ").replace("2","2 ").replace("3","3 ").replace("4","4 ").replace("5"," ").replace("  "," ").strip(wsp).replace(" ","+"))," Gradint has pointed your web browser at an online dictionary that might help.","")
+        return "Pinyin needs tones.  Please go back and add tone numbers to "+text+"."+cond(startBrowser("http://www.mdbg.net/chinese/dictionary?wdqb="+fix_pinyin(text,[]).replace("1","1 ").replace("2","2 ").replace("3","3 ").replace("4","4 ").replace("5"," ").replace("  "," ").strip(wsp).replace(" ","+"))," Gradint has pointed your web browser at an online dictionary that might help.","")
 
 def check_for_slacking():
     if fileExists(progressFile): checkAge(progressFile,localise("It has been %d days since your last Gradint lesson.  Please try to have one every day."))

@@ -87,7 +87,7 @@ class ProgressDatabase(object):
                         code = codeop.compile_command("\n".join(lineCache))
                         if code:
                             lineCache = []
-                            exec code
+                            exec(code)
                 else: exec(expr)
             del expr
         # Remove legacy extentions in promptsData (needed only when loading from text, as this was before pickledProgressFile was added)
