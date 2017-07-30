@@ -975,6 +975,7 @@ def startTk():
             select_userNumber(intor0(self.userNo.get()),updateGUI=0)
             vCurrent = list2set(vocabLinesWithLangs())
             o=appendVocabFileInRightLanguages()
+            if not o: return # IOError
             langs = (secondLanguage,firstLanguage)
             for newLangs,line in vCopyFrom:
                 if (newLangs,line) in vCurrent: continue # already got it
@@ -1491,6 +1492,7 @@ def gui_event_loop():
             if emulated_interruptMain: check_for_interrupts()
             time.sleep(0.3)
         menu_response = app.menu_response
+        del app.menu_response
         if menu_response=="input": # WMstandard
             app.todo.input_response=raw_input()
         elif menu_response=="go":
@@ -1589,7 +1591,6 @@ def gui_event_loop():
                   elif ask_teacherMode: # Do the L2, then ask if actually WANT the L1 as well (might be useful on WinCE etc, search-and-demonstrate-L2)
                     doSynth()
                     if app and not getYN("Also speak the %s?" % firstLanguage):
-                      if app: del app.menu_response
                       continue
                 doControl(text2,firstLanguage,app.Text2)
                 doSynth()
@@ -1682,6 +1683,7 @@ def gui_event_loop():
             if msg: app.todo.alert=u""+msg
             else:
                 o=appendVocabFileInRightLanguages()
+                if not o: continue # IOError
                 o.write(text1+"="+text2+"\n") # was " = " but it slows down parseSynthVocab
                 o.close()
                 if paranoid_file_management:
@@ -1723,7 +1725,6 @@ def gui_event_loop():
             app.todo.clear_text_boxes=1
             app.unset_watch_cursor = 1
             if not found: app.todo.alert = "OOPS: Item to delete/replace was not found in "+vocabFile
-        if app: del app.menu_response
 
 def vocabLinesWithLangs(): # used for merging different users' vocab files
     langs = [secondLanguage,firstLanguage] ; ret = []
@@ -1743,7 +1744,10 @@ def appendVocabFileInRightLanguages():
     for l in v.split("\n"):
         l2=l.lower()
         if l2.startswith("set language ") or l2.startswith("set languages "): langs=l.split()[2:]
-    o=open(vocabFile,"a")
+    try: o=open(vocabFile,"a")
+    except IOError:
+        show_info("Cannot write to "+vocabFile+" (current directory is "+os.getcwd()+")")
+        return
     if not v.endswith("\n"): o.write("\n")
     if not langs==[secondLanguage,firstLanguage]: o.write("SET LANGUAGES "+secondLanguage+" "+firstLanguage+"\n")
     return o
