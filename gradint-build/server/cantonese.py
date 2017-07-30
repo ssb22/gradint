@@ -199,7 +199,8 @@ def import_gradint():
 
 if __name__ == "__main__":
     # command-line use: output Lau for each line of stdin
-    # (or Yale if there's a --yale in sys.argv);
+    # (or Yale if there's a --yale in sys.argv, or both
+    # with '#' separators if --yale#lau in sys.argv);
     # if there's a # in the line, assume it's hanzi#pinyin
     # (for annogen.py --reannotator="##python cantonese.py")
     lines = sys.stdin.read().replace("\r\n","\n").split("\n")
@@ -214,5 +215,6 @@ if __name__ == "__main__":
       else: pinyin = None
       jyutping = get_jyutping(l,0)
       if pinyin: jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
-      if "--yale" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))
+      if "--yale#lau" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
+      elif "--yale" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))
       else: print superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
