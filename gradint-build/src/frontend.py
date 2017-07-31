@@ -486,7 +486,9 @@ def startTk():
             global app ; app = self
             make_extra_buttons_waiting_list()
             if olpc: self.master.option_add('*font',cond(extra_buttons_waiting_list,'Helvetica 9','Helvetica 14'))
-            elif macsound and Tkinter.TkVersion>=8.6: self.master.option_add('*font','System 13') # ok with magnification.  Note >13 causes square buttons.  (Including this line causes "Big print" to work)
+            elif macsound:
+                if Tkinter.TkVersion>=8.6: self.master.option_add('*font','System 13') # ok with magnification.  Note >13 causes square buttons.  (Including this line causes "Big print" to work)
+                if "AppTranslocation" in os.getcwd(): self.todo.alert="Your Mac is using \"app translocation\" to stop Gradint from writing to its folder. This will cause many problems. Quit Gradint, drag it to a different folder and run it again."
             elif WMstandard: self.master.option_add('*font','Helvetica 7') # TODO on ALL WMstandard devices?
             if winsound or cygwin or macsound: self.master.resizable(1,0) # resizable in X direction but not Y (latter doesn't make sense, see below).  (Don't do this on X11 because on some distros it results in loss of automatic expansion as we pack more widgets.)
             elif unix:
