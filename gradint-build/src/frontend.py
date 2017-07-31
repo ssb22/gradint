@@ -1746,7 +1746,7 @@ def appendVocabFileInRightLanguages():
         if l2.startswith("set language ") or l2.startswith("set languages "): langs=l.split()[2:]
     try: o=open(vocabFile,"a")
     except IOError:
-        show_info("Cannot write to "+vocabFile+" (current directory is "+os.getcwd()+")")
+        show_warning("Cannot write to "+vocabFile+" (current directory is "+os.getcwd()+")")
         return
     if not v.endswith("\n"): o.write("\n")
     if not langs==[secondLanguage,firstLanguage]: o.write("SET LANGUAGES "+secondLanguage+" "+firstLanguage+"\n")
