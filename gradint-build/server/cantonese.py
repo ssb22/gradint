@@ -3,7 +3,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.14 (c) 2013-15,2017 Silas S. Brown.  License: GPL
+# v1.15 (c) 2013-15,2017 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
@@ -148,11 +148,15 @@ def jyutping_to_yale_TeX(j): # returns space-separated syllables
     for i in range(len(syl)):
       if syl[i] in "aeiou":
         vowel=i ; break
+    if vowel==None and re.match(r"h?(m|ng)[4-6]",syl): # standalone nasal syllables
+      vowel = syl.find('m')
+      if vowel<0: vowel = syl.index('n')
     if vowel==None:
       ret.append(syl.upper()) ; continue # English word or letter in the Chinese?
     if syl[vowel:vowel+2] == "aa" and (len(syl)<vowel+2 or syl[vowel+2] in "123456"):
       syl=syl[:vowel]+syl[vowel+1:] # final aa -> a
     # the tonal 'h' goes after all the vowels but before any consonants:
+    lastVowel = vowel # default needed if standalone nasal
     for i in range(len(syl)-1,-1,-1):
       if syl[i] in "aeiou":
         lastVowel=i ; break
@@ -206,14 +210,17 @@ if __name__ == "__main__":
     lines = sys.stdin.read().replace("\r\n","\n").split("\n")
     if lines and not lines[-1]: del lines[-1]
     dryrun_mode = True
+    def songSubst(l):
+      if '--song-lyrics' in sys.argv: l=l.replace(unichr(0x4f7f).encode('utf-8'),unichr(0x38c8).encode('utf-8')) # Mandarin shi3 (normally jyutping sai2) is usually si3 in songs, so substitute a rarer character that unambiguously has that reading before sending to get_jyutping
+      return l
     for l in lines:
       if '#' in l: l=l[:l.index('#')]
-      get_jyutping(l)
+      get_jyutping(songSubst(l))
     dryrun_mode = False
     for l in lines:
       if '#' in l: l,pinyin = l.split('#')
       else: pinyin = None
-      jyutping = get_jyutping(l,0)
+      jyutping = get_jyutping(songSubst(l),0)
       if pinyin: jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
       if "--yale#lau" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
       elif "--yale" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))

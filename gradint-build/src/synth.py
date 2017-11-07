@@ -622,9 +622,12 @@ class ESpeakSynth(Synth):
       for index,dat in zip(indexList,data):
           en_words={} # any en words that espeak found embedded in the text
           r=[] ; lastWasBlank=False
-          delete_last_r_if_blank = 0
+          delete_last_r_if_blank = 0 ; appendNext = 0
           thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
           for l in dat.strip(wsp).split("\n"):
+              if appendNext: # (see below)
+                  r.append(l[l.index("[")+1:l.index("]")])
+                  appendNext = 0 ; continue
               # print "Debugger:",l.strip()
               # get en_words for fix_pinyin (and for making sure we embed them in cant)
               lWords = l.split()
@@ -661,7 +664,8 @@ class ESpeakSynth(Synth):
                           en_words[r[-1]]=1
                       foundLetter = 1
                   elif not lang=="zh" and l.startswith("Found: ") and (ord(l[7])>127 or (l[7]=="'" and ord(l[8])>127)): # (espeak 1.40 puts in l[7], 1.44 surrounds in quotes)
-                      r.append(l[l.index("[")+1:l.index("]")])
+                      if not "[" in l: appendNext=1 # probably a spurious newline in the Found quote (espeak 1.48.03)
+                      else: r.append(l[l.index("[")+1:l.index("]")])
               lastWasBlank=(l.startswith("Replace") or not l or foundLetter) # (take 'Replace' lines as blank, so 'Translate' doesn't add a second comma.  ditto letters thing.)
           while r and r[-1] and r[-1][-1]==',': r[-1]=r[-1][:-1] # strip any trailing commas
           if lang=="zh": retList[index]=fix_pinyin(" ".join(r),en_words)
