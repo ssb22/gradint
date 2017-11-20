@@ -80,12 +80,17 @@ for l in os.listdir(newStuff):
     if l.endswith(dottxt) and "_" in l:
         txt = open(newStuff+os.sep+l).read().decode('utf-16')
         txt = (sporadic+txt,l[l.rindex("_")+1:l.rindex(gradint.extsep)])
-        generating[txt] = 1 ; fname2txt[l[:l.rindex(gradint.extsep)]]=txt
+        generating[txt] = (None,l)
+        fname2txt[l[:l.rindex(gradint.extsep)]]=txt
 for l in os.listdir(newStuff):
     if l.endswith(dotwav) or l.endswith(dotmp3):
         k=l[:l.rindex(gradint.extsep)]
         if k in fname2txt: generating[fname2txt[k]]=newStuff+os.sep+l
-del fname2txt # now 'generating' maps (txt,lang) to 1 or filename
+del fname2txt # now 'generating' maps (txt,lang) to (None,txtFile) or filename
+for k,v in generating.items():
+    if type(v)==tuple and v[0]==None: # a previous run was interrupted
+        os.remove(newStuff+os.sep+v[1])
+        del generating[k]
 
 def getTxtLang(s):
     if '!synth:' in s and "_" in s: return gradint.textof(s).decode('utf-8'),gradint.languageof(s)
