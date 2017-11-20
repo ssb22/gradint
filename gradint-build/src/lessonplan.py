@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99895 (c) 2002-2017 Silas S. Brown. GPL v3+.
+# gradint v0.99896 (c) 2002-2017 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -71,7 +71,7 @@ class ProgressDatabase(object):
             else: expr = read(progressFile)
         else: expr = None
         if expr:
-            expr = u8strip(expr) # just in case progress.txt has been edited in Notepad
+            expr = u8strip(expr).replace("\r\n","\n") # just in case progress.txt has been edited in Notepad
             # First, try evaluating it as self.data (legacy progress.txt from older versions).  If that doesn't work, execute it (newer versions).
             global firstLanguage, secondLanguage, otherLanguages
             try: self.data = eval(expr)
