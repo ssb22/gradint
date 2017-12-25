@@ -524,6 +524,7 @@ def startTk():
                             else: f[i]="%d"
                             break
                       if nominalSize==2147483648: nominalSize = 0 # e.g. Tk 8.6 on Ubuntu 16.04 when using the first eval stirng above
+                      elif f2=='set font [font actual default]': nominalSize *= 0.77 # kludge for Tk 8.6 on Ubuntu 16.04 to make large-print calculation below work
                       if nominalSize: break
                     f=" ".join(f)
                     if (not "%d" in f) or not nominalSize: raise Exception("wrong format") # caught below
