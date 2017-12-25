@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99896 (c) 2002-2017 Silas S. Brown. GPL v3+.
+# gradint v0.99897 (c) 2002-2017 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -512,17 +512,21 @@ def startTk():
                 nominalSize = intor0(f[-1])
                 if nominalSize: f=" ".join(f[:-1])+" %d"
                 else: # Tk 8.5+ ?
-                    f=str(self.tk.eval('set font [font actual '+' '.join(f)+']')).split()
-                    upNext = 0
-                    for i in range(len(f)):
+                    for f2 in ['set font [font actual '+' '.join(f)+']', # Tk 8.5
+                               'set font [font actual default]']: # Tk 8.6
+                      f=str(self.tk.eval(f2)).split()
+                      upNext = 0
+                      for i in range(len(f)):
                         if f[i]=="-size": upNext=1
                         elif upNext:
                             nominalSize=intor0(f[i])
                             if nominalSize<0: nominalSize,f[i] = -nominalSize,"-%d"
                             else: f[i]="%d"
                             break
+                      if nominalSize==2147483648: nominalSize = 0 # e.g. Tk 8.6 on Ubuntu 16.04 when using the first eval stirng above
+                      if nominalSize: break
                     f=" ".join(f)
-                    if not "%d" in f: raise Exception("wrong format") # caught below
+                    if (not "%d" in f) or not nominalSize: raise Exception("wrong format") # caught below
                 pixelSize = self.Label.winfo_reqheight()-2*int(str(self.Label["borderwidth"]))-2*int(str(self.Label["pady"]))
                 # NB DO NOT try to tell Tk a desired pixel size - you may get a *larger* pixel size.  Need to work out the desired nominal size.
                 approx_lines_per_screen_when_large = 25 # TODO really? (24 at 800x600 192dpi 15in but misses the status line, but OK for advanced users.  setting 25 gives nominal 7 which is rather smaller.)
@@ -653,7 +657,9 @@ def startTk():
                     updateUserRow(1)
                 if hasattr(self,"bigPrintFont"):
                     self.BigPrintButton = addButton(self.leftPanel,localise("Big print"),self.bigPrint)
-                    self.BigPrintButton["font"]=self.bigPrintFont
+                    try: self.BigPrintButton["font"]=self.bigPrintFont
+                    except:
+                        self.BigPrintButton.pack_forget() ; del self.BigPrintButton, self.bigPrintFont
                 self.remake_cancel_button(localise("Quit"))
                 if not GUI_omit_statusline: self.Version.pack(fill=Tkinter.X,expand=1)
                 if olpc or self.todo.set_main_menu=="test" or GUI_for_editing_only: self.showtest() # olpc: otherwise will just get a couple of options at the top and a lot of blank space (no way to centre it)
