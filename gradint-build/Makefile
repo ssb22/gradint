@@ -210,7 +210,7 @@ gradint.bgz: $(Linux_Files)
 	rm -rf gradint
 
 servertools.bgz: server
-	rm -f server/*~
+	rm -f server/*~ server/*.pyc
 	tar -c server/ | bzip2 -9 > servertools.bgz
 
 gradint.zip: $(Riscos_Files) riscos.zip

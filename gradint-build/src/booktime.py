@@ -23,17 +23,14 @@
 
 def initialGlue(): return Glue(0,maxLenOfLesson)
 
-try: import bisect
+try: from bisect import insort
 except:
-    class bisect: pass
-    bisect=bisect()
     def insort(l,item):
         l.append(item) ; l.sort()
-    bisect.insort = insort
 class Schedule(object):
     # A sorted list of (start,finish) times that are booked
     def __init__(self): self.bookedList = []
-    def book(self,start,finish): bisect.insort(self.bookedList,(start,finish))
+    def book(self,start,finish): insort(self.bookedList,(start,finish))
 
 earliestAllowedEvent = 0 # for "don't start before" hacks, so can keep all initial glue starting at 0
 
@@ -123,10 +120,7 @@ class Glue (GlueOrEvent):
     def __init__(self,length,plusMinus):
         GlueOrEvent.__init__(self,length,plusMinus,1)
 
-def sgn(a):
-    # Not all versions of Python have this built-in
-    if a: return a/abs(a)
-    else: return 1
+def sgn(a): return [1,-1][a<0]
 
 class StretchedTooFar(Exception): pass
 class GluedEvent(object):
