@@ -59,7 +59,7 @@ def CompositeEvent_draw(self,startTime,pixelsPerSec,topY,height):
 gradint.CompositeEvent.draw=CompositeEvent_draw
 
 def Event_colour(self,language):
-    if hasattr(self,"wordToCancel"):
+    if self.makesSenseToLog():
       if language==gradint.firstLanguage: return "yellow" # TODO: 2nd to 3rd lang etc?
       else: return "green"
     else: return "grey" # prompts

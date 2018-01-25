@@ -644,15 +644,17 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
         os.system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
         data=read("tmp0") ; os.unlink("tmp0")
         return data
-    elif madplay_path or got_program("mpg123"):
+    elif madplay_path:
         oldDir = os.getcwd()
-        if madplay_path: d=os.popen(madplay_path+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-","rb").read()
-        else: d=os.popen("mpg123 -q -w - \""+changeToDirOf(file)+"\"","rb").read()
-        os.chdir(oldDir)
-        # fix length (especially if it's mpg123)
-        wavLen = len(d)-8 ; datLen = wavLen-36 # assumes no other chunks
-        if datLen<0: raise IOError("decode_mp3 got bad wav") # better than ValueError for the chr() in the following line
-        return d[:4] + chr(wavLen&0xFF)+chr((wavLen>>8)&0xFF)+chr((wavLen>>16)&0xFF)+chr(wavLen>>24) + d[8:40] + chr(datLen&0xFF)+chr((datLen>>8)&0xFF)+chr((datLen>>16)&0xFF)+chr(datLen>>24) + d[44:]
+        d=os.popen(madplay_path+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-","rb").read()
+        os.chdir(oldDir) ; return d
+    elif got_program("mpg123"): # do NOT try to read its stdout (not only does it write 0 length, which we can fix, but some versions can also write wrong bitrate, which is harder for us to fix)
+        oldDir = os.getcwd()
+        tfil = os.tempnam()+dotwav
+        os.system("mpg123 -q -w \""+tfil+"\" \""+changeToDirOf(file)+"\"")
+        if compress_SH and gotSox: dat = os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ","rb").read()
+        else: dat = open(tfil).read()
+        os.unlink(tfil) ; os.chdir(oldDir) ; return dat
     elif macsound and got_program("afconvert"):
         tfil = os.tempnam()+dotwav
         system("afconvert -f WAVE -d I16@44100 \""+file+"\" \""+tfil+"\"")
