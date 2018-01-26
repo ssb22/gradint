@@ -254,7 +254,9 @@ class SampleEvent(Event):
           try: return os.unlink(self.file)
           except: time.sleep(0.2) # may have taken extra time for the player to load
           if not fileExists_stat(self.file): break # unlink suceeded and still threw exception ??
-    def makesSenseToLog(self): return not self.file.startswith(promptsDirectory) # (NB "not prompts" doesn't necessarily mean it'll be a sample - may be a customised additional comment)
+    def makesSenseToLog(self):
+        if hasattr(self,"is_prompt"): return not self.is_prompt # e.g. prompt from synth-cache
+        return not self.file.startswith(promptsDirectory) # (NB "not prompts" doesn't necessarily mean it'll be a sample - may be a customised additional comment)
     def play(self): # returns a non-{False,0,None} value on error
         if paranoid_file_management:
             if not hasattr(self,"isTemp"): open(self.file) # ensure ready for reading
