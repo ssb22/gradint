@@ -2,7 +2,7 @@
 # diagram.py: script to generate diagrams of gradint lessons
 # (C) 2008 Silas S. Brown.  License: GPL
 
-# gradint is run normally (passing any command-line arguments on)
+# Gradint is run normally (passing any command-line arguments on)
 # and then a diagram of the lesson it made is written to diagram.svg
 
 # you can get .ps by doing: inkscape -p '> diagram.ps' diagram.svg
