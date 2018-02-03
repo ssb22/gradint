@@ -232,7 +232,6 @@ else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = lastIndentLevel = indentLevel = -1
 lCount = -1 ; inTripleQuotes=0 ; orig = []
-suppressed_if = 0
 for l in sys.stdin.xreadlines():
   orig.append(l)
   lCount += 1
@@ -252,30 +251,15 @@ for l in sys.stdin.xreadlines():
   if (code in to_omit or (':' in code and code[:code.index(':')+1] in to_omit)) and not was_inTripleQuotes:
     if ':' in code and code[:code.index(':')+1] in to_omit: code = code[:code.index(':')+1]
     if code.startswith("def "): code=re.sub(r"\([^)][^)][^)]+\)",r"(*_)",code)
-    if code.startswith("elif "): pass # can always remove those lines completely, even if will be followed by an 'else'
-    elif code.startswith("if "):
-      suppressed_if = (indentLevel <= lastIndentLevel)
-      if not suppressed_if: print " "*indentLevel+"pass # trimmed" # just in case there's nothing else in the block
+    if code.startswith("elif "): pass # can always remove those lines completely, even if will be followed by an 'else' (and will never be the only thing in its block)
     else:
+      if code.startswith("if "): code="if 0:"
       print " "*indentLevel+code+" pass # trimmed"
-      suppressed_if=0
     revertToIndent = indentLevel
   elif not code:
     if "#    " in l or lCount < 2: print l # keep start and GPL comments
-  else:
-    if suppressed_if and indentLevel==justRevertedI:
-      if code.startswith("elif "):
-        l = l.replace("elif","if",1)
-        code0 = code0.replace("elif","if",1)
-      elif code=="else:":
-        l = l.replace("else:","if 1: # trimmed",1)
-        code0 = code0.replace("else:","if 1: # trimmed",1)
-      elif code.startswith("else:"):
-        l = re.subn(r"else:\s*","",l,1)[0]
-        code0 = re.subn(r"else:\s*","",code0,1)[0]
-    suppressed_if=0
-    if ('"' in code and '"' in l[len(code):]) or ("'" in code and "'" in l[len(code):]): print l # perhaps # was in a string, keep it
-    else: print code0
+  elif ('"' in code and '"' in l[len(code):]) or ("'" in code and "'" in l[len(code):]): print l # perhaps # was in a string, keep it
+  else: print code0
 orig = "".join(orig)
 for o in to_omit:
   if not o in orig: sys.stderr.write("Warning: line not matched: "+o)
