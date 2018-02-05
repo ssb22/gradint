@@ -23,7 +23,6 @@
 import sys,os,traceback
 oldName = __name__ ; from vapory import * ; __name__ = oldName
 from concurrent.futures import ProcessPoolExecutor
-# from moviepy.editor import VideoClip,AudioFileClip
 
 import gradint
 assert gradint.outputFile, "You must run trace.py with gradint parameters that include outputFile"
@@ -220,9 +219,7 @@ def tryFrame((frame,duration)):
 def main():
     executor = ProcessPoolExecutor()
     duration = runGradint()
-    # print "Making VideoClip" ; vid = VideoClip(lambda t:scene(t).render(width=300, height=200, antialiasing=0.001), duation=duration)
-    # print "Making /tmp/gradint.mp4" ; vid.write_videofile("/tmp/gradint.mp4",fps=theFPS) # won't work with ffmpeg 3.1.3 on Mac OS 10.7 (and brew upgrade gives curl SSL error on cython); would need a VM, or do it indirectly:
-    # print "Making /tmp/test.gif" ; vid.write_gif("/tmp/test.gif",fps=theFPS) ; os.system("ffmpeg -i /tmp/gradint.gif -i "+gradint.outputFile+" -movflags faststart -pix_fmt yuv420p /tmp/gradint.mp4") # works but sometimes fails on ValueError in render_povstring half way through
+    # TODO: pickle all MovableParams so can do the rendering on a different machine than the one that makes the Gradint lesson?
     cmds = executor.map(tryFrame,[(frame,duration) for frame in xrange(int(duration*theFPS))])
     for c in list(cmds)+["ffmpeg -y -framerate "+repr(theFPS)+" -i /tmp/frame%05d.png -i "+gradint.outputFile+" -movflags faststart -pix_fmt yuv420p /tmp/gradint.mp4"]: # patch up skipped frames, then run ffmpeg (could alternatively run with -vcodec huffyuv /tmp/gradint.avi for lossless, insead of --movflags etc, but will get over 6 gig and may get A/V desync problems in mplayer/VLC that -delay doesn't fix, however -b:v 1000k seems to look OK; for WeChat etc you need to recode to h.264, and for HTML 5 video need recode to WebM (but ffmpeg -c:v libvpx no good if not compiled with support for those libraries; may hv to convert on another machine i.e. ffmpeg -i gradint.mp4 -vf scale=320:240 -c:v libvpx -b:v 500k gradint.webm))
         if c:
