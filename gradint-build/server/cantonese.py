@@ -3,7 +3,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.15 (c) 2013-15,2017 Silas S. Brown.  License: GPL
+# v1.16 (c) 2013-15,2017-18 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
@@ -160,10 +160,11 @@ def jyutping_to_yale_TeX(j): # returns space-separated syllables
     for i in range(len(syl)-1,-1,-1):
       if syl[i] in "aeiou":
         lastVowel=i ; break
-    if syl[-1] in "456":
-      syl=syl[:lastVowel+1]+"h"+syl[lastVowel+1:-1]+str(int(syl[-1])-3)
-    if syl[-1] in "123":
-      ret.append((syl[:vowel]+[r"\`",r"\'",r"\="][int(syl[-1])-1]+syl[vowel:-1]).replace(r"\=i",r"\=\i{}").replace(r"\=I",r"\=\I{}"))
+    if syl[-1] in "123456":
+      tone = ["\=",r"\'","",r"\`",r"\'",""][int(syl[-1])-1]
+      if syl[-1] in "456":
+        syl=syl[:lastVowel+1]+"h"+syl[lastVowel+1:]
+      ret.append((syl[:vowel]+tone+syl[vowel:-1]).replace(r"\=i",r"\=\i{}").replace(r"\=I",r"\=\I{}"))
     else: ret.append(syl.upper()) # English word or letter in the Chinese?
   return ' '.join(ret)
 
