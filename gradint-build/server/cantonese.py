@@ -148,7 +148,7 @@ def jyutping_to_yale_TeX(j): # returns space-separated syllables
     for i in range(len(syl)):
       if syl[i] in "aeiou":
         vowel=i ; break
-    if vowel==None and re.match(r"h?(m|ng)[4-6]",syl): # standalone nasal syllables
+    if vowel==None and re.match(r"h?(m|ng)[456]",syl): # standalone nasal syllables
       vowel = syl.find('m')
       if vowel<0: vowel = syl.index('n')
     if vowel==None:
