@@ -60,7 +60,7 @@ gradint.exe: $(Common_Files) gradint.py
 	mv windows0/gradint/samples/utils "windows0/gradint/samples/advanced utilities"
 	for N in hanzi-prompts/*.txt; do python -c "open('windows0/gradint/samples/prompts/$$(echo $$N|sed -e s,.*/,,)','w').write('\\xef\\xbb\\xbf'+open('$$N').read())"; done # overwriting the pinyin ones (as will bundle espeak so can translit.)
 	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
-	for N in windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
+	for N in windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n "$$N"; done
 	# add a utf-8 BOM to start of vocab.txt, to ensure Notepad saves it in utf-8
 	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
 	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
@@ -92,7 +92,7 @@ recorder.exe: $(Common_Files) gradint.py
 	# (replace the .exe with a .bat in case they try to open it again from desktop and get confused by unzip's "overwrite" prompt)
 	# (NB must say 'start' below for the above del to work)
 	echo 'firstLanguage="$(RecorderL1)";secondLanguage="$(RecorderL2)"' > windows0/recorder/settings.txt
-	for N in windows0/recorder/*.bat windows0/recorder/*.txt; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
+	for N in windows0/recorder/*.bat windows0/recorder/*.txt; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n "$$N"; done
 	cd windows0; zip -9r recorder.zip recorder/ ; cd ..
 	echo '$$AUTORUN$$>start /min recorder\runme.bat' | zip -z windows0/recorder.zip
 	cat yali-voice/unzipsfx.exe windows0/recorder.zip > recorder.exe
@@ -108,7 +108,7 @@ gradint.cab: $(Common_Files) gradint.py
 	for Dir in PocketPC0/gradint/partials/*/*; do if cd $$Dir; then if wc -c *.raw | grep -v total$$ | sed -e 's/^ *//' > audiodata.dat ; then cat *.raw >> audiodata.dat ; rm *.raw; else rm -f audiodata.dat; fi; cd ../../../../..; else true; fi; done
 	chmod +w PocketPC0/gradint/gradint.py # saves problems with pocketpc-cab
 	rm -rf PocketPC0/gradint/samples/utils # no point having those on Windows Mobile
-	for N in PocketPC0/gradint/*.txt; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
+	for N in PocketPC0/gradint/*.txt; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n "$$N"; done
 	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
 	cd PocketPC0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
 	# PocketPC/espeak-data contains the altered phon* files in case the eSpeak version is slightly different, but we should be able to re-use the dictionaries etc
@@ -153,7 +153,7 @@ gradint-noGUI.exe: $(Common_Files) gradint.py
 	cp -r $(Common_Files) windows0/gradint/
 	mv windows0/gradint/samples/utils "windows0/gradint/samples/advanced utilities"
 	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
-	for N in windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
+	for N in windows0/gradint/*.txt windows0/gradint/*/*.txt windows0/gradint/*/*.txt windows0/*.bat windows0/*/*.bat windows0/7zip.conf; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n "$$N"; done
 	# add a utf-8 BOM to start of vocab.txt, to ensure Notepad saves it in utf-8
 	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
 	cd windows0/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
@@ -167,7 +167,7 @@ gradint-noGUI.exe: $(Common_Files) gradint.py
 GUI.exe: gradint.py
 	rm -rf windows0 ; cp -r windowsGUI windows0
 	cd windows0 && $(SevenZip) x gradint.bgz && rm gradint.bgz && cd ..
-	for N in windows0/7zip.conf; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
+	for N in windows0/7zip.conf; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n "$$N"; done
 	zip -0 windows0/gradint/library.zip gradint.py # (important to have no compression)
 	cd windows0 ; $(SevenZip) a data.7z setup.bat gradint ; cd ..
 	cat windows/7zS.sfx windows0/7zip.conf windows0/data.7z > GUI.exe
@@ -264,7 +264,7 @@ CD: $(Mac_Files) gradint.zip
 	echo '#!/bin/bash'>CD/gradint/Linux-version.sh; echo python gradint.py>>CD/gradint/Linux-version.sh # don't rename gradint.py because it's used by Mac version also
 	mv gradint.zip CD/gradint/RiscOS-version.zip
 	zip -0 CD/gradint/library.zip gradint.py # (important to have no compression)
-	for N in CD/gradint/*.txt CD/gradint/*/*.txt CD/gradint/*/*/*.txt CD/setup.bat CD/gradint/*.bat CD/gradint/*/*.bat; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n $$N; done
+	for N in CD/gradint/*.txt CD/gradint/*/*.txt CD/gradint/*/*/*.txt CD/setup.bat CD/gradint/*.bat CD/gradint/*/*.bat; do python -c "import sys; sys.stdout.write(sys.stdin.read().replace('\r','').replace('\n','\r\n'))" < "$$N" > n && mv n "$$N"; done
 	cd CD/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ../..
 	cd CD/gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("advanced.txt").read())' && mv v2 advanced.txt && cd ../..
 	echo "<html><body><h1>Gradint Live CD" > CD/Read_Me.html
