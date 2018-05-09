@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.076 (c) 2011,2015,2017 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.077 (c) 2011,2015,2017-18 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -43,20 +43,20 @@ cginame = os.sep+sys.argv[0] ; cginame=cginame[cginame.rindex(os.sep)+1:]
 sys.stderr=open("/dev/null","w") ; sys.argv = []
 gradint = None
 def reinit_gradint(): # if calling again, also redo setup_userID after
-    global gradint,lDic
+    global gradint,langFullName
     if gradint: gradint = reload(gradint)
     else: import gradint
     gradint.waitOnMessage = lambda *args:False
-    lDic = {}
+    langFullName = {}
     for l in gradint.ESpeakSynth().describe_supported_languages().split():
         abbr,name = l.split("=")
-        lDic[abbr]=name
+        langFullName[abbr]=name
     # Try to work out probable default language:
     lang = os.environ.get("HTTP_ACCEPT_LANGUAGE","")
     if lang:
         for c in [',',';','-']:
             if c in lang: lang=lang[:lang.index(c)]
-        if not lang in lDic: lang=""
+        if not lang in langFullName: lang=""
     if lang:
         gradint.firstLanguage = lang
         if not lang=="en": gradint.secondLanguage="en"
@@ -65,10 +65,10 @@ def reinit_gradint(): # if calling again, also redo setup_userID after
 reinit_gradint()
 
 def main():
-  if has_userID(): setup_userID() # always, even for justSynth, as it may include a voice selection (TODO consequently being called twice in many circumstances, could make this more efficient)
-  if "id" in query:
+  if "id" in query: # e.g. from redirectHomeKeepCookie
     os.environ["HTTP_COOKIE"]="id="+query["id"][0]
     print 'Set-Cookie: id=' + query["id"][0]+'; expires=Wed, 1 Dec 2036 23:59:59 GMT'
+  if has_userID(): setup_userID() # always, even for justSynth, as it may include a voice selection (TODO consequently being called twice in many circumstances, could make this more efficient)
   filetype=""
   if "filetype" in query: filetype=query["filetype"][0]
   if not filetype in ["mp3","ogg","wav"]: filetype="mp3"
@@ -314,17 +314,23 @@ def redirectHomeKeepCookie(dirID,extra=""):
 
 def langSelect(name,curLang):
     curLang = gradint.espeak_language_aliases.get(curLang,curLang)
-    return '<select name="'+name+'">'+''.join(['<option value="'+abbr+'"'+gradint.cond(abbr==curLang," selected","")+'>'+localise(abbr)+' ('+abbr+')'+'</option>' for abbr in sorted(lDic.keys())])+'</select>'
+    return '<select name="'+name+'">'+''.join(['<option value="'+abbr+'"'+gradint.cond(abbr==curLang," selected","")+'>'+localise(abbr)+' ('+abbr+')'+'</option>' for abbr in sorted(langFullName.keys())])+'</select>'
 
 def numSelect(name,nums,curNum): return '<select name="'+name+'">'+''.join(['<option value="'+str(num)+'"'+gradint.cond(num==curNum," selected","")+'>'+str(num)+'</option>' for num in nums])+'</select>'
 
 def localise(x):
     r=gradint.localise(x)
-    if r==x: return lDic.get(gradint.espeak_language_aliases.get(x,x),x)
+    if r==x: return langFullName.get(gradint.espeak_language_aliases.get(x,x),x)
     else: return r.encode('utf-8')
 for k,v in {"Swap":{"zh":u"交换","zh2":u"交換"},
             "Text edit":{"zh":u"文本编辑"},
             "Delete":{"zh":u"删除","zh2":u"刪除"},
+            "Really delete this word?":{"zh":u"真的删除这个词?","zh2":u"真的刪除這個詞?"},
+            "Your word list":{"zh":u"你的词汇表","zh2":u"你的詞彙表"},
+            "click for audio":{"zh":u"击某词就听声音","zh2":u"擊某詞就聽聲音"},
+            "Repeats":{"zh":u"重复计数","zh2":u"重複計數"},
+            "To edit this list on another computer, type":{"zh":u"要是想在其他的电脑或手机编辑这个词汇表，请在别的设备打","zh2":u"要是想在其他的電腦或手機編輯這個詞彙表，請在別的設備打"},
+            "Your word list is empty.":{"zh":u"词汇表没有词汇，加一些吧","zh2":u"詞彙表沒有詞彙，加一些吧"}
             }.items():
   if not k in gradint.GUI_translations: gradint.GUI_translations[k]=v
 
@@ -374,29 +380,38 @@ def listVocab(hasList): # main screen
          if type(l)==type([]) or type(l)==type(()) or not "!synth:" in l: return "" # Web-GUI delete in poetry etc not yet supported
          r.append(urllib.quote(l[l.index("!synth:")+7:l.rfind("_")]))
        r.append(localise("Delete"))
-       return '<TD><input type=submit name="del-%s%%3d%s" value="%s" onClick="return confirm(\'Really delete this word?\');"></TD>' % tuple(r)
+       return ('<td><input type=submit name="del-%s%%3d%s" value="%s" onClick="return confirm(\''+localise("Really delete this word?")+'\');"></td>') % tuple(r)
     if hasList:
        gradint.availablePrompts = gradint.AvailablePrompts() # needed before ProgressDatabase()
        # gradint.cache_maintenance_mode=1 # don't transliterate on scan -> NO, including this scans promptsDirectory!
        gradint.ESpeakSynth.update_translit_cache=lambda *args:0 # do it this way instead
        data = gradint.ProgressDatabase().data ; data.reverse()
-       if data: hasList = "<p><TABLE style=\"border: thin solid green\"><caption><nobr>Your word list</NOBR> <NOBR>(click for audio)</NOBR> <input type=submit name=edit value=\""+localise("Text edit")+"\"></caption><TR><TH>Repeats</TH><TH>"+localise(gradint.secondLanguage)+"</TH><TH>"+localise(gradint.firstLanguage)+"</TH></TR>"+"".join(["<TR><TD>%d</TD><TD>%s</TD><TD>%s</TD>%s" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</TABLE>"
+       if data: hasList = "<p><table style=\"border: thin solid green\"><caption><nobr>"+localise("Your word list")+"</nobr> <nobr>("+localise("click for audio")+")</nobr> <input type=submit name=edit value=\""+localise("Text edit")+"\"></caption><tr><th>"+localise("Repeats")+"</th><th>"+localise(gradint.secondLanguage)+"</th><th>"+localise(gradint.firstLanguage)+"</th></tr>"+"".join(["<tr><td>%d</td><td>%s</td><td>%s</td>%s" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</table>"
        else: hasList=""
     else: hasList=""
     if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson")+"""" onClick="if(h5a('"""+cginame+'?lesson='+str(random.random())+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){location.href='"""+cginame+'?lFinish='+str(random.random())+"""'})) return true; else { document.forms[0].lesson.value='Please wait while the lesson starts to play'; document.forms[0].lesson.disabled=1; return false}"></td></tr></table>"""
     if "dictionary" in query:
-        if query["dictionary"][0]=="1": body += '<script><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">Back to referring site</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
-        else: body += '<p><a href="'+query["dictionary"][0]+'">Back to dictionary</a>' # TODO check for cross-site scripting
-    if not hasList: hasList="<P>Your word list is empty."
+        if query["dictionary"][0]=="1": body += '<script><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">'+localise("Back to referring site")+'</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
+        else: body += '<p><a href="'+query["dictionary"][0]+'">'+localise("Back to dictionary")+'</a>' # TODO check for cross-site scripting
+    if hasList:
+      if "SCRIPT_URI" in os.environ: hasList += "<p>"+localise("To edit this list on another computer, type")+" <kbd>"+os.environ["SCRIPT_URI"]+"?id="+getCookieId()+"</kbd>"
+    else: hasList="<P>"+localise("Your word list is empty.")
     body += hasList
     htmlOut(body+'</form></center><script><!--\ndocument.forms[0].l2w.focus()\n//--></script>')
 
-def has_userID():
+def has_userID(): # TODO: can just call getCookieId with not too much extra overhead
     cookie_string = os.environ.get('HTTP_COOKIE',"")
     if cookie_string:
         cookie = Cookie.SimpleCookie()
         cookie.load(cookie_string)
         return 'id' in cookie
+
+def getCookieId():
+    cookie_string = os.environ.get('HTTP_COOKIE',"")
+    if not cookie_string: return
+    cookie = Cookie.SimpleCookie()
+    cookie.load(cookie_string)
+    if 'id' in cookie: return cookie['id'].value.replace('"','').replace("'","").replace("\\","")
 
 def setup_userID():
     # MUST call before outputting headers (may set cookie)
@@ -404,12 +419,7 @@ def setup_userID():
     if cginame=="gradint.cgi": dirName = "cgi-gradint-users" # as previous versions
     else: dirName = cginame+"-users" # TODO document this feature (you can symlink something-else.cgi to gradint.cgi and it will have a separate user directory) (however it still reports gradint.cgi on the footer)
     if not os.path.exists(dirName): os.system("mkdir "+dirName)
-    userID = None
-    cookie_string = os.environ.get('HTTP_COOKIE',"")
-    if cookie_string:
-        cookie = Cookie.SimpleCookie()
-        cookie.load(cookie_string)
-        if 'id' in cookie: userID = cookie['id'].value.replace('"','').replace("'","").replace("\\","")
+    userID = getCookieId()
     need_write = (userID and not os.path.exists(dirName+'/'+userID+'-settings.txt')) # maybe it got cleaned up
     if not userID:
         while True:
