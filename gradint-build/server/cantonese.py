@@ -9,7 +9,13 @@ dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
 import re
 
+extra_zhy_dict = { # TODO: add these to the real zhy_dict
+  u"\u9c85":"bat3",u"\u9b81":"bat3",
+}
+
 def get_jyutping(hanzi,mustWork=1):
+  if type(hanzi)==str: hanzi=hanzi.decode('utf-8')
+  for k,v in extra_zhy_dict.items(): hanzi=hanzi.replace(k,v)
   global espeak
   if not espeak:
       espeak = import_gradint().ESpeakSynth()
