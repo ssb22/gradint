@@ -222,8 +222,8 @@ gradint.zip: $(Riscos_Files) riscos.zip
 	rm -rf \!gradint
 
 publish0: $(All_Versions) gradint.py
-	scp -C gradint.py st0rage.org:gradint/
-	scp -C gradint.py shell.srcf.ucam.org:gradint/
+	scp -C gradint.py st0rage:gradint/
+	scp -C gradint.py srcf:gradint/
 	mv $(All_Versions) ~/public_html/gradint/
 	cp vocab.txt advanced.txt ~/public_html/gradint/
 	cp samples/README.txt ~/public_html/gradint/samples-readme.txt
@@ -231,7 +231,7 @@ publish0: $(All_Versions) gradint.py
 	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/public_html/gradint/latest-version.txt
 	make clean
 	~/homepage/update
-	ssh ssh.st0rage.org "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c 'sleep 60;. build-sync.sh'"
+	ssh st0rage "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c 'sleep 60;. build-sync.sh'"
 
 publish:
 	# do it from /tmp so as to avoid confusing HomeSync if ssh'ing in from a PWF Mac
