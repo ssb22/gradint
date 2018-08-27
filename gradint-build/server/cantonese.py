@@ -3,13 +3,13 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.16 (c) 2013-15,2017-18 Silas S. Brown.  License: GPL
+# v1.17 (c) 2013-15,2017-18 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
 import re
 
-extra_zhy_dict = { # TODO: add these to the real zhy_dict
+extra_zhy_dict = { # TODO: add these to the real zhy_list
   u"\u9c85":"bat3",u"\u9b81":"bat3",
 }
 
@@ -64,7 +64,7 @@ u"\u4F20\u50B3":{"chuan2":"cyun4","zhuan4":"zyun6"},
 u"\u4FBF":{"bian4":"pin4","pian2":"bin6"},
 u"\u5047":{"jia3":"gaa2","jia4":"gaa3"},
 u"\u5174\u8208":{"xing1":"hing1","xing4":"hing3"},
-u"\u5207":{"qie4":"cai3","qie1":"cit3"},
+# u"\u5207":{"qie4":"cai3","qie1":"cit3"}, # WRONG (rm'd v1.17).  It's cit3 in re4qie4.  It just wasn't in yiqie4 (which zhy_list has as an exception anyway)
 u"\u521B\u5275":{"chuang1":"cong1","chuang4":"cong3"},
 u"\u53EA":{"zhi1":"zek3","zhi3":"zi2"},
 u"\u53F7\u865F":{"hao4":"hou6","hao2":"hou4"},
