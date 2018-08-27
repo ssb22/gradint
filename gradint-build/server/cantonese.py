@@ -150,19 +150,20 @@ def hyphenate_syl_list(sList,groupLens=None):
 def jyutping_to_yale_TeX(j): # returns space-separated syllables
   ret=[]
   for syl in ping_or_lau_to_syllable_list(j.lower().replace("eo","eu").replace("oe","eu").replace("j","y").replace("yyu","yu").replace("z","j").replace("c","ch")):
-    vowel=None
+    vowel=lastVowel=None
     for i in range(len(syl)):
       if syl[i] in "aeiou":
         vowel=i ; break
     if vowel==None and re.match(r"h?(m|ng)[456]",syl): # standalone nasal syllables
       vowel = syl.find('m')
       if vowel<0: vowel = syl.index('n')
+      lastVowel = syl.find('g')
+      if lastVowel<0: lastVowel = vowel
     if vowel==None:
       ret.append(syl.upper()) ; continue # English word or letter in the Chinese?
     if syl[vowel:vowel+2] == "aa" and (len(syl)<vowel+2 or syl[vowel+2] in "123456"):
       syl=syl[:vowel]+syl[vowel+1:] # final aa -> a
     # the tonal 'h' goes after all the vowels but before any consonants:
-    lastVowel = vowel # default needed if standalone nasal
     for i in range(len(syl)-1,-1,-1):
       if syl[i] in "aeiou":
         lastVowel=i ; break
