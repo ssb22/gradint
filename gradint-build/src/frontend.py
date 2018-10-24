@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99897 (c) 2002-2017 Silas S. Brown. GPL v3+.
+# gradint v0.99898 (c) 2002-2018 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1436,9 +1436,9 @@ def android_main_menu():
     android.dialogSetItems(map (lambda x:x[0], menu))
     android.dialogShow()
     try: function = menu[android.dialogGetResponse().result['item']][1]
-    except KeyError: break # no 'item'
-    if function: function()
-    else: break
+    except KeyError: continue # no 'item', probably a screen-rotate event or something: just redisplay
+    if function: function() # and redisplay after
+    else: break # quit
 def s60_main_menu():
   while True:
     appuifw.app.body = None # NOT text saying version no etc - has distracting blinking cursor
