@@ -73,7 +73,7 @@ except:
 if android:
     try: android = android.Android()
     except:
-        print "\n\n\n *** Your SL4A server has crashed ***\n  Please restart SL4A (or restart your phone)\n  and try running Gradint again.\n\n"
+        print "\n"*50+" *** Your SL4A server has crashed ***\n  Please restart SL4A\n  (or restart your phone)\n  and try running Gradint again.\n\n\n"
         raise SystemExit
 
 wsp = '\t\n\x0b\x0c\r ' # whitespace characters - ALWAYS use .strip(wsp) not .strip(), because someone added \xa0 (iso8859-1 no-break space) to string.whitespace on WinCE Python, and that can break processing of un-decoded UTF8 strings, e.g. a Chinese phrase ending "\xe5\x86\xa0"!  (and assign to string.whitespace does not work around this.)
