@@ -1424,14 +1424,14 @@ def android_main_menu():
   while True:
     menu=[]
     if maybeCanSynth(secondLanguage):
-        menu.append((u"Just speak a word",primitive_synthloop))
+        menu.append((unicode(localise("Just speak a word")),primitive_synthloop))
         doVocab = maybeCanSynth(firstLanguage)
-        if doVocab: menu.append((u"Add word to my vocab",android_addVocab))
-        menu.append((u"Make lesson from vocab",lesson_loop))
+        if doVocab: menu.append((unicode(localise("Add word to my vocab")),android_addVocab))
+        menu.append((unicode(localise("Make lesson from vocab")),lesson_loop))
         # if doVocab: menu.append((u"View/change vocab",android_viewVocab)) # (TODO but lower priority because SL4A has an editor)
-    else: menu.append((u"Make lesson",lesson_loop))
-    menu += [(u"Record word(s) with mic",android_recordWord),(u"Change languages",android_changeLang)]
-    menu.append((u"Quit",None))
+    else: menu.append((unicode(localise("Make lesson")),lesson_loop))
+    menu += [(unicode(localise("Record word(s) with mic")),android_recordWord),(unicode(localise("Change languages")),android_changeLang)]
+    menu.append((unicode(localise("Quit")),None))
     android.dialogCreateAlert("Gradint","Choose an action")
     android.dialogSetItems(map (lambda x:x[0], menu))
     android.dialogShow()
@@ -1444,7 +1444,7 @@ def s60_main_menu():
     appuifw.app.body = None # NOT text saying version no etc - has distracting blinking cursor
     menu=[]
     if maybeCanSynth(secondLanguage):
-        menu.append((u"Just speak a word",primitive_synthloop))
+        menu.append((u"Just speak a word",primitive_synthloop)) # no localise() as S60 is not guaranteed to be able to display the characters
         doVocab = maybeCanSynth(firstLanguage)
         if doVocab: menu.append((u"Add word to my vocab",s60_addVocab))
         menu.append((u"Make lesson from vocab",s60_runLesson))
