@@ -839,12 +839,11 @@ GUI_translations={
 "More than 30 minutes is rarely more helpful.  Reduce to 30?":{"zh":u"超过30分钟很少有帮助。我减少到30好吗?","zh2":"超過30分鐘很少有幫助。我減少到30好嗎?"},
 "Less than 20 minutes can be a rush.  Increase to 20?":{"zh":u"缺乏20分钟可以太赶紧了。我增长到20好吗?","zh2":"缺乏20分鐘可以太趕緊了。我增長到20好嗎?"},
 "Proceed anyway?":{"zh":u"反正继续?","zh2":"反正繼續"},
-"Just speak a word":{"zh":u"使用机器声音说一词","zh2":"使用機器聲音說一詞"},
+"Just speak a word":{"zh":u"使用机器声音说一词","zh2":u"使用機器聲音說一詞"},
 "Add word to my vocab":{"zh":u"把词加到词汇表","zh2":u"把詞加到詞彙表"},
 "Make lesson from vocab":{"zh":u"做课","zh2":u"做課"},
 "Make lesson":{"zh":u"做课","zh2":u"做課"},
 "Record word(s) with mic":{"zh":u"从麦克风录音词语","zh2":u"從麥克風錄音詞語"},
-:{"zh":u"","zh2":u""},
     }
 
 # scriptVariants optionally maps language abbreviation to default script
