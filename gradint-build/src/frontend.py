@@ -1436,7 +1436,7 @@ def android_main_menu():
     android.dialogSetItems(map (lambda x:x[0], menu))
     android.dialogShow()
     try: function = menu[android.dialogGetResponse().result['item']][1]
-    except KeyError: continue # no 'item', probably a screen-rotate event or something: just redisplay
+    except KeyError: break # probably an error condition: don't try to redisplay, just quit
     if function: function() # and redisplay after
     else: break # quit
 def s60_main_menu():
