@@ -650,10 +650,10 @@ ask_teacherMode = 0
 
 maxNewWords = 5
 maxReviseBeforeNewWords = 3
-newInitialNumToTry = 5
-recentInitialNumToTry = 3
-newWordsTryAtLeast = 3 # if introducing a new word and can't
-# fit in this number of times, don't bother
+newInitialNumToTry = 5 # try to repeat a new word 5x
+recentInitialNumToTry = 3 # and recently-learned one 3x
+newWordsTryAtLeast = 3 # if a new word won't fit 3x,
+        # exclude it (leave it till a future lesson)
 knownThreshold = 5 # after which it won't repeat so much
 reallyKnownThreshold = 10 # after which never added before new words
 meaningTestThreshold = 20 # or 0; if >= this then 50% chance of "what meaning" test
