@@ -563,6 +563,7 @@ class ESpeakSynth(Synth):
             if type(txt)==list: txt="".join(txt)
             if re.match("^[ -~]*$",txt): return # don't need to warn about dictionaries if we were given all-ASCII input (TODO: and tone marks?)
             if filelen(self.place+os.sep+"espeak-data"+os.sep+lang+"_dict")<100000: show_warning("Warning: the eSpeak on this system has only a short dictionary for language '"+lang+"' - please install the Additional Data at espeak.sourceforge.net/data")
+            # TODO: Ubuntu 18.04's espeak-data package does NOT include the additional data; IS included by espeak-ng-data; on unix prefer the espeak-ng command and ask it for its own data path?
             self.dictsChecked[lang]=1
     else:
         def check_dicts(self,lang,txt): pass
