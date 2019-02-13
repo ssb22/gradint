@@ -1460,20 +1460,18 @@ def s60_main_menu():
 
 def downloadLAME():
     # Sourceforge keep making this harder!
+    # Removed code to check for latest version, as we
+    # can't use v3.100 due to Lame bug 488.
     return not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi
 if ! test -e lame*.tar.gz; then
-  export Link="$($Curl "http://sourceforge.net/project/showfiles.php?group_id=290&package_id=309"|grep tar.gz|head -1)"
-  echo "Got HTML: $Link" 1>&2
-  export Link="$(echo "$Link"|sed -e 's,href="/,href="http://sourceforge.net/,' -e 's/.*http:/http:/' -e 's/.tar.gz.*/.tar.gz/')"
-  echo "Following link to $Link" 1>&2
-  if ! $Curl "$Link" > lame.tar.gz; then
+  if ! $Curl "https://sourceforge.net/projects/lame/files/lame/3.99/lame-3.99.5.tar.gz/download" > lame.tar.gz; then
     rm -f lame.tar.gz; exit 1
   fi
   if grep downloads.sourceforge lame.tar.gz 2>/dev/null; then
     export Link="$(cat lame.tar.gz|grep downloads.sourceforge|head -1)"
-    echo "Got HTML 2: $Link" 1>&2
+    echo "Got HTML: $Link" 1>&2
     export Link="$(echo "$Link"|sed -e 's/.*http/http/' -e 's,.*/projects,http://sourceforge.net/projects,' -e 's/".*//')"
-    echo "Following link 2 to $Link" 1>&2
+    echo "Following link to $Link" 1>&2
     if ! $Curl "$Link" > lame.tar.gz; then
       rm -f lame.tar.gz; exit 1
     fi
