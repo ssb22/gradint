@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99898 (c) 2002-2018 Silas S. Brown. GPL v3+.
+# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -238,9 +238,9 @@ class Lesson(object):
         else:
             # less confusing message for a beginner
             return l("Today we will learn %d words\nThis will require %d %s %d %s\nFollow the spoken instructions carefully") % (self.newWords,finish/60,singular(finish/60,"minutes"),finish%60,singular(finish%60,"seconds"))
-    def addSequence(self,gluedEventList):
+    def addSequence(self,gluedEventList,canTrack=True):
         bookIn(gluedEventList,self.schedule)
-        if not gluedListTracker==None: gluedListTracker.append(gluedEventList)
+        if not gluedListTracker==None and canTrack: gluedListTracker.append(gluedEventList)
         glueStart = 0 ; lastI = None
         for i in gluedEventList:
             i.event.setOnLeaves("sequenceID",self.eventListCounter) # for max_lateness stuff

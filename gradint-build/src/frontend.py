@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99898 (c) 2002-2018 Silas S. Brown. GPL v3+.
+# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1161,7 +1161,9 @@ def singular(number,s):
   if firstLanguage=="en" and number==1 and s[-1]=="s": return s[:-1]
   return s
 def localise(s):
-  d = GUI_translations.get(s,{}) ; s2 = 0
+  if s=="zh-yue" or s=="zhy": k="cant"
+  else: k=s
+  d = GUI_translations.get(k,{}) ; s2 = 0
   GUIlang = GUI_languages.get(firstLanguage,firstLanguage)
   if scriptVariants.get(GUIlang,0): s2 = d.get(GUIlang+str(scriptVariants[GUIlang]+1),0)
   if not s2: s2 = d.get(GUIlang,s)

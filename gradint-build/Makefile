@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99898 (c) 2002-2018 Silas S. Brown. GPL v3+.
+# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -176,7 +176,7 @@ GUI.exe: gradint.py
 gradint.tbz: $(Mac_Files)
 	mkdir gradint
 	cp -r $(Mac_Files) gradint
-	chmod +x gradint/start-gradint.app/sox gradint/start-gradint.app/qtplay # just in case it lost its x attribute
+	chmod +x gradint/start-gradint.app/sox gradint/start-gradint.app/sox-14.4.1 gradint/start-gradint.app/qtplay # just in case it lost its x attribute
 	mv gradint/samples/utils "gradint/samples/advanced utilities"
 	for N in hanzi-prompts/*.txt; do python -c "open('gradint/samples/prompts/$$(echo $$N|sed -e s,.*/,,)','w').write('\\xef\\xbb\\xbf'+open('$$N').read())"; done # overwriting the pinyin ones (as will bundle espeak so can translit.), and NB we *do* need the byte-order-mark on Mac OS 10.6 for TextEdit
 	cd gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ..

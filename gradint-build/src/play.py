@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99898 (c) 2002-2018 Silas S. Brown. GPL v3+.
+# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -118,21 +118,25 @@ sox_8bit, sox_16bit, sox_ignoreLen, sox_signed = "-b", "-w", "", "-s"
 soundVolume_dB = math.log(soundVolume)*(-6/math.log(0.5))
 if unix:
   if macsound: got_afplay = got_program("afplay") # 10.5+, use in preference to the bundled qtplay which requires PowerPC or Rosetta
-  sox_formats=os.popen("sox --help 2>&1").read() # NOT .lower() yet
-  sf2 = ' '.join(sox_formats.lower().split())
-  if sf2.startswith("sox: sox v"):
+  def sox_check():
+   global sox_8bit, sox_16bit, sox_ignoreLen, sox_signed, sox_formats
+   sox_formats=os.popen("sox --help 2>&1").read() # NOT .lower() yet
+   sf2 = ' '.join(sox_formats.lower().split())
+   if sf2.startswith("sox: sox v"):
     if sf2[10]==' ': soxMaj=15 # guess (broken HomeBrew install)
     else: soxMaj = intor0(sf2[10:sf2.index('.')])
-  else: soxMaj=0
-  if soxMaj>=14:
+   else: soxMaj=0
+   if soxMaj>=14:
     if soxMaj==14 and sf2[13]<'3': pass
     else: sox_ignoreLen = "|sox --ignore-length -t wav - -t wav - 2>/dev/null"
     if soxMaj==14 and sf2[13]<'4': sox_8bit, sox_16bit = "-1", "-2" # see comment above
     else: sox_8bit, sox_16bit, sox_signed = "-b 8", "-b 16", "-e signed-integer" # TODO: check if 14.3 accepts these also (at least 14.4 complains -2 etc is deprecated)
-  if sf2.find("wav")>=0: gotSox=1
-  else:
-    gotSox=0
-    if got_program("sox"):
+   if sf2.find("wav")>=0: return 1
+   else: return 0
+  gotSox = sox_check()
+  if macsound:
+      if not gotSox and not os.system("mv sox-14.4.1 sox && rm sox.README"): gotSox = sox_check() # see if that one works instead (NB must use os.system here: our system() has not yet been defined)
+  if not gotSox and got_program("sox"):
       if macsound: xtra=". (If you're on 10.8 Mountain Lion, try downloading a more recent sox binary from sox.sourceforge.net and putting it inside Gradint.app, but that will break compatibility with older PowerPC Macs.)" # TODO: ship TWO binaries? but we don't want the default gradint to get too big. See sox.README for more notes.
       elif cygwin: xtra=""
       else: xtra=". Ubuntu users please install libsox-fmt-all."

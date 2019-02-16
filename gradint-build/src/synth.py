@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99898 (c) 2002-2018 Silas S. Brown. GPL v3+.
+# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -93,10 +93,17 @@ class OSXSynth_Say(Synth):
         return es.works_on_this_platform() and es.supports_language('zh')
     def scanVoices(self):
         d = {}
-        try: from AppKit import NSSpeechSynthesizer
-        except: return {"en":""} # no -v parameter at all
-        for vocId in NSSpeechSynthesizer.availableVoices():
-            vocAttrib = NSSpeechSynthesizer.attributesForVoice_(vocId)
+        try:
+            from AppKit import NSSpeechSynthesizer
+            voiceAttrs=[NSSpeechSynthesizer.attributesForVoice_(vocId) for vocId in NSSpeechSynthesizer.availableVoices()]
+        except: # maybe we're running under Homebrew Python instead of /usr/bin/python; in at least some recent OS X versions we should be able to get a voice list with 'say -v ?' instead (I'm not sure how far back that goes, so leaving in the above NSSpeechSynthesizer method as well)
+            voiceAttrs = []
+            for l in os.popen("say -v ? </dev/null 2>/dev/null").readlines():
+                if not '#' in l: continue
+                name,lang=l[:l.index('#')].split()
+                voiceAttrs.append({'VoiceName':name,'VoiceLanguage':lang})
+            if not voiceAttrs: return {"en":""} # maybe we're on ancient OS X: don't use a -v parameter at all
+        for vocAttrib in voiceAttrs:
             if not 'VoiceName' in vocAttrib: continue
             if not 'VoiceLanguage' in vocAttrib:
                 lang={"Damayanti":"id","Maged":"ar","Stine":"nb"}.get(vocAttrib['VoiceName'],None) # TODO: can sometimes use VoiceLocaleIdentifier instead, dropping the _ part (but can't even do that with Damayanti on 10.7)

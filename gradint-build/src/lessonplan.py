@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99898 (c) 2002-2018 Silas S. Brown. GPL v3+.
+# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -202,11 +202,11 @@ class ProgressDatabase(object):
         self.addToLesson(reallyKnownThreshold,-1,1,1,-1)
         l = self.l ; del self.l, self.responseIndex, self.do_as_poem
         if not l.events: raise Exception("Didn't manage to put anything in the lesson")
-        if commentsToAdd: l.addSequence(commentSequence())
+        if commentsToAdd: l.addSequence(commentSequence(),False)
         if orderlessCommentsToAdd:
             for c in orderlessCommentsToAdd:
                 try:
-                    l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),fileToEvent(c,""))])
+                    l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),fileToEvent(c,""))],False)
                 except StretchedTooFar:
                     show_info(("Was trying to add %s\n" % (c,)),True)
                     raise
@@ -219,9 +219,9 @@ class ProgressDatabase(object):
                 def PauseEvent(): return fileToEvent(availablePrompts.lsDic[longpause],promptsDirectory)
                 firstPauseMsg = PauseEvent()
                 # the 1st potentially-awkward pause is likely to be a beepThreshold-length one
-                l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),CompositeEvent([firstPauseMsg,Event(max(5,beepThreshold-firstPauseMsg.length))]))])
+                l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),CompositeEvent([firstPauseMsg,Event(max(5,beepThreshold-firstPauseMsg.length))]))],False)
                 while True:
-                    l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),CompositeEvent([PauseEvent(),Event(50)]))])
+                    l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),CompositeEvent([PauseEvent(),Event(50)]))],False)
                     self.promptsData[longpause] = 1
             except StretchedTooFar: pass
         maxLenOfLesson = o

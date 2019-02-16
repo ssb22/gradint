@@ -755,7 +755,7 @@ import_recordings_from = [r"\My Documents", r"\Storage Card\My Documents", r"\Ra
 # This can be useful to catch words with the Notes app on a PocketPC
 # (which saves its recordings to \My Documents by default).
 
-# ------- GUI translation dictionary ---------
+# ------- GUI translation (localisation) dictionary --------
 
 # The format of this is:
 # {"en phrase A":{"laX":u"language X translation", "laY":"language Y translation", ...}, "en phrase B":{...}, ...}
@@ -770,7 +770,8 @@ GUI_translations={
 "Word in %s":{"zh":u"%s"},
 "Meaning in %s":{"zh":u"%s意思"},
 "en":{"zh":u"英文"},
-"zh":{"zh":u"中文"},
+"zh":{"zh":u"汉语","zh2":u"漢語"},
+"cant":{"zh":u"粵語","zh2":u"廣東話"},
 "Your first language":{"zh":u"母语","zh2":u"母語"},
 "second":{"zh":u"学习的语言","zh2":u"學習的語言"},
 "Change languages":{"zh":u"选择其他语言","zh2":u"選擇其他語言"},
