@@ -1,13 +1,13 @@
-Installing Gradint on Linux systems
------------------------------------
+Installing Gradint on GNU/Linux systems
+---------------------------------------
 
 Gradint does not need to be installed, it can
 just run from the current directory.
 
 If you do want to make a system-wide installation
 (for example if you want to make a package for a
-Linux distribution), I suggest doing the following
-as root:
+GNU/Linux distribution), I suggest doing the
+following as root:
 
 mkdir /usr/share/gradint
 cp gradint.py /usr/share/gradint/

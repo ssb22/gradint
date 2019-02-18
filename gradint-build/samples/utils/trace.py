@@ -1,6 +1,6 @@
 
 # trace.py: script to generate raytraced animations of Gradint lessons
-# Version 1.1 (c) 2018-19 Silas S. Brown.  License: GPL
+# Version 1.11 (c) 2018-19 Silas S. Brown.  License: GPL
 
 #  The Disney Pixar film "Inside Out" (2015) represented
 #  memories as spheres.  I don't have their CGI models, but
@@ -20,7 +20,23 @@
 # futures is used to run multiple instances of POV-Ray on
 # multi-core machines.
 
-debug_one_frame_only = False
+theFPS = 15
+# theFPS = 10 # insufficient for fast movement
+
+# width_height_antialias = (300,200,0.3) # antialias=None doesn't look very good at 300x200, cld try it at higher resolutions (goes to the +A param, PovRay default is 0.3 if -A specified without param; supersample (default 9 rays) if colour differs from neighbours by this amount)
+
+# width_height_antialias = (352,240,0.3) # NTSC VCD (PAL use y=288)
+width_height_antialias = (640,480,0.001) # 480p (DVD)
+# width_height_antialias = (1280,720,None) # Standard HD (Blu-Ray)
+# width_height_antialias = (1920,1080,None) # Full HD (Blu-Ray)
+
+translucent_spheres_when_picture_visible = False # True slows down the rendering
+
+debug_frame_limit = None
+# debug_frame_limit = 60*theFPS # first minute only
+
+povray_quality=9 # default 9: 1=ambient light only, 2=lighting, 4,5=shadows, 8=reflections 9-11=radiosity etc
+# povray_quality = 2
 
 import sys,os,traceback
 oldName = __name__ ; from vapory import * ; __name__ = oldName
@@ -74,8 +90,11 @@ class MovableSphere(MovablePos):
         pos = self.getPos(t)
         if not pos: return # not in scene at this time
         r = self.radius.getPos(t)
-        if self.imageFilename: return Sphere(list(pos),r,colour(self.colour),Texture(Pigment(ImageMap('"'+self.imageFilename+'"',"once","interpolate 2","transmit all 0.3"),'scale',[1.5*r,1.5*r,1],'translate',list(pos),'translate',[-.75*r,-.75*r,0])))
-        else: return Sphere(list(pos),r,colour(self.colour))
+        if self.imageFilename:
+            if translucent_spheres_when_picture_visible and bkgScrFade.getPos(t) < 1: transmittence = 0.5
+            else: transmittence = 0.3
+            return Sphere(list(pos),r,colour(self.colour,t),Texture(Pigment(ImageMap('"'+self.imageFilename+'"',"once","interpolate 2","transmit all "+str(transmittence)),'scale',[1.5*r,1.5*r,1],'translate',list(pos),'translate',[-.75*r,-.75*r,0])))
+        else: return Sphere(list(pos),r,colour(self.colour,t))
 
 class ObjCollection:
     def __init__(self): self.objs = set()
@@ -128,11 +147,27 @@ camera_lookAt = MovablePos()
 def cam(t): return Camera('location',list(camera_position.getPos(t)),'look_at',list(camera_lookAt.getPos(t)))
 def lights(t): return [LightSource([camera_position.x.getPos(t)+10, 15, -20], [1.3, 1.3, 1.3])]
 
-def colour(c): return Texture(Pigment('color',{"l1":[.8,1,.2],"l2":[.5,.5,.9],"prompt":[1,.6,.5]}[c])) # TODO: better colours
-wall,ground = Plane([0, 0, 1], 60, Texture(Pigment('color', [1, 1, 1])), Finish('ambient',0.9)),Plane( [0, 1, 0], -1, Texture( Pigment( 'color', [1, 1, 1]), Finish( 'phong', 0.1, 'reflection',0.4, 'metallic', 0.3))) # from vapory example
+background_screen = [] # (startTime,endTime,picture)
+background_screen_size = 50
+bkgScrFade = MovableParam() ; bkgScrFade.fixAt(-1,1)
+bkgScrX = MovableParam()
+def wall(t):
+    picToUse = None
+    for st,et,pic in background_screen:
+        if st <= t: picToUse = pic
+        else: break
+    if picToUse and bkgScrFade.getPos(t) < 1: return [Plane([0, 0, 1], 60, Texture(Pigment('color', [1, 1, 1])), Texture(Pigment(ImageMap('"'+picToUse+'"',"once","transmit all "+str(bkgScrFade.getPos(t))),'scale',[background_screen_size,background_screen_size,1],'translate',[bkgScrX.getPos(t)-background_screen_size/2,0,0])), Finish('ambient',0.9))]
+    else: return [Plane([0, 0, 1], 60, Texture(Pigment('color', [1, 1, 1])), Finish('ambient',0.9))] # TODO: why does this look brighter than with ImageMap at transmit all 1.0 ?
+
+ground = Plane( [0, 1, 0], -1, Texture( Pigment( 'color', [1, 1, 1]), Finish( 'phong', 0.1, 'reflection',0.4, 'metallic', 0.3))) # from vapory example
+
+def colour(c,t=None):
+    c = {"l1":[.8,1,.2],"l2":[.5,.5,.9],"prompt":[1,.6,.5]}[c] # TODO: better colours
+    if translucent_spheres_when_picture_visible and not t==None and bkgScrFade.getPos(t) < 1: return Texture(Pigment('color',c,'filter',0.7))
+    else: return Texture(Pigment('color',c))
 def scene(t):
     """ Returns the scene at time 't' (in seconds) """
-    return Scene(cam(t), lights(t) + [wall,ground] + [o for o in [x.obj(t) for x in SceneObjects] if not o==None])
+    return Scene(cam(t), lights(t) + wall(t) + [ground] + [o for o in [x.obj(t) for x in SceneObjects] if not o==None])
 
 def Event_draw(self,startTime,rowNo,inRepeat): pass
 gradint.Event.draw = Event_draw
@@ -163,10 +198,15 @@ gradint.Event.colour = Event_colour
 
 def eDraw(startTime,length,rowNo,colour):
     minR = 0.5
-    if colour=="l1":
-        r = EventTracker(rowNo).get(-1,0,0).radius
-    elif colour=="l2":
-        r = EventTracker(rowNo).get(+1,0,0).radius
+    if colour in ["l1","l2"]:
+        if colour=="l1": delta = -1
+        else: delta = +1
+        et = EventTracker(rowNo).get(delta,0,0)
+        r = et.radius
+        if hasattr(et,"imageFilename"):
+            background_screen.append((startTime,startTime+length,et.imageFilename))
+            bkgScrX.fixAt(startTime,4*rowNo)
+            bkgScrX.fixAt(startTime+length,4*rowNo)
     else:
         r = repeatSphere(rowNo,EventTracker(rowNo).numRepeats).radius
         minR = 0.1
@@ -228,9 +268,32 @@ def runGradint():
       i.event.draw(i.getEventStart(glueStart),row,False)
       glueStart = i.getAdjustedEnd(glueStart)
       duration = max(duration,glueStart)
+  background_screen.sort()
+  i = 0
+  while i < len(background_screen)-1:
+      if background_screen[i][-1]==background_screen[i+1][-1] and background_screen[i][1]+5>=background_screen[i+1][0]:
+          # turning off for 5 seconds or less, then turning back on again with the SAME image: might as well merge
+          background_screen[i] = (background_screen[i][0],background_screen[i+1][1],background_screen[i][2])
+          del background_screen[i+1]
+      else: i += 1
+  for i in xrange(len(background_screen)):
+      startTime,endTime,img = background_screen[i]
+      bkgScrFade.fixAt(startTime,1)
+      fadeOutTime = endTime
+      if i<len(background_screen)-1:
+          fadeOutTime = max(fadeOutTime,min(background_screen[i+1][0]-1,fadeOutTime+5))
+          # and don't move the screen while fading out:
+          for ii in xrange(len(bkgScrX.fixed)):
+              if bkgScrX.fixed[ii][0]==endTime:
+                  bkgScrX.fixed[ii]=((fadeOutTime,bkgScrX.fixed[ii][1]))
+                  break
+      bkgScrFade.fixAt(fadeOutTime,1)
+      if endTime >= startTime+1:
+          bkgScrFade.fixAt(startTime+0.5,0.3)
+          bkgScrFade.fixAt(endTime-0.5,0.3)
+      else:
+          bkgScrFade.fixAt((startTime+endTime)/2.0,0.5) # TODO: do we really want to bother with fade, or even any background image at all, if it's less than 1 second ??
   return duration
-
-theFPS = 15 # 10 is insufficient for fast movement
 
 def tryFrame((frame,numFrames)):
     print "Making frame",frame,"of",numFrames
@@ -238,10 +301,8 @@ def tryFrame((frame,numFrames)):
         try: os.mkdir("/tmp/"+repr(frame)) # vapory writes a temp .pov file and does not change its name per process, so better be in a process-unique directory
         except: pass
         os.chdir("/tmp/"+repr(frame))
-        scene(frame*1.0/theFPS).render(width=640, height=480, antialiasing=0.3, outfile="/tmp/frame%05d.png" % frame)
-        # antialiasing=0.001 ? (left at None doesn't look very good at 300x200, cld try at 640x480 or 1280x720) (goes to the +A param, PovRay default is 0.3 if -A specified without param; supersample (default 9 rays) if colour differs from neighbours by this amount)
+        scene(frame*1.0/theFPS).render(width=width_height_antialias[0], height=width_height_antialias[1], antialiasing=width_height_antialias[2], quality=povray_quality, outfile="/tmp/frame%05d.png" % frame)
         # TODO: TURN OFF JITTER with -J if using anti-aliasing in animations
-        # quality? (+Q, 1=ambient light only, 2=lighting, 4,5=shadows, 8=reflections 9-11=radiosity etc, default 9)
         os.chdir("/tmp") ; os.system('rm -r '+repr(frame))
         return None
     except:
@@ -254,12 +315,12 @@ def main():
     executor = ProcessPoolExecutor()
     duration = runGradint()
     numFrames = int(duration*theFPS)
+    if debug_frame_limit: numFrames=min(numFrames,debug_frame_limit)
     # TODO: pickle all MovableParams so can do the rendering on a different machine than the one that makes the Gradint lesson?
-    if debug_one_frame_only: numFrames,cmds = 0,[tryFrame((0,1)),"open /tmp/frame00000.png"] # TODO: 'open' assumes Mac
-    else: cmds = list(executor.map(tryFrame,[(frame,numFrames) for frame in xrange(numFrames)]))+["ffmpeg -y -framerate "+repr(theFPS)+" -i /tmp/frame%05d.png -i "+gradint.outputFile+" -movflags faststart -pix_fmt yuv420p /tmp/gradint.mp4"] #  (could alternatively run with -vcodec huffyuv /tmp/gradint.avi for lossless, insead of --movflags etc, but will get over 6 gig and may get A/V desync problems in mplayer/VLC that -delay doesn't fix, however -b:v 1000k seems to look OK; for WeChat etc you need to recode to h.264, and for HTML 5 video need recode to WebM (but ffmpeg -c:v libvpx no good if not compiled with support for those libraries; may hv to convert on another machine i.e. ffmpeg -i gradint.mp4 -vf scale=320:240 -c:v libvpx -b:v 500k gradint.webm))
-    for c in cmds:
-        # patch up skipped frames, then run ffmpeg (or debug_one_frame_only show the single frame)
-        if c:
+    for c in list(executor.map(tryFrame,[(frame,numFrames) for frame in xrange(numFrames)]))+[
+        "ffmpeg -nostdin -y -framerate "+repr(theFPS)+" -i /tmp/frame%05d.png -i "+gradint.outputFile+" -movflags faststart -pix_fmt yuv420p /tmp/gradint.mp4 && if test -d /Volumes; then open /tmp/gradint.mp4; fi" #  (could alternatively run with -vcodec huffyuv /tmp/gradint.avi for lossless, insead of --movflags etc, but will get over 6 gig and may get A/V desync problems in mplayer/VLC that -delay doesn't fix, however -b:v 1000k seems to look OK; for WeChat etc you need to recode to h.264, and for HTML 5 video need recode to WebM (but ffmpeg -c:v libvpx no good if not compiled with support for those libraries; may hv to convert on another machine i.e. ffmpeg -i gradint.mp4 -vf scale=320:240 -c:v libvpx -b:v 500k gradint.webm))
+        ]:
+        if c: # patch up skipped frames, then run ffmpeg
             print c ; os.system(c)
     for f in xrange(numFrames): os.remove("/tmp/frame%05d.png" % f) # wildcard from command line could get 'argument list too long' on BSD etc
 if __name__=="__main__": main()
