@@ -59,7 +59,7 @@ class Partials_Synth(Synth):
 def fileToEvent(fname,dirBase=None):
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
-    orig_fname = fname
+    orig_DB,orig_fname = dirBase,fname
     if os.sep in fname and fname.find("!synth:")==-1: dirBase,fname = dirBase+fname[:fname.rindex(os.sep)+1], fname[fname.rindex(os.sep)+1:]
     if "_" in fname: lang = languageof(fname)
     else: lang="-unknown-" # so can take a simple wav file, e.g. for endAnnouncement
@@ -92,7 +92,9 @@ def fileToEvent(fname,dirBase=None):
                 e=CompositeEvent(e[:-1]) # omit trailing pause
             if not lessonIsTight(): e.length=math.ceil(e.length) # (TODO slight duplication of logic from SampleEvent c'tor)
         elif s: e=SampleEvent(synthCache+os.sep+s) # single file in synth cache
-        else: e=synth_event(languageof(fname),textof(fname))
+        else:
+            e=synth_event(languageof(fname),textof(fname))
+            e.file = orig_DB+orig_fname # for trace.py check_for_pictures
         e.is_prompt=(dirBase==promptsDirectory+os.sep)
     else: e=SampleEvent(dirBase+fname)
     e.setOnLeaves('wordToCancel',orig_fname)

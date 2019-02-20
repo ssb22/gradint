@@ -101,7 +101,7 @@ class OSXSynth_Say(Synth):
             for l in os.popen("say -v ? </dev/null 2>/dev/null").readlines():
                 if not '#' in l: continue
                 name,lang=l[:l.index('#')].split()
-                voiceAttrs.append({'VoiceName':name,'VoiceLanguage':lang})
+                voiceAttrs.append({'VoiceName':name,'VoiceLanguage':lang.replace('_','-')})
             if not voiceAttrs: return {"en":""} # maybe we're on ancient OS X: don't use a -v parameter at all
         for vocAttrib in voiceAttrs:
             if not 'VoiceName' in vocAttrib: continue
