@@ -15,6 +15,12 @@
 # must include outputFile so audio can be included in the animation)
 # and then the animation is written to /tmp/gradint.mp4.
 
+# Optionally add a static image representing each word (image will be
+# placed onto the spheres, and projected onto the back wall
+# when that word is being recalled)
+# e.g. word1_en.wav, word1_zh.wav, word1.jpg
+# (or png or gif, static only for now).
+
 # Requires POV-Ray, ffmpeg, and the Python packages vapory
 # and futures (use sudo pip install futures vapory) -
 # futures is used to run multiple instances of POV-Ray on
