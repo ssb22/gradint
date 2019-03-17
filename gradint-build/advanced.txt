@@ -107,19 +107,32 @@ prefer_espeak = "en"
 sapiVoices = {
 # Add them in this format but without the # at the beginning:
     # "language abbrev" : ("full voice name", rate),
-# For example, if you have "ScanSoft Mei-Ling_Full_22kHz"
+# 
+# For example, for Windows 10 voices (if both English and
+# Chinese are installed) you can have:
+    # "en" : ("Microsoft Hazel Desktop", 16000),
+    # "zh" : ("Microsoft Huihui Desktop", 16000),
+    # "zhy"     : ("Microsoft Tracy Desktop", 16000),
+    # "zhy-yue" : ("Microsoft Tracy Desktop", 16000),
+    # "cant"    : ("Microsoft Tracy Desktop", 16000),
+# (make sure to set prefer_espeak="" if you want the MS English voice)
+# 
+# Or if you have "ScanSoft Mei-Ling_Full_22kHz"
 # (which reads most Chinese hanzi quite well, but can't read
 # pinyin and sometimes glitches so be careful), you can have
     # "zh" : ("ScanSoft Mei-Ling_Full_22kHz", 22050),
+# 
 # or if you have Loquendo Lisheng (which has prosody reminiscent
 # of an Italian-Chinese bilingual, and can pronounce pinyin
 # with tone numbers as long as you add punctuation at the end)
 # you can have
     # "zh" : ("Lisheng", 16000),
+# 
 # or for Ekho Cantonese you can have:
     # "zhy"     : ("Ekho Cantonese", 8000), # or 16000 for v4.5+
     # "zhy-yue" : ("Ekho Cantonese", 8000), # ditto
     # "cant"    : ("Ekho Cantonese", 8000), # ditto
+# 
 # or if you have other voices in other languages, you can
 # use them too.  Note that FULL voice names must be used,
 # exactly as they are shown in the Control Panel under Speech.
