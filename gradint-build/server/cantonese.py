@@ -41,12 +41,17 @@ def get_jyutping(hanzi,mustWork=1):
   return jyutping
 espeak = 0
 
+def hanzi_only(unitext): return u"".join(filter(lambda x:0x4e00<=ord(x)<0xa700 or ord(x)>=0x10000, list(unitext)))
 def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
   # If we have good quality (proof-read etc) Mandarin pinyin, this can sometimes improve the automatic Cantonese transcription
   if type(hanzi)==str: hanzi = hanzi.decode('utf-8')
+  hanzi = hanzi_only(hanzi)
   if not re.search(py2j_chars,hanzi): return jyutping
   if type(pinyin)==str: pinyin = pinyin.decode('utf-8')
-  pinyin = re.findall('[A-Za-z]*[1-5]',espeak.transliterate("zh",pinyin,forPartials=0)) # TODO: dryrun_mode ?  (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
+  assert pinyin.strip(), "blank pinyin" # saves figuring out a findall TypeError
+  py2 = espeak.transliterate("zh",pinyin,forPartials=0) # TODO: dryrun_mode ?  (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
+  assert py2 and py2.strip(), "espeak.transliterate returned %s for %s" % (repr(py2),repr(pinyin))
+  pinyin = re.findall('[A-Za-z]*[1-5]',py2)
   if not len(pinyin)==len(hanzi): return jyutping # can't fix
   i = 0 ; tones = re.finditer('[1-7]',jyutping) ; j2 = []
   for h,p in zip(list(hanzi),pinyin):
@@ -214,6 +219,8 @@ def import_gradint():
     sys.argv = tmp
     return gradint
 
+def do_song_subst(hanzi_u8): return hanzi_u8.replace(unichr(0x4f7f).encode('utf-8'),unichr(0x38c8).encode('utf-8')) # Mandarin shi3 (normally jyutping sai2) is usually si3 in songs, so substitute a rarer character that unambiguously has that reading before sending to get_jyutping
+
 if __name__ == "__main__":
     # command-line use: output Lau for each line of stdin
     # (or Yale if there's a --yale in sys.argv, or both
@@ -224,7 +231,7 @@ if __name__ == "__main__":
     if lines and not lines[-1]: del lines[-1]
     dryrun_mode = True
     def songSubst(l):
-      if '--song-lyrics' in sys.argv: l=l.replace(unichr(0x4f7f).encode('utf-8'),unichr(0x38c8).encode('utf-8')) # Mandarin shi3 (normally jyutping sai2) is usually si3 in songs, so substitute a rarer character that unambiguously has that reading before sending to get_jyutping
+      if '--song-lyrics' in sys.argv: l=do_song_subst(l)
       return l
     for l in lines:
       if '#' in l: l=l[:l.index('#')]
