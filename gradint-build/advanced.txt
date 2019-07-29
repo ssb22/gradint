@@ -498,6 +498,10 @@ voiceOption = ""
 # presets, by placing the _disabled directories into Gradint's build
 # directory before typing "make".)
 
+# If you just want to disable one of your samples subdirectories, you
+# may simply rename the directory to something ending with exclude_from_scan
+# (default "_disabled") and DON'T add short-description.txt.
+
 max_extra_buttons = 12
 # - this setting limits the number of "add pre-made collection" buttons that
 # are displayed on the screen at one time.  Set it to 0 to disable this feature.
