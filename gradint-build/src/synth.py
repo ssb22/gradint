@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -353,6 +353,7 @@ if macsound:
     import commands
     f=commands.getoutput("echo espeak*-OSX.zip")
     if fileExists(f): unzip_and_delete(f)
+    if not os.system("espeak*/speak64 -h >/dev/null 2>/dev/null"): os.system("mv espeak*/speak64 espeak*/speak") # because some newer macOS releases want 64bit-only apps, and we won't need the dual PPC/i386 one on those
     f=commands.getoutput("echo espeak*/speak")
     if fileExists(f) and fileExists(f[:-5]+"espeak-data/phontab"):
       os.environ["ESPEAK_DATA_PATH"]=os.getcwd()+cwd_addSep+f[:-6]

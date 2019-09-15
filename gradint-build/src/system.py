@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -353,7 +353,7 @@ Tk_might_display_wrong_hanzi = wrong_hanzi_message = "" ; forceRadio=0
 if macsound:
   try: os.remove("_tkinter.so") # it might be an old patched version for the wrong OS version
   except: pass
-  def tkpatch(): # patch Mac OS Tk to the included v8.6 (as v8.4 on OS10.5 has hanzi problem and v8.5 on 10.6 has fontsize problems etc)
+  def tkpatch(): # (called only on specific older versions of Mac OS X) patch Mac OS Tk to the included v8.6 (as v8.4 on OS10.5 has hanzi problem and v8.5 on 10.6 has fontsize problems etc)
     f="/System/Library/Frameworks/Python.framework/Versions/"+sys.version[:3]+"/lib/python"+sys.version[:3]+"/lib-dynload/_tkinter.so"
     if fileExists(f): # we might be able to patch this one up
      if not isDirectory("Frameworks") and fileExists("Frameworks.tbz"): os.system("tar -jxvf Frameworks.tbz && rm Frameworks.tbz && chmod -R +w Frameworks")
@@ -368,7 +368,7 @@ if macsound:
     elif sys.version[:5] == "2.5.1": # 10.5
       if not tkpatch(): Tk_might_display_wrong_hanzi="10.5"
     elif sys.version[:5] == "2.6.1": tkpatch() # 10.6 (still has Tk8.5, hanzi ok but other problems)
-    elif sys.version[:5] == "2.7.5": tkpatch() # 10.9 (problems with "big print" button if don't do this).  TODO: import platform and check platform.mac_ver()[0].startswith('10.9') first? as future releases might now have same Python version and we haven't tested them against this patch; also check 10.8 isn't Python 2.7.5 (10.7 is 2.7.1)
+    elif sys.version[:5] == "2.7.5": tkpatch() # 10.9 (problems with "big print" button if don't do this)
   if Tk_might_display_wrong_hanzi: wrong_hanzi_message = "NB: In Mac OS "+Tk_might_display_wrong_hanzi+", Chinese\ncan display wrongly here." # so they don't panic when it does
 
 # Handle keeping progress file and temp directories etc if we're running from a live CD
@@ -497,13 +497,13 @@ elif macsound:
 
 def got_program(prog):
     if winsound:
-        return fileExists(prog+".exe")
+        if fileExists(prog+".exe"): return prog+".exe"
     elif unix:
         try:
             import distutils.spawn
             if ":." in ":"+os.environ.get("PATH",""):
                 prog = distutils.spawn.find_executable(prog)
-            else: # at least some distutils assume that . is in the PATH even when it isn't, so
+            else: # at least some distutils assume that "." is in the PATH even when it isn't, so do it ourselves without checking "."
                 oldCwd = os.getcwd()
                 pList = os.environ.get("PATH","").split(':')
                 if pList:

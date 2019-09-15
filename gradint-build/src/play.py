@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -135,7 +135,7 @@ if unix:
    else: return 0
   gotSox = sox_check()
   if macsound:
-      if not gotSox and not os.system("mv sox-14.4.1 sox && rm sox.README"): gotSox = sox_check() # see if that one works instead (NB must use os.system here: our system() has not yet been defined)
+      if not gotSox and not os.system("mv sox-14.4.2 sox && rm sox.README"): gotSox = sox_check() # see if that one works instead (NB must use os.system here: our system() has not yet been defined)
   if not gotSox and got_program("sox"):
       if macsound: xtra=". (If you're on 10.8 Mountain Lion, try downloading a more recent sox binary from sox.sourceforge.net and putting it inside Gradint.app, but that will break compatibility with older PowerPC Macs.)" # TODO: ship TWO binaries? but we don't want the default gradint to get too big. See sox.README for more notes.
       elif cygwin: xtra=""

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -132,60 +132,16 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
                 theRecorderControls.current_recordFrom_button = theRecorderControls.old_recordFrom_button
             app.todo.undoRecordFrom=True # we might not be the GUI thread
 
-if not tkSnack:
-  if macsound: # might still be able to use Audio Recorder
-    if fileExists("AudioRecorder.zip"): unzip_and_delete("AudioRecorder.zip")
-    if fileExists("Audio Recorder.app/plist"): # Audio Recorder with our special preferences list
-        runAudioRecorderYet = 0
-        def MacStartRecording():
-            global runAudioRecorderYet
-            if not runAudioRecorderYet: os.system("if ! test -d ~/Library/Preferences; then export HOME=/Users/$LOGNAME; fi; mv ~/Library/Preferences/com.benshan.AudioRecorder31.plist ~/Library/Preferences/com.benshan.AudioRecorder31.plist-OLD 2>/dev/null ; cp Audio\\ Recorder.app/plist ~/Library/Preferences/com.benshan.AudioRecorder31.plist; open -j Audio\\ Recorder.app || open Audio\\ Recorder.app")
-            os.system("osascript -e 'Tell application \"Audio Recorder\" to Record'")
-            runAudioRecorderYet = 1
-        def MacStopRecording(): os.system("osascript -e 'Tell application \"Audio Recorder\" to Stop'")
-        MacRecordingFile = "/tmp/audiorec-output-for-gradint.wav" # specified in the plist
-        def quitAudioRecorder():
-            if runAudioRecorderYet: os.system("osascript -e 'Tell application \"Audio Recorder\" to quit' ; if ! test -d ~/Library/Preferences; then export HOME=/Users/$LOGNAME; fi; rm ~/Library/Preferences/com.benshan.AudioRecorder31.plist ; mv ~/Library/Preferences/com.benshan.AudioRecorder31.plist-OLD ~/Library/Preferences/com.benshan.AudioRecorder31.plist 2>/dev/null")
-        import atexit ; atexit.register(quitAudioRecorder)
-        del MicInput
-        class MicInput(InputSource): # Mac Audio Recorder version
-            def startRec(self,outFile,lastStopRecVal=None):
-                if lastStopRecVal=="total-failure": return
-                self.fileToWrite = outFile
-                MacStartRecording()
-            def stopRec(self):
-                MacStopRecording()
-                if not fileExists(MacRecordingFile):
-                    # In macOS 10.13.6, the osascript command to tell it to start recording somehow overwrites the plist's destination and it goes to "/Users/$LOGNAME/Desktop/untitled recording.m4a" (m4a format rather than wav as well, so would need to wait for an afconvert), plus adds numbers after that filename if one already exists.
-                    # What a mess.  I have no idea why changing the MacOS version gave such a big behaviour change in an app whose version is frozen with the Gradint 'distro'.
-                    for dTry in [os.environ.get("HOME","/")+"/Desktop","/Users/"+os.environ.get("LOGNAME","")+"/Desktop"]:
-                        try: ld=os.listdir(dTry)
-                        except: continue
-                        candidates = []
-                        for f in ld:
-                            if not f.startswith("untitled recording"): continue
-                            i=f.replace("untitled recording","");i=i[:i.index(".")]
-                            if i: i=int(i)
-                            else: i=0
-                            candidates.append((i,dTry+"/"+f))
-                        candidates.sort()
-                        if candidates:
-                            foundIt = candidates[-1][1]
-                            system("afconvert -f WAVE -d I16@44100 \""+foundIt+"\" \""+MacRecordingFile+"\"")
-                            os.remove(foundIt)
-                            break
-                try: os.rename(MacRecordingFile,self.fileToWrite)
-                except: # there might be a cross-device link problem or something
-                    try: write(self.fileToWrite,read(MacRecordingFile)), os.remove(MacRecordingFile)
-                    except:
-                        app.todo.alert="Failed to read "+MacRecordingFile
-                        return "total-failure" # don't start recording the next one
-        tkSnack = "MicOnly"
-  elif unix and useTK and isDirectory("/dev/snd") and got_program("arecord"): # no tkSnack, but can record via ALSA (but no point doing the tests if not useTK)
+if useTK and not tkSnack:
+  if unix and isDirectory("/dev/snd") and got_program("arecord"): # can record via ALSA
+      recParams = (os.P_NOWAIT,got_program("arecord"),"arecord","-f","S16_LE","-r","22050")
+  elif gotSox: recParams = (os.P_NOWAIT,got_program("sox"),"sox","-d","-r","22050","-c","1")+tuple(sox_16bit.split()+sox_signed.split())
+  else: recParams = None
+  if recParams:
     del MicInput
     class MicInput(InputSource):
         def startRec(self,outFile,lastStopRecVal=0.5):
-            self.pid = os.spawnl(os.P_NOWAIT,"/bin/bash","/bin/bash","-c","arecord -f S16_LE -r 22050 "+shell_escape(outFile))
+            self.pid = os.spawnl(*(recParams+(outFile,)))
             time.sleep(lastStopRecVal) # allow process to start
         def stopRec(self):
             os.kill(self.pid,2) # INT

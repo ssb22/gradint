@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.99899 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -55,6 +55,7 @@ tk_only = [ # we want these on WinCE but not S60:
 # "def guiVocabList(parsedVocab):", # now actually used on S60
 "def synchronizeListbox(listbox,masterList):",
 "if useTK:",
+"if useTK and not tkSnack:",
 "def openDirectory(dir,inGuiThread=0):",
 "def gui_event_loop():",
 "def makeButton(parent,text,command):",

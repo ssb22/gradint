@@ -10,4 +10,4 @@ because Gradint doesn't use that functionality.  But be careful about using
 this SOX binary elsewhere, especially for GSM-related processing.
 
 This version of sox does NOT run on OS X 10.8 (it complains about missing
-libltdl.7.dylib).  Use sox-14.4.1 instead for that.
+libltdl.7.dylib).  Use sox-14.4.2 instead for that.
