@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.077 (c) 2011,2015,2017-18 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.078 (c) 2011,2015,2017-19 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -237,6 +237,8 @@ backLink = ' <A HREF="'+cginame+'" onClick="history.go(-1);return false">Back</A
 
 def serveAudio(stream=0, filetype="mp3", inURL=1):
   # caller imports gradint (and sets justSynthesize or whatever) first
+  if os.environ.get("HTTP_IF_MODIFIED_SINCE",""):
+    print "Status: 304 Not Modified\n\n" ; return
   if filetype=="mp3": print "Content-type: audio/mpeg"
   else: print "Content-type: audio/"+filetype # ok for ogg, wav?
   if inURL:
