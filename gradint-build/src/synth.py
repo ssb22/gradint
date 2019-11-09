@@ -110,8 +110,7 @@ class OSXSynth_Say(Synth):
                 if not lang: continue # TODO: output VoiceName in a warning?
             else: lang = vocAttrib['VoiceLanguage']
             if '-' in lang: lang=lang[:lang.index("-")]
-            if not lang in d: d[lang]=[]
-            d[lang].append(vocAttrib['VoiceName'].encode('utf-8'))
+            d.setdefault(lang,[]).append(vocAttrib['VoiceName'].encode('utf-8'))
         found=0 ; d2=d.copy()
         class BreakOut(Exception): pass
         # First, check for voice matches in same language beginning
