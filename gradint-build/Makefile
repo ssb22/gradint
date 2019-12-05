@@ -220,7 +220,6 @@ gradint.zip: $(Riscos_Files) riscos.zip
 	rm -rf \!gradint
 
 publish0: $(All_Versions) gradint.py
-	scp -C gradint.py st0rage:gradint/
 	scp -C gradint.py srcf:gradint/
 	mv $(All_Versions) ~/public_html/gradint/
 	cp vocab.txt advanced.txt ~/public_html/gradint/
