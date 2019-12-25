@@ -243,5 +243,6 @@ if __name__ == "__main__":
       jyutping = get_jyutping(songSubst(l),0)
       if pinyin: jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
       if "--yale#lau" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
+      elif "--yale#lau#ping" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))+"#"+jyutping.replace(' ','')
       elif "--yale" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))
       else: print superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
