@@ -174,7 +174,7 @@ GUI.exe: gradint.py
 gradint.tbz: $(Mac_Files)
 	mkdir gradint
 	cp -r $(Mac_Files) gradint
-	chmod +x gradint/start-gradint.app/sox gradint/start-gradint.app/sox-14.4.2 gradint/start-gradint.app/qtplay # just in case it lost its x attribute
+	chmod +x gradint/start-gradint.app/sox gradint/start-gradint.app/sox-14.4.2 gradint/start-gradint.app/qtplay
 	mv gradint/samples/utils "gradint/samples/advanced utilities"
 	for N in hanzi-prompts/*.txt; do python -c "open('gradint/samples/prompts/$$(echo $$N|sed -e s,.*/,,)','w').write('\\xef\\xbb\\xbf'+open('$$N').read())"; done # overwriting the pinyin ones (as will bundle espeak so can translit.), and NB we *do* need the byte-order-mark on Mac OS 10.6 for TextEdit
 	cd gradint && python -c 'open("v2","w").write("\xef\xbb\xbf"+open("vocab.txt").read())' && mv v2 vocab.txt && cd ..
