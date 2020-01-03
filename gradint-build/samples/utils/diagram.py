@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 
 # diagram.py: script to generate diagrams of gradint lessons
 # (C) 2008 Silas S. Brown.  License: GPL

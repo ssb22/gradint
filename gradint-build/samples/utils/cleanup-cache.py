@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # delete cached synthesized words that are not used
 # (i.e. not mentioned in vocab.txt or samples).

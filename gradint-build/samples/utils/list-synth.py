@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # list-synth.py language [language ...]
 # list all words that can be synthesized

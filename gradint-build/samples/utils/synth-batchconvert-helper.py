@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # Script to assist with using TextAloud or similar program
 # that can batch-synthesize a collection of text files

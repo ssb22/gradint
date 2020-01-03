@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
 program_name = "gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+."

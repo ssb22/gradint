@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 # transliterate.py - print a 2nd-language-transliterated version of vocab.txt and any .txt pairs in samples
 # (may be useful for grepping, loading to Latin-only PDA, etc)
 # (note: leaves comments untransliterated, + may not translit all text if gradint is set up so a transliterating synth will not be used)

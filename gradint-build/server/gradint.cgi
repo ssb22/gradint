@@ -1,7 +1,7 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # -*- coding: utf-8 -*-
 
-program_name = "gradint.cgi v1.078 (c) 2011,2015,2017-19 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.079 (c) 2011,2015,2017-20 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -188,7 +188,7 @@ def allLinesHaveEquals(lines):
         if not '=' in l: return False
     return True
 def authorWordList(lines,l1,l2):
-    gradintUrl = os.environ["SCRIPT_URI"]
+    gradintUrl = os.environ["SCRIPT_URI"] # will be http:// or https:// as appropriate
     r=[] ; count = 0
     # could have target="gradint" in the following, but it may be in a background tab (target="_blank" not recommended as could accumulate many)
     r.append('<form action="%s" method="post" accept-charset="utf-8"><table style="margin-left:auto;margin-right:auto;border:thin solid blue"><tr><td colspan=3 style="text-align:center"><em>Click on each word for audio</em></td></tr>' % gradintUrl)
@@ -228,7 +228,7 @@ def htmlOut(body_u8,title_extra="",links=1):
     print '</head><body>'+body_u8
     print '<HR>'
     if links:
-        print 'This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="http://people.pwf.cam.ac.uk/ssb22/gradint/">download the full version of Gradint</A>.'
+        print 'This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="http://ssb22.user.srcf.net/gradint/">download the full version of Gradint</A>.'
         # TODO @ low-priority: Android 3 <input type="file" accept="audio/*;capture=microphone"></input>
         if "iPhone" in os.environ.get("HTTP_USER_AGENT","") and gradint.secondLanguage=="zh": print '<p>You can also try the Open University <A HREF="http://itunes.apple.com/gb/app/chinese-characters-first-steps/id441549197?mt=8#">Chinese Characters First Steps</A> iPhone application.'
     print '<p>'+program_name[:program_name.index("(")]+"using "+gradint.program_name[:gradint.program_name.index("(")]

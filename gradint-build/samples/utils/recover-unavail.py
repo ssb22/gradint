@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 
 # Script to recover vocabulary from the "unavailable"
 # entries in Gradint's progress file.  Use if for some

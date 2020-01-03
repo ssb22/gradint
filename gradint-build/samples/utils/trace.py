@@ -1,3 +1,4 @@
+#!/usr/bin/env python2
 
 # trace.py: script to generate raytraced animations of Gradint lessons
 # Version 1.11 (c) 2018-19 Silas S. Brown.  License: GPL

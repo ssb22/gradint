@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # vocab2html.py - converts vocab.txt to HTML,
 # linking any vocab that is cached

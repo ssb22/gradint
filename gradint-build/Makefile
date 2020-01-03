@@ -221,6 +221,7 @@ gradint.zip: $(Riscos_Files) riscos.zip
 
 publish0: $(All_Versions) gradint.py
 	scp -C gradint.py srcf:gradint/
+	scp -C server/gradint.cgi srcf:public_html/
 	mv $(All_Versions) ~/public_html/gradint/
 	cp vocab.txt advanced.txt ~/public_html/gradint/
 	cp samples/README.txt ~/public_html/gradint/samples-readme.txt

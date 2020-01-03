@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 # safety-check-progressfile.py:
 # The purpose of this script is to check
 # progress.txt for safety.  Because it's

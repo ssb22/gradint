@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 
 # Script to generate an HTML table of the contents of a lesson
 # for summarizing it to a teacher or native speaker.
