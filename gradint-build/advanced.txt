@@ -442,7 +442,7 @@ partialsDirectory = "partials"
 # have difficulty storing all of these (especially for Korean); therefore
 # you can use Unicode escaping in filenames, e.g. _ud79d for Unicode D79D
 # (equivalent to UTF-8 sequence ED 9E 9D).  Example conversion command:
-# for N in *; do cp "$N" "/path/to/fat/$(python -c "print repr('$N'.decode('utf-8'))[2:-1].replace(r'\\u','_u')")";done
+# for N in *; do cp "$N" "/path/to/fat/$(python2 -c "print repr('$N'.decode('utf-8'))[2:-1].replace(r'\\u','_u')")";done
 
 # When using partials, you can change the length of pause
 # between phrases by changing the following (in seconds) :

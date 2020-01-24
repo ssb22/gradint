@@ -56,7 +56,7 @@ cd .. && rm -rf gradint0
 cd gradint || exit 1
 unzip library.zip gradint.py || exit 1
 rm -rf tcl library.zip *.exe *.pyd *.dll
-if python -c 'import tkinter'; then
+if python2 -c 'import tkinter'; then
  if test -e ~/Desktop && ! test -e ~/Desktop/Gradint; then
   echo "Creating symlink on Desktop"
   ln -s "$(pwd)/gradint.py" ~/Desktop/Gradint
