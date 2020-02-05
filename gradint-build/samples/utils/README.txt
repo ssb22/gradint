@@ -10,6 +10,8 @@ C:\Windows\system32 or somewhere.
 
 All require Python (from www.python.org).  All systems
 except Windows have that anyway if you can run gradint.
+However, some of these utilities are still Python2-only,
+while the main Gradint is now compatible with both 2 and 3.
 
 SPLITTING SOUND FILES
 ---------------------

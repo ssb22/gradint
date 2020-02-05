@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -43,7 +43,8 @@ gradint.py: $(SOURCES) cleanup
 	cat $(SOURCES) > gradint.py
 	chmod a-w gradint.py
 	chmod +x gradint.py
-	python2 -c "import gradint" && rm -f gradint.pyc # just to make sure it compiles
+	python2 -c "import gradint" && rm -f gradint.pyc # just to make sure it compiles in Python 2
+	python3 -c "import gradint" && rm -f gradint.pyc # just to make sure it compiles in Python 3 as well
 
 src/defaults.py: settings.txt advanced.txt Makefile
 	echo "# This is the start of defaults.py - configuration defaults, automatically extracted from default settings.txt and advanced.txt, so user customisations don't have to be complete (helps with upgrades)" > src/defaults.py

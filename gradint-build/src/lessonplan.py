@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -28,15 +28,17 @@ class ProgressDatabase(object):
             tList = {}
             def addVs(ff,dirBase):
                 if dirBase: dirBase += os.sep
+                dirBase,ff = B(dirBase),B(ff)
                 if dirBase+ff in variantFiles:
-                   if os.sep in ff: ffpath=ff[:ff.rfind(os.sep)+1]
-                   else: ffpath=""
-                   variantList=map(lambda x:ffpath+x,variantFiles[dirBase+ff])
+                   if B(os.sep) in ff: ffpath=ff[:ff.rfind(B(os.sep))+1]
+                   else: ffpath=B("")
+                   variantList=map(lambda x:ffpath+B(x),variantFiles[dirBase+ff])
                 else: variantList = [ff]
                 l=languageof(ff)
                 for f in variantList:
-                  if f.lower().endswith(dottxt): text=u8strip(read(dirBase+f)).strip(wsp)
-                  elif f.find("!synth")==-1: continue # don't need to translit. filenames of wav's etc
+                  f = B(f)
+                  if f.lower().endswith(B(dottxt)): text=u8strip(read(dirBase+f)).strip(bwsp)
+                  elif f.find(B("!synth"))==-1: continue # don't need to translit. filenames of wav's etc
                   else: text = textof(f)
                   if not l in tList: tList[l]={}
                   tList[l][text]=1
@@ -45,9 +47,9 @@ class ProgressDatabase(object):
                 if not type(l1)==type([]): l1=[l1]
                 for ff in l1+[l2]: addVs(ff,samplesDirectory)
             doLabel("Transliterating")
-            for lang,dic in tList.items():
+            for lang,dic in list(tList.items()):
                 s = get_synth_if_possible(lang,0)
-                if s and hasattr(s,"update_translit_cache"): s.update_translit_cache(lang,dic.keys())
+                if s and hasattr(s,"update_translit_cache"): s.update_translit_cache(lang,list(dic.keys()))
         self.didScan = alsoScan
     def _load_from_binary(self):
         if pickledProgressFile and fileExists(pickledProgressFile):
@@ -55,11 +57,12 @@ class ProgressDatabase(object):
                 global firstLanguage, secondLanguage, otherLanguages
                 if compress_progress_file or (unix and got_program("gzip")):
                     if paranoid_file_management: open(pickledProgressFile) # ensure ready
-                    f = os.popen('gzip -fdc "'+pickledProgressFile+'"',"rb")
+                    f = os.popen('gzip -fdc "'+pickledProgressFile+'"',popenRB)
                 else: f=open(pickledProgressFile,"rb")
                 try: thingsToSet, tup = pickle.Unpickler(f).load()
                 except: return False # probably moved to a different Python version or something
                 exec(thingsToSet)
+                self._py3_fix()
                 return True
             # otherwise drop out and return None
     def _load_from_text(self,fromString=0):
@@ -67,11 +70,11 @@ class ProgressDatabase(object):
         elif fileExists(progressFile):
             if compress_progress_file or (unix and got_program("gzip")):
                 if paranoid_file_management: open(progressFile) # ensure ready
-                expr = os.popen('gzip -fdc "'+progressFile+'"',"rb").read()
+                expr = readB(os.popen('gzip -fdc "'+progressFile+'"',popenRB))
             else: expr = read(progressFile)
         else: expr = None
         if expr:
-            expr = u8strip(expr).replace("\r\n","\n") # just in case progress.txt has been edited in Notepad
+            expr = u8strip(expr).replace(B("\r\n"),B("\n")) # just in case progress.txt has been edited in Notepad
             # First, try evaluating it as self.data (legacy progress.txt from older versions).  If that doesn't work, execute it (newer versions).
             global firstLanguage, secondLanguage, otherLanguages
             try: self.data = eval(expr)
@@ -81,20 +84,29 @@ class ProgressDatabase(object):
                 except: codeop = 0
                 if codeop: # try a lower-memory version (in case text file has been edited by hand and we're on NSLU2 or something) - don't compile all of it at once
                     lineCache = []
-                    for l in expr.replace("\r\n","\n").split("\n"):
+                    for l in expr.replace(B("\r\n"),B("\n")).split(B("\n")):
                         lineCache.append(l)
-                        if lineCache[-1].endswith(","): continue # no point trying to compile if it's obviously incomplete
-                        code = codeop.compile_command("\n".join(lineCache))
+                        if lineCache[-1].endswith(B(",")): continue # no point trying to compile if it's obviously incomplete
+                        code = codeop.compile_command("# coding=utf-8\n"+S(B("\n").join(lineCache)))
                         if code:
                             lineCache = []
                             exec(code)
-                else: exec(expr)
+                else: exec(B("# coding=utf-8\n")+expr)
             del expr
         # Remove legacy extentions in promptsData (needed only when loading from text, as this was before pickledProgressFile was added)
-        for k in self.promptsData.keys():
+        for k in list(self.promptsData.keys()):
             if k.endswith(dotwav) or k.endswith(dotmp3):
                 self.promptsData[k[:-len(dotwav)]]=self.promptsData[k]
                 del self.promptsData[k]
+        self._py3_fix()
+    def _py3_fix(self):
+        if not type("")==type(u""): return
+        # we're Python 3, and we might have just loaded data from Python 2
+        for l in [self.data,self.unavail]:
+            for i in range(len(l)):
+                for j in [1,2]:
+                    if type(l[i][j])==str: l[i]=l[i][:j]+(S2(LB(l[i][j])),)+l[i][j+1:]
+                    elif type(l[i][j])==list: l[i]=l[i][:j]+(map(lambda x:S2(LB(x)),l[i][j]),)+l[i][j+1:]
     def save(self,partial=0):
         if need_say_where_put_progress: show_info("Saving "+cond(partial,"partial ","")+"progress to "+progressFile+"... ")
         else: show_info("Saving "+cond(partial,"partial ","")+"progress... ")
@@ -103,7 +115,7 @@ class ProgressDatabase(object):
         data = [] # don't use self.data - may want to make another lesson after saving
         for a,b,c in self.data:
             if a: data.append(denumber_filelists(a,b,c))
-        data.sort(cmpfunc) # to normalise when using diff etc
+        sort(data,cmpfunc) # to normalise when using diff etc
         if progressFileBackup:
             try:
                 import shutil
@@ -119,13 +131,19 @@ class ProgressDatabase(object):
               else: fn=progressFile
               f=os.popen('gzip -9 > "'+fn+'"','w')
             else: f = open(progressFile,'w')
+            global progressFileHeader
+            if type(u"")==type(""): # Python 3: ensure UTF-8
+                import codecs
+                realF,f = f,codecs.getwriter("utf-8")(f.buffer)
+                progressFileHeader=progressFileHeader.replace("mode: python ","mode: python; coding: utf-8")
+            else: realF = f
             f.write(progressFileHeader)
             f.write("firstLanguage=\"%s\"\nsecondLanguage=\"%s\"\n# otherLanguages=%s\n" % (firstLanguage,secondLanguage,otherLanguages)) # Note: they're declared "global" above (and otherLanguages commented out here for now, since may add to it in advanced.txt) (Note also save_binary below.)
             if self.didScan and maxNewWords: f.write("# collection=%d done=%d left=%d lessonsLeft=%d\n" % (len(self.data),len(data),len(self.data)-len(data),(len(self.data)-len(data)+maxNewWords-1)/maxNewWords))
             prettyPrintLongList(f,"self.data",data)
             f.write("self.promptsData=") ; pprint.PrettyPrinter(indent=2,width=60,stream=f).pprint(self.promptsData)
             prettyPrintLongList(f,"self.unavail",self.unavail)
-            f.close()
+            realF.close()
             if compress_progress_file and paranoid_file_management: write(progressFile,read(fn)),os.remove(fn)
             self.save_binary(data)
           except IOError: # This can happen for example on some PocketPC devices if you reconnect the power during progress save (which is likely if you return the device to the charger when lesson finished)
@@ -142,7 +160,8 @@ class ProgressDatabase(object):
             if compress_progress_file:
               if paranoid_file_management: fn=os.tempnam()
               else: fn=pickledProgressFile # TODO near-duplicate code with above
-              f=os.popen('gzip -9 > "'+fn+'"','wb')
+              f=os.popen('gzip -9 > "'+fn+'"',popenWB)
+              if hasattr(f,'buffer'): _,f = f,f.buffer
             else: f = open(pickledProgressFile,'wb')
             pickle.Pickler(f,-1).dump(("self.data,self.promptsData,self.unavail,firstLanguage,secondLanguage = tup", (data,self.promptsData,self.unavail,firstLanguage,secondLanguage)))
             f.close()
@@ -178,7 +197,7 @@ class ProgressDatabase(object):
     def makeLesson(self):
         global maxLenOfLesson
         self.l = Lesson()
-        self.data.sort(cmpfunc) ; jitter(self.data)
+        sort(self.data,cmpfunc) ; jitter(self.data)
         self.oldData = self.data[:] # for handling interrupts & partial progress saves
         self.exclude = {} ; self.do_as_poem = {}
         # First priority: Recently-learned old words
@@ -272,7 +291,7 @@ class ProgressDatabase(object):
                 global earliestAllowedEvent ; earliestAllowedEvent = 0
                 if not timesDone and type(promptFile)==type([]):
                     # for poems: if any previously-added new word makes part of the prompt, try to ensure this one is introduced AFTER that one
-                    for f,t in newWordTimes.items():
+                    for f,t in list(newWordTimes.items()):
                         if f in promptFile: earliestAllowedEvent = max(earliestAllowedEvent,t)
                 if not timesDone: newWordTimes[zhFile] = maxLenOfLesson # by default (couldn't fit it in).  (add even if not type(promptFile)==type([]), because it might be a first line)
                 try: self.l.addSequence(seq)
@@ -331,8 +350,8 @@ class ProgressDatabase(object):
         for timesDone,promptFile,zhFile in self.data:
             if timesDone:
                 covered += 1
-                if zhFile.find(exclude_from_coverage)==-1: actualCovered += 1
-            if zhFile.find(exclude_from_coverage)==-1: actualTotal += 1
+                if B(zhFile).find(B(exclude_from_coverage))==-1: actualCovered += 1
+            if B(zhFile).find(B(exclude_from_coverage))==-1: actualTotal += 1
         l=cond(app,localise,lambda x:x)
         toRet = (l("You have %d words in your collection") % total)
         if not total==actualTotal: toRet += (" (actually %d)" % actualTotal)
@@ -347,15 +366,23 @@ def prettyPrintLongList(f,thing,data):
     if winCEsound: p=0 # don't use WinCE's PrettyPrinter here - it inconsistently escapes utf8 sequences (result can't reliably be edited in MADE etc)
     else: p=pprint.PrettyPrinter(indent=2,width=60,stream=f)
     for start in range(0,len(data),step):
+        dat = data[start:start+step]
+        if type("")==type(u""): # Python 3: probably best to output strings rather than bytes
+            for i in range(len(dat)):
+                for j in [1,2]:
+                    if type(dat[i][j])==bytes:
+                        dat[i]=dat[i][:j]+(S2(dat[i][j]),)+dat[i][j+1:]
+                    elif type(dat[i][j])==list:
+                        dat[i]=dat[i][:j]+(map(S2,dat[i][j]),)+dat[i][j+1:]
         if start: f.write(thing+"+=")
         else: f.write(thing+"=")
         if p:
             t = time.time()
-            p.pprint(data[start:start+step])
+            p.pprint(dat)
             if not start and (time.time()-t)*(len(data)/step) > 5: p=0 # machine is too slow - use faster version on next iteration
         else: # faster version - not quite as pretty
             f.write("[")
-            for d in data[start:start+step]: f.write("  "+repr(d)+",\n")
+            for d in dat: f.write("  "+repr(d)+",\n")
             f.write("]\n")
 
 def calcDropLevel(timesDone):
@@ -380,15 +407,23 @@ def cmpfunc(x,y):
     if r: return r # skipping the rest if x[0]!=y[0]
     if x[0]: return cmpfunc_test(x,y) # our special order is needed only for new words (to ensure correct order of introduction)
     def my_toString(x):
-        if type(x)==type([]): return "".join(x)
-        else: return x
-    x2 = (my_toString(x[1]).replace(os.sep,chr(0)), my_toString(x[2]).replace(os.sep,chr(0)))
-    y2 = (my_toString(y[1]).replace(os.sep,chr(0)), my_toString(y[2]).replace(os.sep,chr(0)))
+        if type(x)==type([]): return B("").join(map(B,x))
+        else: return B(x)
+    x2 = (my_toString(x[1]).replace(B(os.sep),chr(0)), my_toString(x[2]).replace(B(os.sep),chr(0)))
+    y2 = (my_toString(y[1]).replace(B(os.sep),chr(0)), my_toString(y[2]).replace(B(os.sep),chr(0)))
     return cmpfunc_test(x2,y2)
 def cmpfunc_test(x,y):
-    if x < y: return -1
-    elif x > y: return 1
-    else: return 0
+    try:
+        if x < y: return -1
+        elif x > y: return 1
+        else: return 0
+    except: # probably Python 3 can't compare list vs string
+        if x[0] < y[0]: return -1
+        elif x[0] > y[0]: return 1
+        x,y = repr(x),repr(y)
+        if x < y: return -1
+        elif x > y: return 1
+        else: return 0
 
 def denumber_filelists(r,x,y):
     if type(x)==type([]): x=map(lambda z:denumber_synth(z),x)
@@ -397,15 +432,15 @@ def denumber_filelists(r,x,y):
     else: y=denumber_synth(y)
     return (r,x,y)
 def denumber_synth(z,also_norm_extsep=0):
-    zf = z.find("!synth:")
+    z=B(z) ; zf = z.find(B("!synth:"))
     if zf>=0:
         z=lower(z[zf:]) # so ignores the priority-number it had (because the vocab.txt file might have been re-organised hence changing all the numbers).  Also a .lower() so case changes don't change progress.  (Old versions of gradint said .lower() when parsing vocab.txt, but this can cause problems with things like Mc[A-Z].. in English espeak)
-        if z.endswith(dotwav) or z.endswith(dotmp3): return z[:z.rindex(extsep)] # remove legacy extensions from synth vocab
-    elif also_norm_extsep: return z.replace("\\","/").replace(".","/") # so compares equally across platforms with os.sep and extsep differences
+        if z.endswith(B(dotwav)) or z.endswith(B(dotmp3)): return z[:z.rindex(B(extsep))] # remove legacy extensions from synth vocab
+    elif also_norm_extsep: return z.replace(B("\\"),B("/")).replace(B("."),B("/")) # so compares equally across platforms with os.sep and extsep differences
     return z
 
 def norm_filelist(x,y):
-    def noext(x): return (x+extsep)[:x.rfind(extsep)] # so user can change e.g. wav to mp3 without disrupting progress.txt
+    def noext(x): return (B(x)+B(' '))[:B(x).rfind(B(extsep))] # so user can change e.g. wav to mp3 without disrupting progress.txt (the ' ' is simply removed if rfind returns -1)
     if type(x)==type([]): x=tuple(map(lambda z:denumber_synth(noext(z),1),x))
     else: x=denumber_synth(noext(x),1)
     if type(y)==type([]): y=tuple(map(lambda z:denumber_synth(noext(z),1),y))
@@ -455,7 +490,7 @@ def mergeProgress(progList,scan):
             if not found: progList.append((0,j,k)) # new item
         else: progList.append((0,j,k)) # ditto
         scanlistDict[key]=1
-    for k,v in renames.items():
+    for k,v in list(renames.items()):
         if k in scanlistDict or len(v)>1: # can't make sense of this one - just add the new stuff
             for jj,kk in v: progList.append((0,jj,kk))
         else: progList[proglistDict[k]]=(progList[proglistDict[k]][0],v[0][0],v[0][1])

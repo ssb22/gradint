@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -203,6 +203,7 @@ def changeToDirOf(file,winsound_also=0):
     # used before running a non-cygwin program in the cygwin environment (due to directory differences etc)
     # and (with winsound_also) before running a program on Windows without needing to quote the filename (e.g. because some versions of eSpeak won't write to a quoted wav file when called from popen).  Note windows os.chdir DOES change the drive also.  Use this only if filename will not contain special characters (e.g. should be able to use it for temp files).
     # NB if winsound_also is set, will return file "quoted" on other systems (so can set winsound_also and not worry about whether or not it should be quoted)
+    file = S(file)
     if winCEsound and not ' ' in file: return file # don't need to quote
     elif winsound_also and not (winsound or mingw32 or cygwin): return '"'+file+'"'
     elif (cygwin or ((winsound or mingw32) and winsound_also)) and os.sep in file:
@@ -234,7 +235,8 @@ else: signal=0
 # SampleEvent extends this to actually play something:
 
 def soundFileType(file):
-    if extsep in file: return file[file.rindex(extsep)+1:].lower()
+    file,sep = B(file),B(extsep)
+    if sep in file: return S(file[file.rindex(sep)+1:].lower())
     else: return "wav"
 
 def lessonIsTight(): return maxLenOfLesson <= 10*60 * min(1.8,max(1,maxNewWords/5.0)) # ?
@@ -268,7 +270,7 @@ class SampleEvent(Event):
         if soundCollector: soundCollector.addFile(self.file,self.exactLen)
         elif appuifw:
             fname = self.file
-            if not fname[1]==":": fname=os.getcwd()+cwd_addSep+fname # must be full drive:\path
+            if not B(fname[1:2])==B(":"): fname=B(os.getcwd()+cwd_addSep)+B(fname) # must be full drive:\path
             sound = audio.Sound.open(ensure_unicode(fname))
             sound.play()
             try: time.sleep(self.length) # TODO or exactLen?
@@ -277,8 +279,8 @@ class SampleEvent(Event):
             return
         elif android:
             fname = self.file
-            if not fname[0]=='/': fname=os.getcwd()+'/'+fname
-            android.mediaPlay("file://"+fname)
+            if not B(fname[0])==B('/'): fname=B(os.getcwd()+'/')+fname
+            android.mediaPlay("file://"+S(fname))
             return
         elif fileType=="mp3" and madplay_path and mp3Player==madplay_path and not macsound and not wavPlayer=="aplay":
             oldcwd = os.getcwd()
@@ -288,8 +290,8 @@ class SampleEvent(Event):
         elif winCEsound and fileType=="mp3":
             # we can handle MP3 on WinCE by opening in Media Player.  Too bad it ignores requests to run minimized.
             fname = self.file
-            if not fname[0]=="\\": fname=os.getcwd()+cwd_addSep+fname # must be full path
-            r=not ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u""+fname)))
+            if not B(fname[0])==B("\\"): fname=os.getcwd()+cwd_addSep+fname # must be full path
+            r=not ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=ensure_unicode(fname))))
             time.sleep(self.length) # exactLen may not be enough
         elif (winsound and not (self.length>10 and wavPlayer)) or winCEsound: # (don't use winsound for long files if another player is available - it has been known to stop prematurely)
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
@@ -298,8 +300,8 @@ class SampleEvent(Event):
                 if winsound: winsound.PlaySound(file,winsound.SND_FILENAME)
                 else: # winCEsound
                     fname = self.file
-                    if not fname[0]=="\\": fname=os.getcwd()+cwd_addSep+fname # must be full path
-                    ctypes.cdll.coredll.sndPlaySoundW(u""+fname,1) # 0=sync 1=async
+                    if not B(fname[0])==B("\\"): fname=os.getcwd()+cwd_addSep+fname # must be full path
+                    ctypes.cdll.coredll.sndPlaySoundW(ensure_unicode(fname),1) # 0=sync 1=async
                     time.sleep(self.exactLen) # if async.  Async seems to be better at avoiding crashes on some handhelds.
             except RuntimeError: return 1
         elif macsound:
@@ -385,10 +387,10 @@ def rough_guess_mp3_length(fname):
     while True:
       head=o.read(512)
       if len(head)==0: raise IndexError # read the whole file and not found a \xFF byte??
-      i=head.find('\xFF')
+      i=head.find(LB('\xFF'))
       if i==-1: continue
       if i+2 < len(head): head += o.read(3)
-      o.seek(o.tell()-len(head)+i+2) ; b=ord(head[i+1])
+      o.seek(o.tell()-len(head)+i+2) ; b=ord(head[i+1:i+2])
       if b >= 0xE0: break # valid frame header starts w. 11 1-bits (not just 8: some files with embedded images could throw that off)
     s = o.tell() ; o.close()
     layer = 4-((b&6)>>1)
@@ -396,7 +398,7 @@ def rough_guess_mp3_length(fname):
       column = layer-1 # MPEG 1 layer 1, 2 or 3
     elif layer==1: column = 3 # MPEG 2+ layer 1
     else: column = 4 # MPEG 2+ layer 2+
-    bitrate = br_tab[ord(head[i+2])>>4][column]
+    bitrate = br_tab[ord(head[i+2:i+3])>>4][column]
     if bitrate==0: bitrate=48 # reasonable guess for speech
     return (filelen(fname)-s)*8.0/(bitrate*1000)
   except IndexError: raise Exception("Invalid MP3 header in file "+repr(fname))
@@ -407,7 +409,7 @@ def filelen(fname):
     return fileLen
 
 def lengthOfSound(file):
-    if file.lower().endswith(dotmp3): return rough_guess_mp3_length(file)
+    if B(file).lower().endswith(B(dotmp3)): return rough_guess_mp3_length(file)
     else: return pcmlen(file)
 
 def pcmlen(file):
@@ -428,24 +430,24 @@ class SoundCollector(object):
     def __init__(self):
         self.rate = 44100 # so ok for oggenc etc
         if out_type=="raw" and write_to_stdout: self.o=sys.stdout
-        elif out_type=="ogg": self.o=os.popen(oggenc()+" -o \"%s\" -r -C 1 -q 0 -" % (cond(write_to_stdout,"-",outputFile),),"wb") # oggenc assumes little-endian, which is what we're going to give it
+        elif out_type=="ogg": self.o=os.popen(oggenc()+" -o \"%s\" -r -C 1 -q 0 -" % (cond(write_to_stdout,"-",outputFile),),popenWB) # oggenc assumes little-endian, which is what we're going to give it
         elif out_type=="aac":
-            if got_program("neroAacEnc"): self.o=os.popen("sox %s - -t wav - | neroAacEnc -br 32000 -if - -of \"%s\"" % (self.soxParams(),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO optionally use -2pass, on a physical input file like the afconvert code)
-            else: self.o=os.popen("faac -b 32 -P%s -C 1 -o \"%s\" -" % (cond(big_endian,""," -X"),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that faac on big-endian needs the -X removed when we're giving it little-endian.  It SHOULD if the compile is endian-dependent.)
-        elif out_type=="mp3": self.o=os.popen("lame -r%s%s -m m --vbr-new -V 9 - \"%s\"" % (lame_endian_parameters(),lame_quiet(),cond(write_to_stdout,"-",outputFile)),"wb") # (TODO check that old versions of lame won't complain about the --vbr-new switch.  And some very old hardware players may insist on MPEG-1 rather than MPEG-2, which would need different parameters)
+            if got_program("neroAacEnc"): self.o=os.popen("sox %s - -t wav - | neroAacEnc -br 32000 -if - -of \"%s\"" % (self.soxParams(),cond(write_to_stdout,"-",outputFile)),popenWB) # (TODO optionally use -2pass, on a physical input file like the afconvert code)
+            else: self.o=os.popen("faac -b 32 -P%s -C 1 -o \"%s\" -" % (cond(big_endian,""," -X"),cond(write_to_stdout,"-",outputFile)),popenWB) # (TODO check that faac on big-endian needs the -X removed when we're giving it little-endian.  It SHOULD if the compile is endian-dependent.)
+        elif out_type=="mp3": self.o=os.popen("lame -r%s%s -m m --vbr-new -V 9 - \"%s\"" % (lame_endian_parameters(),lame_quiet(),cond(write_to_stdout,"-",outputFile)),popenWB) # (TODO check that old versions of lame won't complain about the --vbr-new switch.  And some very old hardware players may insist on MPEG-1 rather than MPEG-2, which would need different parameters)
         # Older versions of gradint used BladeEnc, with these settings: "BladeEnc -br 48 -mono -rawmono STDIN \"%s\"", but lame gives much smaller files (e.g. 3.1M instead of 11M) - it handles the silences more efficiently for a start).
         # Typical file sizes for a 30-minute lesson: OGG 2.7M, neroAacEnc 3.0M at 32000 (you might be able to put up with 1.8M at 18000 or 2.2M at 24000), MP3 3.1M, MP2 3.4M, faac 3.7M, WAV 152M
         # TODO try AAC+?  aacplusenc wavfile(or -) aacfile kbits, 10,12,14,18,20,24,32,40 (or 48 for stereo), but will need a player to test it
         # (mp2 could possibly be made a bit smaller by decreasing the -5, but don't make it as low as -10)
         elif out_type=="spx":
             self.rate = 32000 # could also use 16000 and -w, or even 8000, but those are not so good for language learning
-            self.o=os.popen("speexenc -u --vbr --dtx - "+cond(write_to_stdout,"-",outputFile),"wb") # and write 16-bit little-endian mono
+            self.o=os.popen("speexenc -u --vbr --dtx - "+cond(write_to_stdout,"-",outputFile),popenWB) # and write 16-bit little-endian mono
         elif out_type=="mp2":
             self.rate = 22050
-            self.o=os.popen("toolame %s -s %f -v -5 -p 4 -m m - \"%s\"" % (cond(big_endian,"-x",""),self.rate/1000.0,cond(write_to_stdout,"-",outputFile)),"wb") # TODO check that toolame compiled on big-endian architectures really needs -x to accept little-endian input
+            self.o=os.popen("toolame %s -s %f -v -5 -p 4 -m m - \"%s\"" % (cond(big_endian,"-x",""),self.rate/1000.0,cond(write_to_stdout,"-",outputFile)),popenWB) # TODO check that toolame compiled on big-endian architectures really needs -x to accept little-endian input
         elif not out_type=="raw":
             if out_type=="wav": self.rate=22050 # try not to take TOO much disk space
-            self.o=os.popen("sox %s - -t %s \"%s\"" % (self.soxParams(),out_type,cond(write_to_stdout,"-",outputFile)),"wb")
+            self.o=os.popen("sox %s - -t %s \"%s\"" % (self.soxParams(),out_type,cond(write_to_stdout,"-",outputFile)),popenWB)
         else: self.o = open(outputFile,"wb")
         self.theLen = 0
         self.silences = []
@@ -462,7 +464,7 @@ class SoundCollector(object):
         sampleNo = int(0.5+seconds*self.rate)
         if not sampleNo: sampleNo=1 # so don't lock on rounding errors
         byteNo = sampleNo*2 # since 16-bit
-        outfile_writeBytes(self.o,"\0"*byteNo)
+        outfile_writeBytes(self.o,chr(0)*byteNo)
         self.theLen += byteNo
     def addFile(self,file,length): # length ignored in this version
         fileType=soundFileType(file)
@@ -470,8 +472,8 @@ class SoundCollector(object):
         if riscos_sound:
             os.system("sox -t %s \"%s\" %s tmp0" % (fileType,file,self.soxParams()))
             handle=open("tmp0","rb")
-        elif winsound or mingw32: handle = os.popen(("sox -t %s - %s - < \"%s\"" % (fileType,self.soxParams(),file)),"rb")
-        else: handle = os.popen(("cat \"%s\" | sox -t %s - %s -" % (file,fileType,self.soxParams())),"rb")
+        elif winsound or mingw32: handle = os.popen(("sox -t %s - %s - < \"%s\"" % (fileType,self.soxParams(),file)),popenRB)
+        else: handle = os.popen(("cat \"%s\" | sox -t %s - %s -" % (file,fileType,self.soxParams())),popenRB)
         self.theLen += outfile_writeFile(self.o,handle,file)
         if riscos_sound:
             handle.close() ; os.unlink("tmp0")
@@ -483,7 +485,7 @@ class SoundCollector(object):
             if riscos_sound:
                 os.system(beepCmd(self.soxParams(),"tmp0"))
                 data=read("tmp0") ; os.unlink("tmp0")
-            else: data=os.popen(beepCmd(self.soxParams(),"-"),"rb").read()
+            else: data=readB(os.popen(beepCmd(self.soxParams(),"-"),popenRB))
             outfile_writeBytes(self.o,data)
             self.theLen += len(data)
             self.addSilence(betweenBeeps/2.0)
@@ -502,7 +504,7 @@ class SoundCollector(object):
         if not app: show_info("Lengths of silences: %s (total %s)\n" % (self.silences,ttl))
         if not outputFile=="-": outfile_close(self.o)
 def outfile_writeBytes(o,bytes):
-    try: o.write(bytes)
+    try: writeB(o,bytes)
     except IOError: outfile_write_error()
 def outfile_close(o):
     try: o.close()
@@ -510,7 +512,7 @@ def outfile_close(o):
 def outfile_writeFile(o,handle,filename):
     data,theLen = 1,0
     while data:
-        data = handle.read(102400)
+        data = readB(handle,102400)
         outfile_writeBytes(o,data)
         theLen += len(data)
     if not filename.startswith(partialsDirectory+os.sep): assert theLen, "No data when reading "+filename+": check for sox crash" # (but allow empty partials e.g. r5.  TODO if it's from EkhoSynth it could be a buggy version of Ekho)
@@ -600,7 +602,7 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,sox_signed) # S=script P=params for 
         self.seconds += length
         if not file in self.file2command:
             if fileType=="mp3": fileData,fileType = decode_mp3(file),"wav" # because remote sox may not be able to do it
-            elif compress_SH and unix: handle=os.popen("cat \""+file+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null","rb") # 8-bit if possible (but don't change sample rate, as we might not have floating point)
+            elif compress_SH and unix: handle=os.popen("cat \""+file+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null",popenRB) # 8-bit if possible (but don't change sample rate, as we might not have floating point)
             else: handle = open(file,"rb")
             offset, length = self.bytesWritten, outfile_writeFile(self.o,handle,file)
             self.bytesWritten += length
@@ -652,25 +654,25 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
         return data
     elif madplay_path:
         oldDir = os.getcwd()
-        d=os.popen(madplay_path+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-","rb").read()
+        d=readB(os.popen(madplay_path+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-",popenRB))
         os.chdir(oldDir) ; return d
     elif got_program("mpg123"): # do NOT try to read its stdout (not only does it write 0 length, which we can fix, but some versions can also write wrong bitrate, which is harder for us to fix)
         oldDir = os.getcwd()
         tfil = os.tempnam()+dotwav
         os.system("mpg123 -q -w \""+tfil+"\" \""+changeToDirOf(file)+"\"")
-        if compress_SH and gotSox: dat = os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ","rb").read()
+        if compress_SH and gotSox: dat = readB(os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ",popenRB))
         else: dat = open(tfil).read()
         os.unlink(tfil) ; os.chdir(oldDir) ; return dat
     elif macsound and got_program("afconvert"):
         tfil = os.tempnam()+dotwav
         system("afconvert -f WAVE -d I16@44100 \""+file+"\" \""+tfil+"\"")
-        if compress_SH and gotSox: dat = os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ","rb").read()
+        if compress_SH and gotSox: dat = readB(os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ",popenRB))
         else: dat = open(tfil).read()
         os.unlink(tfil) ; return dat
     elif unix:
         if gotSox:
             warn_sox_decode()
-            return os.popen("cat \""+file+"\" | sox -t mp3 - -t wav"+cond(compress_SH," "+sox_8bit,"")+" - ","rb").read()
+            return readB(os.popen("cat \""+file+"\" | sox -t mp3 - -t wav"+cond(compress_SH," "+sox_8bit,"")+" - ",popenRB))
         else:
             show_warning("Don't know how to decode "+file+" on this system")
             return ""
@@ -680,10 +682,13 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
 class Mp3FileCache(object):
     def __init__(self): self.fileCache = {}
     def __del__(self):
-        import os # as it might already have been gc'd
-        for v in self.fileCache.values():
+        try: import os # as it might already have been gc'd
+        except: pass
+        try:
+          for v in self.fileCache.values():
             try: os.remove(v)
             except: pass # somebody may have removed it already
+        except: pass
     def decode_mp3_to_tmpfile(self,file):
         if not file in self.fileCache:
             self.fileCache[file] = os.tempnam()+dotwav

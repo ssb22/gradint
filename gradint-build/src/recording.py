@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -337,7 +337,7 @@ class RecorderControls(ButtonScrollingMixin):
       def delete(self,filename):
         toDel = [] ; fs=filename.encode('utf-8')
         for f in os.listdir(self.currentDir):
-            if f.startswith(fs): toDel.append(f)
+            if f.startswith(S(fs)): toDel.append(f)
         if not toDel: return tkMessageBox.showinfo(filename,"No files found") # shouldn't happen
         if tkMessageBox.askyesno(filename,"Really delete "+" ".join(toDel)+"?"):
             for d in toDel: os.remove(self.currentDir+os.sep+d)
@@ -361,7 +361,7 @@ class RecorderControls(ButtonScrollingMixin):
         if not found: tkMessageBox.showinfo(filename,localise("Repeat count is 0, so we cannot reduce it for extra revision."))
     def makeLabel_lenLimit(self,utext): return Tkinter.Label(self.grid,text=utext,wraplength=int(self.ourCanvas.winfo_screenwidth()/(1+len(self.languagesToDraw))))
     def addSynthLabel(self,filename,row,col):
-        try: ftext = ensure_unicode(u8strip(read(filename).strip(wsp)))
+        try: ftext = ensure_unicode(u8strip(read(filename).strip(bwsp)))
         except IOError: return False
         l = self.makeLabel_lenLimit(ftext)
         l.grid(row=row,column=col,columnspan=2,sticky="w")
@@ -373,7 +373,7 @@ class RecorderControls(ButtonScrollingMixin):
           self.cancelRename(rr,cc)
         if l: l.grid_forget()
         editText,editEntry = addTextBox(self.grid,"nopack")
-        try: editText.set(ensure_unicode(u8strip(read(filename).strip(wsp))))
+        try: editText.set(ensure_unicode(u8strip(read(filename).strip(bwsp))))
         except IOError: pass
         editEntry.grid(row=row,column=col,sticky='we',columnspan=2)
         editEntry.bind('<Return>',lambda *args:self.doEdit(editText,editEntry,row,col,filename))
@@ -383,8 +383,8 @@ class RecorderControls(ButtonScrollingMixin):
             self.addLabel(row-1,col+1,localise("(synth'd)"))
             self.coords2buttons[(row-1,col+1)].is_synth_label = True
     def doEdit(self,editText,editEntry,row,col,filename):
-        text = asUnicode(editText.get()).encode("utf-8").strip(wsp)
-        if text: open(filename,"w").write(text+"\n")
+        text = asUnicode(editText.get()).encode("utf-8").strip(bwsp)
+        if text: writeB(open(filename,"w"),text+B("\n"))
         else:
             try: os.remove(filename)
             except: pass
@@ -582,7 +582,7 @@ class RecorderControls(ButtonScrollingMixin):
           if hasattr(self,"oldCanvasBbox") and bbox==self.oldCanvasBbox: pass
           else:
               self.oldCanvasBbox = bbox
-              c.config(scrollregion=bbox,width=bbox[2],height=min(c["height"],c.winfo_screenheight()/2,bbox[3]))
+              c.config(scrollregion=bbox,width=bbox[2],height=min(int(c["height"]),int(c.winfo_screenheight()/2),int(bbox[3])))
         if hasattr(self,"currentRecording") and not theISM.currentOutfile: self.doStop() # ensure GUI updates the recording button after player auto-stop (for want of a better place to put it)
         app.after(cond(winCEsound,3000,600),lambda *args:self.reconfigure_scrollbar())
     def setSync(self,syncFlag): self.syncFlag = syncFlag
@@ -722,7 +722,7 @@ class RecorderControls(ButtonScrollingMixin):
             if a>b: return 1
             elif b>a: return -1
             else: return 0
-        l.sort(cmpfunc)
+        sort(l,cmpfunc)
         self.has_variants = check_has_variants(self.currentDir,l)
         allLangs = list2set([firstLanguage,secondLanguage]+possible_otherLanguages)
         hadDirectories = False
@@ -884,7 +884,7 @@ def droidOrS60RecWord(recFunc,inputFunc):
   try: recCount += 1
   except: recCount = 1
   while inLs("%02d" % recCount): recCount += 1
-  origPrefix = prefix = u""+("%02d" % recCount)
+  origPrefix = prefix = ensure_unicode("%02d" % recCount)
   while True:
     prefix = inputFunc(u"Filename:",prefix)
     if not prefix: # pressed cancel ??

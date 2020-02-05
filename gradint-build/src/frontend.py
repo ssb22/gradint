@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -23,17 +23,17 @@ appTitle += time.strftime(" %A") # in case leave 2+ instances on the desktop
 def waitOnMessage(msg):
     global warnings_printed
     if type(msg)==type(u""): msg2=msg.encode("utf-8")
-    else: msg2=msg
+    else: msg2,msg=msg,msg.decode("utf-8")
     if appuifw:
         t=appuifw.Text() ; t.add(u"".join(warnings_printed)+msg) ; appuifw.app.body = t # in case won't fit in the query()  (and don't use note() because it doesn't wait)
-        appuifw.query(u""+msg,'query')
+        appuifw.query(msg,'query')
     elif android:
         # android.notify("Gradint","".join(warnings_printed)+msg) # doesn't work?
         android.dialogCreateAlert("Gradint","".join(warnings_printed)+msg)
         android.dialogSetPositiveButtonText("OK")
         android.dialogShow() ; android.dialogGetResponse()
     elif app:
-        if not (winsound or winCEsound or mingw32 or cygwin): show_info(msg2+"\n\nWaiting for you to press OK on the message box... ",True) # in case terminal is in front
+        if not (winsound or winCEsound or mingw32 or cygwin): show_info(msg2+B("\n\nWaiting for you to press OK on the message box... "),True) # in case terminal is in front
         app.todo.alert = "".join(warnings_printed)+msg
         while True:
             try:
@@ -42,8 +42,8 @@ def waitOnMessage(msg):
             time.sleep(0.5)
         if not (winsound or winCEsound or mingw32 or cygwin): show_info("OK\n",True)
     else:
-        if clearScreen(): msg2 = "This is "+program_name.replace("(c)","\n(c)")+"\n\n"+msg2 # clear screen is less confusing for beginners, but NB it may not happen if warnings etc
-        show_info(msg2+"\n\n"+cond(winCEsound,"Press OK to continue\n","Press Enter to continue\n"))
+        if clearScreen(): msg2 = B("This is "+program_name.replace("(c)","\n(c)")+"\n\n")+msg2 # clear screen is less confusing for beginners, but NB it may not happen if warnings etc
+        show_info(msg2+B("\n\n"+cond(winCEsound,"Press OK to continue\n","Press Enter to continue\n")))
         sys.stderr.flush() # hack because some systems don't do it (e.g. some mingw32 builds), and we don't want the user to fail to see why the program is waiting (especially when there's an error)
         try:
             raw_input(cond(winCEsound,"See message under this window.","")) # (WinCE uses boxes for raw_input so may need to repeat the message - but can't because the prompt is size-limited, so need to say look under the window)
@@ -54,7 +54,7 @@ def waitOnMessage(msg):
 def getYN(msg,defaultIfEof="n"):
     if appuifw:
         appuifw.app.body = None
-        return appuifw.query(u""+msg,'query')
+        return appuifw.query(ensure_unicode(msg),'query')
     elif android:
         android.dialogCreateAlert("Gradint",msg)
         android.dialogSetPositiveButtonText("Yes") # TODO do we have to localise this ourselves or can we have a platform default?
@@ -75,7 +75,7 @@ def getYN(msg,defaultIfEof="n"):
         while not ans=='y' and not ans=='n':
             try: ans = raw_input("%s\nPress y for yes, or n for no.  Then press Enter.  --> " % (msg,))
             except EOFError:
-                ans=defaultIfEof ; print ans
+                ans=defaultIfEof ; print (ans)
         clearScreen() # less confusing for beginners
         if ans=='y': return 1
         return 0
@@ -90,7 +90,7 @@ def primitive_synthloop():
         old_js = justSynthesize
         if appuifw:
             if not justSynthesize: justSynthesize=""
-            justSynthesize=appuifw.query(u"Say:","text",u""+justSynthesize)
+            justSynthesize=appuifw.query(u"Say:","text",ensure_unicode(justSynthesize))
             if justSynthesize: justSynthesize=justSynthesize.encode("utf-8")
             else: break
         else:
@@ -103,18 +103,18 @@ def primitive_synthloop():
             if (winCEsound or riscos_sound or android) and not justSynthesize: break # because no way to send EOF (and we won't be taking i/p from a file)
             if interactive and not readline:
               interactive="('a' for again) Say: "
-              if justSynthesize=="a": justSynthesize=old_js
+              if B(justSynthesize)==B("a"): justSynthesize=old_js
         oldLang = lang
         if justSynthesize: lang = just_synthesize(interactive,lang)
         # and see if it transliterates:
-        if justSynthesize and lang and not '#' in justSynthesize:
-            if justSynthesize.startswith(lang+" "):
+        if justSynthesize and lang and not B('#') in B(justSynthesize):
+            if B(justSynthesize).startswith(B(lang)+B(" ")):
                 t = transliterates_differently(justSynthesize[len(lang+" "):],lang)
                 if t: t=lang+" "+t
             else: t = transliterates_differently(justSynthesize,lang)
             if t:
                 if appuifw: justSynthesize = t
-                else: show_info("Spoken as "+t+"\n")
+                else: show_info(B("Spoken as ")+t+B("\n"))
         if warnings_printed: # at end not beginning, because don't want to overwrite the info message if appuifw
             if appuifw:
                 t=appuifw.Text()
@@ -135,7 +135,7 @@ def startBrowser(url): # true if success
       g=webbrowser.get()
   except: g=0
   if g and (winCEsound or macsound or (hasattr(g,"background") and g.background) or (hasattr(webbrowser,"BackgroundBrowser") and g.__class__==webbrowser.BackgroundBrowser) or (hasattr(webbrowser,"Konqueror") and g.__class__==webbrowser.Konqueror)):
-      return g.open_new(url)
+      return g.open_new(S(url))
   # else don't risk it - it might be text-mode and unsuitable for multitask-with-gradint
   if winsound: return not os.system('start "%ProgramFiles%\\Internet Explorer\\iexplore.exe" '+url) # use os.system not system here (don't know why but system() doesn't always work for IE)
   # (NB DON'T replace % with %%, it doesn't work. just hope nobody set an environment variable to any hex code we're using in mp3web)
@@ -352,19 +352,19 @@ def make_output_row(parent):
 def updateSettingsFile(fname,newVals):
     # leaves comments etc intact, but TODO does not cope with changing variables that have been split over multiple lines
     replacement_lines = []
-    try: oldLines=u8strip(read(fname)).replace("\r\n","\n").split("\n")
+    try: oldLines=u8strip(read(fname)).replace(B("\r\n"),B("\n")).split(B("\n"))
     except IOError: oldLines=[]
     for l in oldLines:
         found=0
-        for k in newVals.keys():
-            if l.startswith(k):
-                replacement_lines.append(k+"="+repr(newVals[k]))
+        for k in list(newVals.keys()):
+            if l.startswith(B(k)):
+                replacement_lines.append(B(k+"="+repr(newVals[k])))
                 del newVals[k]
                 found=1
         if not found: replacement_lines.append(l)
-    for k,v in newVals.items(): replacement_lines.append(k+"="+repr(v))
-    if replacement_lines and replacement_lines[-1]: replacement_lines.append("") # ensure blank line at end so there's a \n but we don't add 1 more with each save
-    open(fname,"w").write("\n".join(replacement_lines))
+    for k,v in list(newVals.items()): replacement_lines.append(B(k+"="+repr(v)))
+    if replacement_lines and replacement_lines[-1]: replacement_lines.append(B("")) # ensure blank line at end so there's a \n but we don't add 1 more with each save
+    writeB(open(fname,"w"),B("\n").join(replacement_lines))
 
 def asUnicode(x): # for handling the return value of Tkinter entry.get()
     try: return u""+x # original behaviour
@@ -492,8 +492,7 @@ def startTk():
             elif WMstandard: self.master.option_add('*font','Helvetica 7') # TODO on ALL WMstandard devices?
             if winsound or cygwin or macsound: self.master.resizable(1,0) # resizable in X direction but not Y (latter doesn't make sense, see below).  (Don't do this on X11 because on some distros it results in loss of automatic expansion as we pack more widgets.)
             elif unix:
-                import commands
-                if commands.getoutput("xlsatoms|grep COMPIZ_WINDOW").find("COMPIZ")>=0: # (not _COMPIZ_WM_WINDOW_BLUR, that's sometimes present outside Compiz)
+                if getoutput("xlsatoms|grep COMPIZ_WINDOW").find("COMPIZ")>=0: # (not _COMPIZ_WM_WINDOW_BLUR, that's sometimes present outside Compiz)
                   # Compiz sometimes has trouble auto-resizing our window (e.g. on Ubuntu 11.10)
                   self.master.geometry("%dx%d" % (self.winfo_screenwidth(),self.winfo_screenheight()))
                   if not GUI_always_big_print: self.todo.alert = "Gradint had to maximize itself because your window manager is Compiz which sometimes has trouble handling Tkinter window sizes"
@@ -542,7 +541,7 @@ def startTk():
             if winCEsound and ask_teacherMode: self.Label["font"]="Helvetica 16" # might make it slightly easier
             self.remake_cancel_button(localise("Cancel lesson"))
             self.Cancel.focus() # (default focus if we don't add anything else, e.g. reader)
-            self.copyright_string = u"This is "+(u""+program_name).replace("(c)",u"\n\u00a9").replace("-",u"\u2013")
+            self.copyright_string = u"This is "+ensure_unicode(program_name).replace("(c)",u"\n\u00a9").replace("-",u"\u2013")
             self.Version = Tkinter.Label(self.leftPanel,text=self.copyright_string)
             addStatus(self.Version,self.copyright_string)
             if olpc: self.Version["font"]='Helvetica 9'
@@ -669,7 +668,7 @@ def startTk():
                 self.restore_copyright()
             if hasattr(self.todo,"alert"):
                 # we have to do it on THIS thread (especially on Windows / Cygwin; Mac OS and Linux might get away with doing it from another thread)
-                tkMessageBox.showinfo(self.master.title(),self.todo.alert)
+                tkMessageBox.showinfo(self.master.title(),S(self.todo.alert))
                 del self.todo.alert
             if hasattr(self.todo,"question"):
                 self.answer_given = tkMessageBox.askyesno(self.master.title(),self.todo.question)
@@ -765,16 +764,16 @@ def startTk():
             if synthCache:
                 cacheManagementOptions = [] # (text, oldKey, newKey, oldFile, newFile)
                 for t,l in [(text1.encode('utf-8'),secondLanguage),(text2.encode('utf-8'),firstLanguage)]:
-                    k,f = synthcache_lookup("!synth:"+t+"_"+l,justQueryCache=1)
+                    k,f = synthcache_lookup(B("!synth:")+t+B("_")+B(l),justQueryCache=1)
                     if f:
                       if (partials_langname(l) in synth_partials_voices or get_synth_if_possible(l,0)): # (no point having these buttons if there's no chance we can synth it by any method OTHER than the cache)
-                        if k in synthCache_transtbl and k[0]=="_": cacheManagementOptions.append(("Keep in "+l+" cache",k,k[1:],0,0))
-                        elif k[0]=="_": cacheManagementOptions.append(("Keep in "+l+" cache",0,0,f,f[1:]))
+                        if k in synthCache_transtbl and B(k[:1])==B("_"): cacheManagementOptions.append(("Keep in "+l+" cache",k,k[1:],0,0))
+                        elif B(k[:1])==B("_"): cacheManagementOptions.append(("Keep in "+l+" cache",0,0,f,f[1:]))
                         if k in synthCache_transtbl: cacheManagementOptions.append(("Reject from "+l+" cache",k,"__rejected_"+k,0,0))
                         else: cacheManagementOptions.append(("Reject from "+l+" cache",0,0,f,"__rejected_"+f))
                     else:
-                      k,f = synthcache_lookup("!synth:__rejected_"+t+"_"+l,justQueryCache=1)
-                      if not f: k,f = synthcache_lookup("!synth:__rejected__"+t+"_"+l,justQueryCache=1)
+                      k,f = synthcache_lookup(B("!synth:__rejected_")+t+B("_"+l),justQueryCache=1)
+                      if not f: k,f = synthcache_lookup(B("!synth:__rejected__")+t+B("_"+l),justQueryCache=1)
                       if f:
                         if k in synthCache_transtbl: cacheManagementOptions.append(("Undo "+l+" cache reject",k,k[11:],0,0))
                         else: cacheManagementOptions.append(("Undo "+l+" cache reject",0,0,f,f[11:]))
@@ -791,7 +790,7 @@ def startTk():
                 if not (text1 or text2): self.ListBox.selection_clear(0,'end') # probably just added a new word while another was selected (added a variation) - clear selection to reduce confusion
                 else: return # don't try to be clever with searches when editing an existing item (the re-ordering can be confusing)
             text1,text2 = text1.lower().replace(" ",""),text2.lower().replace(" ","") # ignore case and whitespace when searching
-            l=map(lambda (x,y):x+"="+y, filter(lambda (x,y):text1 in x.lower().replace(" ","") and text2 in y.lower().replace(" ",""),self.vocabList)[-tkNumWordsToShow:])
+            l=map(lambda x:x[0]+"="+x[1], filter(lambda x:text1 in x[0].lower().replace(" ","") and text2 in x[1].lower().replace(" ",""),self.vocabList)[-tkNumWordsToShow:])
             l.reverse() ; synchronizeListbox(self.ListBox,l) # show in reverse order, in case the bottom of the list box is off-screen
         def doSynthcacheManagement(self,oldKey,newKey,oldFname,newFname):
             # should be a quick operation - might as well do it in the GUI thread
@@ -800,7 +799,7 @@ def startTk():
             if oldKey in synthCache_transtbl:
                 if newKey: synthCache_transtbl[newKey]=synthCache_transtbl[oldKey]
                 else: del synthCache_transtbl[oldKey]
-                open(synthCache+os.sep+transTbl,'w').write("".join([v+" "+k+"\n" for k,v in synthCache_transtbl.items()]))
+                open(synthCache+os.sep+transTbl,'wb').write(B("").join([v+B(" ")+k+B("\n") for k,v in list(synthCache_transtbl.items())]))
             if oldFname:
                 del synthCache_contents[oldFname]
                 if newFname:
@@ -988,8 +987,8 @@ def startTk():
             langs = (secondLanguage,firstLanguage)
             for newLangs,line in vCopyFrom:
                 if (newLangs,line) in vCurrent: continue # already got it
-                if not newLangs==langs: o.write("SET LANGUAGES "+" ".join(list(newLangs))+"\n")
-                o.write(line+"\n")
+                if not newLangs==langs: o.write(B("SET LANGUAGES ")+B(" ").join(list(newLangs))+B("\n"))
+                o.write(B(line)+B("\n"))
                 langs = newLangs
             o.close()
             if hasattr(self,"vocabList"): del self.vocabList # re-read
@@ -1004,15 +1003,15 @@ def startTk():
             global firstLanguage,secondLanguage
             firstLanguage1=asUnicode(self.L1Text.get()).encode('utf-8')
             secondLanguage1=asUnicode(self.L2Text.get()).encode('utf-8')
-            if (firstLanguage,secondLanguage) == (firstLanguage1,secondLanguage1): # they didn't change anything
+            if (B(firstLanguage),B(secondLanguage)) == (firstLanguage1,secondLanguage1): # they didn't change anything
                 langs = ESpeakSynth().describe_supported_languages()
                 msg = (localise("To change languages, edit the boxes that say '%s' and '%s', then press the '%s' button.") % (firstLanguage,secondLanguage,localise("Change languages")))+"\n\n"+localise("Recorded words may be in ANY languages, and you may choose your own abbreviations for them.  However if you want to use the computer voice for anything then please use standard abbreviations.")
                 if langs:
                     if tkMessageBox.askyesno(self.master.title(),msg+"  "+localise("Would you like to see a list of the standard abbreviations for languages that can be computer voiced?")): self.todo.alert = localise("Languages with computer voices (some better than others):")+"\n"+langs
                 else: self.todo.alert = msg+"  "+localise("(Sorry, a list of these is not available on this system - check eSpeak installation.)")
                 return
-            need_redisplay = "@variants-"+GUI_languages.get(firstLanguage,firstLanguage) in GUI_translations or "@variants-"+GUI_languages.get(firstLanguage1,firstLanguage1) in GUI_translations # if EITHER old or new lang has variants, MUST reconstruct that row.  (TODO also do it anyway to get the "Speaker" etc updated?  but may cause unnecessary flicker if that's no big problem)
-            firstLanguage,secondLanguage = firstLanguage1,secondLanguage1
+            need_redisplay = "@variants-"+GUI_languages.get(firstLanguage,firstLanguage) in GUI_translations or "@variants-"+GUI_languages.get(S(firstLanguage1),S(firstLanguage1)) in GUI_translations # if EITHER old or new lang has variants, MUST reconstruct that row.  (TODO also do it anyway to get the "Speaker" etc updated?  but may cause unnecessary flicker if that's no big problem)
+            firstLanguage,secondLanguage = S(firstLanguage1),S(secondLanguage1)
             updateSettingsFile(settingsFile,{"firstLanguage":firstLanguage,"secondLanguage":secondLanguage})
             if need_redisplay:
                 self.thin_down_for_lesson()
@@ -1137,24 +1136,24 @@ def guiVocabList(parsedVocab):
     sl2Len,fl2Len = -len(sl2),-len(fl2)
     ret = []
     for a,b,c in parsedVocab:
-        if c.endswith(sl2): c=c[:sl2Len]
-        elif c.endswith(sl3): c=readText(c)
+        if c.endswith(B(sl2)): c=c[:sl2Len]
+        elif c.endswith(B(sl3)): c=readText(c)
         else: continue
         if type(b)==type([]): b=b[cond(len(b)==3,1,-1)]
-        if b.endswith(fl2): b=b[:fl2Len]
-        elif b.endswith(fl3): b=readText(b)
+        if b.endswith(B(fl2)): b=b[:fl2Len]
+        elif b.endswith(B(fl3)): b=readText(b)
         else: continue
         ret.append((unicode(c,"utf-8"),unicode(b,"utf-8")))
     return ret
 def readText(l): # see utils/transliterate.py (running guiVocabList on txt files from scanSamples)
-    l = samplesDirectory+os.sep+l
+    l = B(samplesDirectory)+B(os.sep)+B(l)
     if l in variantFiles: # oops. just read the 1st .txt variant
-        if os.sep in l: lp=(l+os.sep)[:l.rfind(os.sep)]+os.sep
-        else: lp = ""
-        varList = filter(lambda x:x.endswith(dottxt),variantFiles[l])
+        if B(os.sep) in l: lp=(l+B(os.sep))[:l.rfind(B(os.sep))]+B(os.sep)
+        else: lp = B("")
+        varList = filter(lambda x:x.endswith(B(dottxt)),variantFiles[l])
         varList.sort() # so at least it consistently returns the same one.  TODO utils/ cache-synth.py list-synth.py synth-batchconvert-helper.py all use readText() now, can we get them to cache the other variants too?
         l = lp + varList[0]
-    return u8strip(read(l)).strip(wsp)
+    return u8strip(read(l)).strip(bwsp)
 
 def singular(number,s):
   s=localise(s)
@@ -1251,7 +1250,12 @@ if useTK:
                 break
     # End of finding editor - now start GUI
     try:
-        import thread,Tkinter,tkMessageBox
+        try: import thread
+        except ImportError: import _thread as thread
+        try: import Tkinter,tkMessageBox
+        except:
+            import tkinter as Tkinter
+            from tkinter import messagebox as tkMessageBox
         forceRadio=(macsound and 8.49<Tkinter.TkVersion<8.59) # indicatoron doesn't do very well in OS X 10.6 (Tk 8.5) unless we patched it
         if olpc:
             def interrupt_main(): os.kill(os.getpid(),2) # sigint
@@ -1271,7 +1275,7 @@ if useTK:
 def openDirectory(dir,inGuiThread=0):
     if winCEsound:
         if not dir[0]=="\\": dir=os.getcwd()+cwd_addSep+dir # must be absolute
-        ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u"\\Windows\\fexplore",Parameters=u""+dir)))
+        ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u"\\Windows\\fexplore",Parameters=ensure_unicode(dir))))
     elif explorerCommand:
         if ' ' in dir: dir='"'+dir+'"'
         cmd = explorerCommand+" "+dir
@@ -1292,13 +1296,14 @@ def sanityCheck(text,language,pauseOnError=0): # text is utf-8; returns error me
         if ret: waitOnMessage(ret)
         return ret
     if language=="zh":
-        allDigits = True
-        for t in text:
+        allDigits = True ; text=B(text)
+        for i in xrange(len(text)):
+            t = text[i:i+1]
             if ord(t)>127: return # got hanzi or tone marks
-            if t in "12345": return # got tone numbers
-            if t not in "0123456789. ": allDigits = False
+            if t in B("12345"): return # got tone numbers
+            if t not in B("0123456789. "): allDigits = False
         if allDigits: return
-        return "Pinyin needs tones.  Please go back and add tone numbers to "+text+"."+cond(startBrowser("http://www.mdbg.net/chinese/dictionary?wdqb="+fix_pinyin(text,[]).replace("1","1 ").replace("2","2 ").replace("3","3 ").replace("4","4 ").replace("5"," ").replace("  "," ").strip(wsp).replace(" ","+"))," Gradint has pointed your web browser at an online dictionary that might help.","")
+        return B("Pinyin needs tones.  Please go back and add tone numbers to ")+text+B(".")+cond(startBrowser(B("http://www.mdbg.net/chinese/dictionary?wdqb=")+fix_pinyin(text,[]).strip(bwsp).replace(B("5"),B("")).replace(B(" "),B("+"))),B(" Gradint has pointed your web browser at an online dictionary that might help."),B(""))
 
 def check_for_slacking():
     if fileExists(progressFile): checkAge(progressFile,localise("It has been %d days since your last Gradint lesson.  Please try to have one every day."))
@@ -1313,7 +1318,7 @@ def checkAge(fname,message):
     if days>=5 and (days%5)==0: waitOnMessage(message % days)
 
 def s60_addVocab():
-  label1,label2 = u""+localise("Word in %s") % localise(secondLanguage),u""+localise("Meaning in %s") % localise(firstLanguage)
+  label1,label2 = ensure_unicode(localise("Word in %s") % localise(secondLanguage)),ensure_unicode(localise("Meaning in %s") % localise(firstLanguage))
   while True:
     result = appuifw.multi_query(label1,label2) # unfortunately multi_query can't take default items (and sometimes no T9!), but Form is too awkward (can't see T9 mode + requires 2-button save via Options) and non-multi query would be even more modal
     if not result: return # cancelled
@@ -1326,7 +1331,7 @@ def s60_addVocab():
     appendVocabFileInRightLanguages().write((l2+"="+l1+"\n").encode("utf-8"))
 def s60_changeLang():
     global firstLanguage,secondLanguage
-    result = appuifw.multi_query(u""+localise("Your first language")+" (e.g. "+firstLanguage+")",u""+localise("second")+" (e.g. "+secondLanguage+")")
+    result = appuifw.multi_query(ensure_unicode(localise("Your first language")+" (e.g. "+firstLanguage+")"),ensure_unicode(localise("second")+" (e.g. "+secondLanguage+")"))
     if not result: return # cancelled
     l1,l2 = result
     firstLanguage,secondLanguage = l1.encode('utf-8').lower(),l2.encode('utf-8').lower()
@@ -1340,7 +1345,7 @@ def s60_runLesson():
 def s60_viewVocab():
     global justSynthesize
     doLabel("Reading your vocab list, please wait...")
-    vList = map(lambda (l2,l1):l2+u"="+l1, guiVocabList(parseSynthVocab(vocabFile,1)))
+    vList = map(lambda x:x[0]+u"="+x[1], guiVocabList(parseSynthVocab(vocabFile,1)))
     if not vList: return waitOnMessage("Your computer-voiced vocab list is empty.")
     while True:
       appuifw.app.body = None
@@ -1350,8 +1355,8 @@ def s60_viewVocab():
       action = appuifw.popup_menu([u"Speak (just "+secondLanguage+")",u"Speak ("+secondLanguage+" and "+firstLanguage+")",u"Change "+secondLanguage,u"Change "+firstLanguage,u"Delete item",u"Cancel"], vList[sel])
       if action==0 or action==1:
         doLabel("Speaking...")
-        justSynthesize = secondLanguage+" "+l2.encode('utf-8')
-        if action==1: justSynthesize += ('#'+firstLanguage+" "+l1.encode('utf-8'))
+        justSynthesize = B(secondLanguage)+B(" ")+l2.encode('utf-8')
+        if action==1: justSynthesize += (B('#')+B(firstLanguage)+B(" ")+l1.encode('utf-8'))
         just_synthesize()
         justSynthesize = ""
       elif action==5: pass
@@ -1361,10 +1366,10 @@ def s60_viewVocab():
           if action==2:
               first=1
               while first or (l2 and sanityCheck(l2.encode('utf-8'),secondLanguage,1)):
-                  first=0 ; l2=appuifw.query(u""+secondLanguage,"text",l2)
+                  first=0 ; l2=appuifw.query(ensure_unicode(secondLanguage),"text",l2)
               if not l2: continue
           elif action==3:
-              l1 = appuifw.query(u""+firstLanguage,"text",l1)
+              l1 = appuifw.query(ensure_unicode(firstLanguage),"text",l1)
               if not l1: continue
           doLabel("Processing")
           delOrReplace(oldL2,oldL1,l2,l1,cond(action==4,"delete","replace"))
@@ -1394,27 +1399,27 @@ def android_changeLang():
 
 def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
     langs = [secondLanguage,firstLanguage]
-    v=u8strip(read(vocabFile)).replace("\r\n","\n").replace("\r","\n")
+    v=u8strip(read(vocabFile)).replace(B("\r\n"),B("\n")).replace(B("\r"),B("\n"))
     if paranoid_file_management:
         fname = os.tempnam()
         o = open(fname,"w")
     else: o=open(vocabFile,"w")
     found = 0
-    if last_u8strip_found_BOM: o.write('\xef\xbb\xbf') # re-write it
-    v=v.split("\n")
+    if last_u8strip_found_BOM: writeB(o,LB('\xef\xbb\xbf')) # re-write it
+    v=v.split(B("\n"))
     if v and not v[-1]: v=v[:-1] # don't add an extra blank line at end
     for l in v:
         l2=l.lower()
-        if l2.startswith("set language ") or l2.startswith("set languages "):
-            langs=l.split()[2:] ; o.write(l+"\n") ; continue
-        thisLine=map(lambda x:x.strip(wsp),l.split("=",len(langs)-1))
+        if l2.startswith(B("set language ")) or l2.startswith(B("set languages ")):
+            langs=map(S,l.split()[2:]) ; writeB(o,l+B("\n")) ; continue
+        thisLine=map(lambda x:x.strip(bwsp),l.split(B("="),len(langs)-1))
         if (langs==[secondLanguage,firstLanguage] and thisLine==[L2toDel.encode('utf-8'),L1toDel.encode('utf-8')]) or (langs==[firstLanguage,secondLanguage] and thisLine==[L1toDel.encode('utf-8'),L2toDel.encode('utf-8')]):
             # delete this line.  and maybe replace it
             found = 1
             if action=="replace":
-                if langs==[secondLanguage,firstLanguage]: o.write(newL2.encode("utf-8")+"="+newL1.encode("utf-8")+"\n")
-                else: o.write(newL1.encode("utf-8")+"="+newL2.encode("utf-8")+"\n")
-        else: o.write(l+"\n")
+                if langs==[secondLanguage,firstLanguage]: writeB(o,newL2.encode("utf-8")+B("=")+newL1.encode("utf-8")+B("\n"))
+                else: writeB(o,newL1.encode("utf-8")+B("=")+newL2.encode("utf-8")+B("\n"))
+        else: writeB(o,l+B("\n"))
     o.close()
     if paranoid_file_management:
         write(vocabFile,read(fname))
@@ -1508,7 +1513,9 @@ def gui_event_loop():
             gui_outputTo_start()
             if not soundCollector: app.todo.add_briefinterrupt_button = 1
             try: lesson_loop()
-            except PromptException,prEx: waitOnMessage("Problem finding prompts:\n"+prEx.message) # and don't quit, user may be able to fix
+            except PromptException:
+                prEx = sys.exc_info()[1]
+                waitOnMessage("Problem finding prompts:\n"+prEx.message) # and don't quit, user may be able to fix
             except KeyboardInterrupt: pass # probably pressed Cancel Lesson while it was still being made (i.e. before handleInterrupt)
             if app and not soundCollector: app.todo.remove_briefinterrupt_button = 1 # (not app if it's closed by the close box)
             gui_outputTo_end()
@@ -1523,7 +1530,7 @@ def gui_event_loop():
                     waitOnMessage("WARNING: Word may not save non-Western characters properly.  Try an editor like MADE instead (need to set its font).") # TODO Flinkware MADE version 2.0.0 has been known to insert spurious carriage returns at occasional points in large text files
                     if not app.fileToEdit[0]=="\\": app.fileToEdit=os.getcwd()+cwd_addSep+app.fileToEdit # must be absolute
                     if not fileExists(app.fileToEdit): open(app.fileToEdit,"w") # at least make sure it exists
-                    ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=u""+app.fileToEdit)))
+                    ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=ensure_unicode(app.fileToEdit))))
                     waitOnMessage("When you've finished editing "+app.fileToEdit+", close it and start gradint again.")
                     return
             elif textEditorCommand:
@@ -1571,20 +1578,21 @@ def gui_event_loop():
             text1 = asUnicode(app.Text1.get()).encode('utf-8') ; text2 = asUnicode(app.Text2.get()).encode('utf-8')
             if not text1 and not text2: app.todo.alert=u"Before pressing the "+localise("Speak")+u" button, you need to type the text you want to hear into the box."
             else:
-              if text1.startswith('#'): msg="" # see below
+              if text1.startswith(B('#')): msg="" # see below
               else: msg=sanityCheck(text1,secondLanguage)
-              if msg: app.todo.alert=u""+msg
+              if msg: app.todo.alert=ensure_unicode(msg)
               else:
                 app.set_watch_cursor = 1 ; app.toRestore = []
                 global justSynthesize ; justSynthesize = ""
                 def doControl(text,lang,control):
-                    global justSynthesize
+                    global justSynthesize ; text=B(text)
                     restoreTo = asUnicode(control.get())
-                    if text.startswith('#'): justSynthesize += text # hack for direct control of just_synthesize from the GUI (TODO document it in advanced.txt? NB we also bypass the GUI transliteration in the block below)
+                    if text.startswith(B('#')): justSynthesize = B(justSynthesize)+text # hack for direct control of just_synthesize from the GUI (TODO document it in advanced.txt? NB we also bypass the GUI transliteration in the block below)
                     elif text:
-                        if can_be_synthesized("!synth:"+text+"_"+lang): justSynthesize += ("#"+lang+" "+text)
-                        else: app.todo.alert="Cannot find a synthesizer that can say '"+text+"' in language '"+lang+"' on this system"
-                        t=transliterates_differently(text,lang)
+                        if can_be_synthesized(B("!synth:")+text+B("_")+B(lang)):
+                            justSynthesize=B(justSynthesize)+(B("#")+B(lang)+B(" ")+B(text))
+                        else: app.todo.alert=B("Cannot find a synthesizer that can say '")+text+B("' in language '")+B(lang)+B("' on this system")
+                        t=S(transliterates_differently(text,lang))
                         if t: # (don't go straight into len() stuff, it could be None)
                           if unix and len(t)>300 and hasattr(app,"isBigPrint"): app.todo.alert="Transliteration suppressed to work around Ubuntu bug 731424" # https://bugs.launchpad.net/ubuntu/+bug/731424
                           else:
@@ -1668,7 +1676,7 @@ def gui_event_loop():
             d = ProgressDatabase(0)
             l1find = "!synth:"+lang1.encode('utf-8')+"_"+firstLanguage
             found = 0
-            msg=(u""+localise("%s=%s is already in %s.")) % (t1,t2,vocabFile)
+            msg=(ensure_unicode(localise("%s=%s is already in %s.")) % (t1,t2,vocabFile))
             for listToCheck in [d.data,d.unavail]:
               if found: break
               for item in listToCheck:
@@ -1689,14 +1697,14 @@ def gui_event_loop():
         elif menu_response=="add":
             text1 = asUnicode(app.Text1.get()).encode('utf-8') ; text2 = asUnicode(app.Text2.get()).encode('utf-8')
             msg=sanityCheck(text1,secondLanguage)
-            if msg: app.todo.alert=u""+msg
+            if msg: app.todo.alert=ensure_unicode(msg)
             else:
                 o=appendVocabFileInRightLanguages()
                 if not o: continue # IOError
-                o.write(text1+"="+text2+"\n") # was " = " but it slows down parseSynthVocab
+                writeB(o,text1+B("=")+text2+B("\n")) # was " = " but it slows down parseSynthVocab
                 o.close()
                 if paranoid_file_management:
-                    if filelen(vocabFile)<filelen(vocabFile+"~") or chr(0) in open(vocabFile).read(1024): app.todo.alert="Vocab file corruption! You'd better restore the ~ backup."
+                    if filelen(vocabFile)<filelen(vocabFile+"~") or chr(0) in readB(vocabFile,1024): app.todo.alert="Vocab file corruption! You'd better restore the ~ backup."
                 if hasattr(app,"vocabList"): app.vocabList.append((ensure_unicode(text1),ensure_unicode(text2)))
                 app.todo.clear_text_boxes=app.wordsExist=1
         elif menu_response=="delete" or menu_response=="replace":
@@ -1709,19 +1717,19 @@ def gui_event_loop():
             if found and menu_response=="replace": # maybe hack progress.txt as well (taken out of the above loop for better failsafe)
                 d = ProgressDatabase(0)
                 lang2,lang1=lang2.lower(),lang1.lower() # because it's .lower()'d in progress.txt
-                l1find = "!synth:"+lang1.encode('utf-8')+"_"+firstLanguage
+                l1find = B("!synth:")+lang1.encode('utf-8')+B("_"+firstLanguage)
                 for item in d.data:
-                    if (item[1]==l1find or (type(item[1])==type([]) and l1find in item[1])) and item[2]=="!synth:"+lang2.encode('utf-8')+"_"+secondLanguage and item[0]:
+                    if (item[1]==l1find or (type(item[1])==type([]) and l1find in item[1])) and item[2]==B("!synth:")+lang2.encode('utf-8')+B("_"+secondLanguage) and item[0]:
                         app.unset_watch_cursor = 1
-                        if not getYN(localise("You have repeated %s=%s %d times.  Do you want to pretend you already repeated %s=%s %d times?") % (lang2,lang1,item[0],t2,t1,item[0])):
+                        if not getYN(localise("You have repeated %s=%s %d times.  Do you want to pretend you already repeated %s=%s %d times?") % (S(lang2),S(lang1),item[0],S(t2),S(t1),item[0])):
                             app.set_watch_cursor = 1 ; break
                         d.data.remove(item)
-                        l1replace = "!synth:"+t2.encode('utf-8')+"_"+firstLanguage
+                        l1replace = B("!synth:")+t2.encode('utf-8')+B("_"+firstLanguage)
                         if type(item[1])==type([]):
                             l = item[1]
                             l[l.index(l1find)] = l1replace
                         else: l=l1replace
-                        item = (item[0],l,"!synth:"+t1.encode('utf-8')+"_"+secondLanguage)
+                        item = (item[0],l,B("!synth:")+t1.encode('utf-8')+B("_"+secondLanguage))
                         d.data.append(item)
                         app.set_watch_cursor = 1
                         for i2 in d.unavail:
@@ -1737,34 +1745,36 @@ def gui_event_loop():
 
 def vocabLinesWithLangs(): # used for merging different users' vocab files
     langs = [secondLanguage,firstLanguage] ; ret = []
-    try: v=u8strip(read(vocabFile)).replace("\r","\n")
-    except IOError: v=""
-    for l in v.split("\n"):
+    try: v=u8strip(read(vocabFile)).replace(B("\r"),B("\n"))
+    except IOError: v=B("")
+    for l in v.split(B("\n")):
         l2=l.lower()
-        if l2.startswith("set language ") or l2.startswith("set languages "): langs=l.split()[2:]
+        if l2.startswith(B("set language ")) or l2.startswith(B("set languages ")): langs=map(S,l.split()[2:])
         elif l: ret.append((tuple(langs),l)) # TODO what about blank lines? (currently they'd be considered duplicates)
     return ret
 
 def appendVocabFileInRightLanguages():
     # check if we need a SET LANGUAGE
     langs = [secondLanguage,firstLanguage]
-    try: v=u8strip(read(vocabFile)).replace("\r","\n")
-    except IOError: v=""
-    for l in v.split("\n"):
+    try: v=u8strip(read(vocabFile)).replace(B("\r"),B("\n"))
+    except IOError: v=B("")
+    for l in v.split(B("\n")):
         l2=l.lower()
-        if l2.startswith("set language ") or l2.startswith("set languages "): langs=l.split()[2:]
-    try: o=open(vocabFile,"a")
+        if l2.startswith(B("set language ")) or l2.startswith(B("set languages ")):
+            langs=l.split()[2:]
+            for i in range(len(langs)): langs[i]=S(langs[i])
+    try: o=open(vocabFile,"ab") # (ensure binary on Python 3)
     except IOError:
         show_warning("Cannot write to "+vocabFile+" (current directory is "+os.getcwd()+")")
         return
-    if not v.endswith("\n"): o.write("\n")
-    if not langs==[secondLanguage,firstLanguage]: o.write("SET LANGUAGES "+secondLanguage+" "+firstLanguage+"\n")
+    if not v.endswith(B("\n")): o.write(B("\n"))
+    if not langs==[secondLanguage,firstLanguage]: o.write(B("SET LANGUAGES "+secondLanguage+" "+firstLanguage+"\n"))
     return o
 
 def transliterates_differently(text,lang):
     global last_partials_transliteration ; last_partials_transliteration=None
     global partials_are_sporadic ; o=partials_are_sporadic ; partials_are_sporadic = None # don't want to touch the counters here
-    if synthcache_lookup("!synth:"+text+"_"+lang):
+    if synthcache_lookup(B("!synth:")+B(text)+B("_")+B(lang)):
         partials_are_sporadic = o
         if last_partials_transliteration and not last_partials_transliteration==text: return last_partials_transliteration
         else: return # (don't try to translit. if was in synth cache - will have no idea which synth did it)
@@ -1788,13 +1798,13 @@ def gui_outputTo_start():
         except: pass
         gui_output_counter = 1 # now local because we also got prefix
         if justSynthesize:
-            if '#' in justSynthesize[1:]: prefix="" # multiple languages
+            if B('#') in B(justSynthesize)[1:]: prefix=B("") # multiple languages
             else: # prefix the language that's being synth'd
-                prefix=justSynthesize.split()[0]
-                if prefix.startswith('#'): prefix=prefix[1:]
-        else: prefix = "lesson"
+                prefix=B(justSynthesize).split()[0]
+                if prefix.startswith(B('#')): prefix=prefix[1:]
+        else: prefix = B("lesson")
         while not outputFile or fileExists(outputFile):
-            outputFile=gui_output_directory+os.sep+prefix+str(gui_output_counter)+extsep+app.outputTo.get()
+            outputFile=gui_output_directory+os.sep+S(prefix)+str(gui_output_counter)+extsep+app.outputTo.get()
             gui_output_counter += 1
         global write_to_stdout ; write_to_stdout = 0
         global out_type ; out_type = app.outputTo.get()
@@ -1847,7 +1857,7 @@ def gui_outputTo_end(openDir=True):
 def main():
     global useTK,justSynthesize,waitBeforeStart,traceback,appTitle,app,warnings_toprint
     if useTK:
-        if justSynthesize and not justSynthesize[-1]=='*': appTitle=cond('#' in justSynthesize,"Gradint","Reader") # not "language lesson"
+        if justSynthesize and not B(justSynthesize)[-1:]==B('*'): appTitle=cond(B('#') in B(justSynthesize),"Gradint","Reader") # not "language lesson"
         startTk()
     else:
         app = None # not False anymore
@@ -1863,8 +1873,8 @@ def rest_of_main():
         except NameError: ceLowMemory=0
         if ceLowMemory and getYN("Low memory! Python may crash. Turn off progress saving for safety?"): saveProgress=0
         
-        if justSynthesize=="-": primitive_synthloop()
-        elif justSynthesize and justSynthesize[-1]=='*':
+        if B(justSynthesize)==B("-"): primitive_synthloop()
+        elif justSynthesize and B(justSynthesize)[-1:]==B('*'):
             justSynthesize=justSynthesize[:-1]
             waitBeforeStart = 0
             just_synthesize() ; lesson_loop()
@@ -1873,12 +1883,16 @@ def rest_of_main():
         elif appuifw: s60_main_menu()
         elif android: android_main_menu()
         else: lesson_loop()
-    except SystemExit,e: exitStatus = e.code
+    except SystemExit:
+        e = sys.exc_info()[1]
+        exitStatus = e.code
     except KeyboardInterrupt: pass
-    except PromptException,prEx:
+    except PromptException:
+        prEx = sys.exc_info()[1]
         waitOnMessage("\nProblem finding prompts:\n"+prEx.message+"\n")
         exitStatus = 1
-    except MessageException,mEx:
+    except MessageException:
+        mEx = sys.exc_info()[1]
         waitOnMessage(mEx.message+"\n") ; exitStatus = 1
     except:
         w="\nSomething has gone wrong with my program.\nThis is not your fault.\nPlease let me know what it says.\nThanks.  Silas\n"+exc_info()
@@ -1903,7 +1917,7 @@ def rest_of_main():
         except: pass
         waitOnMessage(w.strip())
         if not useTK:
-            if tracebackFile: sys.stderr.write(read("last-gradint-error"+extsep+"txt"))
+            if tracebackFile: writeB(sys.stderr,read("last-gradint-error"+extsep+"txt"))
             elif traceback: traceback.print_exc() # will be wrong if there was an error in speaking
         exitStatus = 1
         if appuifw: raw_input() # so traceback stays visible

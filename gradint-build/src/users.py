@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -49,12 +49,12 @@ def get_userNames(): # list of unicode user names or []
   ret=[]
   u=userNameFile ; c=0
   while fileExists(u):
-    ret.append(unicode(u8strip(read(u)).strip(wsp),'utf-8'))
+    ret.append(unicode(u8strip(read(u)).strip(bwsp),'utf-8'))
     c += 1 ; u=addUserToFname(userNameFile,c)
   global lastUserNames ; lastUserNames = ret
   return ret
 
-def set_userName(N,unicodeName): open(addUserToFname(userNameFile,N),"w").write(unicodeName.encode("utf-8")+"\n") # implicitly adds if N=num+1
+def set_userName(N,unicodeName): writeB(open(addUserToFname(userNameFile,N),"w"),unicodeName.encode("utf-8")+B("\n")) # implicitly adds if N=num+1
 
 def wrapped_set_userName(N,unicodeName):
   if unicodeName.strip(wsp): set_userName(N,unicodeName)
@@ -118,17 +118,18 @@ def updateUserRow(fromMainMenu=0):
   else: row.widgetsToDel.append(addButton(row,localise("Family mode (multiple user)"),lambda *args:(set_userName(0,""),updateUserRow())))
 
 def renameUser(i,radioButton,parent,cancel=0):
-    if hasattr(radioButton,"in_renaming"):
+    if hasattr(radioButton,"in_renaming"): # finish the rename
         del radioButton.in_renaming
         n=asUnicode(radioButton.renameText.get())
         if cancel: pass
-        elif not n.strip(wsp) and len(lastUserNames)>1: tkMessageBox.showinfo(app.master.title(),"You can't have blank user names unless there is only one user.  Keeping the original name instead.")
+        elif not n.strip(wsp) and (len(lastUserNames)>1 and not (len(lastUserNames)==2 and not lastUserNames[-1])): tkMessageBox.showinfo(app.master.title(),"You can't have blank user names unless there is only one user.  Keeping the original name instead.")
         else:
             set_userName(i,n)
+            lastUserNames[i] = n
             radioButton["text"]=n
         radioButton.renameEntry.grid_forget()
         radioButton.grid(row=i+1,column=0,sticky="w")
-    else:
+    else: # start the rename
         radioButton.in_renaming = 1
         radioButton.grid_forget()
         radioButton.renameText,radioButton.renameEntry = addTextBox(parent,"nopack")
@@ -141,7 +142,7 @@ def renameUser(i,radioButton,parent,cancel=0):
 
 def deleteUser(i):
     for n in ["Are you sure","Are you REALLY sure","This is your last chance: Are you REALLY SURE"]:
-        if not tkMessageBox.askyesno(app.master.title(),u""+n+" you want to delete "+lastUserNames[i]+" permanently, including any vocabulary list and recordings?"): return
+        if not tkMessageBox.askyesno(app.master.title(),ensure_unicode(n)+" you want to delete "+lastUserNames[i]+" permanently, including any vocabulary list and recordings?"): return
     numUsers=len(lastUserNames)
     for fileOrDir in user0+(userNameFile,):
         d=addUserToFname(fileOrDir,i)

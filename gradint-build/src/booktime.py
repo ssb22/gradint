@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -262,7 +262,7 @@ class Lesson(object):
         latenessCap = {} ; nextStart = 0
         for t,event in self.events:
             if nextStart:
-                for k in latenessCap.keys(): latenessCap[k] += (nextStart-(t+event.length)) # the gap
+                for k in list(latenessCap.keys()): latenessCap[k] += (nextStart-(t+event.length)) # the gap
             nextStart = t
             if not hasattr(event,"importance"): continue # (wasn't added via addSequence, probably not a normal lesson)
             event.max_lateness=min(event.max_lateness,latenessCap.get(event.importance,maxLenOfLesson))
@@ -309,12 +309,12 @@ def decide_subst_synth(cache_fname):
 def subst_some_synth_for_synthcache(events):
     # turn SOME synthcache events back into synth events (for testing new synths etc)
     reverse_transTbl = {}
-    for k,v in synthCache_transtbl.items(): reverse_transTbl[v]=k
+    for k,v in list(synthCache_transtbl.items()): reverse_transTbl[v]=k
     for i in range(len(events)):
         if hasattr(events[i][1],"file") and events[i][1].file.startswith(synthCache+os.sep):
-            cache_fname = events[i][1].file[len(synthCache+os.sep):]
+            cache_fname = B(events[i][1].file[len(synthCache+os.sep):])
             cache_fname = reverse_transTbl.get(cache_fname,cache_fname)
-            if cache_fname[0]=="_": continue # a sporadically-used synthCache entry anyway
+            if cache_fname[:1]==B("_"): continue # a sporadically-used synthCache entry anyway
             if type(synthCache_test_mode)==type([]):
                 found=0
                 for str in synthCache_test_mode:
@@ -322,4 +322,4 @@ def subst_some_synth_for_synthcache(events):
                         found=1 ; break
                 if found: continue
             lang = languageof(cache_fname)
-            if get_synth_if_possible(lang) and decide_subst_synth(cache_fname): events[i] = (events[i][0],synth_event(lang,cache_fname[:cache_fname.rindex("_")]))
+            if get_synth_if_possible(lang) and decide_subst_synth(cache_fname): events[i] = (events[i][0],synth_event(lang,cache_fname[:cache_fname.rindex(B("_"))]))

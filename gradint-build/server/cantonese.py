@@ -1,21 +1,31 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#  (should work with either Python 2 or Python 3)
 
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.18 (c) 2013-15,2017-19 Silas S. Brown.  License: GPL
+# v1.3 (c) 2013-15,2017-20 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping just batch it up for later
 jyutping_cache = {} ; jyutping_dryrun = set()
 import re
 
-extra_zhy_dict = { # TODO: add these to the real zhy_list
+extra_zhy_dict = { # TODO: add these to the real zhy_list in eSpeak
   u"\u9c85":"bat3",u"\u9b81":"bat3",
 }
 
+def S(v): # make sure it's a string in both Python 2 and 3
+  if type("")==type(u""): # Python 3
+    try: return v.decode('utf-8') # in case it's bytes
+    except: return v
+  else: return v
+def B(v): # make sure it's bytes in Python 3, str in Python 2
+  if type(v)==type(u""): return v.encode('utf-8')
+  return v
+
 def get_jyutping(hanzi,mustWork=1):
-  if type(hanzi)==str: hanzi=hanzi.decode('utf-8')
+  if not type(hanzi)==type(u""): hanzi=hanzi.decode('utf-8')
   for k,v in extra_zhy_dict.items(): hanzi=hanzi.replace(k,v)
   global espeak
   if not espeak:
@@ -33,10 +43,10 @@ def get_jyutping(hanzi,mustWork=1):
       vals = espeak.transliterate_multiple("zhy",jyutping_dryrun,0)
       assert len(jyutping_dryrun)==len(vals)
       for k,v in zip(jyutping_dryrun,vals):
-        jyutping_cache[k]=v.replace("7","1").lower() # see below
+        jyutping_cache[k]=S(v).replace("7","1").lower() # see below
       jyutping_dryrun = set()
   if hanzi in jyutping_cache: jyutping = jyutping_cache[hanzi]
-  else: jyutping_cache[hanzi] = jyutping = espeak.transliterate("zhy",hanzi,forPartials=0).replace("7","1").lower() # .lower() needed because espeak sometimes randomly capitalises e.g. 2nd hanzi of 'hypocrite' (Mandarin xuwei de ren)
+  else: jyutping_cache[hanzi] = jyutping = S(espeak.transliterate("zhy",hanzi,forPartials=0)).replace("7","1").lower() # .lower() needed because espeak sometimes randomly capitalises e.g. 2nd hanzi of 'hypocrite' (Mandarin xuwei de ren)
   if mustWork: assert jyutping.strip(), "No translit. result for "+repr(hanzi)
   elif not jyutping.strip(): jyutping=""
   return jyutping
@@ -45,15 +55,16 @@ espeak = 0
 def hanzi_only(unitext): return u"".join(filter(lambda x:0x4e00<=ord(x)<0xa700 or ord(x)>=0x10000, list(unitext)))
 def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
   # If we have good quality (proof-read etc) Mandarin pinyin, this can sometimes improve the automatic Cantonese transcription
-  if type(hanzi)==str: hanzi = hanzi.decode('utf-8')
+  if not type(hanzi)==type(u""): hanzi = hanzi.decode('utf-8')
   hanzi = hanzi_only(hanzi)
   if not re.search(py2j_chars,hanzi): return jyutping
-  if type(pinyin)==str: pinyin = pinyin.decode('utf-8')
+  if not type(pinyin)==type(u""): pinyin = pinyin.decode('utf-8')
   assert pinyin.strip(), "blank pinyin" # saves figuring out a findall TypeError
   py2 = espeak.transliterate("zh",pinyin,forPartials=0) # TODO: dryrun_mode ?  (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
   assert py2 and py2.strip(), "espeak.transliterate returned %s for %s" % (repr(py2),repr(pinyin))
-  pinyin = re.findall('[A-Za-z]*[1-5]',py2)
+  pinyin = re.findall('[A-Za-z]*[1-5]',S(py2))
   if not len(pinyin)==len(hanzi): return jyutping # can't fix
+  jyutping = S(jyutping)
   i = 0 ; tones = re.finditer('[1-7]',jyutping) ; j2 = []
   for h,p in zip(list(hanzi),pinyin):
     try: j = tones.next().end()
@@ -105,47 +116,47 @@ u"\u91CF":{"liang2":"loeng4","liang4":"loeng6"},
 u"\u9577\u957F":{"chang2":"coeng4","zhang3":"zoeng2"},
 u"\u9593\u95F4":{"jian1":"gaan1","jian4":"gaan3"},
 u"\u96BE\u96E3":{"nan2":"naan4","nan4":"naan6"}}
-for k in py2j.keys()[:]:
-  if len(k)>1:
+for k in list(py2j.keys()):
+   if len(k)>1:
     for c in list(k): py2j[c]=py2j[k]
     del py2j[k]
 for _,v in py2j.items():
-  for k in v.keys()[:]:
+  for k in list(v.keys()):
     if len(k.split())>1:
       for w in k.split(): v[w]=v[k]
       del v[k]
-py2j_chars = re.compile(u'['+''.join(py2j.keys())+']')
+py2j_chars = re.compile(u'['+''.join(list(py2j.keys()))+']')
 
 def jyutping_to_lau(j):
-  j = j.lower().replace("j","y").replace("z","j")
+  j = S(j).lower().replace("j","y").replace("z","j")
   for k,v in jlRep: j=j.replace(k,v)
-  return j.lower().replace("aa","a").replace("ohek","euk") # private communication 2015-07, partially confirmed w. publications
+  return j.lower().replace("aa","a").replace("ohek","euk")
 def incomplete_lau_to_jyutping(l):
   # incomplete: assumes Lau didn't do the "aa" -> "a" rule
-  l = l.lower().replace("euk","ohek")
+  l = S(l).lower().replace("euk","ohek")
   for k,v in ljRep: l=l.replace(k,v)
   return l.lower().replace("j","z").replace("y","j")
 def incomplete_lau_to_yale_u8(l): return jyutping_to_yale_u8(incomplete_lau_to_jyutping(l))
 jlRep = [(unchanged,unchanged.upper()) for unchanged in "aai aau aam aang aan aap aat aak ai au am ang an ap at ak a ei eng ek e iu im ing in ip it ik i oi ong on ot ok ung uk".split()] + [("eoi","UI"),("eon","UN"),("eot","UT"),("eok","EUK"),("oeng","EUNG"),("oe","EUH"),("c","ch"),("ou","O"),("o","OH"),("yu","UE"),("u","OO")]
-jlRep.sort(lambda a,b:len(b[0])-len(a[0])) # longest 1st
+jlRep.sort(key=lambda a:-len(a[0])) # longest 1st
 # u to oo includes ui to ooi, un to oon, ut to oot
 # yu to ue includes yun to uen and yut to uet
 # drawing from the table on http://www.omniglot.com/writing/cantonese.htm plus this private communication:
 # Jyutping "-oeng" maps to Sidney Lau "-eung".
 # Jyutping "jyu" maps to Sidney Lau "yue". (consequence of yu->ue, j->y)
 ljRep=[(b.lower(),a.upper()) for a,b in jlRep]
-ljRep.sort(lambda a,b:len(b[0])-len(a[0])) # longest 1st
+ljRep.sort(key=lambda a:-len(a[0])) # longest 1st
 
-def ping_or_lau_to_syllable_list(j): return re.sub(r"([1-9])(?![0-9])",r"\1 ",re.sub(r"[!-/:-@^-`]"," ",j)).split()
+def ping_or_lau_to_syllable_list(j): return re.sub(r"([1-9])(?![0-9])",r"\1 ",re.sub(r"[!-/:-@^-`]"," ",S(j))).split()
 
 def hyphenate_ping_or_lau_syl_list(sList,groupLens=None):
-    if type(sList) in [str,unicode]:
+    if type(sList) in [str,type(u"")]:
         sList = ping_or_lau_to_syllable_list(sList)
     return hyphenate_syl_list(sList,groupLens)
 def hyphenate_yale_syl_list(sList,groupLens=None):
     # (if sList is a string, the syllables must be space-separated,
     #  which will be the case if to_yale functions below are used)
-    if type(sList) in [str,unicode]: sList = sList.split()
+    if not type(sList)==list: sList = sList.split()
     return hyphenate_syl_list(sList,groupLens)
 def hyphenate_syl_list(sList,groupLens=None):
     assert type(sList) == list
@@ -154,13 +165,13 @@ def hyphenate_syl_list(sList,groupLens=None):
     else: assert sum(groupLens) == len(sList), "sum("+repr(groupLens)+")!=len("+repr(sList)+")"
     r = [] ; start = 0
     for g in groupLens:
-        r.append("-".join(sList[start:start+g]))
+        r.append("-".join(S(x) for x in sList[start:start+g]))
         start += g
     return " ".join(r)
     
 def jyutping_to_yale_TeX(j): # returns space-separated syllables
   ret=[]
-  for syl in ping_or_lau_to_syllable_list(j.lower().replace("eo","eu").replace("oe","eu").replace("j","y").replace("yyu","yu").replace("z","j").replace("c","ch")):
+  for syl in ping_or_lau_to_syllable_list(S(j).lower().replace("eo","eu").replace("oe","eu").replace("j","y").replace("yyu","yu").replace("z","j").replace("c","ch")):
     vowel=lastVowel=None
     for i in range(len(syl)):
       if syl[i] in "aeiou":
@@ -192,20 +203,26 @@ def jyutping_to_yale_u8(j): # returns space-separated syllables
     for x,y in l:
       z = re.sub(re.escape(x)+r"(.)",r"\1"+y,z)
     return z
-  return unicodedata.normalize('NFC',mysub(unicode(jyutping_to_yale_TeX(j).replace(r"\i{}","i").replace(r"\I{}","I")),[(r"\`",u"\u0300"),(r"\'",u"\u0301"),(r"\=",u"\u0304")])).encode('utf-8')
+  if type(u"")==type(""): U=str # Python 3
+  else: U=unicode # Python 2
+  return unicodedata.normalize('NFC',mysub(U(jyutping_to_yale_TeX(j).replace(r"\i{}","i").replace(r"\I{}","I")),[(r"\`",u"\u0300"),(r"\'",u"\u0301"),(r"\=",u"\u0304")])).encode('utf-8')
 
 def superscript_digits_TeX(j):
   # for jyutping and Sidney Lau
+  j = S(j)
   for digit in "123456789": j=j.replace(digit,r"\raisebox{-0.3ex}{$^"+digit+r"$}\hspace{0pt}")
   return j
 
 def superscript_digits_HTML(j):
+  j = S(j)
   for digit in "123456789": j=j.replace(digit,"<sup>"+digit+"</sup>")
   return j
 
 def superscript_digits_UTF8(j):
   # WARNING: not all fonts have all digits; many have only the first 3.  superscript_digits_HTML might be better for browsers, even though it does produce more bytes.
-  for digit in range(1,10): j=j.replace(str(digit),u"¹²³⁴⁵⁶⁷⁸⁹"[digit-1].encode('utf-8'))
+  j = S(j)
+  for digit in range(1,10): j=j.replace(str(digit),S(u"¹²³⁴⁵⁶⁷⁸⁹"[digit-1].encode('utf-8')))
+  if type(j)==type(u""): j=j.encode('utf-8') # Python 3
   return j
 
 import sys
@@ -220,7 +237,7 @@ def import_gradint():
     sys.argv = tmp
     return gradint
 
-def do_song_subst(hanzi_u8): return hanzi_u8.replace(unichr(0x4f7f).encode('utf-8'),unichr(0x38c8).encode('utf-8')) # Mandarin shi3 (normally jyutping sai2) is usually si3 in songs, so substitute a rarer character that unambiguously has that reading before sending to get_jyutping
+def do_song_subst(hanzi_u8): return B(hanzi_u8).replace(unichr(0x4f7f).encode('utf-8'),unichr(0x38c8).encode('utf-8')) # Mandarin shi3 (normally jyutping sai2) is usually si3 in songs, so substitute a rarer character that unambiguously has that reading before sending to get_jyutping
 
 if __name__ == "__main__":
     # command-line use: output Lau for each line of stdin
@@ -243,7 +260,7 @@ if __name__ == "__main__":
       else: pinyin = None
       jyutping = get_jyutping(songSubst(l),0)
       if pinyin: jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
-      if "--yale#lau" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
-      elif "--yale#lau#ping" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))+"#"+jyutping.replace(' ','')
-      elif "--yale" in sys.argv: print hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))
-      else: print superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))
+      if "--yale#lau" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping))))
+      elif "--yale#lau#ping" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))+"#"+jyutping.replace(' ',''))
+      elif "--yale" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping)))
+      else: print (superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping))))

@@ -3,9 +3,9 @@
 # email-lesson.sh: a script that can help you to
 # automatically distribute daily Gradint lessons
 # to students using a web server with reminder
-# emails.  Version 1.1128
+# emails.  Version 1.13
 
-# (C) 2007-2010 Silas S. Brown, License: GPL
+# (C) 2007-2010,2020 Silas S. Brown, License: GPL
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -116,7 +116,7 @@ if test "a$1" == "a--run"; then
       rm -f email_lesson_users/$U/rollback
       if test $Did_Download == 0; then
         # send a reminder
-        export DaysOld="$(python2 -c "import os,time;print int((time.time()-os.stat('email_lesson_users/$U/lastdate').st_mtime)/3600/24)")"
+        export DaysOld="$(python -c "import os,time;print(int((time.time()-os.stat('email_lesson_users/$U/lastdate').st_mtime)/3600/24))")"
         if test $DaysOld -lt 5 || test $(date +%u) == 1; then # (remind only on Mondays if not checked for 5 days, to avoid filling up inboxes when people are away and can't get to email)
         while ! $MailProg -s "$SUBJECT_LINE" $STUDENT_EMAIL "$Extra_Mailprog_Params1" "$Extra_Mailprog_Params2" <<EOF
 $FORGOT_YESTERDAY
@@ -285,7 +285,7 @@ cd email_lesson_users
 while true; do
   echo "Type a user alias (or just press Enter) to add a new user, or Ctrl-C to quit"
   read Alias
-  export ID=$(mktemp -d user.$(python2 -c 'import random; print random.random()')XXXXXX) # (newer versions of mktemp allow more than 6 X's so the python step isn't necessary, but just in case we want to make sure that it's hard to guess the ID)
+  export ID=$(mktemp -d user.$(python -c 'import random; print(random.random())')XXXXXX) # (newer versions of mktemp allow more than 6 X's so the python step isn't necessary, but just in case we want to make sure that it's hard to guess the ID)
   if ! test "a$Alias" == a; then ln -s $ID "$Alias"; fi
   cd $ID
   cat > profile <<EOF

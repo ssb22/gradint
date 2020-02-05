@@ -1,4 +1,5 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
+# (either Python 2 or Python 3)
 
 # safety-check-progressfile.py:
 # The purpose of this script is to check

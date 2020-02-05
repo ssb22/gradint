@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -40,10 +40,11 @@ class Partials_Synth(Synth):
         # the first syllable in 1st list can optionally be the header file to use
         fname = os.tempnam()+dotwav
         o=open(fname,"wb")
-        if not (text and text[0] and text[0][0].endswith(dotwav)): o.write(read(partialsDirectory+os.sep+"header"+dotwav))
+        if not (text and text[0] and B(text[0][0]).endswith(B(dotwav))): o.write(read(partialsDirectory+os.sep+"header"+dotwav))
         for phrase in text:
             datFileInUse = 0 ; assert type(phrase)==type([])
             for f in phrase:
+                f = S(f)
                 if f in audioDataPartials:
                     datFile,offset,size = audioDataPartials[f]
                     if not datFileInUse: datFileInUse = open(partialsDirectory+os.sep+datFile,"rb")
@@ -58,19 +59,20 @@ class Partials_Synth(Synth):
 
 def fileToEvent(fname,dirBase=None):
     if dirBase==None: dirBase=samplesDirectory
-    if dirBase: dirBase += os.sep
+    dirBase,fname = B(dirBase),B(fname)
+    if dirBase: dirBase += B(os.sep)
     orig_DB,orig_fname = dirBase,fname
-    if os.sep in fname and fname.find("!synth:")==-1: dirBase,fname = dirBase+fname[:fname.rindex(os.sep)+1], fname[fname.rindex(os.sep)+1:]
-    if "_" in fname: lang = languageof(fname)
+    if B(os.sep) in fname and fname.find(B("!synth:"))==-1: dirBase,fname = dirBase+fname[:fname.rindex(B(os.sep))+1], fname[fname.rindex(B(os.sep))+1:]
+    if B("_") in fname: lang = languageof(fname)
     else: lang="-unknown-" # so can take a simple wav file, e.g. for endAnnouncement
     if dirBase+fname in variantFiles:
         variantFiles[dirBase+fname]=variantFiles[dirBase+fname][1:]+[variantFiles[dirBase+fname][0]] # cycle through the random order of variants
-        fname=variantFiles[dirBase+fname][0]
-    if fname.lower().endswith(dottxt) and "_" in fname:
-        ftxt = u8strip(read(dirBase+fname)).strip(wsp)
-        if not ftxt: raise MessageException("File "+fname+" in "+dirBase+" has no text in it; please fix this") # nicer message than catching it at a lower level
-        fname = "!synth:"+ftxt+'_'+lang
-    if fname.find("!synth:")>=0:
+        fname=B(variantFiles[dirBase+fname][0])
+    if fname.lower().endswith(B(dottxt)) and B("_") in fname:
+        ftxt = u8strip(read(dirBase+fname)).strip(bwsp)
+        if not ftxt: raise MessageException(B("File ")+fname+B(" in ")+dirBase+B(" has no text in it; please fix this")) # nicer message than catching it at a lower level
+        fname = B("!synth:")+B(ftxt)+B('_')+B(lang)
+    if fname.find(B("!synth:"))>=0:
         s = synthcache_lookup(fname)
         if type(s)==type([]): # trying to synth from partials
             if filter(lambda x:not type(x)==type([]), s): # but not completely (switching between partials and synth in a long text), this is more tricky:
@@ -91,11 +93,11 @@ def fileToEvent(fname,dirBase=None):
                     e.append(Event(betweenPhrasePause))
                 e=CompositeEvent(e[:-1]) # omit trailing pause
             if not lessonIsTight(): e.length=math.ceil(e.length) # (TODO slight duplication of logic from SampleEvent c'tor)
-        elif s: e=SampleEvent(synthCache+os.sep+s) # single file in synth cache
+        elif s: e=SampleEvent(synthCache+os.sep+S(s)) # single file in synth cache
         else:
             e=synth_event(languageof(fname),textof(fname))
             e.file = orig_DB+orig_fname # for trace.py check_for_pictures
-        e.is_prompt=(dirBase==promptsDirectory+os.sep)
+        e.is_prompt=(dirBase==B(promptsDirectory+os.sep))
     else: e=SampleEvent(dirBase+fname)
     e.setOnLeaves('wordToCancel',orig_fname)
     return e
@@ -109,22 +111,24 @@ if mp3web: # synth-cache must exist
 if synthCache:
     # this listdir() call can take ages on rpcemu if it's large
     if riscos_sound: show_info("Reading synthCache... ")
-    try: synthCache_contents = os.listdir(synthCache)
+    try: synthCache_contents = map(B,os.listdir(synthCache))
     except: synthCache_contents = synthCache = []
     for i in synthCache_contents:
-        if i.upper()==transTbl: # in case it's a different case
-            transTbl=i ; break
+        if i.upper()==B(transTbl): # in case it's a different case
+            transTbl=S(i) ; break
     synthCache_contents = list2dict(synthCache_contents) # NOT 2set, as the GUI can delete things from it
     if riscos_sound: show_info("done\n")
 synthCache_transtbl = {}
-if synthCache and transTbl in synthCache_contents:
+if synthCache and B(transTbl) in synthCache_contents:
     ensure_nodups = {} # careful of duplicate filenames being appended to trans.tbl, make sure they override previous entries
-    for l in open(synthCache+os.sep+transTbl).readlines():
-        v,k = l.strip(wsp).split(None,1)
+    for l in open(synthCache+os.sep+transTbl,'rb').readlines():
+        v,k = l.strip(bwsp).split(None,1)
         if v in ensure_nodups: del synthCache_transtbl[ensure_nodups[v]]
         ensure_nodups[v]=k ; synthCache_transtbl[k]=v
     del ensure_nodups
-def textof(fname): return fname[fname.find('!synth:')+7:fname.rfind('_')]
+def textof(fname):
+    fname = B(fname)
+    return fname[fname.find(B('!synth:'))+7:fname.rfind(B('_'))]
 last_partials_transliteration = None
 synth_partials_cache = {} ; scl_disable_recursion = 0
 def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=None):
@@ -132,8 +136,9 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
     if dirBase==None: dirBase=samplesDirectory
     if dirBase: dirBase += os.sep
     if not lang: lang = languageof(fname)
-    if fname.lower().endswith(dottxt):
-        try: fname = fname[:fname.rfind("_")]+"!synth:"+u8strip(read(dirBase+fname)).strip(wsp)+"_"+lang
+    fname = B(fname)
+    if fname.lower().endswith(B(dottxt)):
+        try: fname = fname[:fname.rfind(B("_"))]+B("!synth:")+u8strip(read(S(B(dirBase)+B(fname)))).strip(bwsp)+B("_")+B(lang)
         except IOError: return 0,0 # probably trying to synthcache_lookup a file with variants without first choosing a variant (e.g. in anticipation() to check for sporadic cache entries in old words) - just ignore this
     text = textof(fname)
     useSporadic = -1 # undecided (no point accumulating counters for potentially-unbounded input)
@@ -142,10 +147,10 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
     if synthCache:
       for init in "_","":
         for ext in "wav","mp3":
-            k=init+text.lower()+"_"+lang+extsep+ext
-            s=synthCache_transtbl.get(k,k)
+            k=B(init)+text.lower()+B("_"+lang+extsep+ext)
+            s=B(synthCache_transtbl.get(k,k))
             if s in synthCache_contents: ret=s
-            elif s.lower().endswith(dotwav) and s[:-len(dotwav)]+dotmp3 in synthCache_contents: ret=s[:-len(dotwav)]+dotmp3
+            elif s.lower().endswith(B(dotwav)) and s[:-len(dotwav)]+B(dotmp3) in synthCache_contents: ret=s[:-len(dotwav)]+B(dotmp3)
             else: ret=0
             if ret:
                 if justQueryCache==1: ret=(k,ret)
@@ -175,11 +180,11 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
           elif type(get_synth_if_possible(lang,0))==EkhoSynth: l=None # some faulty versions of Ekho are more likely to segfault if called on fragments (e.g. if the fragment ends with some English), so don't do this with Ekho (unless can confirm it's at least ekho_4.5-2ubuntu10.04 .. not all versions of ekho can report their version no.)
           else: # longer text and SOME can be synth'd from partials: go through it more carefully
             t2=fix_compatibility(ensure_unicode(text2.replace(chr(0),"")).replace(u"\u3002",".").replace(u"\u3001",",")).encode('utf-8')
-            for t in ".!?:;,": t2=t2.replace(t,t+chr(0))
+            for t in ".!?:;,": t2=t2.replace(B(t),B(t)+chr(0))
             l=[]
             scl_disable_recursion = 1
             for phrase in filter(lambda x:x,t2.split(chr(0))):
-              ll=synthcache_lookup("!synth:"+phrase+"_"+lang,dirBase,0,0,lang)
+              ll=synthcache_lookup(B("!synth:")+phrase+B("_"+lang),dirBase,0,0,lang)
               if type(ll)==type([]): l += ll
               else: l.append(synth_event(lang,phrase,0))
             scl_disable_recursion = 0
@@ -194,7 +199,7 @@ def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=Non
     if l: return l
     if tryHarder and not tryHarder==True: return tryHarder
     if printErrors and synthCache and not (app and winsound):
-        r = repr(text.lower()+"_"+lang)
+        r = repr(text.lower()+B("_"+lang))
         if len(r)>100: r=r[:100]+"..."
         global NICcount
         try: NICcount += 1
@@ -211,9 +216,10 @@ def can_be_synthesized(fname,dirBase=None,lang=None):
     else: return get_synth_if_possible(lang) # and this time print the warning
 def stripPuncEtc(text):
     # For sending text to synth_from_partials.  Removes spaces and punctuation from text, and returns a list of the text split into phrases.
-    for t in " -_'\"()[]": text=text.replace(t,"")
-    for t in ".!?:;": text=text.replace(t,",")
-    return filter(lambda x:x,text.split(","))
+    text = B(text)
+    for t in " -_'\"()[]": text=text.replace(B(t),B(""))
+    for t in ".!?:;": text=text.replace(B(t),B(","))
+    return filter(lambda x:x,text.split(B(",")))
 
 for zipToCheck in ["yali-voice","yali-lower","cameron-voice"]:
     if riscos_sound:
@@ -269,7 +275,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
     try:
         ela = espeak_language_aliases
         format,values = pickle.Unpickler(open(partials_cache_file,"rb")).load()
-        if format==partialsCacheFormat: exec format+"=values"
+        if format==partialsCacheFormat: exec (format+"=values")
         if not (ela==espeak_language_aliases and dirsToStat[0][0]==partialsDirectory): espeak_language_aliases,dirsToStat=ela,[]
         del ela,format,values
     except MemoryError: raise # has been known on winCEsound when we're a library module (so previous memory check didn't happen)
@@ -312,10 +318,11 @@ if partialsDirectory and isDirectory(partialsDirectory):
                     while True:
                         fftell = ff.tell()
                         char = ff.read(1)
-                        if not "0"<=char<="9": break
-                        size,fname = (char+ff.readline(256)).strip(wsp).split(None,1)
+                        if not B("0")<=char<=B("9"): break
+                        size,fname = (char+ff.readline(256)).strip(bwsp).split(None,1)
                         try: size=int(size)
                         except: break # binary just happened to start with "0"-"9"
+                        fname = S(fname)
                         addFile(fname)
                         amend.append(l+os.sep+v+os.sep+fname)
                         audioDataPartials[l+os.sep+v+os.sep+fname] = (f,offset,size)
@@ -330,7 +337,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
                 elif f.find('-e')>=0 or f.find('-f')>=0: end.append(f) # 'end' or 'finish'
             for f in files: addFile(f)
             def byReverseLength(a,b): return len(b)-len(a)
-            start.sort(byReverseLength) ; mid.sort(byReverseLength) ; end.sort(byReverseLength) # important if there are some files covering multiple syllables (and do it to start,mid,end not to files initially, so as to catch files within audiodata.dat also)
+            sort(start,byReverseLength) ; sort(mid,byReverseLength) ; sort(end,byReverseLength) # important if there are some files covering multiple syllables (and do it to start,mid,end not to files initially, so as to catch files within audiodata.dat also)
             def toDict(l): # make the list of filenames into a dict of short-key -> [(long-key, filename) list].  short-key is the shortest possible key.
                 if not l: return {}
                 l2 = [] ; kLen = len(l[0])
@@ -368,29 +375,30 @@ def partials_langname(lang):
 
 def synth_from_partials(text,lang,voice=None,isStart=1):
     lang = partials_langname(lang)
-    text=text.strip(wsp) # so whitespace between words is ignored on the recursive call
+    text=B(text).strip(bwsp) # so whitespace between words is ignored on the recursive call
     if lang=="zh": # hack for Mandarin - higher tone 5 after a tone 3 (and ma5 after 4 or 5 also)
         lastNum = None
         for i in range(len(text)):
-            if text[i] in "123456":
-                if text[i]=="5" and (lastNum=="3" or (lastNum>"3" and i>2 and text[i-2:i+1]=="ma5")): # (TODO ne5 also? but only if followed by some form of question mark, and that might have been dropped)
+            if text[i:i+1] in B("123456"):
+                if text[i:i+1]==B("5") and (lastNum==B("3") or (lastNum and lastNum>B("3") and i>2 and text[i-2:i+1]==B("ma5"))): # (TODO ne5 also? but only if followed by some form of question mark, and that might have been dropped)
                     # see if we got a "tone 6" (higher tone 5)
                     # don't worry too much if we haven't
-                    r=synth_from_partials(text[:i]+"6"+text[i+1:],lang,voice,isStart)
+                    r=synth_from_partials(text[:i]+B("6")+text[i+1:],lang,voice,isStart)
                     if r: return r
                     else: break
                 elif lastNum: break # don't look beyond 1st 2
-                lastNum = text[i]
+                lastNum = text[i:i+1]
     if not voice: # try all voices for the language, see if we can find one that can say all the necessary parts
         if not lang in synth_partials_voices: return None
         needCalibrated=False
         if lang=="zh": # hack for Mandarin - avoid consecutive 1st tones on non-calibrated voices
             # (DON'T do 3rd tone sandhi here - that's the caller's responsibility and we don't want it done twice now there's sandhi-blocking rules)
             lastNum=None
-            for c in text:
-                if c=="1" and lastNum=="1":
+            for i in xrange(len(text)):
+                c = text[i:i+1]
+                if c==B("1") and lastNum==B("1"):
                     needCalibrated=True ; break # TODO: unless this syllable is exactly the same as the last syllable (a repeated syllable is always ok to use even if uncalibrated)
-                if c in "123456": lastNum=c
+                if c in B("123456"): lastNum=c
             # end of hack for Mandarin
         vTry = synth_partials_voices[lang]
         if voiceOption:
@@ -408,8 +416,9 @@ def synth_from_partials(text,lang,voice=None,isStart=1):
         return None
     dir, start, mid, end, flags = voice
     def lookup_dic(text,dic):
+        text = S(text)
         if dic:
-            for k,v in dic.get(text[:len(dic.keys()[0])],[]):
+            for k,v in dic.get(text[:len(list(dic.keys())[0])],[]):
                 if text.startswith(k): return k,v
         return None,None
     if not text: return [] # (shouldn't happen)

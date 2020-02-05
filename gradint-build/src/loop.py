@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -18,7 +18,12 @@ def doOneLesson(dbase):
         lesson = dbase.makeLesson()
     else:
         soFar = "Re-loading saved lesson, so not scanning collection."
-        if compress_progress_file: lesson=pickle.Unpickler(os.popen('gzip -fdc "'+saveLesson+'"','rb')).load()
+        if compress_progress_file:
+            pp = os.popen('gzip -fdc "'+saveLesson+'"',popenRB)
+            if hasattr(pp,'buffer'): ppb = pp.buffer
+            else: ppb = pp
+            lesson=pickle.Unpickler(ppb).load()
+            del ppb,pp
         else: lesson=pickle.Unpickler(open(saveLesson,'rb')).load()
     if app and not dbase: app.setNotFirstTime()
     while 1:
@@ -42,7 +47,12 @@ def doOneLesson(dbase):
           else: dbase.save()
           if dbase.saved_completely and app: app.setNotFirstTime() # dbase.saved_completely could have been done by EITHER of the above (e.g. overlapping partial saves)
           if saveLesson:
-              if compress_progress_file: pickle.Pickler(os.popen('gzip -9 > "'+saveLesson+'"','wb'),-1).dump(lesson) # TODO: paranoid_file_management ? (c.f. saveProgress)
+              if compress_progress_file:
+                  pp = os.popen('gzip -9 > "'+saveLesson+'"',popenWB)
+                  if hasattr(pp,'buffer'): ppb=pp.buffer
+                  else: ppb = pp
+                  pickle.Pickler(ppb,-1).dump(lesson) # TODO: paranoid_file_management ? (c.f. saveProgress)
+                  del ppb,pp
               else: pickle.Pickler(open(saveLesson,"wb"),-1).dump(lesson)
               saveLesson = None # so saves only the first when doing multiple lessons
               if justSaveLesson: break
@@ -52,15 +62,15 @@ def doOneLesson(dbase):
 def disable_lid(restore): # for portable netbooks (like eee), can close lid & keep listening
   if unix:
    if app and not outputFile:
-    import commands ; global oldLid,warnedAC
+    global oldLid,warnedAC
     try: warnedAC
     except: warnedAC=0
-    if (not restore) and commands.getoutput("cat /proc/acpi/ac_adapter/AC*/state 2>/dev/null").find("off-line")>=0 and not warnedAC:
+    if (not restore) and getoutput("cat /proc/acpi/ac_adapter/AC*/state 2>/dev/null").find("off-line")>=0 and not warnedAC:
       waitOnMessage("Some quirky Linux battery managers turn speakers off mid-lesson, so AC power is recommended.") ; warnedAC=1 # (TODO what if pull out AC during the lesson without looking at the screen?  Spoken message??)
     ls = "et org.gnome.settings-daemon.plugins.power lid-close-" ; src=["ac","battery"]
-    if restore and oldLid[0]: return [commands.getoutput("gsettings s"+ls+p+"-action "+q+" 2>/dev/null") for p,q in zip(src,oldLid)]
-    oldLid = [commands.getoutput("gsettings g"+ls+p+"-action 2>/dev/null").replace("'","") for p in src]
-    if oldLid[0]: [commands.getoutput("gsettings s"+ls+p+"-action blank 2>/dev/null") for p in src]
+    if restore and oldLid[0]: return [getoutput("gsettings s"+ls+p+"-action "+q+" 2>/dev/null") for p,q in zip(src,oldLid)]
+    oldLid = [getoutput("gsettings g"+ls+p+"-action 2>/dev/null").replace("'","") for p in src]
+    if oldLid[0]: [getoutput("gsettings s"+ls+p+"-action blank 2>/dev/null") for p in src]
 
 if loadLesson==-1: loadLesson=(fileExists(saveLesson) and time.localtime(os.stat(saveLesson).st_mtime)[:3]==time.localtime()[:3])
 

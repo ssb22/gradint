@@ -12,6 +12,7 @@
 samples_url = None # or "http://example.org/path/to/samples/"
 
 import gradint, os
+from gradint import B,S
 newpf = gradint.progressFile
 gradint.progressFile = gradint.progressFileBackup
 gradint.pickledProgressFile=None
@@ -31,16 +32,16 @@ newProg = gradint.ProgressDatabase(alsoScan=0)
 gradint.mergeProgress(newProg.data,mergeIn)
 del mergeIn
 changes = [] ; count=0
-newProg.data.sort()
+gradint.sort(newProg.data,gradint.cmpfunc)
 for tries,l1,l2 in newProg.data:
   if not tries: continue
   key = gradint.norm_filelist(l1,l2)
   oldTries = opd.get(key,0)
-  if not oldTries==tries: changes.append((oldTries,count,tries-oldTries,l1,l2))
+  if not oldTries==tries: changes.append((oldTries,count,tries-oldTries,S(l1),S(l2)))
   count += 1
 del newProg,opd
 changes.sort()
-print '<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title></head><body><h2>Gradint lesson report</h2><table border><tr><th>Repeats before</th><th>Repeats today</th><th>Question</th><th>Answer</th></tr>' # (have Question/Answer order rather than Word/Meaning, because if it's L2-only poetry then the question is the previous line, which is not exactly "meaning")
+print ('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title></head><body><h2>Gradint lesson report</h2><table border><tr><th>Repeats before</th><th>Repeats today</th><th>Question</th><th>Answer</th></tr>') # (have Question/Answer order rather than Word/Meaning, because if it's L2-only poetry then the question is the previous line, which is not exactly "meaning")
   
 had_h5a = False
 def h5aCode(filename):
@@ -49,7 +50,7 @@ def h5aCode(filename):
     global had_h5a
     if not had_h5a:
       had_h5a = True
-      print """<script language="Javascript"><!--
+      print ("""<script language="Javascript"><!--
 function h5a(link,type) { if (document.createElement) {
    var ae = document.createElement('audio');
    if (ae.canPlayType && function(s){return s!="" && s!="no"}(ae.canPlayType(type))) {
@@ -57,7 +58,7 @@ function h5a(link,type) { if (document.createElement) {
      else ae.setAttribute('src', link);
      ae.play();
      return false; } } return true; }
-//--></script>"""
+//--></script>""")
   return r
 def real_h5aCode(filename):
   if filename.endswith(gradint.dotmp3): return ' onClick="javascript:return h5a(this,\'audio/mpeg\')"'
@@ -65,12 +66,14 @@ def real_h5aCode(filename):
   else: return ""
 
 def wrappable(f):
-  z = u'\u200b'.encode('utf-8') # zero-width space
+  z = u'\u200b' # zero-width space
+  if not type(u"")==type(""): z=z.encode('utf-8') # Py2
   return f.replace(os.sep,os.sep+z).replace('_',z+'_')
 def checkVariant(l,ensureTxt=0):
+  l=S(l)
   if os.sep in l: fname=l[l.rindex(os.sep)+1:]
   else: fname=l
-  variants = gradint.variantFiles.get(gradint.samplesDirectory+os.sep+l,[fname])
+  variants = map(S,gradint.variantFiles.get(B(gradint.samplesDirectory+os.sep+l),[fname]))
   if fname in variants: return l # ok
   # else no default variant, need to pick one for the link
   for v in variants:
@@ -81,12 +84,13 @@ def checkVariant(l,ensureTxt=0):
     return l[:l.rindex(os.sep)+1]+v
 def link(l):
   if type(l)==type([]): return link(l[-1])
-  if l.lower().endswith(gradint.dottxt): l="!synth:"+gradint.u8strip(gradint.read(gradint.samplesDirectory+os.sep+checkVariant(l,1))).strip(gradint.wsp)+"_"+gradint.languageof(l)
+  l = S(l)
+  if l.lower().endswith(gradint.dottxt): l="!synth:"+S(gradint.u8strip(gradint.read(gradint.samplesDirectory+os.sep+checkVariant(l,1)))).strip(gradint.wsp)+"_"+gradint.languageof(l)
   if "!synth:" in l:
-    if gradint.languageof(l) not in [gradint.firstLanguage,gradint.secondLanguage]: l=gradint.textof(l)+" ("+gradint.languageof(l)+")"
-    else: l=gradint.textof(l)
+    if gradint.languageof(l) not in [gradint.firstLanguage,gradint.secondLanguage]: l=S(gradint.textof(l))+" ("+gradint.languageof(l)+")"
+    else: l=S(gradint.textof(l))
     return l.replace('&','&amp;').replace('<','&lt;')
   if samples_url: return '<A HREF="'+samples_url+checkVariant(l)+'"'+h5aCode(checkVariant(l))+'>'+wrappable(l)+'</A>'
   return wrappable(l).replace('&','&amp;').replace('<','&lt;')
-for b4,pos,today,l1,l2 in changes: print '<tr><td>%d</td><td>%d</td><td>%s</td><td>%s</td></tr>' % (b4,today,link(l1),link(l2))
-print '</table></body></html>'
+for b4,pos,today,l1,l2 in changes: print ('<tr><td>%d</td><td>%d</td><td>%s</td><td>%s</td></tr>' % (b4,today,link(l1),link(l2)))
+print ('</table></body></html>')

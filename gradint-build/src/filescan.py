@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -83,7 +83,7 @@ def import_recordings(destDir=None):
 def exec_in_a_func(x): # helper function for below (can't be nested in python 2.3)
    # Also be careful of http://bugs.python.org/issue4315 (shadowing globals in an exec) - better do this in a dictionary
    d={"firstLanguage":firstLanguage,"secondLanguage":secondLanguage}
-   exec x in d
+   exec (x,d)
    return d["secondLanguage"],d["firstLanguage"]
 def check_has_variants(directory,ls):
     if directory==promptsDirectory: return True
@@ -134,8 +134,8 @@ def getLsDic(directory):
             elif (file+extsep)[:file.rfind(extsep)] in lsDic: continue # don't let a .txt~ or other unknown extension override a .txt
         lsDic[(file+extsep)[:file.rfind(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
     if has_variants:
-        ls=list2set(ls) ; newVs = []
-        for k,v in lsDic.items():
+        ls=list2set(ls) ; newVs = {}
+        for k,v in list(lsDic.items()):
             # check for _lang_variant.ext and take out the _variant,
             # but keep them in variantFiles dict for fileToEvent to put back
             if not v or (not directory==promptsDirectory and v.find("_explain_")>=0): continue # don't get confused by that
@@ -148,20 +148,25 @@ def getLsDic(directory):
             if not newK in lsDic: lsDic[newK] = newV
             else: # variants of different file types? better store them all under one (fileToEvent will sort out).  (Testing if the txt can be synth'd has already been done above)
                 if v.endswith(dottxt) and not lsDic[newK].endswith(dottxt): # if any variants are .txt then we'd better ensure the key is, so transliterate etc finds it. So move the key over to the .txt one.
-                    old_dirV = directory+os.sep+lsDic[newK]
+                    old_dirV = B(directory+os.sep+lsDic[newK])
                     d = variantFiles[old_dirV]
                     del variantFiles[old_dirV]
                     lsDic[newK] = newV
-                    variantFiles[directory+os.sep+newV] = d
+                    variantFiles[B(directory)+B(os.sep)+B(newV)] = d
                     lsDic[newK] = newV # just add to the previous key
+                    if old_dirV in newVs:
+                        del newVs[old_dirV]
+                        newVs[B(directory)+B(os.sep)+B(newV)] = 1
                 else: newV = lsDic[newK]
-            dir_newV = directory+os.sep+newV
+            dir_newV = B(directory)+B(os.sep)+B(newV)
             if not dir_newV in variantFiles:
                 variantFiles[dir_newV] = []
-                if newV in ls: variantFiles[dir_newV].append(newV) # the no-variants name is also a valid option
+                if S(newV) in ls: variantFiles[dir_newV].append(newV) # the no-variants name is also a valid option
             variantFiles[dir_newV].append(v)
-            newVs.append(dir_newV)
-        for v in newVs: random.shuffle(variantFiles[v])
+            newVs[dir_newV]=1
+        for v in list(newVs.keys()):
+            assert v in variantFiles, repr(sorted(list(variantFiles.keys())))+' '+repr(v)
+            random.shuffle(variantFiles[v])
     return lsDic
 
 def scanSamples_inner(directory,retVal,doLimit):
@@ -176,7 +181,7 @@ def scanSamples_inner(directory,retVal,doLimit):
         # check which language the poetry is to be in (could be L1-to-L2, L2-to-L3, L2-only, or L3-only)
         def poetry_language():
          ret = ""
-         for file,withExt in lsDic.items():
+         for file,withExt in list(lsDic.items()):
           if withExt:
             if file.endswith(secLangSuffix): ret=secLangSuffix # but stay in the loop
             elif (not file.endswith(firstLangSuffix)):
@@ -188,7 +193,7 @@ def scanSamples_inner(directory,retVal,doLimit):
     prefix = directory[len(samplesDirectory)+cond(samplesDirectory,len(os.sep),0):] # the directory relative to samplesDirectory
     if prefix: prefix += os.sep
     lastFile = None # for doPoetry
-    items = lsDic.items() ; items.sort()
+    items = list(lsDic.items()) ; items.sort()
     for file,withExt in items:
         swapWithPrompt = 0
         if not withExt:
@@ -236,7 +241,7 @@ def scanSamples_inner(directory,retVal,doLimit):
             retVal.append((0,promptToAdd,prefix+withExt))
             if emptyCheck_hack: return
             if explanationFile: filesWithExplanations[prefix+withExt]=explanationFile
-            if doLimit: limitedFiles[prefix+withExt]=prefix
+            if doLimit: limitedFiles[B(prefix+withExt)]=prefix
             lastFile = [promptFile,withExt]
 
 cache_maintenance_mode=0 # hack so cache-synth.py etc can cache promptless words for use in justSynthesize, and words in prompts themselves
@@ -249,32 +254,32 @@ def parseSynthVocab(fname,forGUI=0):
     if not fileExists(fname): return []
     if not emptyCheck_hack: doLabel("Reading "+fname)
     allLangs = list2set([firstLanguage,secondLanguage]+otherLanguages)
-    for l in u8strip(read(fname)).replace("\r","\n").split("\n"):
+    for l in u8strip(read(fname)).replace(B("\r"),B("\n")).split(B("\n")):
         # TODO can we make this any faster on WinCE with large vocab lists? (tried SOME optimising already)
-        if not "=" in l: # might be a special instruction
+        if not B("=") in l: # might be a special instruction
             if not l: continue
-            canProcess = 0 ; l2=l.strip(wsp)
-            if not l2 or l2[0]=='#': continue
+            canProcess = 0 ; l2=l.strip(bwsp)
+            if not l2 or l2[0:1]==B('#'): continue
             l2=l2.lower()
-            if l2.startswith("set language ") or l2.startswith("set languages "):
-                langs=l.split()[2:] ; someLangsUnknown = 0
+            if l2.startswith(B("set language ")) or l2.startswith(B("set languages ")):
+                langs=map(S,l.split()[2:]) ; someLangsUnknown = 0
                 maxsplit = len(langs)-1
                 for l in langs:
                     if not l in allLangs: someLangsUnknown = 1
-            elif l2.startswith("limit on"):
+            elif l2.startswith(B("limit on")):
                 doLimit = 1 ; limitNo += 1
-            elif l2.startswith("limit off"): doLimit = 0
-            elif l2.startswith("begin poetry"): doPoetry,lastPromptAndWord,disablePoem = True,None,False
-            elif l2.startswith("end poetry"): doPoetry = lastPromptAndWord = None
-            elif l2.startswith("poetry vocab line"): doPoetry,lastPromptAndWord = 0,cond(lastPromptAndWord,lastPromptAndWord,0) # not None, in case we're at the very start of a poem (see "just processed"... at end)
+            elif l2.startswith(B("limit off")): doLimit = 0
+            elif l2.startswith(B("begin poetry")): doPoetry,lastPromptAndWord,disablePoem = True,None,False
+            elif l2.startswith(B("end poetry")): doPoetry = lastPromptAndWord = None
+            elif l2.startswith(B("poetry vocab line")): doPoetry,lastPromptAndWord = 0,cond(lastPromptAndWord,lastPromptAndWord,0) # not None, in case we're at the very start of a poem (see "just processed"... at end)
             else: canProcess=1
             if not canProcess: continue
-        elif '#' in l and l.strip(wsp)[0]=='#': continue # guard condition "'#' in l" improves speed
+        elif B('#') in l and l.strip(bwsp)[0:1]==B('#'): continue # guard condition "'#' in l" improves speed
         if forGUI: strCount=""
         else:
             strCount = "%05d!synth:" % (count,)
             count += 1
-        langsAndWords = zip(langs,l.split("=",maxsplit)) # don't try strip on a map() - it's faster to do it as-needed below
+        langsAndWords = list(zip(langs,l.split(B("="),maxsplit))) # don't try strip on a map() - it's faster to do it as-needed below
         # (maxsplit means you can use '=' signs in the last language, e.g. if using SSML with eSpeak)
         if someLangsUnknown: langsAndWords = filter(lambda x:x[0] in allLangs, langsAndWords)
         # Work out what we'll use for the prompt.  It could be firstLanguage, or it could be one of the other languages if we see it twice (e.g. if 2nd language is listed twice then the second one will be the prompt for 2nd-language-to-2nd-language learning), or it could be the only language if we're simply listing words for cache maintenance
@@ -285,10 +290,10 @@ def parseSynthVocab(fname,forGUI=0):
             while i<len(langsAndWords):
                 lang,word = langsAndWords[i] ; i += 1
                 isReminder = cache_maintenance_mode and len(langsAndWords)==1 and not doPoetry
-                if (lang in langsAlreadySeen or isReminder) and (lang in getsynth_cache or can_be_synthesized("!synth:"+word+"_"+lang)): # (check cache because most of the time it'll be there and we don't need to go through all the text processing in can_be_synthesized)
+                if (lang in langsAlreadySeen or isReminder) and (lang in getsynth_cache or can_be_synthesized(B("!synth:")+B(word)+B("_")+B(lang))): # (check cache because most of the time it'll be there and we don't need to go through all the text processing in can_be_synthesized)
                     if not word: continue
-                    elif word[0] in wsp or word[-1] in wsp: word=word.strip(wsp) # avoid call if unnecessary
-                    return strCount+word+"_"+lang, cond(isReminder,0,i)
+                    elif word[0:1] in bwsp or word[-1:] in bwsp: word=word.strip(bwsp) # avoid call if unnecessary
+                    return B(strCount)+word+B("_"+lang), cond(isReminder,0,i)
                 langsAlreadySeen[lang]=True
             return None,0
         prompt,onePastPromptIndex = findPrompt()
@@ -312,16 +317,16 @@ def parseSynthVocab(fname,forGUI=0):
             while i<len(langsAndWords):
                 lang,word = langsAndWords[i] ; i+=1
                 if i==onePastPromptIndex or (lang==firstLanguage and not firstLanguage==secondLanguage) or not word: continue # if 1st language occurs more than once (target as well as prompt) then don't get confused - this vocab file is probably being used with reverse settings
-                elif word[0] in wsp or word[-1] in wsp: word=word.strip(wsp) # avoid call if unnecessary
-                if lang in getsynth_cache or can_be_synthesized("!synth:"+word+"_"+lang):
+                elif word[0:1] in bwsp or word[-1:] in bwsp: word=word.strip(bwsp) # avoid call if unnecessary
+                if lang in getsynth_cache or can_be_synthesized(B("!synth:")+word+B("_"+lang)):
                   if not (doPoetry and disablePoem):
-                    f=strCount+word+"_"+lang
+                    f=B(strCount)+word+B("_"+lang)
                     if prompt==1 or prompt==f: # a file with itself as the prompt (either explicitly or by omitting any other prompt)
                         prompt=f
                         singleLinePoems[f]=1
                     ret.append((0,prompt,f))
                     if emptyCheck_hack: return ret
-                    if doLimit: limitedFiles[f]="synth:"+str(limitNo)
+                    if doLimit: limitedFiles[f]=B("synth:"+str(limitNo))
                     if doPoetry: lastPromptAndWord = [prompt_L1only,f]
                 elif doPoetry: disablePoem=1 # if one of the lines can't be synth'd, disable the rest of the poem (otherwise get wrongly connected lines, disconnected lines, or re-introduction of isolated lines that were previously part of a poem but can't be synth'd on this platform)
         if not lastPromptAndWord==None: doPoetry = 1 # just processed a "poetry vocab line" (lastPromptAndWord is either the real last prompt and word, or 0 if we were at the start)
@@ -347,10 +352,10 @@ class AvailablePrompts(object):
     def __init__(self):
         self.lsDic = getLsDic(promptsDirectory)
         self.prefixes = {}
-        for k,v in self.lsDic.items():
+        for k,v in list(self.lsDic.items()):
             if v: self.prefixes[k[:k.rfind("_")]]=1 # delete language
             else: del self.lsDic[k] # !poetry etc doesn't make sense in prompts
-        self.prefixes = self.prefixes.keys()
+        self.prefixes = list(self.prefixes.keys())
         self.user_is_advanced = None
     def getRandomPromptList(self,promptsData,language):
         random.shuffle(self.prefixes)
@@ -408,13 +413,13 @@ def introductions(zhFile,progressData):
     for d,fname in dirsWithIntros[:]:
         found = 0
         for p in progressData:
-            if p[-1].startswith(d) and p[0]:
+            if B(p[-1]).startswith(B(d)) and p[0]:
                 # this dir has already been introduced
                 found=1 ; dirsWithIntros.remove((d,fname)) ; break
         if found: continue
-        if zhFile.startswith(d): toIntroduce.append((d,fname))
+        if B(zhFile).startswith(B(d)): toIntroduce.append((d,fname))
     toIntroduce.sort() # should put shorter ones 1st
-    return map(lambda (x,fname): fileToEvent(cond(x,x+os.sep,"")+fname), toIntroduce)
+    return map(lambda x: fileToEvent(cond(x[0],x[0]+os.sep,"")+x[1]), toIntroduce)
 
 def explanations(zhFile):
     if zhFile in filesWithExplanations: return fileToEvent(zhFile.replace(dotmp3,dotwav).replace(dottxt,dotwav).replace(dotwav,"_explain_"+firstLanguage+filesWithExplanations[zhFile][-len(dotwav):]))

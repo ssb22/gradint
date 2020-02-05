@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -26,10 +26,13 @@ class Synth(object):
     ################## don't have to re-implement below
     def __init__(self): self.fileCache = {}
     def __del__(self):
-        import os # as it might already have been gc'd
-        for v in self.fileCache.values():
+        try: import os # as it might already have been gc'd
+        except: pass # might still be able to use it
+        try:
+          for v in self.fileCache.values():
             try: os.remove(v)
             except: pass # someone may have removed it already, e.g. cache-synth.py's renaming
+        except: pass
         self.fileCache = {} # essential for the globalEspeakSynth hack (or get crash when try to make multiple lessons to file)
     def makefile_cached(self,lang,text):
         if type(text)==type([]): textKey=repr(text)
@@ -114,7 +117,7 @@ class OSXSynth_Say(Synth):
         found=0 ; d2=d.copy()
         class BreakOut(Exception): pass
         # First, check for voice matches in same language beginning
-        for k,v in d.items()[:]:
+        for k,v in list(d.items()):
             if k in macVoices:
               try:
                 for m in macVoices[k].split():
@@ -124,16 +127,16 @@ class OSXSynth_Say(Synth):
               except BreakOut: pass
             if len(d2[k])>1: d2[k]=[d2[k][0]]
         # Then check across languages (e.g. cant -> zh-...)
-        for k,v in macVoices.items():
+        for k,v in list(macVoices.items()):
          try:
-          for kk,vv in d.items():
+          for kk,vv in list(d.items()):
             for m in v.split():
               for vvv in vv:
                 if m.lower() == vvv.lower():
                   d2[k] = [vvv] ; found=1 ; raise BreakOut()
          except BreakOut: pass
-        if d.keys()==['en'] and not found: return {"en":""} # just use the default
-        for k,v in d2.items()[:]: d2[k]='-v "'+v[0]+'" '
+        if list(d.keys())==['en'] and not found: return {"en":""} # just use the default
+        for k,v in list(d2.items()): d2[k]='-v "'+v[0]+'" '
         return d2
 
 def aiff2wav(fname):
@@ -307,13 +310,14 @@ py_final_letters="aeginouvrAEGINOUVR:" # (don't just pick up on tone numbers, bu
 def sort_out_pinyin_3rd_tones(pinyin):
     # Tone sandhi blocking rules: Need to stop 3rd-tones sortout at end of any 2-syllable word + "gei3 ni3" + "wo3 xiang3".
     # Also need to stop at phrase breaks and any English word (or hanzi, although may get awkward cases with 3rd-tone hanzi mixed with pinyin, but that's no big worry as lily isn't too reliable anyway and with partials it'll be transliterated)
-    segments = [] ; thisSeg = "" ; syls = 0
-    def endsWithSpecialWordpair(segLower): return segLower.endswith("gei3 ni3") or segLower.endswith("gei3 wo3") or segLower.endswith("ni3 xiang3") or segLower.endswith("wo3 xiang3")
-    for c in pinyin:
-        if ord(c)>128 or c in ".,?;" or (c==" " and syls==2) or endsWithSpecialWordpair(thisSeg.lower()):
-            segments.append(thisSeg) ; thisSeg="" ; syls = 0
-        elif c==" ": syls = 0
-        elif c in "12345": syls += 1
+    segments = [] ; thisSeg = B("") ; syls = 0 ; pinyin=B(pinyin)
+    def endsWithSpecialWordpair(segLower): return segLower.endswith(B("gei3 ni3")) or segLower.endswith(B("gei3 wo3")) or segLower.endswith(B("ni3 xiang3")) or segLower.endswith(B("wo3 xiang3"))
+    for i in xrange(len(pinyin)):
+        c = pinyin[i:i+1]
+        if ord(c)>128 or c in B(".,?;") or (c==B(" ") and syls==2) or endsWithSpecialWordpair(thisSeg.lower()):
+            segments.append(thisSeg) ; thisSeg=B("") ; syls = 0
+        elif c==B(" "): syls = 0
+        elif c in B("12345"): syls += 1
         thisSeg += c
     segments.append(thisSeg)
     # Now go for each segment
@@ -321,19 +325,19 @@ def sort_out_pinyin_3rd_tones(pinyin):
     for seg in segments:
       i=0
       while i<len(seg):
-        while i<len(seg) and seg[i] not in '12345': i+=1
-        if i<len(seg) and seg[i]=='3' and i and seg[i-1] in py_final_letters:
+        while i<len(seg) and seg[i:i+1] not in B('12345'): i+=1
+        if i<len(seg) and seg[i:i+1]==B('3') and i and seg[i-1:i] in B(py_final_letters):
             toneToChange = i ; numThirdsAfter = 0
             j = i
             while True:
                 j += 1
-                while j<len(seg) and seg[j] not in '12345': j+=1
-                if j<len(seg) and seg[j]=='3' and seg[j-1] in py_final_letters: numThirdsAfter+=1
+                while j<len(seg) and seg[j:j+1] not in B('12345'): j+=1
+                if j<len(seg) and seg[j:j+1]==B('3') and seg[j-1:j] in B(py_final_letters): numThirdsAfter+=1
                 else: break
-            if numThirdsAfter % 2: seg=seg[:toneToChange]+'2'+seg[toneToChange+1:]
+            if numThirdsAfter % 2: seg=seg[:toneToChange]+B('2')+seg[toneToChange+1:]
         i += 1
       ret.append(seg)
-    return "".join(ret)
+    return B("").join(ret)
 
 class FliteSynth(Synth):
     def __init__(self): Synth.__init__(self)
@@ -349,11 +353,10 @@ if winsound or mingw32 or cygwin: del FliteSynth.play # because on some (even hi
 
 if macsound:
     # See if we need to unpack eSpeak and/or set the variables
-    import commands
-    f=commands.getoutput("echo espeak*-OSX.zip")
+    f=getoutput("echo espeak*-OSX.zip")
     if fileExists(f): unzip_and_delete(f)
     if not os.system("espeak*/speak64 -h >/dev/null 2>/dev/null"): os.system("mv espeak*/speak64 espeak*/speak") # because some newer macOS releases want 64bit-only apps, and we won't need the dual PPC/i386 one on those
-    f=commands.getoutput("echo espeak*/speak")
+    f=getoutput("echo espeak*/speak")
     if fileExists(f) and fileExists(f[:-5]+"espeak-data/phontab"):
       os.environ["ESPEAK_DATA_PATH"]=os.getcwd()+cwd_addSep+f[:-6]
       os.environ["PATH"]=os.getcwd()+cwd_addSep+f[:-6]+":"+os.environ["PATH"]
@@ -379,10 +382,12 @@ espeak_language_aliases = { "cant":"zhy" }
 class SimpleZhTransliterator(object): # if not got eSpeak on system
     def can_transliterate(self,lang): return lang=="zh"
     def transliterate(self,lang,text,forPartials=1,from_espeak=0):
-        if lang=="zh" and text.find("</")==-1: # (not </ - don't do this if got SSML)
+        text = B(text)
+        if lang=="zh" and text.find(B("</"))==-1: # (not </ - don't do this if got SSML)
             text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode("utf-8")
             found=0
-            for t in text:
+            for i in xrange(len(text)):
+                t = text[i:i+1]
                 if ord(t)>=128:
                     found=1 ; break
             if not found and text.lower()==fix_pinyin(text,[]): return text # don't need espeak
@@ -391,9 +396,9 @@ class SimpleZhTransliterator(object): # if not got eSpeak on system
 simpleZhTransliterator = SimpleZhTransliterator()
 
 def shell_escape(text):
-    text = text.replace('\\','\\\\').replace('"','\\"')
-    if unix: text=text.replace("$","\\$").replace("`","\\`").replace("!","! ")
-    return '"'+text+'"'
+    text = B(text).replace(B('\\'),B('\\\\')).replace(B('"'),B('\\"'))
+    if unix: text=text.replace(B("$"),B("\\$")).replace(B("`"),B("\\`")).replace(B("!"),B("! "))
+    return B('"')+text+B('"')
 
 espeakTranslitCacheFile = "espeak-translit-cache"+extsep+"bin" # TODO to advanced.txt?
 class ESpeakSynth(Synth):
@@ -405,7 +410,7 @@ class ESpeakSynth(Synth):
         elif winsound or mingw32: tryList=[programFiles+"\\eSpeak\\espeak-data"]
         elif winCEsound: tryList=["\\espeak-data"] # Can't try \\Storage Card because our eSpeak compile can't cope with spaces (and quoting it does not work)
         else:
-            tryList=[os.environ.get("HOME","")+"espeak-data","/usr/share/espeak-data","/usr/local/share/espeak-data"]
+            tryList=[os.environ.get("HOME","")+"espeak-data","/usr/share/espeak-data","/usr/local/share/espeak-data","/usr/lib/x86_64-linux-gnu/espeak-data"]
             if cygwin: tryList.append(programFiles+"/eSpeak/espeak-data")
         if os.environ.get("ESPEAK_DATA_PATH",""): tryList.insert(0,os.environ["ESPEAK_DATA_PATH"]+os.sep+"espeak-data")
         langList = []
@@ -417,7 +422,6 @@ class ESpeakSynth(Synth):
             if langList: break
         if unix: # espeak might know where its data is
           if not self.place:
-            import commands
             versionLine = (filter(lambda x:x.strip(),os.popen("(speak --help||espeak --help) 2>/dev/null").read().split("\n"))+[""])[0]
             if versionLine.find("Data at:")>=0:
               self.place = versionLine[versionLine.index("Data at:")+8:].strip()
@@ -438,27 +442,28 @@ class ESpeakSynth(Synth):
             if placeStat==tuple(os.stat(self.place)): self.translitCache = tc # otherwise regenerate it because eSpeak installation has changed (TODO if you overwrite an existing _dict file in-place, it might not update the stat() of espeak-data and the cache might not be re-generated when it should; espeak's --compile seems ok though)
           self.place=self.place[:self.place.rindex(os.sep)] # drop the \espeak-data, so can be used in --path=
     def _add_lang(self,lang,fname):
+        lang,fname = S(lang),S(fname)
         if "~" in lang: return # emacs backup files
         self.languages[lang]=fname
-        for l in open(self.place+os.sep+"voices"+os.sep+fname).read(256).replace("\r","\n").split("\n"):
-            if l.startswith("language "):
-                l=l[9:].strip(wsp)
-                if not l==lang:
-                    if l in espeak_language_aliases.values(): # aliasing to an alias - update it
-                        for k,v in espeak_language_aliases.items():
-                            if v==l: espeak_language_aliases[k]=lang
-                    espeak_language_aliases[l] = lang
+        for l in open(self.place+os.sep+"voices"+os.sep+fname,"rb").read(256).replace(B("\r"),B("\n")).split(B("\n")):
+            if l.startswith(B("language ")):
+                l=l[9:].strip(bwsp)
+                if not l==B(lang):
+                    Sl = S(l)
+                    if Sl in espeak_language_aliases.values(): # aliasing to an alias - update it
+                        for k,v in list(espeak_language_aliases.items()):
+                            if v==Sl: espeak_language_aliases[k]=lang
+                    espeak_language_aliases[Sl] = lang
     def describe_supported_languages(self):
         ret=[]
-        items=self.languages.items() ; items.sort()
+        items=list(self.languages.items()) ; items.sort()
         for k,v in items:
             if "-" in k and not k=="zh-yue": continue # skip variants in the report (but do recognise them)
-            o=open(self.place+os.sep+"espeak-data"+os.sep+"voices"+os.sep+v)
-            line=""
+            o=open(self.place+os.sep+"espeak-data"+os.sep+"voices"+os.sep+v,'rb')
             for t in range(10):
                 line=o.readline()
-                if line.find("name")>=0:
-                    lname = line.split()[1].replace("_test","").replace("-test","").replace("-experimental","").replace("-expertimental","") # (delete the -test etc for more screen real-estate, as this is used only for explaining what the language abbreviations mean)
+                if line.find(B("name"))>=0:
+                    lname = S(line.split()[1]).replace("_test","").replace("-test","").replace("-experimental","").replace("-expertimental","") # (delete the -test etc for more screen real-estate, as this is used only for explaining what the language abbreviations mean)
                     if not lname: continue
                     lname=lname[0].upper()+lname[1:]
                     ret.append(k+"="+lname)
@@ -489,8 +494,7 @@ class ESpeakSynth(Synth):
         else: # not windows or cygwin
             self.program="speak"
             if riscos_sound: return True # we've already confirmed <eSpeak$dir> works in the constructor
-            import commands
-            loc=commands.getoutput("locale -a 2>/dev/null|grep -i 'utf-*8$'|head -1").strip(wsp)
+            loc=getoutput("locale -a 2>/dev/null|grep -i 'utf-*8$'|head -1").strip(wsp)
             if loc: loc="LC_CTYPE="+loc+" " # in case espeak can't find a utf-8 locale by itself
             self.program=loc+"speak"
             if got_program("speak"): return True
@@ -498,11 +502,13 @@ class ESpeakSynth(Synth):
             self.program = loc+"espeak"
             return got_program("espeak")
     def guess_length(self,lang,text):
-        if text.find("</")>=0: # might be SSML - don't count inside <...>
+        text=B(text)
+        if text.find(B("</"))>=0: # might be SSML - don't count inside <...>
             l=inSsml=0
-            for c in text:
-                if c=="<": inSsml=1
-                elif c==">": inSsml=0
+            for i in xrange(len(text)):
+                c = text[i:i+1]
+                if c==B("<"): inSsml=1
+                elif c==B(">"): inSsml=0
                 elif not inSsml: l += 1
         else: l=len(text)
         latency = 0
@@ -522,7 +528,7 @@ class ESpeakSynth(Synth):
         time.sleep(0.3) # 0.2 not always long enough for transliterations (get empty output file if try to read too soon, then loop waiting for it to have contents)
         return self.winCE_wait(expectedOutputFile,infileToDel)
     def winCE_start(self,parameters):
-        s = ShellExecuteInfo(60,File=u""+self.program,Parameters=u"--path="+self.place+" "+parameters,fMask=0x40)
+        s = ShellExecuteInfo(60,File=ensure_unicode(self.program),Parameters=u"--path="+self.place+" "+parameters,fMask=0x40)
         ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(s))
         self.hProcess = s.hProcess # TODO check it's not NULL (failed to run)
     def winCE_wait(self,expectedOutputFile,infileToDel=None,needDat=1):
@@ -536,11 +542,11 @@ class ESpeakSynth(Synth):
             if firstIter: firstIter -= 1
             else: time.sleep(0.2),check_for_interrupts() # (latter needed in case it gets stuck)
             try:
-              if needDat: dat=read(u""+expectedOutputFile)
-              else: dat=open(u""+expectedOutputFile).read(8)
+              if needDat: dat=read(ensure_unicode(expectedOutputFile))
+              else: dat=open(ensure_unicode(expectedOutputFile)).read(8)
             except: continue # error on trying to read output
             if not dat: continue # output read as empty
-            if expectedOutputFile.endswith(dotwav) and (len(dat)<8 or dat[6:8]=="\xff\x7f"): continue # length field not yet written
+            if expectedOutputFile.endswith(dotwav) and (len(dat)<8 or dat[6:8]==LB("\xff\x7f")): continue # length field not yet written
             # (TODO how could we make sure a long transliteration has finished, if the OS lets us open the file before done and if WaitForSingleObject doesn't work?)
             if not firstIter: time.sleep(0.2) # just in case
             if infileToDel:
@@ -567,8 +573,8 @@ class ESpeakSynth(Synth):
         def check_dicts(self,lang,txt):
             if not hasattr(self,"dictsChecked"): self.dictsChecked = {}
             if lang in self.dictsChecked or not lang in ["zh","zhy","ru"]: return
-            if type(txt)==list: txt="".join(txt)
-            if re.match("^[ -~]*$",txt): return # don't need to warn about dictionaries if we were given all-ASCII input (TODO: and tone marks?)
+            if type(txt)==list: txt=B("").join(txt)
+            if re.match(B("^[ -~]*$"),txt): return # don't need to warn about dictionaries if we were given all-ASCII input (TODO: and tone marks?)
             if filelen(self.place+os.sep+"espeak-data"+os.sep+lang+"_dict")<100000: show_warning("Warning: the eSpeak on this system has only a short dictionary for language '"+lang+"' - please install the Additional Data at espeak.sourceforge.net/data")
             # TODO: Ubuntu 18.04's espeak-data package does NOT include the additional data; IS included by espeak-ng-data; on unix prefer the espeak-ng command and ask it for its own data path?
             self.dictsChecked[lang]=1
@@ -579,6 +585,7 @@ class ESpeakSynth(Synth):
       # Note: Don't make textList TOO long, because the resulting data must fit on the (RAM)disk and in memory.
       retList = [] ; write_to_espeak = [] ; indexList = []
       split_token = "^^^" # must be something not defined in the _rules files
+      textList = map(lambda x:B(x), textList)
       self.check_dicts(lang,textList)
       for text in textList: # DON'T escape_jyutping (treat as en words)
         if lang=="zh":
@@ -591,9 +598,9 @@ class ESpeakSynth(Synth):
             if type(t)==type([]):
                 indexList.append(len(retList))
                 retList.append(None) # result not filled in yet
-                if lang=="zh": tt=pinyin_uColon_to_V(t[0].replace("-","/")) # NB fix_compatibility has already been done (as has preprocess_chinese_numbers), by simpleZhTransliterator above
+                if lang=="zh": tt=pinyin_uColon_to_V(t[0].replace(B("-"),B("/"))) # NB fix_compatibility has already been done (as has preprocess_chinese_numbers), by simpleZhTransliterator above
                 else: tt=t[0]
-                write_to_espeak.append(fix_commas(tt).replace(split_token," "))
+                write_to_espeak.append(fix_commas(tt).replace(B(split_token),B(" ")))
                 # (replacing - with / because espeak zh voice treats / as a silent word separator but - is ignored; - is used as a word separator in MeiLing etc.  so if you want to write the hanzi for wei2ren2 but you want it to be wei4+ren2, you can hack in this way.  TODO document?)
             else: retList.append(t)
         else: retList.append(None)
@@ -609,15 +616,15 @@ class ESpeakSynth(Synth):
               overruns.append(i-len(overruns))
           i += 1
       fname = os.tempnam()
-      open(fname,"w").write((".\n"+split_token+" ").join(write_to_espeak))
+      writeB(open(fname,"w"),(B(".\n")+B(split_token)+B(" ")).join(write_to_espeak))
       oldcwd=os.getcwd()
       if winCEsound:
           translit_out = os.tempnam()
           data=self.winCE_run(' -v%s -q -X -f %s --phonout=%s' % (espeak_language_aliases.get(lang,lang),fname,translit_out),translit_out)
           os.remove(translit_out)
-      else: data=os.popen(self.program+' -v%s -q -X -f %s%s' % (espeak_language_aliases.get(lang,lang),changeToDirOf(fname,1),cond(unix," 2>&1","")),"rb").read() # popen2 might not work, so had better do it this way:
+      else: data=readB(os.popen(self.program+' -v%s -q -X -f %s%s' % (espeak_language_aliases.get(lang,lang),changeToDirOf(fname,1),cond(unix," 2>&1","")),popenRB)) # popen2 might not work, so had better do it this way:
       os.chdir(oldcwd) ; os.remove(fname)
-      data = data.replace("\r\n","\n").split("\nTranslate '"+split_token+"'\n")
+      data = data.replace(B("\r\n"),B("\n")).split(B("\nTranslate '")+B(split_token)+B("'\n"))
       if len(data)==2*(len(indexList)+len(overruns))-1:
         # split points are doubled - better take every ODD item.  (NB the text in between is NOT necessarily blank - espeak can flush its sentence cache there)
         d2 = []
@@ -634,9 +641,9 @@ class ESpeakSynth(Synth):
           r=[] ; lastWasBlank=False
           delete_last_r_if_blank = 0 ; appendNext = 0
           thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
-          for l in dat.strip(wsp).split("\n"):
+          for l in dat.strip(bwsp).split(B("\n")):
               if appendNext: # (see below)
-                  r.append(l[l.index("[")+1:l.index("]")])
+                  r.append(l[l.index(B("["))+1:l.index(B("]"))])
                   appendNext = 0 ; continue
               # print "Debugger:",l.strip()
               # get en_words for fix_pinyin (and for making sure we embed them in cant)
@@ -652,37 +659,38 @@ class ESpeakSynth(Synth):
                       en_words[r[-1]]=1
                   thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
               # end of getting en_words
-              if lang=="zh" and r and ((not lastWasBlank and (l.startswith("Replace") or l.startswith("Translate") or l.startswith("Found"))) or l.find("';'")>1 or l.find("','")>1): r[-1]+="," # (because not-blank is probably the line of phonemes)
-              elif not lang=="zh" and l.startswith("_|") and r: r[-1] += "," # works for zh-yue
+              if lang=="zh" and r and ((not lastWasBlank and (l.startswith(B("Replace")) or l.startswith(B("Translate")) or l.startswith(B("Found")))) or l.find(B("';'"))>1 or l.find(B("','"))>1): r[-1]+=B(",") # (because not-blank is probably the line of phonemes)
+              elif not lang=="zh" and l.startswith(B("_|")) and r: r[-1] += B(",") # works for zh-yue
               if delete_last_r_if_blank and not l: r=r[:-1] # "Translate" followed by blank line is probably corner-brackets or something; don't want that confusing the transliteration (especially if it's for partials)
               delete_last_r_if_blank = 0
               foundLetter=0
-              if l.startswith("Translate "):
-                  toAppend=l[l.index("'")+1:-1].replace("\xc3\xbc","v")
+              if l.startswith(B("Translate ")):
+                  toAppend=l[l.index(B("'"))+1:-1].replace(LB("\xc3\xbc"),B("v"))
                   if not (toAppend in en_words and r and toAppend==r[-1]):
                     # TODO what about partial English words? e.g. try "kao3 testing" - translate 'testing' results in a translate of 'test' also (which assumes it's already in en mode), resulting in a spurious word "test" added to the text box; not sure how to pick this up without parsing the original text and comparing with the Replace rules that occurred
                     r.append(toAppend)
                     delete_last_r_if_blank = 1
                   else: en_words[toAppend]=1
               else: # not Translate
-                  if lang=="zh" and l.startswith("Found: ") and ((l[7]==l[9]=="'" and "a"<=l[8]<="z") or (l[8]==" " and "a"<=l[7]<="z")): # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
-                      if l[8]==' ': letter=l[7]
-                      else: letter=l[8]
-                      if forPartials: r.append("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1".split()[ord(letter)-ord('a')])
+                  if lang=="zh" and l.startswith(B("Found: ")) and ((l[7:8]==l[9:10]==B("'") and B("a")<=l[8:9]<=B("z")) or (l[8:9]==B(" ") and B("a")<=l[7:8]<=B("z"))): # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
+                      if l[8:9]==B(' '): letter=l[7:8]
+                      else: letter=l[8:9]
+                      if forPartials: r.append(B("a1 bo1 ci1 de1 e1 fou1 ge1 he1 yi1 ji1 ke1 le1 me1 ne1 wo1 po1 qi1 ri4 si1 te4 yu1 wei4 wu1 xi1 ye1 zi1").split()[ord(letter)-ord('a')])
                       else: # a letter in something we're transliterating for a pinyin-driven unit-selection synth
                           r.append(letter)
                           en_words[r[-1]]=1
                       foundLetter = 1
-                  elif not lang=="zh" and l.startswith("Found: ") and (ord(l[7])>127 or (l[7]=="'" and ord(l[8])>127)): # (espeak 1.40 puts in l[7], 1.44 surrounds in quotes)
-                      if not "[" in l: appendNext=1 # probably a spurious newline in the Found quote (espeak 1.48.03)
-                      else: r.append(l[l.index("[")+1:l.index("]")])
-              lastWasBlank=(l.startswith("Replace") or not l or foundLetter) # (take 'Replace' lines as blank, so 'Translate' doesn't add a second comma.  ditto letters thing.)
-          while r and r[-1] and r[-1][-1]==',': r[-1]=r[-1][:-1] # strip any trailing commas
-          if lang=="zh": retList[index]=fix_pinyin(" ".join(r),en_words)
-          else: retList[index]=" ".join(r)
+                  elif not lang=="zh" and l.startswith(B("Found: ")) and (ord(l[7:8])>127 or (l[7:8]==B("'") and ord(l[8:9])>127)): # (espeak 1.40 puts in l[7], 1.44 surrounds in quotes)
+                      if not B("[") in l: appendNext=1 # probably a spurious newline in the Found quote (espeak 1.48.03)
+                      else: r.append(l[l.index(B("["))+1:l.index(B("]"))])
+              lastWasBlank=(l.startswith(B("Replace")) or not l or foundLetter) # (take 'Replace' lines as blank, so 'Translate' doesn't add a second comma.  ditto letters thing.)
+          while r and r[-1] and r[-1][-1:]==B(','): r[-1]=r[-1][:-1] # strip any trailing commas
+          if lang=="zh": retList[index]=fix_pinyin(B(" ").join(r),en_words)
+          else: retList[index]=B(" ").join(r)
       return retList
-    def escape_jyutping(self,text): return re.sub(r"([abcdefghjklmnopstuwz][a-z]*[1-7])",r"[[\1]]",text) # TODO what if user already escaped it?
+    def escape_jyutping(self,text): return re.sub(B(r"([abcdefghjklmnopstuwz][a-z]*[1-7])"),B(r"[[\1]]"),B(text)) # TODO what if user already escaped it?
     def play(self,lang,text):
+        lang = S(lang)
         self.check_dicts(lang,text)
         if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_jyutping(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode("utf-8"))
         elif lang=="zh": text=fix_commas(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode('utf-8'))
@@ -710,8 +718,8 @@ class ESpeakSynth(Synth):
             return ret
         elif unix or winsound or mingw32 or cygwin:
             # Windows command line is not always 100% UTF-8 safe, so we'd better use a pipe.  Unix command line OK but some espeak versions have a length limit.  (No pipes on riscos.)
-            p=os.popen(self.program+cond(text.find("</")>=0," -m","")+' -v%s -a%d %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,espeak_pipe_through),"wb")
-            p.write(text.replace(". ",".\n")+"\n") ; return p.close() # (see comment below re adding newlines)
+            p=os.popen(self.program+cond(B(text).find(B("</"))>=0," -m","")+' -v%s -a%d %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,espeak_pipe_through),"w")
+            writeB(p,B(text).replace(B(". "),B(".\n"))+B("\n")) ; return p.close() # (see comment below re adding newlines)
         else: return system(self.program+cond(text.find("</")>=0," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
     def makefile(self,lang,text,is_winCEhint=0):
         self.check_dicts(lang,text)
@@ -724,7 +732,7 @@ class ESpeakSynth(Synth):
             return fname
         fname = os.tempnam()+dotwav
         oldcwd=os.getcwd()
-        sysCommand = cond(winCEsound,"",self.program)+cond(text.find("</")>=0," -m","")+' -v%s -w %s%s' % (espeak_language_aliases.get(lang,lang),cond(unix,"/dev/stdout|cat>",""),changeToDirOf(fname,1))
+        sysCommand = cond(winCEsound,"",self.program)+cond(B(text).find(B("</"))>=0," -m","")+' -v%s -w %s%s' % (espeak_language_aliases.get(lang,lang),cond(unix,"/dev/stdout|cat>",""),changeToDirOf(fname,1))
         # (Unix use stdout and cat because some espeak versions truncate the output file mid-discourse)
         # (eSpeak wavs are 22.05k 16-bit mono; not much point down-sampling to 16k to save 30% storage at expense of CPU)
         if winsound or mingw32: os.popen(sysCommand,"w").write(text+"\n") # must pipe the text in
@@ -738,9 +746,9 @@ class ESpeakSynth(Synth):
         else:
             # we can make it asynchronously (still need to pipe)
             # (add end-of-sentence newlines due to short line buffer in some versions of espeak)
-            sysCommand='echo '+shell_escape(text.replace(". ",".\n"))+'|'+sysCommand
+            sysCommand=B('echo ')+shell_escape(B(text).replace(B(". "),B(".\n")))+B('|')+B(sysCommand)
             if not self.theProcess: self.theProcess = os.popen("/bin/bash","w")
-            self.theProcess.write('cd "'+os.getcwd()+'"\n'+sysCommand+"\n")
+            writeB(self.theProcess,B('cd "'+os.getcwd()+'"\n')+sysCommand+B("\n"))
             self.theProcess.flush()
         os.chdir(oldcwd)
         return fname
@@ -751,12 +759,12 @@ class ESpeakSynth(Synth):
 def fix_commas(text):
   # some versions of espeak won't honour ordinary commas in among Chinese text if the ordinary commas don't have spaces after
   # also put 2 spaces after full stop, and make sure capitalised
-  i=0
+  i=0 ; text=B(text)
   while i<len(text)-1:
-    if text[i] in '.,?;!':
-      tRest = text[i+1:].strip(wsp)
-      if tRest and (ord(tRest[0])>=128 or 'a'<=tRest[0].lower()<='z'):
-        text=text[:i+1]+cond(text[i] in ".?!","  "+tRest[0].upper()," "+tRest[0])+tRest[1:]
+    if text[i:i+1] in B('.,?;!'):
+      tRest = text[i+1:].strip(bwsp)
+      if tRest and (ord(tRest[:1])>=128 or B('a')<=tRest[:1].lower()<=B('z')):
+        text=text[:i+1]+cond(text[i:i+1] in B(".?!"),B("  ")+tRest[:1].upper(),B(" ")+tRest[:1])+tRest[1:]
     i+=1
   return text
 
@@ -765,33 +773,33 @@ def fix_pinyin(pinyin,en_words):
   if en_words:
     ret=[]
     def stripPunc(w):
-      i=0 ; j=len(w) ; w=w.lower()
-      while i<len(w) and not 'a'<=w[i]<='z': i+=1
-      while j>1 and not ('a'<=w[j-1]<='z' or '1'<w[j-1]<='5'): j-=1
+      w=B(w) ; i=0 ; j=len(w) ; w=w.lower()
+      while i<len(w) and not B('a')<=w[i:i+1]<=B('z'): i+=1
+      while j>1 and not (B('a')<=w[j-1:j]<=B('z') or B('1')<w[j-1:j]<=B('5')): j-=1
       return w[i:j]
     for w in pinyin.split():
       if stripPunc(w) in en_words: ret.append(w)
       else: ret.append(fix_pinyin(w,[]))
-    return ' '.join(ret)
+    return B(' ').join(ret)
   i=0
-  pinyin=pinyin_uColon_to_V(pinyin)+"@@@" # (includes .lower; @@@ for termination)
+  pinyin=pinyin_uColon_to_V(pinyin)+B("@@@") # (includes .lower; @@@ for termination)
   while i<len(pinyin):
-    if pinyin[i] in "12345":
+    if pinyin[i:i+1] in B("12345"):
       moveBy=0
-      if pinyin[i+1] in "iuv": moveBy=1 # these are never initial letters
-      elif pinyin[i+1]=="o" and not pinyin[i+2] in "u12345": moveBy=1 # "o" and "ou" are valid syllables, but a number before "o" is likely to be premature especially if the "o" is not itself followed by a number (or "u")
-      elif pinyin[i+1:i+3]=="ng" and not pinyin[i+3] in "aeiouv": moveBy=2 # before an -ng, but NOT before a -n g-(vowel)
-      elif pinyin[i+1] in "nr" and not pinyin[i+2] in "aeiouv" and not (pinyin[i+1]=="r" and i and not pinyin[i-1]=="e") and not pinyin[i+1:i+3]=="r5": moveBy=1 # before -n or -r (as final not as initial) (but NB -r is only on -er, otherwise it's an r5.  and if it already says r5, leave it.)
-      if moveBy: pinyin=pinyin[:i]+pinyin[i+1:i+moveBy+1]+pinyin[i]+pinyin[i+moveBy+1:]
+      if pinyin[i+1:i+2] in B("iuv"): moveBy=1 # these are never initial letters
+      elif pinyin[i+1:i+2]==B("o") and not pinyin[i+2:i+3] in B("u12345"): moveBy=1 # "o" and "ou" are valid syllables, but a number before "o" is likely to be premature especially if the "o" is not itself followed by a number (or "u")
+      elif pinyin[i+1:i+3]==B("ng") and not pinyin[i+3:i+4] in B("aeiouv"): moveBy=2 # before an -ng, but NOT before a -n g-(vowel)
+      elif pinyin[i+1:i+2] in B("nr") and not pinyin[i+2:i+3] in B("aeiouv") and not (pinyin[i+1:i+2]==B("r") and i and not pinyin[i-1:i]==B("e")) and not pinyin[i+1:i+3]==B("r5"): moveBy=1 # before -n or -r (as final not as initial) (but NB -r is only on -er, otherwise it's an r5.  and if it already says r5, leave it.)
+      if moveBy: pinyin=pinyin[:i]+pinyin[i+1:i+moveBy+1]+pinyin[i:i+1]+pinyin[i+moveBy+1:]
     i+=1
   i=0
   while i<len(pinyin): # check for missing 5's
-    if (pinyin[i] in "aeiouvr" and pinyin[i+1] not in "aeiouv12345") or (ord('a')<=ord(pinyin[i])<=ord('z') and not (ord("a")<=ord(pinyin[i+1])<=ord("z") or pinyin[i+1] in "12345")): # ("alnum and next is not alnum" is not strictly necessary, but we do need to add 5's after en-like words due to 'fix_pinyin(t)==t' being used as a do-we-need-proper-translit. condition in SimpleZhTransliterator, otherwise get problems with things like "c diao4" going to eSpeak when it could go to partials-with-letter-substitutions)
-      if pinyin[i+1:i+3]=="ng" and not pinyin[i+3] in "aeiouv":
-        if pinyin[i+3] not in "12345": pinyin=pinyin[:i+3]+"5"+pinyin[i+3:]
-      elif (pinyin[i+1]=="n" or pinyin[i:i+2]=="er") and not pinyin[i+2] in "aeiouv" and not pinyin[i]=="r":
-        if pinyin[i+2] not in "12345": pinyin=pinyin[:i+2]+"5"+pinyin[i+2:]
-      else: pinyin=pinyin[:i+1]+"5"+pinyin[i+1:]
+    if (pinyin[i:i+1] in B("aeiouvr") and pinyin[i+1:i+2] not in B("aeiouv12345")) or (ord('a')<=ord(pinyin[i:i+1])<=ord('z') and not (ord("a")<=ord(pinyin[i+1:i+2])<=ord("z") or pinyin[i+1:i+2] in B("12345"))): # ("alnum and next is not alnum" is not strictly necessary, but we do need to add 5's after en-like words due to 'fix_pinyin(t)==t' being used as a do-we-need-proper-translit. condition in SimpleZhTransliterator, otherwise get problems with things like "c diao4" going to eSpeak when it could go to partials-with-letter-substitutions)
+      if pinyin[i+1:i+3]==B("ng") and not pinyin[i+3:i+4] in B("aeiouv"):
+        if pinyin[i+3:i+4] not in B("12345"): pinyin=pinyin[:i+3]+B("5")+pinyin[i+3:]
+      elif (pinyin[i+1:i+2]==B("n") or pinyin[i:i+2]==B("er")) and not pinyin[i+2:i+3] in B("aeiouv") and not pinyin[i:i+1]==B("r"):
+        if pinyin[i+2:i+3] not in B("12345"): pinyin=pinyin[:i+2]+B("5")+pinyin[i+2:]
+      else: pinyin=pinyin[:i+1]+B("5")+pinyin[i+1:]
     i+=1
   return pinyin[:-3] # remove the @@'s
 
@@ -987,6 +995,7 @@ def setSoundCollector(sc):
     global soundCollector, viable_synths, getsynth_cache
     soundCollector,viable_synths,getsynth_cache = sc,[],{}
 def get_synth_if_possible(language,warn=1,to_transliterate=False):
+    language = S(language)
     if language in getsynth_cache and not to_transliterate: return getsynth_cache[language] # most common case (vocab.txt parse)
     if language==None:
         if not None in getsynth_cache: getsynth_cache[None]=Partials_Synth()
@@ -1031,28 +1040,28 @@ def pinyin_uColon_to_V(pinyin):
     pinyin = pinyin.lower()
 
     pristineU = unichr(0xfc).encode('utf-8')
-    pinyin = pinyin.replace("j"+pristineU,"ju").replace("q"+pristineU,"qu").replace("x"+pristineU,"xu").replace(pristineU,"v").replace(unichr(0xea).encode('utf-8'),"e") # for pristine's pinyin
+    pinyin = B(pinyin).replace(B("j")+pristineU,B("ju")).replace(B("q")+pristineU,B("qu")).replace(B("x")+pristineU,B("xu")).replace(pristineU,B("v")).replace(unichr(0xea).encode('utf-8'),B("e")) # for pristine's pinyin
     
-    return pinyin.replace("u:","v").replace("leu","lv").replace("neu","nv")
+    return pinyin.replace(B("u:"),B("v")).replace(B("leu"),B("lv")).replace(B("neu"),B("nv"))
 
 class SynthEvent(Event):
     def __init__(self,text,synthesizer,language,is_prompt=0):
         assert text,"Trying to speak zero-length text"
-        self.text = text ; self.synthesizer = synthesizer
+        self.text = B(text) ; self.synthesizer = synthesizer
         self.modifiedText = self.text
         if language=="en":
-            self.modifiedText = self.modifiedText.replace("\xE2\x80\xA7","").replace("\xE2\x80\xB2","") # remove syllable boundaries and primes (usually just confuse speech synths)
-            if not self.text[-1] in ";.!?-" and not (';' in self.text and ';' in self.text[self.text.index(';')+1:]): self.modifiedText += ';' # prosody hack (some synths sound a bit too much like 'disjointed strict commands' without this)
+            self.modifiedText = self.modifiedText.replace(LB("\xE2\x80\xA7"),B("")).replace(LB("\xE2\x80\xB2"),B("")) # remove syllable boundaries and primes (usually just confuse speech synths)
+            if not self.text[-1:] in B(";.!?-") and not (B(';') in self.text and B(';') in self.text[self.text.index(B(';'))+1:]): self.modifiedText += B(';') # prosody hack (some synths sound a bit too much like 'disjointed strict commands' without this)
         elif language=="zh":
             # normalise pinyin
             # (note - this code is NOT used for partials synth, only for passing to espeak etc.  see elsewhere for partials synth)
             self.modifiedText = pinyin_uColon_to_V(self.modifiedText) # includes .lower()
             # and put space between every syllable of w, if it's one word only (the Lily voice seems to stand a better chance of getting it right that way, and occasionally other voices do too, e.g. "chang2yuan3" in at least some versions of eSpeak, not to mention Loquendo Lisheng
-            for t in ["1","2","3","4","5"]: self.modifiedText = self.modifiedText.replace(t+"-",t+" ") # for Lily, Lisheng etc.  NB replace hyphen with space not with "", otherwise can get problems with phrases like "wang4en1-fu4yi4".  DON'T do it except after tone marks, because for hanzi we might want to use hyphens for word-boundary disambiguation.
-            if (not " " in self.modifiedText) and ("1" in self.modifiedText or "2" in self.modifiedText or "3" in self.modifiedText or "4" in self.modifiedText or "5" in self.modifiedText):
+            for t in ["1","2","3","4","5"]: self.modifiedText = self.modifiedText.replace(B(t+"-"),B(t+" ")) # for Lily, Lisheng etc.  NB replace hyphen with space not with "", otherwise can get problems with phrases like "wang4en1-fu4yi4".  DON'T do it except after tone marks, because for hanzi we might want to use hyphens for word-boundary disambiguation.
+            if (not B(" ") in self.modifiedText) and (B("1") in self.modifiedText or B("2") in self.modifiedText or B("3") in self.modifiedText or B("4") in self.modifiedText or B("5") in self.modifiedText):
                 self.modifiedText=fix_pinyin(self.modifiedText,[]) # better call that before doing the following (in case any digits in the wrong place)
                 for f in py_final_letters:
-                    for t in "12345": self.modifiedText=self.modifiedText.replace(f+t,f+t+" ")
+                    for t in "12345": self.modifiedText=self.modifiedText.replace(B(f+t),B(f+t+" "))
             if synthesizer.__class__ in [GeneralSynth, GeneralFileSynth]:
                 # some e.g. eSpeak use capitals to start a new sentence, so need to undo some of the .lower() that pinyin_uColon_to_V did.
                 # (ESpeakSynth already calls fix_commas in play() and makefile() so don't need to do it here.)
@@ -1167,11 +1176,11 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
           ret=can_be_synthesized(fname)
           if ret: return fileToEvent(fname)
           else: show_warning("Can't say "+repr(fname)) # previous warnings should have said why (e.g. partials-only language)
-      for line in justSynthesize.split('#'):
-        line = line.strip(wsp) ; l = line.split(None,1)
-        if extsep in line and fileExists(line): event = fileToEvent(line,"")
-        elif extsep in line and fileExists(abspath_from_start(line)): event = fileToEvent(abspath_from_start(line),"")
-        elif line=='R':
+      for line in B(justSynthesize).split(B('#')):
+        line = line.strip(bwsp) ; l = line.split(None,1)
+        if B(extsep) in line and fileExists(line): event = fileToEvent(line,"")
+        elif B(extsep) in line and fileExists(abspath_from_start(line)): event = fileToEvent(abspath_from_start(line),"")
+        elif line==B('R'):
             repeatMode=1 ; continue
         elif len(l)==1:
             try: delayVal = float(l[0])
@@ -1192,13 +1201,13 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
             lang, text = l
             if lang=="sh:": event = ShellEvent(text)
             else:
-                fname = "!synth:"+text+"_"+lang
+                fname = B("!synth:")+B(text)+B("_")+B(lang)
                 if not can_be_synthesized(fname):
                     if lang in [firstLanguage,secondLanguage]+otherLanguages:
                         show_warning("Can't say %s in %s" % (repr(text),repr(lang)))
                         lastLanguage=lang ; continue
                     # otherwise, user might have omitted lang by mistake
-                    show_warning("Assuming %s was meant to be synthesized in language '%s'" % (cond('#' in justSynthesize or len(repr(line))<10,"that '"+repr(line)+"'","this line"),lastLanguage))
+                    show_warning("Assuming %s was meant to be synthesized in language '%s'" % (cond(B('#') in B(justSynthesize) or len(repr(line))<10,"that '"+repr(line)+"'","this line"),lastLanguage))
                     if callSanityCheck and sanityCheck(line,lastLanguage,1): return
                     event = checkCanSynth("!synth:"+line+"_"+lastLanguage)
                 else:

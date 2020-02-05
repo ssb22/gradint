@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -42,7 +42,7 @@ def anticipation(promptFile,zhFile,numTimesBefore,promptsData):
     # work out number of repetitions needed.  not sure if this should be configurable somewhere.
     first_repeat_is_unessential = 0
     if not numTimesBefore: # New word.  If there are L2 variants, introduce them all if possible.
-        numVariants = min(3,len(variantFiles.get(samplesDirectory+os.sep+zhFile,[0]))) # TODO really max to 3? or 4? or .. ?
+        numVariants = min(3,len(variantFiles.get(B(samplesDirectory)+B(os.sep)+B(zhFile),[0]))) # TODO really max to 3? or 4? or .. ?
         if numVariants>1 and lessonIsTight(): numVariants = 1 # hack
         numRepeats = numVariants + cond(numVariants>=cond(availablePrompts.user_is_advanced,2,3),0,1)
     elif numTimesBefore == 1: numRepeats = 3
@@ -53,7 +53,7 @@ def anticipation(promptFile,zhFile,numTimesBefore,promptsData):
     else: numRepeats = 1
     if numRepeats==1:
       k,f = synthcache_lookup(zhFile,justQueryCache=1)
-      if f and k[0]=="_" and not textof(zhFile) in subst_synth_counters:
+      if f and B(k[:1])==B("_") and not textof(zhFile) in subst_synth_counters:
         # Hack: an experimental cache entry but only 1 repetition - what do we do?
         c=random.choice([1,2,3])
         if c==1: pass # do nothing
@@ -111,10 +111,11 @@ def reverseAnticipation(promptFile,zhFile,promptsData):
     return CompositeEvent(theList)
 
 def languageof(file):
-    assert "_" in file, "no _ in %s" % (file,)
-    s=file[file.rindex("_")+1:]
-    if extsep in s: return s[:s.rindex(extsep)]
-    else: return s
+    file = B(file)
+    assert B("_") in file, "no _ in %s" % (repr(file),)
+    s=file[file.rindex(B("_"))+1:]
+    if B(extsep) in s: return S(s[:s.rindex(B(extsep))])
+    else: return S(s)
 
 def commentSequence():
     sequence = []
@@ -128,7 +129,7 @@ def anticipationSequence(promptFile,zhFile,start,to,promptsData,introList):
     # (try number from 'start' to 'to', EXCLUDING 'to')
     sequence = []
     # First one has initialGlue() whatever the value of 'start' is
-    if meaningTestThreshold and to==start+1 and start>meaningTestThreshold and random.choice([1,2])==1 and not type(promptFile)==type([]) and promptFile.find("_"+firstLanguage+extsep)>=0:
+    if meaningTestThreshold and to==start+1 and start>meaningTestThreshold and random.choice([1,2])==1 and not type(promptFile)==type([]) and B(promptFile).find(B("_"+firstLanguage+extsep))>=0:
         # *** not sure about that condition - should the random be more biased?
         # (the type() and following condition is a hack that ensures this is not used for poetry etc where there are composite prompts or the prompt is the previous line.  TODO would be better to keep track of which samples are poetic, because the above breaks down on the first line of a poem that has a translation into the first language because that looks like a normal prompt/response - but ok for now)
         firstItem = reverseAnticipation(promptFile,zhFile,promptsData)

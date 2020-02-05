@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -73,10 +73,10 @@ except:
 if android:
     try: android = android.Android()
     except:
-        print "\n"*50+" *** Your SL4A server has crashed ***\n  Please restart SL4A\n  (or restart your phone)\n  and try running Gradint again.\n\n\n"
+        print ("\n"*50+" *** Your SL4A server has crashed ***\n  Please restart SL4A\n  (or restart your phone)\n  and try running Gradint again.\n\n\n")
         raise SystemExit
 
-wsp = '\t\n\x0b\x0c\r ' # whitespace characters - ALWAYS use .strip(wsp) not .strip(), because someone added \xa0 (iso8859-1 no-break space) to string.whitespace on WinCE Python, and that can break processing of un-decoded UTF8 strings, e.g. a Chinese phrase ending "\xe5\x86\xa0"!  (and assign to string.whitespace does not work around this.)
+wsp = '\t\n\x0b\x0c\r ' ; bwsp=B(wsp) # whitespace characters - ALWAYS use .strip(wsp) not .strip(), because someone added \xa0 (iso8859-1 no-break space) to string.whitespace on WinCE Python, and that can break processing of un-decoded UTF8 strings, e.g. a Chinese phrase ending "\xe5\x86\xa0"!  (and assign to string.whitespace does not work around this.)
 # As .split() can't take alternative characters (and re-writing in Python is probably slow), just be careful with using it on un-decoded utf-8 stuff.  (split(None,1) is ok if 1st word won't end in an affected character)
 
 warnings_printed = [] ; app = False # False is a hack for "maybe later"
@@ -94,7 +94,7 @@ def show_info(i,always_stderr=False):
     if not riscos_sound and not always_stderr and hasattr(sys.stderr,"isatty") and not sys.stderr.isatty(): return # be quiet if o/p is being captured by cron etc (but isatty() might always return false on RISC OS
     if winCEsound and len(i)>101: i=i[:100]+"..."+i[-1] # otherwise can hang winCEsound's console
     if type(i)==type(u""): i=i.encode('utf-8')
-    try: sys.stderr.write(i)
+    try: writeB(sys.stderr,i)
     except IOError: pass
 
 # For pre-2.3 versions of Python (e.g. 2.2 on Symbian S60 and Mac OS 10.3):
@@ -108,7 +108,7 @@ except: exec("True = 1 ; False = 0")
 # Check if we're on big-endian architecture (relevant to sox etc)
 try: import struct
 except: struct=0
-if struct and struct.pack("h",1)[0]=='\x00': big_endian = 1
+if struct and B(struct.pack("h",1)[0])==B('\x00'): big_endian = 1
 else: big_endian = 0
 
 # RISC OS has a different extension separator because "." is used as a directory separator (from the original 1982 BBC Micro DFS with 1-character directories)
@@ -174,7 +174,8 @@ if use_unicode_filenames:
 
 def u8strip(d):
     global last_u8strip_found_BOM ; last_u8strip_found_BOM = 0
-    if d.startswith('\xef\xbb\xbf'):
+    d = B(d)
+    if d.startswith(LB('\xef\xbb\xbf')):
         last_u8strip_found_BOM = 1
         return d[3:] # ignore Notepad's UTF-8 BOM's
     else: return d
@@ -225,22 +226,23 @@ def exc_info(inGradint=True):
     while tbObj and hasattr(tbObj,"tb_next") and tbObj.tb_next: tbObj=tbObj.tb_next
     if tbObj and hasattr(tbObj,"tb_lineno"): w += (" at line "+str(tbObj.tb_lineno))
     if inGradint:
-        if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and not tbObj.tb_frame.f_code.co_filename.find("gradint"+extsep+"py")>=0: w += (" in "+tbObj.tb_frame.f_code.co_filename+"\n")
-        else: w += (" in "+program_name[:program_name.index("(c)")]+"\n")
+        if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and not tbObj.tb_frame.f_code.co_filename.find("gradint"+extsep+"py")>=0: w += (" in "+tbObj.tb_frame.f_code.co_filename)
+        else: w += (" in "+program_name[:program_name.index("(c)")])
+        w += " on Python "+sys.version.split()[0]+"\n"
     del tbObj
     return w
 
 def read(fname): return open(fname,"rb").read()
 def write(fname,data): open(fname,"wb").write(data)
 def readSettings(f):
-   try: fdat = u8strip(read(f)).replace("\r","\n")
+   try: fdat = u8strip(read(f)).replace(B("\r"),B("\n"))
    except: return show_warning("Warning: Could not load "+f)
    try: fdat = unicode(fdat,"utf-8")
    except: return show_warning("Problem decoding utf-8 in "+f)
-   try: exec(fdat) in globals()
+   try: exec(fdat,globals())
    except: show_warning("Error in "+f+" ("+exc_info(False)+")")
 synth_priorities = "eSpeak MacOS SAPI Ekho" # old advanced.txt had this instead of prefer_espeak; we can still support it
-dir1 = list2set(dir()+["dir1","f","last_u8strip_found_BOM"])
+dir1 = list2set(dir()+["dir1","f","last_u8strip_found_BOM","__warningregistry__"])
 for f in configFiles: readSettings(f)
 for d in dir():
   if not d in dir1 and eval(d) and not type(eval(d))==type(lambda *args:0): # (ignore unrecognised options that evaluate false - these might be an OLD unused option with a newer gradint rather than vice versa; also ignore functions as these could be used in command-line parameters)
@@ -273,7 +275,8 @@ if paranoid_file_management:
   def tryIO(func):
     for tries in range(10)+["last"]:
         try: return func()
-        except IOError,err:
+        except IOError:
+            err = sys.exc_info()[1]
             if tries=="last" or not err.errno in [5,13,None]: raise
             time.sleep(0.5)
   def read(file): return tryIO(lambda x=file:_old_open(x,"rb").read())
@@ -290,7 +293,8 @@ if paranoid_file_management:
   def open(file,mode="r",forAppend=0):
     if "a" in mode:
         try: dat = open(file,"rb").read()
-        except IOError,err:
+        except IOError:
+            err = sys.exc_info()[1]
             if err.errno==2: dat = "" # no such file or directory
             else: raise
         if len(dat) < filelen(file): raise IOError("short read")
@@ -493,7 +497,9 @@ elif macsound:
        os.system('open ../Gradint.app')
        sys.exit(0)
     elif fileExists_stat("../Gradint 2.app/deleteme"):
-       import thread ; thread.start_new_thread(lambda *x:(time.sleep(2),os.system('rm -rf "../Gradint 2.app"')),())
+       try: import thread
+       except ImportError: import _thread as thread
+       thread.start_new_thread(lambda *x:(time.sleep(2),os.system('rm -rf "../Gradint 2.app"')),())
 
 def got_program(prog):
     if winsound:
@@ -579,8 +585,8 @@ try:
   import locale
   locale.setlocale(locale.LC_ALL, 'C')
 except: pass
-if not '\xc4'.lower()=='\xc4': # buggy setlocale (e.g. S60) can create portability issues with progress files
-  lTrans="".join([chr(c) for c in range(ord('A'))]+[chr(c) for c in range(ord('a'),ord('z')+1)]+[chr(c) for c in range(ord('Z')+1,256)])
+if not LB('\xc4').lower()==LB('\xc4'): # buggy setlocale (e.g. S60) can create portability issues with progress files
+  lTrans=B("").join([chr(c) for c in range(ord('A'))]+[chr(c) for c in range(ord('a'),ord('z')+1)]+[chr(c) for c in range(ord('Z')+1,256)])
   def lower(s): return s.translate(lTrans) # (may crash if Unicode)
 else:
   def lower(s): return s.lower()

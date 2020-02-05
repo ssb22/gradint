@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+.
+# gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -8,6 +8,8 @@
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
+#!/usr/bin/env python
+#  (works on either Python 2 or Python 3)
 
 # program to "thin down" the gradint .py for low memory environments
 # by taking out some of the code that's unused on that platform
@@ -119,7 +121,7 @@ desktop_only = [ # Don't want these on either WinCE or S60:
 'if hasattr(app,"isBigPrint") and winsound:',
 "if unix:","elif unix:",
 "def disable_lid(restore):",
-'elif unix and useTK and isDirectory("/dev/snd") and got_program("arecord"):',
+'if unix and isDirectory("/dev/snd") and got_program("arecord"):',
 "if unix and (';' in cmd or '<' in cmd):",
 'elif wavPlayer=="sox":',
 'elif wavPlayer=="aplay" and ((not fileType=="mp3") or madplay_path or gotSox):',
@@ -233,10 +235,10 @@ else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = lastIndentLevel = indentLevel = -1
 lCount = -1 ; inTripleQuotes=0 ; orig = []
-for l in sys.stdin.xreadlines():
+for l in sys.stdin:
   orig.append(l)
   lCount += 1
-  if lCount==2: print "\n# NOTE: this version has been automatically TRIMMED for "+version+" (some non-"+version+" code taken out)\n"
+  if lCount==2: print ("\n# NOTE: this version has been automatically TRIMMED for "+version+" (some non-"+version+" code taken out)\n")
   l=l.rstrip()
   assert not "\t" in l, "can't cope with tabs"
   lastIndentLevel,indentLevel = indentLevel,-1
@@ -255,12 +257,12 @@ for l in sys.stdin.xreadlines():
     if code.startswith("elif "): pass # can always remove those lines completely, even if will be followed by an 'else' (and will never be the only thing in its block)
     else:
       if code.startswith("if "): code="if 0:"
-      print " "*indentLevel+code+" pass # trimmed"
+      print (" "*indentLevel+code+" pass # trimmed")
     revertToIndent = indentLevel
   elif not code:
-    if "#    " in l or lCount < 2: print l # keep start and GPL comments
-  elif ('"' in code and '"' in l[len(code):]) or ("'" in code and "'" in l[len(code):]): print l # perhaps # was in a string, keep it
-  else: print code0
+    if "#    " in l or lCount < 2: print (l) # keep start and GPL comments
+  elif ('"' in code and '"' in l[len(code):]) or ("'" in code and "'" in l[len(code):]): print (l) # perhaps # was in a string, keep it
+  else: print (code0)
 orig = "".join(orig)
 for o in to_omit:
   if not o in orig: sys.stderr.write("Warning: line not matched: "+o)

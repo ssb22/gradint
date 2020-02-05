@@ -1,7 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+#   (Python 2 or Python 3, but more fully tested on 2)
 
-program_name = "gradint v0.999 (c) 2002-2019 Silas S. Brown. GPL v3+."
+program_name = "gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+."
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -21,8 +22,40 @@ appTitle = "Language lesson"
 
 import sys,os
 
-if not sys.version_info[0]==2: # oh panic, someone's probably trying to run us on Py3k
-    sys.stderr.write("Sorry, Gradint cannot run on Python "+repr(sys.version_info[0])+"\nPlease install a 2.x version of Python (must be 2.2+).\n")
-    sys.exit(1)
+if sys.version_info[0]>2:
+    _map,_filter = map,filter
+    def map(*args): return list(_map(*args))
+    def filter(*args): return list(_filter(*args))
+    from functools import cmp_to_key
+    def sort(l,c): l.sort(key=cmp_to_key(c))
+    raw_input,unichr,xrange = input,chr,range
+    def chr(x): return unichr(x).encode('latin1')
+    from subprocess import getoutput
+    def readB(f,m=None): return f.buffer.read(m)
+    popenRB,popenWB = "r","w"
+    def writeB(f,b): f.buffer.write(b)
+    def unicode(b,enc): return b.decode(enc)
+else:
+    def sort(l,c): l.sort(c)
+    def readB(f,m=None): return f.read(m)
+    popenRB,popenWB = "rb","wb"
+    def writeB(f,b): f.write(b)
+    bytes = str
+    try: from commands import getoutput
+    except ImportError: pass
+def B(x):
+    if type(x)==bytes: return x
+    try: return x.encode('utf-8')
+    except: return x # maybe not a string
+def LB(x):
+    if type(x)==bytes: return x
+    try: return x.encode('latin1')
+    except: return x
+def S(x):
+    if type(x)==bytes and not bytes==str: return x.decode('utf-8')
+    return x
+def S2(s):
+    try: return S(s)
+    except: return s # coding errors OK in unavail, leave as byte-string
 
 # --------------------------------------------------------
