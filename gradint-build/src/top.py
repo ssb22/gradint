@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #   (Python 2 or Python 3, but more fully tested on 2)
 
-program_name = "gradint v3.0 (c) 2002-20 Silas S. Brown. GPL v3+."
+program_name = "gradint v3.01 (c) 2002-20 Silas S. Brown. GPL v3+."
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -35,9 +35,11 @@ if sys.version_info[0]>2:
     popenRB,popenWB = "r","w"
     def writeB(f,b): f.buffer.write(b)
     def unicode(b,enc): return b.decode(enc)
-else:
+else: # Python 2
     def sort(l,c): l.sort(c)
-    def readB(f,m=None): return f.read(m)
+    def readB(f,m=None):
+        if m: return f.read(m)
+        else: return f.read() # no "None" in Python 2
     popenRB,popenWB = "rb","wb"
     def writeB(f,b): f.write(b)
     bytes = str
