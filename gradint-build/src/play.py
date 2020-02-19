@@ -111,6 +111,11 @@ if madplay_path and not mp3Player: mp3Player=madplay_path
 def intor0(v):
     try: return int(v)
     except ValueError: return 0
+def digitPrefix(v): # in case we don't have regexp library
+    l = []
+    for d in list(v):
+        if '0' <= d <= '9': l.append(d)
+    return intor0(''.join(l))
 
 sox_effect=""
 sox_8bit, sox_16bit, sox_ignoreLen, sox_signed = "-b", "-w", "", "-s"
@@ -532,7 +537,7 @@ def lame_endian_parameters():
   lameVer = os.popen("lame --version").read()
   if lameVer.find("version ")>=0:
     lameVer = lameVer[lameVer.index("version "):].split()[1]
-    if lameVer and '.' in lameVer and (lameVer[0]>'3' or intor0(lameVer[2:4])>97):
+    if lameVer and '.' in lameVer and (intor0(lameVer[:lameVer.index('.')])>3 or digitPrefix(lameVer[lameVer.index('.')+1:])>97):
       # Got 3.98+ - explicitly tell it the endianness (but check for alpha releases first - some of them don't deal with either this or the 3.97 behaviour very well)
       if lameVer.find("alpha")>=0 and lameVer[0]=="3" and intor0(lameVer[2:4])==98: show_warning("Warning: You have a 3.98 alpha release of LAME.\nIf the MP3 file is white noise, try a different LAME version.")
       return " --little-endian"
