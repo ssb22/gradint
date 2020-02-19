@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.01 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.02 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -131,11 +131,10 @@ if unix:
     else: sox_ignoreLen = "|sox --ignore-length -t wav - -t wav - 2>/dev/null"
     if soxMaj==14 and sf2[13]<'4': sox_8bit, sox_16bit = "-1", "-2" # see comment above
     else: sox_8bit, sox_16bit, sox_signed = "-b 8", "-b 16", "-e signed-integer" # TODO: check if 14.3 accepts these also (at least 14.4 complains -2 etc is deprecated)
-   if sf2.find("wav")>=0: return 1
-   else: return 0
-  gotSox = sox_check()
+   return sf2.find("wav")>=0, sf2.find("mp3")>=0
+  gotSox,soxMp3 = sox_check()
   if macsound:
-      if not gotSox and not os.system("mv sox-14.4.2 sox && rm sox.README"): gotSox = sox_check() # see if that one works instead (NB must use os.system here: our system() has not yet been defined)
+      if not gotSox and not os.system("mv sox-14.4.2 sox && rm sox.README"): gotSox,soxMp3 = sox_check() # see if that one works instead (NB must use os.system here: our system() has not yet been defined)
   if not gotSox and got_program("sox"):
       if macsound: xtra=". (If you're on 10.8 Mountain Lion, try downloading a more recent sox binary from sox.sourceforge.net and putting it inside Gradint.app, but that will break compatibility with older PowerPC Macs.)" # TODO: ship TWO binaries? but we don't want the default gradint to get too big. See sox.README for more notes.
       elif cygwin: xtra=""
@@ -328,7 +327,7 @@ class SampleEvent(Event):
             if wavPlayer.find("start")>=0: time.sleep(max(0,self.length-(time.time()-t))) # better do this - don't want events overtaking each other if there are delays.  exactLen not always enough.  (but do subtract the time already taken, in case command extensions have been disabled and "start" is synchronous.)
             os.chdir(oldDir)
         elif fileType=="mp3" and mp3Player and not sox_effect and not (wavPlayer=="aplay" and mp3Player==madplay_path): return system(mp3Player+' "'+self.file+'"')
-        elif wavPlayer=="sox":
+        elif wavPlayer=="sox" and (soxMp3 or not fileType=="mp3"):
             # To make it more difficult:
             # sox v12.x (c. 2001) - bug when filenames contain 2 spaces together, and needs input from re-direction in this case
             # sox 14.0 on Cygwin - bug when input is from redirection, unless using cat | ..
@@ -647,6 +646,7 @@ def warn_sox_decode():
         if r: show_warning('; '.join(r))
         warned_about_sox_decode = 1
 def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes it's always small enough to read the whole thing into RAM (should be true if it's 1 word though, and decode_mp3 isn't usually used unless we're making a lesson file rather than running something in justSynthesize)
+    file = S(file)
     if riscos_sound:
         warn_sox_decode()
         os.system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
@@ -670,11 +670,11 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
         else: dat = open(tfil).read()
         os.unlink(tfil) ; return dat
     elif unix:
-        if gotSox:
+        if soxMp3:
             warn_sox_decode()
             return readB(os.popen("cat \""+file+"\" | sox -t mp3 - -t wav"+cond(compress_SH," "+sox_8bit,"")+" - ",popenRB))
         else:
-            show_warning("Don't know how to decode "+file+" on this system")
+            show_warning("Don't know how to decode "+file+" on this system.  Try installing madplay or mpg123.")
             return ""
     else: raise Exception("decode_mp3 called on a setup that's not Unix and doesn't have MADplay.  Need to implement non-cat sox redirect.")
 

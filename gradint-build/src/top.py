@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #   (Python 2 or Python 3, but more fully tested on 2)
 
-program_name = "gradint v3.01 (c) 2002-20 Silas S. Brown. GPL v3+."
+program_name = "gradint v3.02 (c) 2002-20 Silas S. Brown. GPL v3+."
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -31,20 +31,21 @@ if sys.version_info[0]>2:
     raw_input,unichr,xrange = input,chr,range
     def chr(x): return unichr(x).encode('latin1')
     from subprocess import getoutput
-    def readB(f,m=None): return f.buffer.read(m)
     popenRB,popenWB = "r","w"
-    def writeB(f,b): f.buffer.write(b)
     def unicode(b,enc): return b.decode(enc)
 else: # Python 2
     def sort(l,c): l.sort(c)
-    def readB(f,m=None):
-        if m: return f.read(m)
-        else: return f.read() # no "None" in Python 2
     popenRB,popenWB = "rb","wb"
-    def writeB(f,b): f.write(b)
     bytes = str
     try: from commands import getoutput
     except ImportError: pass
+def readB(f,m=None):
+    if hasattr(f,"buffer"): f=f.buffer # Python 3 non-"b" file
+    if m: return f.read(m)
+    else: return f.read() # no "None" in Python 2
+def writeB(f,b):
+    if hasattr(f,"buffer"): f=f.buffer # Python 3 non-"b" file
+    f.write(b)
 def B(x):
     if type(x)==bytes: return x
     try: return x.encode('utf-8')
