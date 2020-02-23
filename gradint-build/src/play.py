@@ -115,6 +115,7 @@ def digitPrefix(v): # in case we don't have regexp library
     l = []
     for d in list(v):
         if '0' <= d <= '9': l.append(d)
+        else: break
     return intor0(''.join(l))
 
 sox_effect=""
