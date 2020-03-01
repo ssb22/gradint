@@ -223,11 +223,11 @@ gradint.zip: $(Riscos_Files) riscos.zip
 publish0: $(All_Versions) gradint.py
 	scp -C gradint.py srcf:gradint/
 	scp -C server/gradint.cgi srcf:public_html/
-	mv $(All_Versions) ~/public_html/gradint/
-	cp vocab.txt advanced.txt ~/public_html/gradint/
-	cp samples/README.txt ~/public_html/gradint/samples-readme.txt
-	cp samples/prompts/README.txt ~/public_html/gradint/prompts-readme.txt
-	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/public_html/gradint/latest-version.txt
+	mv $(All_Versions) ~/homepage/public/gradint/
+	cp vocab.txt advanced.txt ~/homepage/public/gradint/
+	cp samples/README.txt ~/homepage/public/gradint/samples-readme.txt
+	cp samples/prompts/README.txt ~/homepage/public/gradint/prompts-readme.txt
+	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/homepage/public/gradint/latest-version.txt
 	make clean
 	~/homepage/update
 	ssh st0rage "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c 'sleep 60;. build-sync.sh'"
