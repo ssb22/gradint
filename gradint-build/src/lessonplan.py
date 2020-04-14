@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.02 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -219,6 +219,12 @@ class ProgressDatabase(object):
         for p in poems:
             for l in p: self.do_as_poem[self.responseIndex[l]] = p
         self.addToLesson(reallyKnownThreshold,-1,1,1,-1)
+        if not self.l.events:
+            # desperado if someone really wants extra revision of few words
+            global randomDropLevel, randomDropLevel2
+            rdl,rdl2,randomDropLevel,randomDropLevel2 = randomDropLevel,randomDropLevel2,0,0
+            self.addToLesson(reallyKnownThreshold,-1,1,1,-1)
+            randomDropLevel, randomDropLevel2 = rdl,rdl2
         l = self.l ; del self.l, self.responseIndex, self.do_as_poem
         if not l.events: raise Exception("Didn't manage to put anything in the lesson")
         if commentsToAdd: l.addSequence(commentSequence(),False)
