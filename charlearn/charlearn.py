@@ -1,7 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
+# (should work in either Python 2 or Python 3)
 
 # Character-learning support program
-# (C) 2006-2013 Silas S. Brown.  Version 0.1471.
+# (C) 2006-2013, 2020 Silas S. Brown.  Version 0.3.
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -12,6 +13,11 @@
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
+
+# Where to find history:
+# on GitHub at https://github.com/ssb22/gradint
+# and on GitLab at https://gitlab.com/ssb22/gradint
+# and on BitBucket https://bitbucket.org/ssb22/gradint
 
 listenAddr='127.0.0.1'
 firstPortNo=9876
@@ -26,13 +32,17 @@ if sys.argv[-1].startswith("--"): gradint = None # (don't need to speak if we're
 elif os.path.isfile("gradint.py"): import gradint
 else: gradint = None # won't speak characters
 
-import commands,random,cPickle,BaseHTTPServer,os,thread,string,time,socket
+import random,os,time,socket
+try: from subprocess import getoutput
+except: from commands import getoutput
+try: from cPickle import Pickler,Unpickler
+except: from pickle import Pickler,Unpickler
+try: from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+except: from http.server import BaseHTTPRequestHandler, HTTPServer
+try: import thread
+except: import _thread as thread
 
-if not sys.version_info[0]==2:
-    sys.stderr.write("Sorry, charlearn cannot run on Python "+repr(sys.version_info[0])+"\nNeeds Python 2.x\n")
-    sys.exit(1)
-
-def byPriority(a,b): return a.priority-b.priority
+def byPriority(a): return a.priority
 
 priorityIfGotWrong = -10
 priorityOfOtherCharWrong = -4
@@ -61,7 +71,7 @@ class SingleChar:
   def formatPinyin(self): return self.pinyin.replace("\n","<BR>") # (could make it into actual tone marks also)
   def htmlString(self,parent,step=1,left=0):
     self.supposedToKnow = 1
-    r='<html><head><title>hanzi</title><meta http-equiv="Content-Type" content="text/html; charset=%s"></head><body><h1>%s</h1>' % (parent.charset,self.hanzi)
+    r=u'<html><head><title>hanzi</title><meta http-equiv="Content-Type" content="text/html; charset=%s"></head><body><h1>%s</h1>' % (parent.charset,self.hanzi)
     if step==1: r+=self.yesno('Do you know what this is? (%d remaining)' % left,2,0)
     else:
       r += self.formatPinyin() + "<HR>"
@@ -70,7 +80,7 @@ class SingleChar:
           l = []
           for c in parent.chars:
             if c.similarityGroup == self.similarityGroup and not id(c)==id(self): l.append(c)
-          l.sort(byPriority)
+          l.sort(key=byPriority)
           r+="Not to be confused with:"
           for c in l[:maxShowInGroup-1]: r+='<h1>%s</h1>%s' % (c.hanzi,c.formatPinyin())
           r += '<hr>'
@@ -78,7 +88,7 @@ class SingleChar:
           r+='<A HREF="/%s">Next character</A>' % str(random.random())
           if step==-1:
             # got it right - might as well take that link automatically
-            r=parent.processRequest("/").replace('</body></html>','')
+            r=parent.processRequest("/").decode(parent.charset).replace('</body></html>','')
         else:
           updateSessionLen()
           r+='<A HREF="/quit">Quit</A> | <A HREF="/%s">Another %d</A>' % (str(random.random()),sessionLen)
@@ -128,6 +138,12 @@ the_speaker_process = None
 def terminate_server():
   # portable signal.alarm(1)
   time.sleep(1); os.abort()
+def B(s):
+    if type(u"")==type(""): return s.encode('utf-8')
+    else: return s
+def S(s):
+    if type(u"")==type("") and not type(s)==type(""): return s.decode('utf-8')
+    else: return s
 class CharDbase:
   def __init__(self):
     self.counter = 0 ; self.nextPriority = 0
@@ -135,18 +151,18 @@ class CharDbase:
     self.chars = [] ; self.thisSession = []
     self.readTable() ; self.readKnown() ; self.readRevise()
   def debug_printKnown(self):
-    print "-*- coding: %s -*-" % (self.charset,)
+    print ("-*- coding: %s -*-" % (self.charset,))
     for c in self.chars:
-      if c.supposedToKnow: print c.priority,c.hanzi
+      if c.supposedToKnow: print ("%s %s" % (c.priority,c.hanzi))
   def readTable(self):
     addingTo = 0
     if self.chars: addingTo = 1
-    lines=open(tableFile).readlines()
-    if lines[0].startswith("charset:"):
-      self.charset = lines[0].split()[-1]
+    lines=open(tableFile,'rb').readlines()
+    if lines[0].startswith(B("charset:")):
+      self.charset = S(lines[0].split()[-1])
       lines = lines[1:]
     else: self.charset = "iso-8859-1"
-    for line in lines: self.addCharFromFreqTable(line,addingTo)
+    for line in lines: self.addCharFromFreqTable(line.decode(self.charset),addingTo)
   def readKnown(self):
     try:
       o=open(knownFile)
@@ -165,7 +181,7 @@ class CharDbase:
           c.supposedToKnow = 1
           c.priority = priorityOfGroupWrong # just to check
         return
-    print "WARNING: character '%s' in %s was not in %s - ignoring" % (repr(hanzi),knownFile,tableFile)
+    print ("WARNING: character '%s' in %s was not in %s - ignoring" % (repr(hanzi),knownFile,tableFile))
   def makeCharRevise(self,hanzi):
     if not hanzi: return # blank lines etc
     for c in self.chars:
@@ -173,9 +189,9 @@ class CharDbase:
         c.supposedToKnow = 1
         c.priority = priorityIfGotWrong
         return
-    print "WARNING: character '%s' in %s was not in %s - ignoring" % (repr(hanzi),reviseFile,tableFile)
+    print ("WARNING: character '%s' in %s was not in %s - ignoring" % (repr(hanzi),reviseFile,tableFile))
   def addCharFromFreqTable(self,line,checkAlreadyThere):
-    hanzi,pinyin = string.split(line,maxsplit=1)
+    hanzi,pinyin = line.split(None,1)
     c=SingleChar(hanzi,pinyin.replace("\\n","\n"))
     c.priority = self.nextPriority ; self.nextPriority += 1
     if checkAlreadyThere:
@@ -210,37 +226,37 @@ class CharDbase:
           if c.priority >= priorityBreakGroup: c.similarityGroup=None
           elif c.priority > priorityOfGroupWrong: c.priority = priorityOfGroupWrong
     elif path=="/status":
-      self.chars.sort(byPriority)
+      self.chars.sort(key=byPriority)
       cp=self.chars[:] ; r='<html><head><title>Current Status</title><meta http-equiv="Content-Type" content="text/html; charset=%s"></head><body><h2>Current Status</h2>(score/priority number is shown to the left of each item)<br>' % (self.charset,)
       while cp:
         if not cp[0].supposedToKnow:
           del cp[0] ; continue
         if cp[0].priority >= priorityBreakGroup: thisGrp=[0]
-        else: thisGrp=filter(lambda x:x==0 or (cp[x].similarityGroup and cp[x].similarityGroup==cp[0].similarityGroup and cp[x].priority < priorityBreakGroup),range(len(cp)))
+        else: thisGrp=list(filter(lambda x:x==0 or (cp[x].similarityGroup and cp[x].similarityGroup==cp[0].similarityGroup and cp[x].priority < priorityBreakGroup),range(len(cp))))
         if len(thisGrp)>1 and not r.endswith("<hr>"): r+="<hr>"
         if len(thisGrp)>1: r+="<em>"+str(len(thisGrp))+" similar items:</em><br>"
         for g in thisGrp: r += str(cp[g].priority)+": "+cp[g].hanzi+" "+cp[g].pinyin+"<br>"
         if len(thisGrp)>1: r+="<hr>"
         thisGrp.reverse()
         for toDel in thisGrp: del cp[toDel]
-      return r+"</body></html>"
+      return (r+"</body></html>").encode(self.charset)
     else:
-      if path=="/checkallknown": self.thisSession = filter(lambda x:x.supposedToKnow,self.chars) # TODO: Document this URL
+      if path=="/checkallknown": self.thisSession = list(filter(lambda x:x.supposedToKnow,self.chars)) # TODO: Document this URL
       char,step = self.chooseChar(),1
-    return char.htmlString(self,step,len(self.thisSession))
+    return char.htmlString(self,step,len(self.thisSession)).encode(self.charset)
   def chooseChar(self):
     if not self.thisSession:
-      self.chars.sort(byPriority)
+      self.chars.sort(key=byPriority)
       if sessionLen==initSessionLen:
         self.thisSession = self.chars[:sessionLen] # introduce in order the first time (especially if the second one is just a straight line ("yi1"), as one beginner thought the program had gone wrong when he saw this)
         self.thisSession.reverse() # because taken out by pop()
       else: self.thisSession = random.sample(self.chars[:int(sessionLen*sampleConst)],sessionLen) # TODO need a better way than that.  NB high priority should be VERY likely, but others should have a chance.  try as-is for now
     return self.thisSession.pop()
-  def save(self): cPickle.Pickler(open(dumpFile,"w"),-1).dump(self)
+  def save(self): Pickler(open(dumpFile,"wb"),-1).dump(self)
   def countKnown(self):
     charsSeen = sessnLen = charsSecure = newChars = 0
     secure=[] ; insecure=[]
-    self.chars.sort(byPriority)
+    self.chars.sort(key=byPriority)
     for c in self.chars:
       if c.supposedToKnow:
         charsSeen += 1
@@ -251,10 +267,10 @@ class CharDbase:
     return charsSeen,sessnLen,secure,insecure
 
 try:
-  dumped = open(dumpFile)
+  dumped = open(dumpFile,"rb")
 except IOError: dumped = None
 if dumped:
-  thechars = cPickle.Unpickler(dumped).load()
+  thechars = Unpickler(dumped).load()
   dumped.close()
   thechars.thisSession = []
   if os.stat(tableFile).st_mtime > os.stat(dumpFile).st_mtime: thechars.readTable()
@@ -268,7 +284,7 @@ if dumped:
 else:
   thechars=CharDbase()
 
-class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
+class RequestHandler(BaseHTTPRequestHandler):
   def do_GET(self):
     if self.path.startswith("/fav"):
       self.send_response(404) ; self.end_headers() ; return
@@ -276,9 +292,9 @@ class RequestHandler(BaseHTTPServer.BaseHTTPRequestHandler):
     self.send_header("Content-type","text/html; charset="+thechars.charset)
     self.end_headers()
     if self.path.startswith("/quit"):
-      r=thechars.processRequest("/status")
+      r=thechars.processRequest("/status").decode(thechars.charset)
       r=r[:r.index("<body>")+6]+"Server terminating."+r[r.index("<body>")+6:]
-      self.wfile.write(r)
+      self.wfile.write(r.encode(thechars.charset))
       thread.start_new_thread(terminate_server,()) # can terminate the server after this request
     else: self.wfile.write(thechars.processRequest(self.path))
     self.wfile.close() # needed or will wait for bkg speaking processes etc
@@ -286,11 +302,11 @@ def do_session():
   portNo = firstPortNo ; server = None
   while portNo < firstPortNo+100:
     try:
-      server = BaseHTTPServer.HTTPServer((listenAddr,portNo),RequestHandler)
+      server = HTTPServer((listenAddr,portNo),RequestHandler)
       break
     except socket.error: portNo += 1
   assert server, "Couldn't find a port to run the server on"
-  if ("win" not in sys.platform) and commands.getoutput("which x-www-browser 2>/dev/null"): # (try to find x-www-browser, but not on windows/cygwin/darwin)
+  if ("win" not in sys.platform) and getoutput("which x-www-browser 2>/dev/null"): # (try to find x-www-browser, but not on windows/cygwin/darwin)
     os.system("x-www-browser http://localhost:%d/%s &" % (portNo,str(random.random()))) # shouldn't need a sleep as should take a while to start anyway
   else:
     try:
@@ -298,28 +314,28 @@ def do_session():
       webbrowser.open_new("http://localhost:%d/%s" % (portNo,str(random.random())))
     except ImportError: pass # fall through to command-line message
   # Do this as well, in case that command failed:
-  print ; print ; print
-  print "Server running.  If a web browser does not appear automatically,"
-  print "please start one yourself and go to"
-  print "http://localhost:%d/%d" % (portNo,random.randint(1,99999))
-  print ; print ; print
+  print ("") ; print ("") ; print ("")
+  print ("Server running.  If a web browser does not appear automatically,")
+  print ("please start one yourself and go to")
+  print ("http://localhost:%d/%d" % (portNo,random.randint(1,99999)))
+  print ("") ; print ("") ; print ("")
   server.serve_forever()
 
 if sys.argv[-1]=='--count':
   x,y,sec,insec=thechars.countKnown()
-  print "%d (of which %d seem secure)" % (x,len(sec))
+  print ("%d (of which %d seem secure)" % (x,len(sec)))
 elif sys.argv[-1]=='--show-secure':
   x,y,sec,insec=thechars.countKnown()
-  print " ".join(sec)
+  print (" ".join(sec))
 elif sys.argv[-1]=='--show-wfx':
   # the result of this might need charset conversion
   # (and the conversion of charlearn scores to Wenlin histories is only approximate)
-  print """<?xml version='1.0'?>
+  print ("""<?xml version='1.0'?>
 <!-- Wenlin Flashcard XML file -->
-<stack owner='Anonymous' reward='points'>"""
-  thechars.chars.sort(byPriority)
+<stack owner='Anonymous' reward='points'>""")
+  thechars.chars.sort(key=byPriority)
   for c in thechars.chars:
-    print "<card type='d'><question>"+c.hanzi+"</question>"
+    print ("<card type='d'><question>"+c.hanzi+"</question>")
     trials = "" ; score = 0
     if c.supposedToKnow:
         if c.priority < 0:
@@ -332,6 +348,6 @@ elif sys.argv[-1]=='--show-wfx':
         while p < c.priority:
             trials += "y" ; score += 1
             p *= 2
-    print "<history score='%d' trials='%d' recent='%s'></history></card>" % (score,len(trials),trials)
-  print "</stack>"
+    print ("<history score='%d' trials='%d' recent='%s'></history></card>" % (score,len(trials),trials))
+  print ("</stack>")
 else: do_session()
