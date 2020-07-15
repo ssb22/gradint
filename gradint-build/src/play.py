@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -27,7 +27,7 @@ def play(event):
     timeout_time = time.time() + max(10,event.length/3) # don't loop *forever* if unable to start playing (especially if we're being used in a reminder system etc, it may be best to exit eventually)
     if lessonStartTime and not soundCollector:
         if hasattr(event,"max_lateness"): timeout_time = min(timeout_time, lessonStartTime + (copy_of_runner_events[0][2]+event.max_lateness))
-        if hasattr(event,"sequenceID") and event.sequenceID in sequenceIDs_to_cancel: timeout_time = 0
+        if hasattr(event,"sequenceID") and checkIn(event.sequenceID,sequenceIDs_to_cancel): timeout_time = 0
     play_error = "firstTime"
     while play_error and time.time()<=timeout_time: # use <= rather than < in case we have only 1sec precision
         if not play_error=="firstTime":
@@ -102,7 +102,9 @@ def maybe_unicode(label):
 
 if (winsound or mingw32) and fileExists("madplay.exe"): madplay_path = "madplay.exe"
 elif unix and hasattr(os,"popen"):
-  madplay_path = os.popen("PATH=$PATH:. which madplay 2>/dev/null").read().strip(wsp)
+  madplay_path = os.popen("PATH=$PATH:. which madplay 2>/dev/null").read()
+  try: madplay_path = wspstrip(madplay_path)
+  except: madplay_path = madplay_path.strip()
   if not fileExists(cond(cygwin,madplay_path+".exe",madplay_path)): madplay_path="" # in case of a Unix 'which' returning error on stdout
   if madplay_path and not winsound and not mingw32: madplay_path='"'+madplay_path+'"' # in case there's spaces etc in the path
 else: madplay_path = None
@@ -605,7 +607,7 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,sox_signed) # S=script P=params for 
     def addFile(self,file,length):
         fileType=soundFileType(file)
         self.seconds += length
-        if not file in self.file2command:
+        if not checkIn(file,self.file2command):
             if fileType=="mp3": fileData,fileType = decode_mp3(file),"wav" # because remote sox may not be able to do it
             elif compress_SH and unix: handle=os.popen("cat \""+file+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null",popenRB) # 8-bit if possible (but don't change sample rate, as we might not have floating point)
             else: handle = open(file,"rb")
@@ -696,7 +698,7 @@ class Mp3FileCache(object):
             except: pass # somebody may have removed it already
         except: pass
     def decode_mp3_to_tmpfile(self,file):
-        if not file in self.fileCache:
+        if not checkIn(file,self.fileCache):
             self.fileCache[file] = os.tempnam()+dotwav
             write(self.fileCache[file],decode_mp3(file))
         return self.fileCache[file]

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -59,7 +59,7 @@ def import_recordings(destDir=None):
                 if checkFirst:
                   for lang in [firstLanguage,secondLanguage]:
                    for ext in [dotwav,dotmp3]:
-                    if f[:f.rfind(extsep)]+"_"+lang+ext in curFiles: raise CannotOverwriteExisting()
+                    if checkIn(f[:f.rfind(extsep)]+"_"+lang+ext,curFiles): raise CannotOverwriteExisting()
                   continue
                 if not destDir:
                     if not getYN("Import the recordings that are in "+importDir+"?"): break
@@ -101,9 +101,9 @@ def getLsDic(directory):
     if not (directory.find(exclude_from_scan)==-1): return {}
     try: ls = os.listdir(directory)
     except: return {} # (can run without a 'samples' directory at all if just doing synth)
-    if "settings"+dottxt in ls:
+    if checkIn("settings"+dottxt,ls):
         # Sort out the o/p from import_recordings (and legacy record-with-HDogg.bat if anyone's still using that)
-        oddLanguage,evenLanguage = exec_in_a_func(u8strip(read(directory+os.sep+"settings"+dottxt).replace("\r\n","\n")).strip(wsp))
+        oddLanguage,evenLanguage = exec_in_a_func(wspstrip(u8strip(read(directory+os.sep+"settings"+dottxt).replace("\r\n","\n"))))
         if oddLanguage==evenLanguage: oddLanguage,evenLanguage="_"+oddLanguage,"-meaning_"+evenLanguage # if user sets languages the same, assume they want -meaning prompts
         else: oddLanguage,evenLanguage="_"+oddLanguage,"_"+evenLanguage
         for f in ls:
@@ -122,7 +122,7 @@ def getLsDic(directory):
         # in lsDic if it's in the list (any extension); =filename if it's an extension we know about; =None if it's a directory (in which case the key is the full filename), ottherwise =""
         if has_variants and file.find("_",file.find("_")+1)>=0: languageOverride=file[file.find("_")+1:file.find("_",file.find("_")+1)]
         else: languageOverride=None
-        if filelower.endswith(dottxt) and (file+extsep)[:file.rfind(extsep)] in lsDic: continue # don't let a .txt override a recording if both exist
+        if filelower.endswith(dottxt) and checkIn((file+extsep)[:file.rfind(extsep)],lsDic): continue # don't let a .txt override a recording if both exist
         if (filelower.endswith(dottxt) and file.find("_")>=0 and can_be_synthesized(file,directory,languageOverride)) or filelower.endswith(dotwav) or filelower.endswith(dotmp3): val = file
         else:
             val = ""
@@ -131,7 +131,7 @@ def getLsDic(directory):
                 lsDic[file]=None # a directory: store full name even if it has extsep in it.  Note however that we don't check isDirectory() if it's .wav etc as that would take too long.  (however some dirnames can contain dots)
                 # (+ NB need to store the directories specifically due to cases like course/ and course.pdf which may otherwise result in 2 traversals of "course" if we check isDirectory on 'extension is either none or unknown')
                 continue
-            elif (file+extsep)[:file.rfind(extsep)] in lsDic: continue # don't let a .txt~ or other unknown extension override a .txt
+            elif checkIn((file+extsep)[:file.rfind(extsep)],lsDic): continue # don't let a .txt~ or other unknown extension override a .txt
         lsDic[(file+extsep)[:file.rfind(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
     if has_variants:
         ls=list2set(ls) ; newVs = {}
@@ -145,7 +145,7 @@ def getLsDic(directory):
             if penult_==-1: continue
             del lsDic[k]
             newK,newV = k[:k.rfind("_")], v[:v.rfind("_")]+v[v.rfind(extsep):]
-            if not newK in lsDic: lsDic[newK] = newV
+            if not checkIn(newK,lsDic): lsDic[newK] = newV
             else: # variants of different file types? better store them all under one (fileToEvent will sort out).  (Testing if the txt can be synth'd has already been done above)
                 if v.endswith(dottxt) and not lsDic[newK].endswith(dottxt): # if any variants are .txt then we'd better ensure the key is, so transliterate etc finds it. So move the key over to the .txt one.
                     old_dirV = B(directory+os.sep+lsDic[newK])
@@ -154,18 +154,18 @@ def getLsDic(directory):
                     lsDic[newK] = newV
                     variantFiles[B(directory)+B(os.sep)+B(newV)] = d
                     lsDic[newK] = newV # just add to the previous key
-                    if old_dirV in newVs:
+                    if checkIn(old_dirV,newVs):
                         del newVs[old_dirV]
                         newVs[B(directory)+B(os.sep)+B(newV)] = 1
                 else: newV = lsDic[newK]
             dir_newV = B(directory)+B(os.sep)+B(newV)
-            if not dir_newV in variantFiles:
+            if not checkIn(dir_newV,variantFiles):
                 variantFiles[dir_newV] = []
-                if S(newV) in ls: variantFiles[dir_newV].append(newV) # the no-variants name is also a valid option
+                if checkIn(S(newV),ls): variantFiles[dir_newV].append(newV) # the no-variants name is also a valid option
             variantFiles[dir_newV].append(v)
             newVs[dir_newV]=1
         for v in list(newVs.keys()):
-            assert v in variantFiles, repr(sorted(list(variantFiles.keys())))+' '+repr(v)
+            assert checkIn(v,variantFiles), repr(sorted(list(variantFiles.keys())))+' '+repr(v)
             random.shuffle(variantFiles[v])
     return lsDic
 
@@ -174,12 +174,12 @@ def scanSamples_inner(directory,retVal,doLimit):
     secLangSuffix = "_"+secondLanguage
     lsDic = getLsDic(directory)
     intro = intro_filename+"_"+firstLanguage
-    if intro in lsDic: dirsWithIntros.append((directory[len(samplesDirectory)+len(os.sep):],lsDic[intro]))
-    if not doLimit: doLimit = limit_filename in lsDic
-    doPoetry = poetry_filename in lsDic
+    if checkIn(intro,lsDic): dirsWithIntros.append((directory[len(samplesDirectory)+len(os.sep):],lsDic[intro]))
+    if not doLimit: doLimit = checkIn(limit_filename,lsDic)
+    doPoetry = checkIn(poetry_filename,lsDic)
     if doPoetry:
         # check which language the poetry is to be in (could be L1-to-L2, L2-to-L3, L2-only, or L3-only)
-        def poetry_language():
+        def poetry_language(firstLangSuffix,secLangSuffix,lsDic):
          ret = ""
          for file,withExt in list(lsDic.items()):
           if withExt:
@@ -189,7 +189,7 @@ def scanSamples_inner(directory,retVal,doLimit):
                 for l in otherLanguages:
                     if not l in llist and file.endswith("_"+l): return "_"+l
          return ret
-        doPoetry = poetry_language()
+        doPoetry = poetry_language(firstLangSuffix,secLangSuffix,lsDic)
     prefix = directory[len(samplesDirectory)+cond(samplesDirectory,len(os.sep),0):] # the directory relative to samplesDirectory
     if prefix: prefix += os.sep
     lastFile = None # for doPoetry
@@ -209,7 +209,7 @@ def scanSamples_inner(directory,retVal,doLimit):
                 wordSuffix=None
                 for l in otherLanguages:
                     if not l in [firstLanguage,secondLanguage] and file.endswith("_"+l):
-                        if l in otherFirstLanguages: swapWithPrompt=1
+                        if checkIn(l,otherFirstLanguages): swapWithPrompt=1
                         wordSuffix="_"+l ; break
                 if not wordSuffix: continue # can't do anything with this file
             if swapWithPrompt or firstLanguage==secondLanguage: promptFile=None
@@ -232,7 +232,7 @@ def scanSamples_inner(directory,retVal,doLimit):
                 # poetry without first-language prompts
                 if lastFile:
                     promptToAdd = prefix+lastFile[-1]
-                    if promptToAdd in singleLinePoems: del singleLinePoems[promptToAdd]
+                    if checkIn(promptToAdd,singleLinePoems): del singleLinePoems[promptToAdd]
                 else:
                     promptToAdd = prefix+withExt # 1st line is its own prompt
                     singleLinePoems[promptToAdd]=1
@@ -258,14 +258,14 @@ def parseSynthVocab(fname,forGUI=0):
         # TODO can we make this any faster on WinCE with large vocab lists? (tried SOME optimising already)
         if not B("=") in l: # might be a special instruction
             if not l: continue
-            canProcess = 0 ; l2=l.strip(bwsp)
+            canProcess = 0 ; l2=bwspstrip(l)
             if not l2 or l2[0:1]==B('#'): continue
             l2=l2.lower()
             if l2.startswith(B("set language ")) or l2.startswith(B("set languages ")):
                 langs=map(S,l.split()[2:]) ; someLangsUnknown = 0
                 maxsplit = len(langs)-1
                 for l in langs:
-                    if not l in allLangs: someLangsUnknown = 1
+                    if not checkIn(l,allLangs): someLangsUnknown = 1
             elif l2.startswith(B("limit on")):
                 doLimit = 1 ; limitNo += 1
             elif l2.startswith(B("limit off")): doLimit = 0
@@ -274,33 +274,33 @@ def parseSynthVocab(fname,forGUI=0):
             elif l2.startswith(B("poetry vocab line")): doPoetry,lastPromptAndWord = 0,cond(lastPromptAndWord,lastPromptAndWord,0) # not None, in case we're at the very start of a poem (see "just processed"... at end)
             else: canProcess=1
             if not canProcess: continue
-        elif B('#') in l and l.strip(bwsp)[0:1]==B('#'): continue # guard condition "'#' in l" improves speed
+        elif B('#') in l and bwspstrip(l)[0:1]==B('#'): continue # guard condition "'#' in l" improves speed
         if forGUI: strCount=""
         else:
             strCount = "%05d!synth:" % (count,)
             count += 1
         langsAndWords = list(zip(langs,l.split(B("="),maxsplit))) # don't try strip on a map() - it's faster to do it as-needed below
         # (maxsplit means you can use '=' signs in the last language, e.g. if using SSML with eSpeak)
-        if someLangsUnknown: langsAndWords = filter(lambda x:x[0] in allLangs, langsAndWords)
+        if someLangsUnknown: langsAndWords = filter(lambda x,a=allLangs:checkIn(x[0],a), langsAndWords)
         # Work out what we'll use for the prompt.  It could be firstLanguage, or it could be one of the other languages if we see it twice (e.g. if 2nd language is listed twice then the second one will be the prompt for 2nd-language-to-2nd-language learning), or it could be the only language if we're simply listing words for cache maintenance
         if firstLanguage==secondLanguage: langsAlreadySeen = {}
         else: langsAlreadySeen = {firstLanguage:True}
-        def findPrompt():
+        def findPrompt(langsAndWords,langsAlreadySeen,doPoetry,strCount):
             i=0
             while i<len(langsAndWords):
                 lang,word = langsAndWords[i] ; i += 1
                 isReminder = cache_maintenance_mode and len(langsAndWords)==1 and not doPoetry
                 if (lang in langsAlreadySeen or isReminder) and (lang in getsynth_cache or can_be_synthesized(B("!synth:")+B(word)+B("_")+B(lang))): # (check cache because most of the time it'll be there and we don't need to go through all the text processing in can_be_synthesized)
                     if not word: continue
-                    elif word[0:1] in bwsp or word[-1:] in bwsp: word=word.strip(bwsp) # avoid call if unnecessary
+                    elif word[0:1] in bwsp or word[-1:] in bwsp: word=bwspstrip(word) # avoid call if unnecessary
                     return B(strCount)+word+B("_"+lang), cond(isReminder,0,i)
                 langsAlreadySeen[lang]=True
             return None,0
-        prompt,onePastPromptIndex = findPrompt()
+        prompt,onePastPromptIndex = findPrompt(langsAndWords,langsAlreadySeen,doPoetry,strCount)
         if not prompt and len(langsAndWords)>1: # 1st language prompt not found; try 2nd language to 3rd language etc
-            langsAlreadySeen = list2dict(otherFirstLanguages) ; prompt,onePastPromptIndex = findPrompt()
+            langsAlreadySeen = list2dict(otherFirstLanguages) ; prompt,onePastPromptIndex = findPrompt(langsAndWords,langsAlreadySeen,doPoetry,strCount)
             if not prompt:
-                langsAlreadySeen = {secondLanguage:True} ; prompt,onePastPromptIndex = findPrompt()
+                langsAlreadySeen = {secondLanguage:True} ; prompt,onePastPromptIndex = findPrompt(langsAndWords,langsAlreadySeen,doPoetry,strCount)
         prompt_L1only = prompt # before we possibly change it into a list etc.  (Actually not necessarily L1 see above, but usually is)
         if doPoetry:
             if prompt and lastPromptAndWord:
@@ -309,7 +309,7 @@ def parseSynthVocab(fname,forGUI=0):
             elif not prompt:
                 if lastPromptAndWord:
                     prompt=lastPromptAndWord[-1]
-                    if lastPromptAndWord[-1] in singleLinePoems: del singleLinePoems[lastPromptAndWord[-1]]
+                    if checkIn(lastPromptAndWord[-1],singleLinePoems): del singleLinePoems[lastPromptAndWord[-1]]
                 else:
                     prompt = 1 # file itself (see below)
         if prompt:
@@ -317,8 +317,8 @@ def parseSynthVocab(fname,forGUI=0):
             while i<len(langsAndWords):
                 lang,word = langsAndWords[i] ; i+=1
                 if i==onePastPromptIndex or (lang==firstLanguage and not firstLanguage==secondLanguage) or not word: continue # if 1st language occurs more than once (target as well as prompt) then don't get confused - this vocab file is probably being used with reverse settings
-                elif word[0:1] in bwsp or word[-1:] in bwsp: word=word.strip(bwsp) # avoid call if unnecessary
-                if lang in getsynth_cache or can_be_synthesized(B("!synth:")+word+B("_"+lang)):
+                elif word[0:1] in bwsp or word[-1:] in bwsp: word=bwspstrip(word) # avoid call if unnecessary
+                if checkIn(lang,getsynth_cache) or can_be_synthesized(B("!synth:")+word+B("_"+lang)):
                   if not (doPoetry and disablePoem):
                     f=B(strCount)+word+B("_"+lang)
                     if prompt==1 or prompt==f: # a file with itself as the prompt (either explicitly or by omitting any other prompt)
@@ -334,9 +334,9 @@ def parseSynthVocab(fname,forGUI=0):
 
 def sanitise_otherLanguages():
     for l in otherFirstLanguages:
-        if not l in otherLanguages: otherLanguages.append(l)
+        if not checkIn(l,otherLanguages): otherLanguages.append(l)
     for l in otherLanguages:
-        if not l in possible_otherLanguages: possible_otherLanguages.append(l)
+        if not checkIn(l,possible_otherLanguages): possible_otherLanguages.append(l)
 sanitise_otherLanguages()
 
 # Prompt file syntax: word_language.wav
@@ -360,7 +360,7 @@ class AvailablePrompts(object):
     def getRandomPromptList(self,promptsData,language):
         random.shuffle(self.prefixes)
         for p in self.prefixes:
-            if p.lower() in self.reservedPrefixes: continue
+            if checkIn(p.lower(),self.reservedPrefixes): continue
             try:
                 theList = self.getPromptList(p,promptsData,language)
                 return theList
@@ -375,11 +375,11 @@ class AvailablePrompts(object):
                 if p > advancedPromptThreshold2:
                     self.user_is_advanced = 1 ; break # got a reasonably advanced user
         beginnerPrompt = prefix+"_"+firstLanguage
-        if not beginnerPrompt in self.lsDic:
+        if not checkIn(beginnerPrompt,self.lsDic):
             if self.user_is_advanced and not language==secondLanguage and prefix+"_"+secondLanguage in self.lsDic: beginnerPrompt=prefix+"_"+secondLanguage # No first language prompt, but in advanced mode may be able to find a second-language prompt for a 3rd language
             else: beginnerPrompt = None
         advancedPrompt = prefix+"_"+language
-        if not advancedPrompt in self.lsDic:
+        if not checkIn(advancedPrompt,self.lsDic):
             # Must use beginnerPrompt
             if beginnerPrompt: r=[self.lsDic[beginnerPrompt]]
             else:
@@ -400,7 +400,7 @@ class AvailablePrompts(object):
         # Increment advancedPrompt, taking care not to go
         # past the threshold if it's not available yet
         adv = promptsData.get(advancedPrompt,0)
-        if advancedPrompt in self.lsDic or adv <= cond(language==secondLanguage,transitionPromptThreshold,transitionPromptThreshold2):
+        if checkIn(advancedPrompt,self.lsDic) or adv <= cond(language==secondLanguage,transitionPromptThreshold,transitionPromptThreshold2):
             adv += 1
         promptsData[advancedPrompt] = adv
         # and finally,
@@ -422,5 +422,5 @@ def introductions(zhFile,progressData):
     return map(lambda x: fileToEvent(cond(x[0],x[0]+os.sep,"")+x[1]), toIntroduce)
 
 def explanations(zhFile):
-    if zhFile in filesWithExplanations: return fileToEvent(zhFile.replace(dotmp3,dotwav).replace(dottxt,dotwav).replace(dotwav,"_explain_"+firstLanguage+filesWithExplanations[zhFile][-len(dotwav):]))
+    if checkIn(zhFile,filesWithExplanations): return fileToEvent(zhFile.replace(dotmp3,dotwav).replace(dottxt,dotwav).replace(dotwav,"_explain_"+firstLanguage+filesWithExplanations[zhFile][-len(dotwav):]))
 

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -53,7 +53,7 @@ def anticipation(promptFile,zhFile,numTimesBefore,promptsData):
     else: numRepeats = 1
     if numRepeats==1:
       k,f = synthcache_lookup(zhFile,justQueryCache=1)
-      if f and B(k[:1])==B("_") and not textof(zhFile) in subst_synth_counters:
+      if f and B(k[:1])==B("_") and not checkIn(textof(zhFile),subst_synth_counters):
         # Hack: an experimental cache entry but only 1 repetition - what do we do?
         c=random.choice([1,2,3])
         if c==1: pass # do nothing
@@ -65,7 +65,7 @@ def anticipation(promptFile,zhFile,numTimesBefore,promptsData):
     theList = []
     if instrIsPrefix: theList = instructions
     theList.append(promptEvent)
-    if promptFile==zhFile and not promptFile in singleLinePoems:
+    if promptFile==zhFile and not checkIn(promptFile,singleLinePoems):
         # A multi-line poem with no first-language prompts, so we're using each fragment as a prompt for the next, but the first fragment is its own prompt, which means that 'prompt' is ambiguous.  Say "beginning" to disambiguate it.
         theList = theList + map(lambda x:fileToEvent(x,promptsDirectory), availablePrompts.getPromptList("begin",promptsData,languageof(zhFile)))
     if not instrIsPrefix: theList += instructions

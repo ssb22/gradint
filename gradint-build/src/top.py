@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #   (Python 2 or Python 3, but more fully tested on 2)
 
-program_name = "gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+."
+program_name = "gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+."
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -28,7 +28,7 @@ if sys.version_info[0]>2:
     def filter(*args): return list(_filter(*args))
     from functools import cmp_to_key
     def sort(l,c): l.sort(key=cmp_to_key(c))
-    raw_input,unichr,xrange = input,chr,range
+    raw_input,unichr,xrange,long = input,chr,range,int
     def chr(x): return unichr(x).encode('latin1')
     from subprocess import getoutput
     popenRB,popenWB = "r","w"
@@ -39,6 +39,9 @@ else: # Python 2
     bytes = str
     try: from commands import getoutput
     except ImportError: pass
+    # For pre-2.3 versions of Python (e.g. 2.2 on Symbian S60 and Mac OS 10.3):
+    try: True
+    except: exec("True = 1 ; False = 0")
 def readB(f,m=None):
     if hasattr(f,"buffer"): f=f.buffer # Python 3 non-"b" file
     if m: return f.read(m)

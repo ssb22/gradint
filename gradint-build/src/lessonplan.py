@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -25,22 +25,24 @@ class ProgressDatabase(object):
           self.unavail = mergeProgress(self.data,scanSamples()+parseSynthVocab(vocabFile))
           if not cache_maintenance_mode:
             doLabel("Checking transliterations")
+            global tList # for Python 2.1
             tList = {}
             def addVs(ff,dirBase):
                 if dirBase: dirBase += os.sep
                 dirBase,ff = B(dirBase),B(ff)
-                if dirBase+ff in variantFiles:
+                if checkIn(dirBase+ff,variantFiles):
                    if B(os.sep) in ff: ffpath=ff[:ff.rfind(B(os.sep))+1]
                    else: ffpath=B("")
-                   variantList=map(lambda x:ffpath+B(x),variantFiles[dirBase+ff])
+                   variantList=map(lambda x,f=ffpath:f+B(x),variantFiles[dirBase+ff])
                 else: variantList = [ff]
                 l=languageof(ff)
                 for f in variantList:
                   f = B(f)
-                  if f.lower().endswith(B(dottxt)): text=u8strip(read(dirBase+f)).strip(bwsp)
+                  if f.lower().endswith(B(dottxt)):
+                      text=bwspstrip(u8strip(read(dirBase+f)))
                   elif f.find(B("!synth"))==-1: continue # don't need to translit. filenames of wav's etc
                   else: text = textof(f)
-                  if not l in tList: tList[l]={}
+                  if not checkIn(l,tList): tList[l]={}
                   tList[l][text]=1
             for ff in availablePrompts.lsDic.values(): addVs(ff,promptsDirectory)
             for _,l1,l2 in self.data:
@@ -50,6 +52,7 @@ class ProgressDatabase(object):
             for lang,dic in list(tList.items()):
                 s = get_synth_if_possible(lang,0)
                 if s and hasattr(s,"update_translit_cache"): s.update_translit_cache(lang,list(dic.keys()))
+            del tList
         self.didScan = alsoScan
     def _load_from_binary(self):
         if pickledProgressFile and fileExists(pickledProgressFile):
@@ -173,7 +176,7 @@ class ProgressDatabase(object):
         if hasattr(self,"previous_filesNotPlayed"):
             i=0
             while i<len(filesNotPlayed):
-                if filesNotPlayed[i] in self.previous_filesNotPlayed: i+=1
+                if checkIn(filesNotPlayed[i],self.previous_filesNotPlayed): i+=1
                 else: del filesNotPlayed[i] # cumulative effects if managed to play it last time but not this time (and both lessons incomplete)
         self.previous_filesNotPlayed = filesNotPlayed = list2set(filesNotPlayed)
         if not filesNotPlayed:
@@ -187,7 +190,7 @@ class ProgressDatabase(object):
             l.append(self.data[i][2])
             found=0
             for ii in l:
-              if ii in filesNotPlayed:
+              if checkIn(ii,filesNotPlayed):
                   self.data[i] = self.oldData[i]
                   found=1 ; break
             if not found and not self.data[i] == self.oldData[i]: changed = 1
@@ -237,16 +240,16 @@ class ProgressDatabase(object):
                     raise
         # Add note on "long pause", for beginners
         longpause = "longpause_"+firstLanguage
-        if not advancedPromptThreshold and not longpause in availablePrompts.lsDic: longpause = "longpause_"+secondLanguage
+        if not advancedPromptThreshold and not checkIn(longpause,availablePrompts.lsDic): longpause = "longpause_"+secondLanguage
         o=maxLenOfLesson ; maxLenOfLesson = max(l.events)[0]
-        if longpause in availablePrompts.lsDic and self.promptsData.get(longpause,0)==0:
+        if checkIn(longpause,availablePrompts.lsDic) and self.promptsData.get(longpause,0)==0:
             try:
-                def PauseEvent(): return fileToEvent(availablePrompts.lsDic[longpause],promptsDirectory)
-                firstPauseMsg = PauseEvent()
+                def PauseEvent(longpause): return fileToEvent(availablePrompts.lsDic[longpause],promptsDirectory)
+                firstPauseMsg = PauseEvent(longpause)
                 # the 1st potentially-awkward pause is likely to be a beepThreshold-length one
                 l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),CompositeEvent([firstPauseMsg,Event(max(5,beepThreshold-firstPauseMsg.length))]))],False)
                 while True:
-                    l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),CompositeEvent([PauseEvent(),Event(50)]))],False)
+                    l.addSequence([GluedEvent(Glue(1,maxLenOfLesson),CompositeEvent([PauseEvent(longpause),Event(50)]))],False)
                     self.promptsData[longpause] = 1
             except StretchedTooFar: pass
         maxLenOfLesson = o
@@ -279,7 +282,7 @@ class ProgressDatabase(object):
             numFailures = 0 ; startTime = time.time() # for not taking too long
             for i in xrange(len(self.data)):
                 if maxNumToAdd>-1 and numberAdded >= maxNumToAdd: break # too many
-                if i in self.exclude: continue # already had it
+                if checkIn(i,self.exclude): continue # already had it
                 (timesDone,promptFile,zhFile)=self.data[i]
                 if timesDone < minTimesDone or (maxTimesDone>=0 and timesDone > maxTimesDone): continue # out of range this time
                 if timesDone >= knownThreshold: thisNumToTry = min(random.choice([2,3,4]),numToTry)
@@ -288,7 +291,7 @@ class ProgressDatabase(object):
                     # dropping it at random
                     self.exclude[i] = 1 # pretend we've done it
                     continue
-                if i in self.do_as_poem:
+                if checkIn(i,self.do_as_poem):
                     # this is part of a "known poem" and let's try to do it in sequence
                     self.try_add_poem(self.do_as_poem[i]) ; continue
                 oldPromptsData = self.promptsData.copy()
@@ -298,7 +301,7 @@ class ProgressDatabase(object):
                 if not timesDone and type(promptFile)==type([]):
                     # for poems: if any previously-added new word makes part of the prompt, try to ensure this one is introduced AFTER that one
                     for f,t in list(newWordTimes.items()):
-                        if f in promptFile: earliestAllowedEvent = max(earliestAllowedEvent,t)
+                        if checkIn(f,promptFile): earliestAllowedEvent = max(earliestAllowedEvent,t)
                 if not timesDone: newWordTimes[zhFile] = maxLenOfLesson # by default (couldn't fit it in).  (add even if not type(promptFile)==type([]), because it might be a first line)
                 try: self.l.addSequence(seq)
                 except StretchedTooFar: # If this happens, couldn't fit the word in anywhere.  If this is "filling in gaps" then it's likely that we won't be able to fit in any more words this lesson, so stop trying.
@@ -447,9 +450,9 @@ def denumber_synth(z,also_norm_extsep=0):
 
 def norm_filelist(x,y):
     def noext(x): return (B(x)+B(' '))[:B(x).rfind(B(extsep))] # so user can change e.g. wav to mp3 without disrupting progress.txt (the ' ' is simply removed if rfind returns -1)
-    if type(x)==type([]): x=tuple(map(lambda z:denumber_synth(noext(z),1),x))
+    if type(x)==type([]): x=tuple(map(lambda z,noext=noext:denumber_synth(noext(z),1),x))
     else: x=denumber_synth(noext(x),1)
-    if type(y)==type([]): y=tuple(map(lambda z:denumber_synth(noext(z),1),y))
+    if type(y)==type([]): y=tuple(map(lambda z,noext=noext:denumber_synth(noext(z),1),y))
     else: y=denumber_synth(noext(y),1)
     return (x,y)
 def mergeProgress(progList,scan):
@@ -475,7 +478,7 @@ def mergeProgress(progList,scan):
     renames = {}
     for (_,j,k) in scan:
         key = norm_filelist(j,k)
-        if key in proglistDict:
+        if checkIn(key,proglistDict):
             # an existing item - but in the case of synth'd vocab, we need to take the capitals/lower-case status from the scan rather than from the progress file (see comment above in denumber_synth) so:
             progList[proglistDict[key]]=(progList[proglistDict[key]][0],j,k)
         elif type(key[0])==type("") and (key[0]+key[1]).find("!synth")==-1 and ("_" in key[0] and "_" in key[1]):
@@ -488,8 +491,8 @@ def mergeProgress(progList,scan):
                 while ki>lastDirsep and not "0"<=normK[ki]<="9": ki -= 1
                 if ki<=lastDirsep: break
                 key2 = (key[0][:ki+1]+key[0][key[0].rindex("_"):],key[1][:ki+1]+key[1][key[1].rindex("_"):])
-                if key2 in proglistDict:
-                    if not key2 in renames: renames[key2] = []
+                if checkIn(key2,proglistDict):
+                    if not checkIn(key2,renames): renames[key2] = []
                     renames[key2].append((j,k))
                     found=1 ; break
                 while ki>lastDirsep and "0"<=normK[ki]<="9": ki -= 1
@@ -497,7 +500,7 @@ def mergeProgress(progList,scan):
         else: progList.append((0,j,k)) # ditto
         scanlistDict[key]=1
     for k,v in list(renames.items()):
-        if k in scanlistDict or len(v)>1: # can't make sense of this one - just add the new stuff
+        if checkIn(k,scanlistDict) or len(v)>1: # can't make sense of this one - just add the new stuff
             for jj,kk in v: progList.append((0,jj,kk))
         else: progList[proglistDict[k]]=(progList[proglistDict[k]][0],v[0][0],v[0][1])
     # finally, separate off any with non-0 progress that are
@@ -507,7 +510,7 @@ def mergeProgress(progList,scan):
     n = 0 ; unavailList = []
     while n<len(progList):
         i,j,k = progList[n]
-        if not norm_filelist(j,k) in scanlistDict:
+        if not checkIn(norm_filelist(j,k), scanlistDict):
             unavailList.append((i,j,k))
             del progList[n]
         else: n += 1
@@ -563,11 +566,11 @@ def jitter(list):
     # need to work on them more quickly, and can limit manually
     limitCounts = {} ; i = 0 ; imax = len(list)
     while i < imax:
-        if list[i][0]==0 and (list[i][-1] in limitedFiles): # or not languageof(list[i][2])==secondLanguage):
+        if list[i][0]==0 and checkIn(list[i][-1],limitedFiles): # or not languageof(list[i][2])==secondLanguage):
             # if not languageof(list[i][2])==secondLanguage: countNo="other-langs"
             # else:
             countNo = limitedFiles[list[i][-1]]
-            if not countNo in limitCounts: limitCounts [countNo] = 0
+            if not checkIn(countNo,limitCounts): limitCounts [countNo] = 0
             limitCounts [countNo] += 1
             # (below is a hack: if already moved something, set limit_words to 1.  May want to do it better than that e.g. go back and ensure the first thing only left 1 as well, or share out limit_words among any concurrently available new items that are just about to be introduced)
             if limitCounts [countNo] > cond(imax==len(list),limit_words,1) or (countNo=="other-langs" and limitCounts [countNo] > 1):
@@ -592,14 +595,14 @@ def find_known_poems(progressData):
             nextLineDic[line]=response # TODO check what would happen if 2 different poems in vocab.txt share an identical line (or if responseIndex is ambiguous in any way)
             hasPreviousLine[response]=True
     poems = []
-    for poemFirstLine in filter(lambda x:not x in hasPreviousLine,nextLineDic.keys()):
+    for poemFirstLine in filter(lambda x,hasPreviousLine=hasPreviousLine:not x in hasPreviousLine,nextLineDic.keys()):
         poemLines = [] ; line = poemFirstLine
         poem_is_viable = True
         while True:
             poemLines.append(line)
-            if not line in responseIndex or progressData[responseIndex[line]][0] < reallyKnownThreshold:
+            if not checkIn(line,responseIndex) or progressData[responseIndex[line]][0] < reallyKnownThreshold:
                 poem_is_viable = False ; break # whole poem not in database yet, or is but not well-rehearsed
-            if not line in nextLineDic: break
+            if not checkIn(line,nextLineDic): break
             line = nextLineDic[line]
         if poem_is_viable: poems.append(poemLines)
     return poems, responseIndex

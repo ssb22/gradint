@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -37,7 +37,7 @@ class Synth(object):
     def makefile_cached(self,lang,text):
         if type(text)==type([]): textKey=repr(text)
         else: textKey=text
-        if (lang,textKey) in self.fileCache: return self.fileCache[(lang,textKey)]
+        if checkIn((lang,textKey),self.fileCache): return self.fileCache[(lang,textKey)]
         t = self.makefile(lang,text)
         self.fileCache[(lang,textKey)] = t
         return t
@@ -74,7 +74,7 @@ class OSXSynth_Say(Synth):
         try: osxSayVoicesScan # singleton
         except: osxSayVoicesScan = self.scanVoices()
         self.voices = osxSayVoicesScan ; return True
-    def supports_language(self,lang): return lang in self.voices
+    def supports_language(self,lang): return checkIn(lang,self.voices)
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
     def play(self,lang,text): return system("say %s\"%s\"" % (self.voices[lang],self.transliterate(lang,text).replace('"','')))
     # TODO 10.7+ may also support -r rate (WPM), make that configurable in advanced.txt ?
@@ -107,8 +107,8 @@ class OSXSynth_Say(Synth):
                 voiceAttrs.append({'VoiceName':name,'VoiceLanguage':lang.replace('_','-')})
             if not voiceAttrs: return {"en":""} # maybe we're on ancient OS X: don't use a -v parameter at all
         for vocAttrib in voiceAttrs:
-            if not 'VoiceName' in vocAttrib: continue
-            if not 'VoiceLanguage' in vocAttrib:
+            if not checkIn('VoiceName',vocAttrib): continue
+            if not checkIn('VoiceLanguage',vocAttrib):
                 lang={"Damayanti":"id","Maged":"ar","Stine":"nb"}.get(vocAttrib['VoiceName'],None) # TODO: can sometimes use VoiceLocaleIdentifier instead, dropping the _ part (but can't even do that with Damayanti on 10.7)
                 if not lang: continue # TODO: output VoiceName in a warning?
             else: lang = vocAttrib['VoiceLanguage']
@@ -207,7 +207,7 @@ class PttsSynth(Synth):
                 # must keep the full path even on non-cygwin because we're adding ,1 to changeToDirOf (hope we don't hit a Windows version that doesn't like this).  But we can keep relative paths if tempdir_is_curdir. (TODO if this breaks when not tempdir_is_curdir, could try copying ptts.exe to temp, but would need to delete it afterwards)
                 if cygwin or not tempdir_is_curdir: self.program='"'+os.getcwd()+cwd_addSep+i+'"'
                 else: self.program = i
-                self.offlineOnly = 'offline' in i
+                self.offlineOnly = checkIn('offline',i)
                 break
         if not self.program:
             # (in case someone's running on Windows from source)
@@ -216,15 +216,15 @@ class PttsSynth(Synth):
         else: self.lily_file = lily_file
         if fileExists(self.lily_file):
             self.old_lily_data=read(self.lily_file)
-            if "zh" in sapiVoices and sapiVoices["zh"][0].lower()=="vw lily": del sapiVoices["zh"] # because we don't want to bypass our own interface to lily if a user set that without realising it's not needed
+            if checkIn("zh",sapiVoices) and sapiVoices["zh"][0].lower()=="vw lily": del sapiVoices["zh"] # because we don't want to bypass our own interface to lily if a user set that without realising it's not needed
         else: self.lily_file = None
-    def supports_language(self,lang): return lang in sapiVoices or lang=="en" or (self.lily_file and lang=="zh")
+    def supports_language(self,lang): return checkIn(lang,sapiVoices) or lang=="en" or (self.lily_file and lang=="zh")
     # Voice list: os.popen("echo | "+self.program+" -vl").read().split("\n").  If any .lower() contain "espeak-" then after the "-" is an espeak language code see ESpeakSynth (it may not want unicode).  Other voices may also have support for specific languages - may sometimes be able to use <lang langid="locale-hex-code"/> (e.g. 809 UK, 804 Chinese (PRC) 404 Taiwan, 411 Japan) but no way for gradint to tell if successful
     def works_on_this_platform(self): return self.program
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate, especially if they're going to set the speed in the control panel!
     def play(self,lang,text):
         if self.offlineOnly: return SampleEvent(self.makefile_cached(lang,text)).play()
-        if lang in sapiVoices:
+        if checkIn(lang,sapiVoices):
             d=os.getcwd()
             ret=self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),speed=sapiSpeeds.get(lang,None))
             os.chdir(d) ; return ret
@@ -253,7 +253,7 @@ class PttsSynth(Synth):
     def makefile(self,lang,text):
         fname = os.tempnam()+dotwav
         oldcwd=os.getcwd()
-        if lang in sapiVoices: r=self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),fname,sapiVoices[lang][1],speed=sapiSpeeds.get(lang,None))
+        if checkIn(lang,sapiVoices): r=self.sapi_unicode(sapiVoices[lang][0],ensure_unicode(text),fname,sapiVoices[lang][1],speed=sapiSpeeds.get(lang,None))
         elif lang=="en":
             p=os.popen(self.program+' -c 1 -w '+changeToDirOf(fname,1)+self.speedParam(sapiSpeeds.get(lang,None))+toNull,"w") # (can specify mono but can't specify sample rate if it wasn't mentioned in sapiVoices - might make en synth-cache bigger than necessary but otherwise no great problem)
             p.write(text+"\n")
@@ -406,7 +406,7 @@ class ESpeakSynth(Synth):
         Synth.__init__(self)
         self.languages = {} ; self.program=""
         tryList = []
-        if riscos_sound and 'eSpeak$dir' in os.environ: tryList=[os.environ['eSpeak$dir']+'.espeak-dat',os.environ['eSpeak$dir']+'.espeak-data']
+        if riscos_sound and checkIn('eSpeak$dir',os.environ): tryList=[os.environ['eSpeak$dir']+'.espeak-dat',os.environ['eSpeak$dir']+'.espeak-data']
         elif winsound or mingw32: tryList=[programFiles+"\\eSpeak\\espeak-data"]
         elif winCEsound: tryList=["\\espeak-data"] # Can't try \\Storage Card because our eSpeak compile can't cope with spaces (and quoting it does not work)
         else:
@@ -447,7 +447,7 @@ class ESpeakSynth(Synth):
         self.languages[lang]=fname
         for l in open(self.place+os.sep+"voices"+os.sep+fname,"rb").read(256).replace(B("\r"),B("\n")).split(B("\n")):
             if l.startswith(B("language ")):
-                l=l[9:].strip(bwsp)
+                l=bwspstrip(l[9:])
                 if not l==B(lang):
                     Sl = S(l)
                     if Sl in espeak_language_aliases.values(): # aliasing to an alias - update it
@@ -469,8 +469,8 @@ class ESpeakSynth(Synth):
                     ret.append(k+"="+lname)
                     break
         return " ".join(ret)
-    def supports_language(self,lang): return espeak_language_aliases.get(lang,lang) in self.languages
-    def not_so_good_at(self,lang): return lang not in prefer_espeak
+    def supports_language(self,lang): return checkIn(espeak_language_aliases.get(lang,lang),self.languages)
+    def not_so_good_at(self,lang): return not checkIn(lang,prefer_espeak)
     def works_on_this_platform(self):
         if len(self.languages.items())==0: return 0
         if winCEsound:
@@ -482,7 +482,7 @@ class ESpeakSynth(Synth):
         elif cygwin: toTry=[programFiles+"/eSpeak/command_line/espeak.exe"]
         else: toTry = []
         if toTry: # windows or cygwin
-            if "ESPEAK_DATA_PATH" in os.environ:
+            if checkIn("ESPEAK_DATA_PATH",os.environ):
                 toTry.insert(0,os.environ["ESPEAK_DATA_PATH"]+os.sep+"espeak.exe")
                 toTry.insert(0,os.environ["ESPEAK_DATA_PATH"]+os.sep+"command_line"+os.sep+"espeak.exe")
             for t in toTry:
@@ -494,7 +494,7 @@ class ESpeakSynth(Synth):
         else: # not windows or cygwin
             self.program="speak"
             if riscos_sound: return True # we've already confirmed <eSpeak$dir> works in the constructor
-            loc=getoutput("locale -a 2>/dev/null|grep -i 'utf-*8$'|head -1").strip(wsp)
+            loc=wspstrip(getoutput("locale -a 2>/dev/null|grep -i 'utf-*8$'|head -1"))
             if loc: loc="LC_CTYPE="+loc+" " # in case espeak can't find a utf-8 locale by itself
             self.program=loc+"speak"
             if got_program("speak"): return True
@@ -533,7 +533,7 @@ class ESpeakSynth(Synth):
         self.hProcess = s.hProcess # TODO check it's not NULL (failed to run)
     def winCE_wait(self,expectedOutputFile,infileToDel=None,needDat=1):
         # won't always work: if app and not app.Label["text"].strip(): app.setLabel("Waiting for eSpeak") # in case it doesn't produce output
-        ctypes.cdll.coredll.WaitForSingleObject(self.hProcess,4294967295) # i.e. 0xFFFFFFFF but that throws up a warning on Python 2.3
+        ctypes.cdll.coredll.WaitForSingleObject(self.hProcess,long(65535)*long(65537)) # i.e. 0xFFFFFFFF but that throws up a warning on Python 2.3; Python 2.1 won't accept 4294967295 without L but Python 3 says syntax error if L, so need to multiply
         ctypes.cdll.coredll.CloseHandle(self.hProcess)
         # In some rare circumstances, that command won't wait (e.g. process hadn't started despite the fact we delayed), so check the output files also.
         # (Leave WaitForSingleObject in as it could save some CPU cycles / potential OS crashes on some WinCE versions)
@@ -555,7 +555,7 @@ class ESpeakSynth(Synth):
             return dat
     def update_translit_cache(self,lang,textList): # forPartials=1 assumed
         if not lang=="zh": return # TODO if expand 'transliterate' to do other languages, make sure to update this also, and the cache format
-        if self.translitCache: textList=filter(lambda x:x not in self.translitCache, textList)
+        if self.translitCache: textList=filter(lambda x,self=self:not checkIn(x,self.translitCache), textList)
         step = 1000 # should be about right?
         for i in range(0,len(textList),step):
             tl = textList[i:i+step]
@@ -567,12 +567,12 @@ class ESpeakSynth(Synth):
             try: pickle.Pickler(open(espeakTranslitCacheFile,"wb"),-1).dump((tuple(os.stat(self.place+os.sep+"espeak-data")),self.translitCache))
             except IOError: pass # 'permission denied' is ok
     def transliterate(self,lang,text,forPartials=1):
-        if lang=="zh" and text in self.translitCache: return self.translitCache[text] # (TODO add "and forPartials"? but don't need to bother with this extra condition on slow systems)
+        if lang=="zh" and checkIn(text,self.translitCache): return self.translitCache[text] # (TODO add "and forPartials"? but don't need to bother with this extra condition on slow systems)
         return self.transliterate_multiple(lang,[text],forPartials)[0] # and don't cache it - could be experimental, and we don't want cache to grow indefinitely
     if unix:
         def check_dicts(self,lang,txt):
             if not hasattr(self,"dictsChecked"): self.dictsChecked = {}
-            if lang in self.dictsChecked or not lang in ["zh","zhy","ru"]: return
+            if checkIn(lang,self.dictsChecked) or not lang in ["zh","zhy","ru"]: return
             if type(txt)==list: txt=B("").join(txt)
             if re.match(B("^[ -~]*$"),txt): return # don't need to warn about dictionaries if we were given all-ASCII input (TODO: and tone marks?)
             if filelen(self.place+os.sep+"espeak-data"+os.sep+lang+"_dict")<100000: show_warning("Warning: the eSpeak on this system has only a short dictionary for language '"+lang+"' - please install the Additional Data at espeak.sourceforge.net/data")
@@ -641,7 +641,7 @@ class ESpeakSynth(Synth):
           r=[] ; lastWasBlank=False
           delete_last_r_if_blank = 0 ; appendNext = 0
           thisgroup_max_priority,thisgroup_enWord_priority = 0.5,0
-          for l in dat.strip(bwsp).split(B("\n")):
+          for l in bwspstrip(dat).split(B("\n")):
               if appendNext: # (see below)
                   r.append(l[l.index(B("["))+1:l.index(B("]"))])
                   appendNext = 0 ; continue
@@ -666,7 +666,7 @@ class ESpeakSynth(Synth):
               foundLetter=0
               if l.startswith(B("Translate ")):
                   toAppend=l[l.index(B("'"))+1:-1].replace(LB("\xc3\xbc"),B("v"))
-                  if not (toAppend in en_words and r and toAppend==r[-1]):
+                  if not (checkIn(toAppend,en_words) and r and toAppend==r[-1]):
                     # TODO what about partial English words? e.g. try "kao3 testing" - translate 'testing' results in a translate of 'test' also (which assumes it's already in en mode), resulting in a spurious word "test" added to the text box; not sure how to pick this up without parsing the original text and comparing with the Replace rules that occurred
                     r.append(toAppend)
                     delete_last_r_if_blank = 1
@@ -762,7 +762,7 @@ def fix_commas(text):
   i=0 ; text=B(text)
   while i<len(text)-1:
     if text[i:i+1] in B('.,?;!'):
-      tRest = text[i+1:].strip(bwsp)
+      tRest = bwspstrip(text[i+1:])
       if tRest and (ord(tRest[:1])>=128 or B('a')<=tRest[:1].lower()<=B('z')):
         text=text[:i+1]+cond(text[i:i+1] in B(".?!"),B("  ")+tRest[:1].upper(),B(" ")+tRest[:1])+tRest[1:]
     i+=1
@@ -778,7 +778,7 @@ def fix_pinyin(pinyin,en_words):
       while j>1 and not (B('a')<=w[j-1:j]<=B('z') or B('1')<w[j-1:j]<=B('5')): j-=1
       return w[i:j]
     for w in pinyin.split():
-      if stripPunc(w) in en_words: ret.append(w)
+      if checkIn(stripPunc(w),en_words): ret.append(w)
       else: ret.append(fix_pinyin(w,[]))
     return B(' ').join(ret)
   i=0
@@ -877,7 +877,7 @@ def espeak_stdout_works():
     except ValueError: return False
 def espeak_volume_ok():
     # if has "zh", should be recent enough
-    return "zh" in ESpeakSynth().languages
+    return checkIn("zh",ESpeakSynth().languages)
 if wavPlayer_override or (unix and not macsound and not (oss_sound_device=="/dev/sound/dsp" or oss_sound_device=="/dev/dsp")):
     if wavPlayer=="aplay" and espeak_stdout_works(): espeak_pipe_through="--stdout|aplay -q" # e.g. NSLU2
     else: del ESpeakSynth.play # because we have no way of sending it to the alternative device, so do it via a file
@@ -960,7 +960,7 @@ class GeneralFileSynth(Synth):
         return 0
     def works_on_this_platform(self): return extra_speech_tofile
     def guess_length(self,lang,text):
-        if not lang in self.letters: self.letters[lang]=self.duration[lang]=0
+        if not checkIn(lang,self.letters): self.letters[lang]=self.duration[lang]=0
         if self.letters[lang]<25:
             self.letters[lang] += len(text)
             self.duration[lang] += SampleEvent(self.makefile_cached(lang,text)).exactLen
@@ -996,9 +996,9 @@ def setSoundCollector(sc):
     soundCollector,viable_synths,getsynth_cache = sc,[],{}
 def get_synth_if_possible(language,warn=1,to_transliterate=False):
     language = S(language)
-    if language in getsynth_cache and not to_transliterate: return getsynth_cache[language] # most common case (vocab.txt parse)
+    if checkIn(language,getsynth_cache) and not to_transliterate: return getsynth_cache[language] # most common case (vocab.txt parse)
     if language==None:
-        if not None in getsynth_cache: getsynth_cache[None]=Partials_Synth()
+        if not checkIn(None,getsynth_cache): getsynth_cache[None]=Partials_Synth()
         return getsynth_cache[None]
     global viable_synths, warned_about_nosynth
     if not viable_synths:
@@ -1022,10 +1022,10 @@ def get_synth_if_possible(language,warn=1,to_transliterate=False):
                 getsynth_cache[language]=synth # only if warn (otherwise wait until we're called again, then warn)
             return synth
     if (not warn) or language not in [firstLanguage,secondLanguage]+possible_otherLanguages: return None # without printing a warning
-    if not language in warned_about_nosynth:
+    if not checkIn(language,warned_about_nosynth):
         warned_about_nosynth[language] = 1
         canSay = []
-        if language in synth_partials_voices: canSay.append("recorded syllables (partials)")
+        if checkIn(language,synth_partials_voices): canSay.append("recorded syllables (partials)")
         if synthCache: canSay.append("recorded phrases (synthCache)")
         if canSay: canSay="\n  - can use only "+" and ".join(canSay)
         else: canSay="\n  (did you read ALL the comments in vocab.txt?)"
@@ -1096,7 +1096,7 @@ class SynthEvent(Event):
             self.sound = self.synthesizer.makefile_cached(self.language,self.modifiedText)
             self.synthesizer.finish_makefile()
         if sample_table_hack:
-            if not self.sound in sample_table_hack_lengthDic: sample_table_hack_lengthDic[self.sound]=SampleEvent(self.sound).exactLen
+            if not checkIn(self.sound,sample_table_hack_lengthDic): sample_table_hack_lengthDic[self.sound]=SampleEvent(self.sound).exactLen
             soundCollector.addFile(self.sound,sample_table_hack_lengthDic[self.sound])
             open(self.sound,"wb") # i.e. truncate at 0 bytes to save space (but keep around so no name clashes)
         elif self.sound:
@@ -1177,7 +1177,8 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
           if ret: return fileToEvent(fname)
           else: show_warning("Can't say "+repr(fname)) # previous warnings should have said why (e.g. partials-only language)
       for line in B(justSynthesize).split(B('#')):
-        line = line.strip(bwsp) ; l = line.split(None,1)
+        line = bwspstrip(line)
+        l = line.split(None,1)
         if B(extsep) in line and fileExists(line): event = fileToEvent(line,"")
         elif B(extsep) in line and fileExists(abspath_from_start(line)): event = fileToEvent(abspath_from_start(line),"")
         elif line==B('R'):

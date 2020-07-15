@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -49,7 +49,7 @@ def get_userNames(): # list of unicode user names or []
   ret=[]
   u=userNameFile ; c=0
   while fileExists(u):
-    ret.append(unicode(u8strip(read(u)).strip(bwsp),'utf-8'))
+    ret.append(unicode(bwspstrip(u8strip(read(u)),'utf-8')))
     c += 1 ; u=addUserToFname(userNameFile,c)
   global lastUserNames ; lastUserNames = ret
   return ret
@@ -57,7 +57,7 @@ def get_userNames(): # list of unicode user names or []
 def set_userName(N,unicodeName): writeB(open(addUserToFname(userNameFile,N),"w"),unicodeName.encode("utf-8")+B("\n")) # implicitly adds if N=num+1
 
 def wrapped_set_userName(N,unicodeName):
-  if unicodeName.strip(wsp): set_userName(N,unicodeName)
+  if wspstrip(unicodeName): set_userName(N,unicodeName)
   else: app.todo.alert="You need to type the person's name in the box before you press "+localise("Add new name") # don't waitOnMessage because we're in the GUI thread
 
 GUI_usersRow = lastUserNames = None
@@ -91,7 +91,7 @@ def updateUserRow(fromMainMenu=0):
         userBSM = ButtonScrollingMixin() ; userBSM.ourCanvas = c
     else: userBSM = None
     for i in range(len(names)):
-      if names[i].strip(wsp):
+      if wspstrip(names[i]):
         r=Tkinter.Radiobutton(row, text=names[i], variable=app.userNo, value=str(i), takefocus=0)
         r.grid(row=i+1,column=0,sticky="w")
         r["command"]=cmd=lambda e=None,i=i: select_userNumber(i)
@@ -107,22 +107,22 @@ def updateUserRow(fromMainMenu=0):
         r=Tkinter.Frame(row) ; r.grid(row=i+1,column=0,columnspan=4)
         text,entry = addTextBox(r)
         if not fromMainMenu: entry.focus() # because user has just pressed the "add other students" button, or has just added a name and may want to add another
-        l=lambda *args:(wrapped_set_userName(i,asUnicode(text.get())),updateUserRow())
+        l=lambda e=None,wrapped_set_userName=wrapped_set_userName,i=i,text=text:(wrapped_set_userName(i,asUnicode(text.get())),updateUserRow())
         addButton(r,localise("Add new name"),l)
         entry.bind('<Return>',l)
         if not i: Tkinter.Label(row,text="The first name should be that of the\nEXISTING user (i.e. YOUR name).").grid(row=i+2,column=0,columnspan=4)
       if userBSM: userBSM.bindFocusIn(r) # for shift-tab from the bottom
       if hasattr(row,"widgetsToDel"): row.widgetsToDel.append(r)
       if not names[i]: break
-    if userBSM: c.after(cond(winCEsound,1500,300),lambda *args:c.config(scrollregion=c.bbox(Tkinter.ALL),width=c.bbox(Tkinter.ALL)[2],height=min(c["height"],c.winfo_screenheight()/2,c.bbox(Tkinter.ALL)[3]))) # hacky (would be better if it could auto shrink on resize)
-  else: row.widgetsToDel.append(addButton(row,localise("Family mode (multiple user)"),lambda *args:(set_userName(0,""),updateUserRow())))
+    if userBSM: c.after(cond(winCEsound,1500,300),lambda e=None,c=c:c.config(scrollregion=c.bbox(Tkinter.ALL),width=c.bbox(Tkinter.ALL)[2],height=min(c["height"],c.winfo_screenheight()/2,c.bbox(Tkinter.ALL)[3]))) # hacky (would be better if it could auto shrink on resize)
+  else: row.widgetsToDel.append(addButton(row,localise("Family mode (multiple user)"),lambda e=None:(set_userName(0,""),updateUserRow())))
 
 def renameUser(i,radioButton,parent,cancel=0):
     if hasattr(radioButton,"in_renaming"): # finish the rename
         del radioButton.in_renaming
         n=asUnicode(radioButton.renameText.get())
         if cancel: pass
-        elif not n.strip(wsp) and (len(lastUserNames)>1 and not (len(lastUserNames)==2 and not lastUserNames[-1])): tkMessageBox.showinfo(app.master.title(),"You can't have blank user names unless there is only one user.  Keeping the original name instead.")
+        elif not wspstrip(n) and (len(lastUserNames)>1 and not (len(lastUserNames)==2 and not lastUserNames[-1])): tkMessageBox.showinfo(app.master.title(),"You can't have blank user names unless there is only one user.  Keeping the original name instead.")
         else:
             set_userName(i,n)
             lastUserNames[i] = n
@@ -136,9 +136,9 @@ def renameUser(i,radioButton,parent,cancel=0):
         radioButton.renameEntry.grid(row=i+1,column=0)
         radioButton.renameText.set(lastUserNames[i])
         radioButton.renameEntry.focus()
-        radioButton.after(10,lambda *args:radioButton.renameEntry.event_generate('<End>'))
-        radioButton.renameEntry.bind('<Return>',lambda *args:renameUser(i,radioButton,parent))
-        radioButton.renameEntry.bind('<Escape>',lambda *args:renameUser(i,radioButton,parent,cancel=1))
+        radioButton.after(10,lambda e=None,radioButton=radioButton:radioButton.renameEntry.event_generate('<End>'))
+        radioButton.renameEntry.bind('<Return>',lambda e=None,radioButton=radioButton,i=i,parent=parent:renameUser(i,radioButton,parent))
+        radioButton.renameEntry.bind('<Escape>',lambda e=None,i=i,radioButton=radioButton,parent=parent:renameUser(i,radioButton,parent,cancel=1))
 
 def deleteUser(i):
     for n in ["Are you sure","Are you REALLY sure","This is your last chance: Are you REALLY SURE"]:

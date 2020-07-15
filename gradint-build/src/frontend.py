@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -23,7 +23,9 @@ appTitle += time.strftime(" %A") # in case leave 2+ instances on the desktop
 def waitOnMessage(msg):
     global warnings_printed
     if type(msg)==type(u""): msg2=msg.encode("utf-8")
-    else: msg2,msg=msg,msg.decode("utf-8")
+    else:
+        try: msg2,msg=msg,msg.decode("utf-8")
+        except AttributeError: msg2=msg # Python 2.1 has no .decode
     if appuifw:
         t=appuifw.Text() ; t.add(u"".join(warnings_printed)+msg) ; appuifw.app.body = t # in case won't fit in the query()  (and don't use note() because it doesn't wait)
         appuifw.query(msg,'query')
@@ -175,10 +177,10 @@ tkNumWordsToShow = 10 # the default number of list-box items
 def addStatus(widget,status,mouseOnly=0):
     # Be VERY CAREFUL with status line changes.  Don't do it on things that are focused by default (except with mouseOnly=1).  Don't do it when the default status line might be the widest thing (i.e. when list box is not displayed) or window size could jump about too much.  And in any event don't use lines longer than about 53 characters (the approx default width of the listbox when using monospace fonts).
     # (NB addStatus now takes effect only when the list box is displayed anyway, so OK for buttons that might also be displayed without it)
-    widget.bind('<Enter>',lambda *args:app.set_statusline(status))
+    widget.bind('<Enter>',lambda e=None,status=status:app.set_statusline(status))
     widget.bind('<Leave>',app.restore_statusline)
     if not mouseOnly:
-        widget.bind('<FocusIn>',lambda *args:app.set_statusline(status))
+        widget.bind('<FocusIn>',lambda e=None,app=app,status=status:app.set_statusline(status))
         widget.bind('<FocusOut>',app.restore_statusline)
 def makeButton(parent,text,command):
     button = Tkinter.Button(parent)
@@ -212,7 +214,7 @@ def CXVMenu(e): # callback for right-click
     funclist = [("Paste",paste),("Delete",'<Delete>')]
     if not macsound:
         funclist = [("Cut",cut),("Copy",copy)]+funclist # doesn't work reliably on Mac Tk
-    for l,cmd in funclist: m.add_command(label=l,command=(lambda e=e,c=cmd: e.widget.after(10,evgen,e,c)))
+    for l,cmd in funclist: m.add_command(label=l,command=(lambda e=e,c=cmd,evgen=evgen: e.widget.after(10,evgen,e,c)))
     m.add_command(label="Select All",command=(lambda e=e: e.widget.after(10,selectAll,e)))
     m.tk_popup(e.x_root-3, e.y_root+3,entry="0")
 def selectAll(e):
@@ -235,7 +237,7 @@ def addTextBox(row,wide=0):
         def doRawInput(text,entry):
             app.input_to_set = text
             app.menu_response="input"
-        entry.bind('<Return>',lambda e:doRawInput(text,entry))
+        entry.bind('<Return>',lambda e,doRawInput=doRawInput,text=text,entry=entry:doRawInput(text,entry))
         if wide: # put help in 1st wide textbox
           global had_doRawInput
           try: had_doRawInput
@@ -244,10 +246,10 @@ def addTextBox(row,wide=0):
             text.set("(Push OK to type A-Z)") # (if changing this message, change it below too)
             class E: pass
             e=E() ; e.widget = entry
-            entry.after(10,lambda *args:selectAll(e))
+            entry.after(10,lambda _=None,e=e:selectAll(e))
       else: # PocketPC: try to detect long clicks. This is awkward. time.time is probably 1sec resolution so will get false +ves if go by that only.
         def timeStamp(entry): entry.buttonPressTime=time.time()
-        entry.bind('<ButtonPress-1>',lambda e:timeStamp(entry))
+        entry.bind('<ButtonPress-1>',lambda e,timeStamp=timeStamp,entry=entry:timeStamp(entry))
         global lastDblclkAdvisory,lastDblclk
         lastDblclkAdvisory=lastDblclk=0
         def pasteInstructions(t):
@@ -259,8 +261,8 @@ def addTextBox(row,wide=0):
         def doPaste(text,entry):
             text.set(entry.selection_get(selection="CLIPBOARD"))
             global lastDblclk ; lastDblclk=time.time()
-        entry.bind('<ButtonRelease-1>',lambda e:pasteInstructions(time.time()-getattr(entry,"buttonPressTime",time.time())))
-        entry.bind('<Double-Button-1>',lambda e:doPaste(text,entry))
+        entry.bind('<ButtonRelease-1>',lambda e,entry=entry,pasteInstructions=pasteInstructions:pasteInstructions(time.time()-getattr(entry,"buttonPressTime",time.time())))
+        entry.bind('<Double-Button-1>',lambda e,doPaste=doPaste,text=text,entry=entry:doPaste(text,entry))
     # Tkinter bug workaround (some versions): event_generate from within a key event handler can be unreliable, so the Ctrl-A handler delays selectAll by 10ms:
     entry.bind(cond(macsound,'<Command-a>','<Control-a>'),(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
     bindUpDown(entry,False)
@@ -297,14 +299,14 @@ def make_output_row(parent):
     # if there aren't any options then return None
     # we also put script-variant selection here, if any
     row = None
-    def getRow(row):
+    def getRow(row,parent):
       if not row:
         row = Tkinter.Frame(parent)
         row.pack(fill=Tkinter.X,expand=1)
       return row
     GUIlang = GUI_languages.get(firstLanguage,firstLanguage)
-    if "@variants-"+GUIlang in GUI_translations: # the firstLanguage has script variants
-        row=getRow(row)
+    if checkIn("@variants-"+GUIlang,GUI_translations): # the firstLanguage has script variants
+        row=getRow(row,parent)
         if not hasattr(app,"scriptVariant"): app.scriptVariant = Tkinter.StringVar(app)
         count = 0
         for variant in GUI_translations["@variants-"+GUIlang]:
@@ -312,7 +314,7 @@ def make_output_row(parent):
             count += 1
         app.scriptVariant.set(str(scriptVariants.get(GUIlang,0)))
     if synth_partials_voices and guiVoiceOptions:
-        row=getRow(row)
+        row=getRow(row,parent)
         if not hasattr(app,"voiceOption"): app.voiceOption = Tkinter.StringVar(app)
         Tkinter.Radiobutton(row, text=u" Normal ", variable=app.voiceOption, value="", indicatoron=forceRadio).pack({"side":"left"})
         for o in guiVoiceOptions: Tkinter.Radiobutton(row, text=u" "+o[1].upper()+o[2:]+u" ", variable=app.voiceOption, value=o, indicatoron=forceRadio).pack({"side":"left"})
@@ -321,9 +323,9 @@ def make_output_row(parent):
     if not hasattr(app,"outputTo"):
         app.outputTo = Tkinter.StringVar(app) # NB app not parent (as parent is no longer app)
         app.outputTo.set("0") # not "" or get tri-state boxes on OS X 10.6
-    row=getRow(row)
+    row=getRow(row,parent)
     rightrow = addRightRow(row) # to show beginners this row probably isn't the most important thing despite being in a convenient place, we'll right-align
-    def addFiletypeButton(fileType):
+    def addFiletypeButton(fileType,rightrow):
         ftu = fileType.upper()
         t = Tkinter.Radiobutton(rightrow, text=cond(forceRadio,""," ")+ftu+" ", variable=app.outputTo, value=fileType, indicatoron=forceRadio)
         bindUpDown(t,True)
@@ -337,13 +339,13 @@ def make_output_row(parent):
     addStatus(t,"Select this to send all sounds to\nthe speaker, not to files on disk")
     bindUpDown(t,True)
     t.pack({"side":"left"})
-    if got_program("lame"): addFiletypeButton("mp3")
-    if got_windows_encoder: addFiletypeButton("wma")
-    if got_program("neroAacEnc") or got_program("faac") or got_program("afconvert"): addFiletypeButton("aac")
-    if got_program("oggenc") or got_program("oggenc2"): addFiletypeButton("ogg")
-    if got_program("toolame"): addFiletypeButton("mp2")
-    if got_program("speexenc"): addFiletypeButton("spx")
-    addFiletypeButton("wav")
+    if got_program("lame"): addFiletypeButton("mp3",rightrow)
+    if got_windows_encoder: addFiletypeButton("wma",rightrow)
+    if got_program("neroAacEnc") or got_program("faac") or got_program("afconvert"): addFiletypeButton("aac",rightrow)
+    if got_program("oggenc") or got_program("oggenc2"): addFiletypeButton("ogg",rightrow)
+    if got_program("toolame"): addFiletypeButton("mp2",rightrow)
+    if got_program("speexenc"): addFiletypeButton("spx",rightrow)
+    addFiletypeButton("wav",rightrow)
     # "Get MP3 encoder" and "Get WMA encoder" changed to "MP3..." and "WMA..." to save width (+ no localisation necessary)
     if unix and not got_program("lame") and got_program("make") and got_program("gcc") and (got_program("curl") or got_program("wget")): addButton(rightrow,"MP3...",app.getEncoder,status="Press this to compile an MP3 encoder\nso Gradint can output to MP3 files") # (checking gcc as well as make because some distros strangely have make but no compiler; TODO what if has a non-gcc compiler)
     # (no longer available) elif (winsound or mingw32) and not got_windows_encoder and not got_program("lame"): addButton(rightrow,"WMA...",app.getEncoder,status="Press this to download a WMA encoder\nso Gradint can output to WMA files")
@@ -381,8 +383,8 @@ def setupScrollbar(parent,rowNo):
     s.config(command=c.yview)
     scrolledFrame=Tkinter.Frame(c) ; c.create_window(0,0,window=scrolledFrame,anchor="nw")
     # Mousewheel binding.  TODO the following bind_all assumes only one scrolledFrame on screen at once (redirect all mousewheel events to the frame; necessary as otherwise they'll go to buttons etc)
-    app.ScrollUpHandler = lambda *args:c.yview("scroll","-1","units")
-    app.ScrollDownHandler = lambda *args:c.yview("scroll","1","units")
+    app.ScrollUpHandler = lambda e=None,c=c:c.yview("scroll","-1","units")
+    app.ScrollDownHandler = lambda e=None,c=c:c.yview("scroll","1","units")
     if macsound:
         def ScrollHandler(event):
             if event.delta>0: app.ScrollUpHandler()
@@ -399,8 +401,8 @@ shortDescriptionName = "short-description"+dottxt
 longDescriptionName = "long-description"+dottxt
 class ExtraButton(object):
     def __init__(self,directory):
-        self.shortDescription = u8strip(read(directory+os.sep+shortDescriptionName)).strip(wsp)
-        if fileExists(directory+os.sep+longDescriptionName): self.longDescription = u8strip(read(directory+os.sep+longDescriptionName)).strip(wsp)
+        self.shortDescription = wspstrip(u8strip(read(directory+os.sep+shortDescriptionName)))
+        if fileExists(directory+os.sep+longDescriptionName): self.longDescription = wspstrip(u8strip(read(directory+os.sep+longDescriptionName)))
         else: self.longDescription = self.shortDescription
         self.directory = directory
     def add(self):
@@ -417,7 +419,7 @@ class ExtraButton(object):
         try: ls = os.listdir(samplesDirectory)
         except: os.mkdir(samplesDirectory)
         name1=newName
-        while newName in ls: newName+="1"
+        while checkIn(newName,ls): newName+="1"
         name2=newName
         newName = samplesDirectory+os.sep+newName
         os.rename(self.directory,newName)
@@ -426,13 +428,13 @@ class ExtraButton(object):
             which_collection = localise(" has been added to your collection.")
             o=open(vocabFile,"a")
             o.write("# --- BEGIN "+self.shortDescription+" ---\n")
-            o.write(u8strip(read(newName+os.sep+"add-to-vocab"+dottxt)).strip(wsp)+"\n")
+            o.write(wspstrip(u8strip(read(newName+os.sep+"add-to-vocab"+dottxt)))+"\n")
             o.write("# ----- END "+self.shortDescription+" ---\n")
             if hasattr(app,"vocabList"): del app.vocabList # so re-reads
             os.remove(newName+os.sep+"add-to-vocab"+dottxt)
         if fileExists(newName+os.sep+"add-to-languages"+dottxt):
             changed = 0
-            for lang in u8strip(read(newName+os.sep+"add-to-languages"+dottxt)).strip(wsp).split():
+            for lang in wspstrip(u8strip(read(newName+os.sep+"add-to-languages"+dottxt))).split():
                 if not lang in [firstLanguage,secondLanguage]+otherLanguages:
                     otherLanguages.append(lang) ; changed = 1
             if changed: sanitise_otherLanguages(), updateSettingsFile("advanced"+dottxt,{"otherLanguages":otherLanguages,"possible_otherLanguages":possible_otherLanguages})
@@ -470,8 +472,8 @@ def focusButton(button):
             try: button.config(state=state)
             except: pass # maybe not a button
         for t in range(250,1000,250): # (NB avoid epilepsy's 5-30Hz!)
-          app.after(t,lambda *args:flashButton(button,"active"))
-          app.after(t+150,lambda *args:flashButton(button,"normal"))
+          app.after(t,lambda e=None,flashButton=flashButton,button=button:flashButton(button,"active"))
+          app.after(t+150,lambda e=None,flashButton=flashButton,button=button:flashButton(button,"normal"))
         # (Don't like flashing, but can't make it permanently active as it won't change when the focus does)
 
 if WMstandard: GUI_omit_statusline = 1 # unlikely to be room (and can disrupt nav)
@@ -482,7 +484,7 @@ def startTk():
             Tkinter.Frame.__init__(self, master)
             class EmptyClass: pass
             self.todo = EmptyClass() ; self.toRestore = []
-            self.ScrollUpHandler = self.ScrollDownHandler = lambda *args:True
+            self.ScrollUpHandler = self.ScrollDownHandler = lambda e=None:True
             global app ; app = self
             make_extra_buttons_waiting_list()
             if olpc: self.master.option_add('*font',cond(extra_buttons_waiting_list,'Helvetica 9','Helvetica 14'))
@@ -522,11 +524,11 @@ def startTk():
                             if nominalSize<0: nominalSize,f[i] = -nominalSize,"-%d"
                             else: f[i]="%d"
                             break
-                      if nominalSize==2147483648: nominalSize = 0 # e.g. Tk 8.6 on Ubuntu 16.04 when using the first eval stirng above
+                      if nominalSize==long(32768)*long(65536): nominalSize = 0 # e.g. Tk 8.6 on Ubuntu 16.04 when using the first eval string above
                       elif f2=='set font [font actual default]': nominalSize *= 0.77 # kludge for Tk 8.6 on Ubuntu 16.04 to make large-print calculation below work
                       if nominalSize: break
                     f=" ".join(f)
-                    if (not "%d" in f) or not nominalSize: raise Exception("wrong format") # caught below
+                    if (not checkIn("%d",f)) or not nominalSize: raise Exception("wrong format") # caught below
                 pixelSize = self.Label.winfo_reqheight()-2*int(str(self.Label["borderwidth"]))-2*int(str(self.Label["pady"]))
                 # NB DO NOT try to tell Tk a desired pixel size - you may get a *larger* pixel size.  Need to work out the desired nominal size.
                 approx_lines_per_screen_when_large = 25 # TODO really? (24 at 800x600 192dpi 15in but misses the status line, but OK for advanced users.  setting 25 gives nominal 7 which is rather smaller.)
@@ -733,7 +735,7 @@ def startTk():
             addLabel(self.LessonRow,localise("mins"))
             self.MakeLessonButton=addButton(self.LessonRow,localise("Start lesson"),self.makelesson,{"side":"left"},status="Press to create customized lessons\nusing the words in your collection")
             self.lastOutTo=-1 # so it updates the Start Lesson button if needed
-            self.MakeLessonButton.bind('<FocusIn>',(lambda *args:app.after(10,lambda *args:app.MinsEntry.selection_clear())))
+            self.MakeLessonButton.bind('<FocusIn>',(lambda e=None,app=app:app.after(10,lambda e=None,app=app:app.MinsEntry.selection_clear())))
         def sync_listbox_etc(self):
             if not hasattr(self,"vocabList"):
                 if hasattr(self,"needVocablist"): return # already waiting for main thread to make one
@@ -766,16 +768,16 @@ def startTk():
                 for t,l in [(text1.encode('utf-8'),secondLanguage),(text2.encode('utf-8'),firstLanguage)]:
                     k,f = synthcache_lookup(B("!synth:")+t+B("_")+B(l),justQueryCache=1)
                     if f:
-                      if (partials_langname(l) in synth_partials_voices or get_synth_if_possible(l,0)): # (no point having these buttons if there's no chance we can synth it by any method OTHER than the cache)
-                        if k in synthCache_transtbl and B(k[:1])==B("_"): cacheManagementOptions.append(("Keep in "+l+" cache",k,k[1:],0,0))
+                      if (checkIn(partials_langname(l),synth_partials_voices) or get_synth_if_possible(l,0)): # (no point having these buttons if there's no chance we can synth it by any method OTHER than the cache)
+                        if checkIn(k,synthCache_transtbl) and B(k[:1])==B("_"): cacheManagementOptions.append(("Keep in "+l+" cache",k,k[1:],0,0))
                         elif B(k[:1])==B("_"): cacheManagementOptions.append(("Keep in "+l+" cache",0,0,f,f[1:]))
-                        if k in synthCache_transtbl: cacheManagementOptions.append(("Reject from "+l+" cache",k,"__rejected_"+k,0,0))
+                        if checkIn(k,synthCache_transtbl): cacheManagementOptions.append(("Reject from "+l+" cache",k,"__rejected_"+k,0,0))
                         else: cacheManagementOptions.append(("Reject from "+l+" cache",0,0,f,"__rejected_"+f))
                     else:
                       k,f = synthcache_lookup(B("!synth:__rejected_")+t+B("_"+l),justQueryCache=1)
                       if not f: k,f = synthcache_lookup(B("!synth:__rejected__")+t+B("_"+l),justQueryCache=1)
                       if f:
-                        if k in synthCache_transtbl: cacheManagementOptions.append(("Undo "+l+" cache reject",k,k[11:],0,0))
+                        if checkIn(k,synthCache_transtbl): cacheManagementOptions.append(("Undo "+l+" cache reject",k,k[11:],0,0))
                         else: cacheManagementOptions.append(("Undo "+l+" cache reject",0,0,f,f[11:]))
                       elif l==secondLanguage and mp3web and not ';' in t: cacheManagementOptions.append(("Get from "+mp3webName,0,0,0,0))
                 if not hasattr(self,"cacheManagementOptions"):
@@ -790,13 +792,13 @@ def startTk():
                 if not (text1 or text2): self.ListBox.selection_clear(0,'end') # probably just added a new word while another was selected (added a variation) - clear selection to reduce confusion
                 else: return # don't try to be clever with searches when editing an existing item (the re-ordering can be confusing)
             text1,text2 = text1.lower().replace(" ",""),text2.lower().replace(" ","") # ignore case and whitespace when searching
-            l=map(lambda x:x[0]+"="+x[1], filter(lambda x:text1 in x[0].lower().replace(" ","") and text2 in x[1].lower().replace(" ",""),self.vocabList)[-tkNumWordsToShow:])
+            l=map(lambda x:x[0]+"="+x[1], filter(lambda x,text1=text1,text2=text2:x[0].lower().replace(" ","").find(text1)>-1 and x[1].lower().replace(" ","").find(text2)>-1,self.vocabList)[-tkNumWordsToShow:])
             l.reverse() ; synchronizeListbox(self.ListBox,l) # show in reverse order, in case the bottom of the list box is off-screen
         def doSynthcacheManagement(self,oldKey,newKey,oldFname,newFname):
             # should be a quick operation - might as well do it in the GUI thread
             if (oldKey,oldFname) == (0,0): # special for mp3web
                 self.menu_response="mp3web" ; return
-            if oldKey in synthCache_transtbl:
+            if checkIn(oldKey,synthCache_transtbl):
                 if newKey: synthCache_transtbl[newKey]=synthCache_transtbl[oldKey]
                 else: del synthCache_transtbl[oldKey]
                 open(synthCache+os.sep+transTbl,'wb').write(B("").join([v+B(" ")+k+B("\n") for k,v in list(synthCache_transtbl.items())]))
@@ -924,8 +926,8 @@ def startTk():
             self.L2Entry.bind('<Return>',self.changeLanguages)
             for e in [self.L1Entry,self.L2Entry]: e.bind('<Button-1>',(lambda e:e.widget.after(10,lambda e=e:selectAll(e))))
             self.ChangeLanguageButton = addButton(self.row3,"",self.changeLanguages,status="Use this button to set your\nfirst and second languages") # will set text in updateLanguageLabels
-            self.ChangeLanguageButton.bind('<FocusIn>',(lambda *args:app.after(10,lambda *args:app.L2Entry.selection_clear())))
-            self.AddButton.bind('<FocusIn>',(lambda *args:app.after(10,lambda *args:app.L1Entry.selection_clear()))) # for backwards tabbing
+            self.ChangeLanguageButton.bind('<FocusIn>',(lambda e=None,app=app:app.after(10,lambda e=None,app=app:app.L2Entry.selection_clear())))
+            self.AddButton.bind('<FocusIn>',(lambda e=None,app=app:app.after(10,lambda e=None,app=app:app.L1Entry.selection_clear()))) # for backwards tabbing
             if GUI_omit_settings and (vocabFile==user0[1] or fileExists(vocabFile)): self.row3.pack_forget()
             if textEditorCommand:
                 self.RecordedWordsButton = addButton(self.row4,"",self.showRecordedWords,{"side":"left"},status="This button lets you manage recorded\n(as opposed to computer-voiced) words")
@@ -972,8 +974,8 @@ def startTk():
             m=Tkinter.Menu(None, tearoff=0, takefocus=0)
             for i in range(len(lastUserNames)):
                 if lastUserNames[i] and not i==intor0(self.userNo.get()):
-                    if fileExists(addUserToFname(user0[1],i)): m.add_command(label=u"Copy vocab list from "+lastUserNames[i],command=(lambda e=None,i=i:self.copyVocabFrom(i)))
-                    m.add_command(label=u"Copy recordings to/from "+lastUserNames[i],command=(lambda e=None,i=i:self.setToOpen((addUserToFname(user0[0],i),addUserToFname(user0[0],intor0(self.userNo.get()))))))
+                    if fileExists(addUserToFname(user0[1],i)): m.add_command(label=u"Copy vocab list from "+lastUserNames[i],command=(lambda e=None,i=i,self=self:self.copyVocabFrom(i)))
+                    m.add_command(label=u"Copy recordings to/from "+lastUserNames[i],command=(lambda e=None,i=i,self=self:self.setToOpen((addUserToFname(user0[0],i),addUserToFname(user0[0],intor0(self.userNo.get()))))))
             m.tk_popup(self.CopyFromButton.winfo_rootx(),self.CopyFromButton.winfo_rooty(),entry="0")
         def setToOpen(self,toOpen): self.menu_response,self.toOpen = "samplesCopy",toOpen
         def copyVocabFrom(self,userNo):
@@ -986,7 +988,7 @@ def startTk():
             if not o: return # IOError
             langs = (secondLanguage,firstLanguage)
             for newLangs,line in vCopyFrom:
-                if (newLangs,line) in vCurrent: continue # already got it
+                if checkIn((newLangs,line),vCurrent): continue # already got it
                 if not newLangs==langs: o.write(B("SET LANGUAGES ")+B(" ").join(list(newLangs))+B("\n"))
                 o.write(B(line)+B("\n"))
                 langs = newLangs
@@ -1010,7 +1012,7 @@ def startTk():
                     if tkMessageBox.askyesno(self.master.title(),msg+"  "+localise("Would you like to see a list of the standard abbreviations for languages that can be computer voiced?")): self.todo.alert = localise("Languages with computer voices (some better than others):")+"\n"+langs
                 else: self.todo.alert = msg+"  "+localise("(Sorry, a list of these is not available on this system - check eSpeak installation.)")
                 return
-            need_redisplay = "@variants-"+GUI_languages.get(firstLanguage,firstLanguage) in GUI_translations or "@variants-"+GUI_languages.get(S(firstLanguage1),S(firstLanguage1)) in GUI_translations # if EITHER old or new lang has variants, MUST reconstruct that row.  (TODO also do it anyway to get the "Speaker" etc updated?  but may cause unnecessary flicker if that's no big problem)
+            need_redisplay = checkIn("@variants-"+GUI_languages.get(firstLanguage,firstLanguage),GUI_translations) or checkIn("@variants-"+GUI_languages.get(S(firstLanguage1),S(firstLanguage1)),GUI_translations) # if EITHER old or new lang has variants, MUST reconstruct that row.  (TODO also do it anyway to get the "Speaker" etc updated?  but may cause unnecessary flicker if that's no big problem)
             firstLanguage,secondLanguage = S(firstLanguage1),S(secondLanguage1)
             updateSettingsFile(settingsFile,{"firstLanguage":firstLanguage,"secondLanguage":secondLanguage})
             if need_redisplay:
@@ -1074,7 +1076,7 @@ def startTk():
             # (also remove the simple visual markup that Wenlin sometimes adds)
             t1,t2=text1,text2
             for zap in ["\n","\r","<b>","</b>","<i>","</i>","<u>","</u>"]: t1,t2=t1.replace(zap,""),t2.replace(zap,"")
-            t1,t2 = t1.strip(wsp), t2.strip(wsp)
+            t1,t2 = wspstrip(t1),wspstrip(t2)
             if not t1==text1: self.Text1.set(t1)
             if not t2==text2: self.Text2.set(t2)
         def getEncoder(self,*args):
@@ -1147,13 +1149,13 @@ def guiVocabList(parsedVocab):
     return ret
 def readText(l): # see utils/transliterate.py (running guiVocabList on txt files from scanSamples)
     l = B(samplesDirectory)+B(os.sep)+B(l)
-    if l in variantFiles: # oops. just read the 1st .txt variant
+    if checkIn(l,variantFiles): # oops. just read the 1st .txt variant
         if B(os.sep) in l: lp=(l+B(os.sep))[:l.rfind(B(os.sep))]+B(os.sep)
         else: lp = B("")
         varList = filter(lambda x:x.endswith(B(dottxt)),variantFiles[l])
         varList.sort() # so at least it consistently returns the same one.  TODO utils/ cache-synth.py list-synth.py synth-batchconvert-helper.py all use readText() now, can we get them to cache the other variants too?
         l = lp + varList[0]
-    return u8strip(read(l)).strip(bwsp)
+    return bwspstrip(u8strip(read(l)))
 
 def singular(number,s):
   s=localise(s)
@@ -1303,7 +1305,7 @@ def sanityCheck(text,language,pauseOnError=0): # text is utf-8; returns error me
             if t in B("12345"): return # got tone numbers
             if t not in B("0123456789. "): allDigits = False
         if allDigits: return
-        return B("Pinyin needs tones.  Please go back and add tone numbers to ")+text+B(".")+cond(startBrowser(B("http://www.mdbg.net/chinese/dictionary?wdqb=")+fix_pinyin(text,[]).strip(bwsp).replace(B("5"),B("")).replace(B(" "),B("+"))),B(" Gradint has pointed your web browser at an online dictionary that might help."),B(""))
+        return B("Pinyin needs tones.  Please go back and add tone numbers to ")+text+B(".")+cond(startBrowser(B("http://www.mdbg.net/chinese/dictionary?wdqb=")+bwspstrip(fix_pinyin(text,[])).replace(B("5"),B("")).replace(B(" "),B("+"))),B(" Gradint has pointed your web browser at an online dictionary that might help."),B(""))
 
 def check_for_slacking():
     if fileExists(progressFile): checkAge(progressFile,localise("It has been %d days since your last Gradint lesson.  Please try to have one every day."))
@@ -1412,7 +1414,7 @@ def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
         l2=l.lower()
         if l2.startswith(B("set language ")) or l2.startswith(B("set languages ")):
             langs=map(S,l.split()[2:]) ; writeB(o,l+B("\n")) ; continue
-        thisLine=map(lambda x:x.strip(bwsp),l.split(B("="),len(langs)-1))
+        thisLine=map(bwspstrip,l.split(B("="),len(langs)-1))
         if (langs==[secondLanguage,firstLanguage] and thisLine==[L2toDel.encode('utf-8'),L1toDel.encode('utf-8')]) or (langs==[firstLanguage,secondLanguage] and thisLine==[L1toDel.encode('utf-8'),L2toDel.encode('utf-8')]):
             # delete this line.  and maybe replace it
             found = 1
@@ -1426,7 +1428,7 @@ def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):
         os.remove(fname)
     return found
 
-def maybeCanSynth(lang): return lang in synth_partials_voices or get_synth_if_possible(lang,0) or synthCache
+def maybeCanSynth(lang): return checkIn(lang,synth_partials_voices) or get_synth_if_possible(lang,0) or synthCache
 def android_main_menu():
   while True:
     menu=[]
@@ -1632,7 +1634,7 @@ def gui_event_loop():
             if not app: break
             found=0
             for f in scanDirs()[0].keys():
-              if not f in oldLs and (f.lower().endswith(dotmp3) or f.lower().endswith(dotwav)) and getYN("Use "+f[f.rfind(os.sep)+1:]+"?"): # TODO don't ask this question too many times if there are many and they're all 'no'
+              if not checkIn(f,oldLs) and (f.lower().endswith(dotmp3) or f.lower().endswith(dotwav)) and getYN("Use "+f[f.rfind(os.sep)+1:]+"?"): # TODO don't ask this question too many times if there are many and they're all 'no'
                 system("mp3gain -r -s r -k -d 10 \""+f+"\"") # (if mp3gain command is available; ignore errors if not (TODO document in advanced.txt)) (note: doing here not after the move, in case synthCache is over ftpfs mount or something)
                 uf=scFile=text1.encode("utf-8")+"_"+secondLanguage+f[-4:].lower()
                 try:
@@ -1668,7 +1670,7 @@ def gui_event_loop():
                 if system("""tar -zxvf lame*.tar.gz && cd lame-* && if ./configure && make; then ln -s $(pwd)/frontend/lame ../lame || true; else cd .. ; rm -rf lame*; exit 1; fi"""): app.todo.alert = "Compile failed"
           app.todo.set_main_menu = 1
         elif (menu_response=="add" or menu_response=="replace") and not (app.Text1.get() and app.Text2.get()): app.todo.alert="You need to type text in both boxes before adding the word/meaning pair to "+vocabFile
-        elif menu_response=="add" and hasattr(app,"vocabList") and (asUnicode(app.Text1.get()),asUnicode(app.Text2.get())) in app.vocabList:
+        elif menu_response=="add" and hasattr(app,"vocabList") and checkIn((asUnicode(app.Text1.get()),asUnicode(app.Text2.get())),app.vocabList):
             # Trying to add a word that's already there - do we interpret this as a progress adjustment?
             app.set_watch_cursor = 1
             t1,t2 = asUnicode(app.Text1.get()),asUnicode(app.Text2.get())
@@ -1680,7 +1682,7 @@ def gui_event_loop():
             for listToCheck in [d.data,d.unavail]:
               if found: break
               for item in listToCheck:
-                if (item[1]==l1find or (type(item[1])==type([]) and l1find in item[1])) and item[2]=="!synth:"+lang2.encode('utf-8')+"_"+secondLanguage:
+                if (item[1]==l1find or (type(item[1])==type([]) and checkIn(l1find,item[1]))) and item[2]=="!synth:"+lang2.encode('utf-8')+"_"+secondLanguage:
                     if not item[0]: break # not done yet - as not-found
                     newItem0 = reviseCount(item[0])
                     app.unset_watch_cursor = 1
@@ -1719,7 +1721,7 @@ def gui_event_loop():
                 lang2,lang1=lang2.lower(),lang1.lower() # because it's .lower()'d in progress.txt
                 l1find = B("!synth:")+lang1.encode('utf-8')+B("_"+firstLanguage)
                 for item in d.data:
-                    if (item[1]==l1find or (type(item[1])==type([]) and l1find in item[1])) and item[2]==B("!synth:")+lang2.encode('utf-8')+B("_"+secondLanguage) and item[0]:
+                    if (item[1]==l1find or (type(item[1])==type([]) and checkIn(l1find,item[1]))) and item[2]==B("!synth:")+lang2.encode('utf-8')+B("_"+secondLanguage) and item[0]:
                         app.unset_watch_cursor = 1
                         if not getYN(localise("You have repeated %s=%s %d times.  Do you want to pretend you already repeated %s=%s %d times?") % (S(lang2),S(lang1),item[0],S(t2),S(t1),item[0])):
                             app.set_watch_cursor = 1 ; break

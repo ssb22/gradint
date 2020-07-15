@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.03 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -82,6 +82,7 @@ wsp = '\t\n\x0b\x0c\r ' ; bwsp=B(wsp) # whitespace characters - ALWAYS use .stri
 warnings_printed = [] ; app = False # False is a hack for "maybe later"
 warnings_toprint = []
 def show_warning(w):
+    if w+"\n" in warnings_printed: return
     if not app and not app==False and not appuifw and not android:
         if winCEsound and len(w)>100: w=w[:100]+"..." # otherwise can hang winCEsound's console (e.g. a long "assuming that" message from justSynthesize)
         sys.stderr.write(w+"\n")
@@ -97,11 +98,6 @@ def show_info(i,always_stderr=False):
     try: writeB(sys.stderr,i)
     except IOError: pass
 
-# For pre-2.3 versions of Python (e.g. 2.2 on Symbian S60 and Mac OS 10.3):
-try: True
-except: exec("True = 1 ; False = 0")
-# TODO make sure to avoid writing "string1 in string2" without thinking - if string1 is multiple characters it won't work on pre-2.3
-# TODO check all lambda functions for Python2.2 compatibility
 # (TODO: GUI_translations, if not set in advanced.txt, won't work properly on pre-2.3 - it'll take them as Latin-1)
 # (TODO: and if it *IS* set in advanced.txt, will 2.2's exec() correctly exec a unicode string?)
 
@@ -126,6 +122,14 @@ def list2dict(l):
   return d
 try: list2set = set
 except NameError: list2set = list2dict
+def checkIn(k,obj):
+    try: return k in obj # dict or set
+    except:
+        try: return obj.has_key(k) # Python 2.1 (may raise TypeError, AttributeError etc if try to use the "in" operator as above, but has_key rm'd from Python3)
+        except: return obj.find(k) > -1 # Python 2.1 strings
+try: object
+except:
+    class object: pass # Python 2.1
 
 # settings.txt and advanced.txt
 # (done here before the variables start to be used in
@@ -179,12 +183,18 @@ def u8strip(d):
         last_u8strip_found_BOM = 1
         return d[3:] # ignore Notepad's UTF-8 BOM's
     else: return d
+def bwspstrip(s):
+    try: return s.strip(bwsp)
+    except: return s.strip() # Python 2.1
+def wspstrip(s):
+    try: return s.strip(wsp)
+    except: return s.strip() # Python 2.1
 GUI_translations_old = GUI_translations
 configFiles = map(lambda x:x+dottxt,["advanced","settings"]) # MUST have settings last so can have per-user override of scriptVariants
 if not hasattr(sys,"argv"): sys.argv=" " # some Symbian versions
 starting_directory = os.getcwd()
 if not fileExists(configFiles[0]):
-  if macsound and "_" in os.environ:
+  if macsound and checkIn("_",os.environ):
     s=os.environ["_"] ; s=s[:s.rfind(os.sep)]
     os.chdir(s)
     if not fileExists(configFiles[0]):
@@ -245,7 +255,7 @@ synth_priorities = "eSpeak MacOS SAPI Ekho" # old advanced.txt had this instead 
 dir1 = list2set(dir()+["dir1","f","last_u8strip_found_BOM","__warningregistry__"])
 for f in configFiles: readSettings(f)
 for d in dir():
-  if not d in dir1 and eval(d) and not type(eval(d))==type(lambda *args:0): # (ignore unrecognised options that evaluate false - these might be an OLD unused option with a newer gradint rather than vice versa; also ignore functions as these could be used in command-line parameters)
+  if not checkIn(d,dir1) and eval(d) and not type(eval(d))==type(lambda *args:0): # (ignore unrecognised options that evaluate false - these might be an OLD unused option with a newer gradint rather than vice versa; also ignore functions as these could be used in command-line parameters)
     show_warning("Warning: Unrecognised option in config files: "+d)
 del dir1
 GUI_translations_old.update(GUI_translations) ; GUI_translations = GUI_translations_old # in case more have been added since advanced.txt last update
@@ -281,15 +291,15 @@ if paranoid_file_management:
             time.sleep(0.5)
   def read(file): return tryIO(lambda x=file:_old_open(x,"rb").read())
   def _write(fn,data):
-    tryIO(lambda x=fn,y=data:_old_open(x,"wb").write(data))
+    tryIO(lambda x=fn,y=data:_old_open(x,"wb").write(y))
     time.sleep(0.5)
     if not filelen(fn)==len(data):
       # might be a version of curlftpfs that can't shorten files - try delete and restart (although this can erase permissions info)
       os.remove(fn)
-      tryIO(lambda x=fn,y=data:_old_open(x,"wb").write(data))
+      tryIO(lambda x=fn,y=data:_old_open(x,"wb").write(y))
       if not filelen(fn)==len(data): raise IOError("wrong length")
     if not read(fn)==data: raise IOError("verification failure on "+repr(fn))
-  def write(fn,data): return tryIO(lambda x=fn,y=data:_write(x,data))
+  def write(fn,data): return tryIO(lambda x=fn,y=data:_write(x,y))
   def open(file,mode="r",forAppend=0):
     if "a" in mode:
         try: dat = open(file,"rb").read()
@@ -388,8 +398,8 @@ def progressFileOK():
         except: return 0
 if winsound:  # will try these dirs in reverse order:
     tryList = ["C:\\TEMP\\gradint-progress.txt", "C:\\gradint-progress.txt", "C:gradint-progress.txt"]
-    if "HOMEDRIVE" in os.environ and "HOMEPATH" in os.environ: tryList.append(os.environ["HOMEDRIVE"]+os.environ["HOMEPATH"]+os.sep+"gradint-progress.txt")
-elif "HOME" in os.environ: tryList=[os.environ["HOME"]+os.sep+"gradint-progress.txt"]
+    if checkIn("HOMEDRIVE",os.environ) and checkIn("HOMEPATH",os.environ): tryList.append(os.environ["HOMEDRIVE"]+os.environ["HOMEPATH"]+os.sep+"gradint-progress.txt")
+elif checkIn("HOME",os.environ): tryList=[os.environ["HOME"]+os.sep+"gradint-progress.txt"]
 elif riscos_sound: tryList=["$.gradint-progress/txt"]
 else: tryList = []
 foundPF = okPF = 0 ; defaultProgFile = progressFile
@@ -479,9 +489,9 @@ except: orig_onceperday=0
 if winsound:
     # check for users putting support files/folders in the desktop shortcuts folder and thinking it's the gradint folder
     # We can't do much about detecting users on non-English Windows who have heeded the warning about moving the "Desktop" folder to the real desktop but then mistook this for the gradint folder when adding flite (but hopefully they'll be using ptts/espeak anyway, and yali has an installer)
-    if "HOMEDRIVE" in os.environ and "HOMEPATH" in os.environ: dr=os.environ["HOMEDRIVE"]+os.environ["HOMEPATH"]
+    if checkIn("HOMEDRIVE",os.environ) and checkIn("HOMEPATH",os.environ): dr=os.environ["HOMEDRIVE"]+os.environ["HOMEPATH"]
     else: dr="C:\\Program Files" # as setup.bat (location for gradint on Win95 etc)
-    if "USERPROFILE" in os.environ: dr=os.environ["USERPROFILE"]
+    if checkIn("USERPROFILE",os.environ): dr=os.environ["USERPROFILE"]
     if not dr[-1]=="\\": dr += "\\"
     try: dirList = os.listdir(dr+"Desktop\\gradint\\") # trailing \ important, otherwise it can include gradint.zip etc on Desktop
     except: dirList = []
@@ -507,7 +517,7 @@ def got_program(prog):
     elif unix:
         try:
             import distutils.spawn
-            if ":." in ":"+os.environ.get("PATH",""):
+            if (":"+os.environ.get("PATH","")).find(":.")>-1:
                 prog = distutils.spawn.find_executable(prog)
             else: # at least some distutils assume that "." is in the PATH even when it isn't, so do it ourselves without checking "."
                 oldCwd = os.getcwd()
@@ -523,7 +533,7 @@ def got_program(prog):
                     os.chdir(oldCwd)
         except ImportError:
             # fall back to running 'which' in a shell (probably slower if got_program is called repeatedly)
-            prog = os.popen("which "+prog+" 2>/dev/null").read().strip(wsp)
+            prog = wspstrip(os.popen("which "+prog+" 2>/dev/null").read())
             if not fileExists_stat(prog): prog=None # some Unix 'which' output an error to stdout instead of stderr, so check the result exists
         return prog
 
@@ -557,8 +567,8 @@ def check_for_interrupts(): # used on platforms where thread.interrupt_main won'
         raise KeyboardInterrupt
 
 # If forking, need to do so BEFORE importing any Tk module (we can't even verify Tk exists 1st)
-if outputFile or justSynthesize or appuifw or not (winsound or winCEsound or mingw32 or macsound or riscos_sound or cygwin or "DISPLAY" in os.environ): useTK = 0
-if useTK and runInBackground and not (winsound or mingw32) and hasattr(os,"fork") and not "gradint_no_fork" in os.environ:
+if outputFile or justSynthesize or appuifw or not (winsound or winCEsound or mingw32 or macsound or riscos_sound or cygwin or checkIn("DISPLAY",os.environ)): useTK = 0
+if useTK and runInBackground and not (winsound or mingw32) and hasattr(os,"fork") and not checkIn("gradint_no_fork",os.environ):
     if os.fork(): sys.exit()
     os.setsid()
     if os.fork(): sys.exit()
