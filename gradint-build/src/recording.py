@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.05 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -51,7 +51,7 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
         global paranoid_file_management
         if use_unicode_filenames: fileToPlay=ensure_unicode(fileToPlay)
         else:
-            assert not type(fileToPlay)==type(u"")
+            assert type(fileToPlay)==type("")
             if not paranoid_file_management and filter(lambda x:ord(x)>=128,list(fileToPlay)): paranoid_file_management = True # hack to try to work around a Tkinter fault on Linux with utf-8 filenames
         if paranoid_file_management: # try to ensure it's ready for reading
             if filelen(fileToPlay)<1048576:
@@ -86,7 +86,8 @@ class PlayerInput(InputSource): # play to speakers while recording to various de
         elapsedTime = self.elapsedTime()
         if elapsedTime>=self.length-self.startSample*1.0/self.sampleRate: self.close()
         else:
-            import thread
+            try: import thread
+            except ImportError: import _thread as thread
             def stopMe(self,thread_id,elapsedTime):
                 time.sleep(max(0.5,self.length-self.startSample*1.0/self.sampleRate-elapsedTime))
                 self.autostop(thread_id)
@@ -678,7 +679,8 @@ class RecorderControls(ButtonScrollingMixin):
             app.scanrow.set("0")
             self.reconfigure_scrollbar()
         if tkSnack: theISM.setInputSource(MicInput())
-        self.frame=Tkinter.Frame(app.leftPanel) ; self.frame.pack()
+        self.frame=Tkinter.Frame(app.leftPanel)
+        self.frame.pack(fill=Tkinter.Y,expand=1)
 
         self.need_reRecord_enabler = 0 # no previously-existing words yet (when we get existing words we 'lock' them and have to unlock by pressing a global 'rerecord' button 1st, just in case)
 

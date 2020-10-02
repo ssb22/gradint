@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.05 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -156,14 +156,18 @@ if winsound or mingw32:
     # TODO now that we (usually) have tkSnack bundled with the Windows version, can we try that also (with file=) before sndrec32?
     if not wavPlayer and fileExists(os.environ.get("windir","C:\\Windows")+"\\system32\\sndrec32.exe"): wavPlayer = "start /min sndrec32 /play /close" # TODO could also use ShellExecute or some other utility to make it completely hidden
 elif unix and not macsound:
-    sox_type = "-t ossdsp -s "+sox_16bit # (we will check that sox can do ossdsp below) (always specify 16-bit because if we're adjusting the volume of 8-bit wav's then we could lose too many bits in the adjustment unless we first convert to 16-bit)
+    sox_type = "-t ossdsp "+sox_signed+" "+sox_16bit # (we will check that sox can do ossdsp below) (always specify 16-bit because if we're adjusting the volume of 8-bit wav's then we could lose too many bits in the adjustment unless we first convert to 16-bit)
     if not soundVolume==1: sox_effect=" vol "+str(soundVolume)
     if sox_effect and not gotSox:
         show_warning("Warning: trying to adjust soundVolume when 'sox' is not on the system might not work")
         # (need a warning here, because if using 'aplay' then sox o/p is 2>/dev/null (see below) so a missing sox won't be obvious)
+    if sox_formats.find("alsa")>=0 and isDirectory("/dev/snd"):
+        sox_type=sox_type.replace("ossdsp","alsa")
+        oss_sound_device = "hw:0,0"
     if not oss_sound_device:
         dsps_to_check = []
-        if sox_formats.find("ossdsp")>=0: dsps_to_check += ["/dev/sound/dsp","/dev/dsp"]
+        if sox_formats.find("ossdsp")>=0:
+            dsps_to_check += ["/dev/sound/dsp","/dev/dsp"]
         if sox_formats.find("sunau")>=0: dsps_to_check += ["/dev/audio"]
         for dsp in dsps_to_check:
             if fileExists_stat(dsp):
@@ -421,7 +425,10 @@ def lengthOfSound(file):
 
 def pcmlen(file):
     header = sndhdr.what(file)
-    if not header: raise IOError("Problem opening file '%s'" % (file,))
+    if not header:
+        # some Python 3 installations seem less able to run sndhdr
+        if gotSox: return len(readB(os.popen("sox \""+file+"\" -t raw "+sox_8bit+" "+sox_signed+" -c 1 -r 8000 - ",popenRB)))/8000.0
+        else: raise IOError("sndhdr can't analyse file '%s'" % (file,))
     (wtype,wrate,wchannels,wframes,wbits) = header
     if android:
         if wrate==6144: # might be a .3gp from android_recordFile

@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.04 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.05 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -378,6 +378,8 @@ def setupScrollbar(parent,rowNo):
     onLeft = winCEsound or olpc
     s = Tkinter.Scrollbar(parent,takefocus=0)
     s.grid(row=rowNo,column=cond(onLeft,0,1),sticky="ns"+cond(onLeft,"w","e"))
+    try: parent.rowconfigure(rowNo,weight=1)
+    except: pass
     c=Tkinter.Canvas(parent,bd=0,width=200,height=100,yscrollcommand=s.set)
     c.grid(row=rowNo,column=cond(onLeft,1,0),sticky="nsw")
     s.config(command=c.yview)
@@ -501,7 +503,7 @@ def startTk():
             self.extra_button_callables = []
             self.pack(fill=Tkinter.BOTH,expand=1)
             self.leftPanel = Tkinter.Frame(self)
-            self.leftPanel.pack(side="left",fill=Tkinter.X,expand=1) # "fill" needed so listbox can fill later
+            self.leftPanel.pack(side="left",fill=Tkinter.BOTH,expand=1)
             self.rightPanel = None # for now
             self.cancelling = 0 # guard against multiple presses of Cancel
             self.Label = Tkinter.Label(self.leftPanel,text="Please wait a moment")
@@ -1230,7 +1232,7 @@ if useTK:
         if sys.version.startswith("2.3.5") and "DISPLAY" in os.environ: explorerCommand = None # 'open' doesn't seem to work when running from within Python in X11 on 10.4
         else: explorerCommand="open"
     elif unix:
-        if "KDE_FULL_SESSION" is os.environ and got_program("kfmclient"):
+        if "KDE_FULL_SESSION" in os.environ and got_program("kfmclient"):
             # looks like we're in a KDE session and can use the kfmclient command
             textEditorCommand=explorerCommand="kfmclient exec"
         elif not olpc and got_program("gnome-open"):
@@ -1242,7 +1244,7 @@ if useTK:
             # (TODO if both rox and gnome are available, can we tell which one the user prefers?)
             explorerCommand="rox"
         # anyway, see if we can find a nice editor
-        for editor in ["leafpad","gedit","nedit","kedit","xedit"]:
+        for editor in ["leafpad","featherpad","gedit","nedit","kedit","xedit"]:
             if got_program(editor):
                 textEditorName=textEditorCommand=editor
                 textEditorWaits = 1
