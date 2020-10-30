@@ -1,10 +1,11 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
+# (compatible with both Python 2 and Python 3)
 
 # Script to generate an HTML table of the contents of a lesson
 # for summarizing it to a teacher or native speaker.
 # Reads from progressFile and progressFileBackup.
 
-# Version 1.04 (c) 2011 Silas S. Brown.  License: GPL
+# Version 1.05 (c) 2011, 2020 Silas S. Brown.  License: GPL
 
 # Example use:
 # python lesson-table.py | ssh some-server 'mutt -e "set record = \"\";" -e "set charset=\"utf-8\"; set send_charset=\"utf-8\"; set content_type=\"text/html\";" to-address -s "Gradint report"' || echo Send failed
@@ -41,7 +42,10 @@ for tries,l1,l2 in newProg.data:
   count += 1
 del newProg,opd
 changes.sort()
-print ('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title></head><body><h2>Gradint lesson report</h2><table border><tr><th>Repeats before</th><th>Repeats today</th><th>Question</th><th>Answer</th></tr>') # (have Question/Answer order rather than Word/Meaning, because if it's L2-only poetry then the question is the previous line, which is not exactly "meaning")
+print ('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title></head><body><h2>Gradint lesson report</h2>')
+if gradint.unix and gradint.got_program("zgrep"):
+  print (os.popen("zgrep '^# collection=' \"%s\"" % gradint.progressFile).read()[2:].rstrip())
+print ('<table border><tr><th>Repeats before</th><th>Repeats today</th><th>Question</th><th>Answer</th></tr>') # (have Question/Answer order rather than Word/Meaning, because if it's L2-only poetry then the question is the previous line, which is not exactly "meaning")
   
 had_h5a = False
 def h5aCode(filename):
