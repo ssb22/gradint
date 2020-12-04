@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.06 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.061 (c) 2002-20 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -443,6 +443,9 @@ if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam"
         global tempnam_no ; tempnam_no += 1
         return tmpPrefix+str(tempnam_no)
     os.tempnam = os.tmpnam = tempnam
+elif (macsound or sys.platform.lower().find("bsd")>0) and os.environ.get("TMPDIR",""): # BSD tempnam uses P_tmpdir instead, override
+    tempnam0 = os.tempnam
+    os.tempnam=lambda *args:tempnam0(os.environ["TMPDIR"])
 
 if disable_once_per_day==1:
   if once_per_day==3: sys.exit()
