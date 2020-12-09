@@ -212,7 +212,7 @@ def getAmplify(directory):
     for f in os.listdir(directory):
         factor = None
         if f.endswith(dotwav) and not system("sox \""+directory+os.sep+f+"\" "+out2nul+" stat 2> \""+statfile+"\""):
-            for l in read(statfile).replace("\r","\n").split("\n"):
+            for l in S(read(statfile)).replace("\r","\n").split("\n"):
                 if l.startswith("Volume adjustment:"): factor=l.split()[2]
         if not factor: continue
         tmplist.append([float(factor),f,factor])
