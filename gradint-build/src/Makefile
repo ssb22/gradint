@@ -1,3 +1,2 @@
-all:
-	echo "Please run 'make' in the directory above, not here."
-	exit 1
+../gradint.py:
+	make -C .. gradint.py
