@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.31 (c) 2013-15,2017-20 Silas S. Brown.  License: GPL
+# v1.32 (c) 2013-15,2017-21 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping batch it up for later (then run and save cache on first call with False)
 jyutping_cache = {} ; jyutping_dryrun = set()
@@ -193,8 +193,14 @@ def jyutping_to_yale_TeX(j): # returns space-separated syllables
     for i in range(len(syl)-1,-1,-1):
       if syl[i] in "aeiou":
         lastVowel=i ; break
-    if syl[-1] in "123456":
-      tone = ["\=",r"\'","",r"\`",r"\'",""][int(syl[-1])-1]
+    if syl[-1] in "1234567":
+      # get_jyutping replaces 7 with 1 because zhy_list is
+      # more Canton-type than Hong Kong-type Cantonese and
+      # there is considerable disagreement on which "1"s
+      # should be "7"s, but if you pass any "7" into the
+      # jyutping_to_yale functions we can at least process
+      # it here:
+      tone = ["\=",r"\'","",r"\`",r"\'","",r"\`"][int(syl[-1])-1]
       if syl[-1] in "456":
         syl=syl[:lastVowel+1]+"h"+syl[lastVowel+1:]
       ret.append((syl[:vowel]+tone+syl[vowel:-1]).replace(r"\=i",r"\=\i{}").replace(r"\=I",r"\=\I{}"))
