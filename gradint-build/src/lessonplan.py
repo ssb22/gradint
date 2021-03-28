@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.061 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.062 (c) 2002-21 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -27,9 +27,9 @@ class ProgressDatabase(object):
             doLabel("Checking transliterations")
             global tList # for Python 2.1
             tList = {}
-            def addVs(ff,dirBase):
-                if dirBase: dirBase += os.sep
+            def addVs(ff,dirBase): # add variants of ff to tList which we might need to transliterate
                 dirBase,ff = B(dirBase),B(ff)
+                if dirBase: dirBase += B(os.sep)
                 if checkIn(dirBase+ff,variantFiles):
                    if B(os.sep) in ff: ffpath=ff[:ff.rfind(B(os.sep))+1]
                    else: ffpath=B("")

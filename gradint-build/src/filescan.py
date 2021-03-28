@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.061 (c) 2002-20 Silas S. Brown. GPL v3+.
+# gradint v3.062 (c) 2002-21 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -17,7 +17,7 @@ def init_scanSamples():
   dirsWithIntros = []
   filesWithExplanations = {}
   singleLinePoems = {} # keys are any poem files which are single line only, so as to avoid saying 'beginning' in prompts
-  variantFiles = {} # careful with clearing this if prompts is using it also (hence called only below and in loop.py before prompt scan)
+  variantFiles = {} # maps dir+fname to (no dir+) fname list, main use is in fileToEvent.  Careful with clearing this if prompts is using it also (hence init_scanSamples is called only below and in loop.py before prompt scan)
 init_scanSamples() ; emptyCheck_hack = 0
 def scanSamples(directory=None):
     if not directory: directory=samplesDirectory
@@ -115,14 +115,14 @@ def getLsDic(directory):
             os.rename(directory+os.sep+f,directory+os.sep+f[:i]+(("%0"+str(len(str(len(ls))))+"d") % (int((int(num)-1)/2)*2+1))+cond(int(num)%2,oddLanguage,evenLanguage)+f[f.rfind(extsep):])
         os.remove(directory+os.sep+"settings"+dottxt)
         ls = os.listdir(directory)
-    ls.sort() ; lsDic = {}
+    ls.sort()
+    lsDic = {} # key is file w/out extension but INCLUDING any variant number.  Value is full filename if it's an extension we know about, "" if it's a file we can't process, or None if it's a directory (in which case key includes any 'extension' if the directory has one)
     has_variants = check_has_variants(directory,ls)
     for file in ls:
         filelower = file.lower()
-        # in lsDic if it's in the list (any extension); =filename if it's an extension we know about; =None if it's a directory (in which case the key is the full filename), ottherwise =""
-        if has_variants and file.find("_",file.find("_")+1)>=0: languageOverride=file[file.find("_")+1:file.find("_",file.find("_")+1)]
+        if filelower.endswith(dottxt) and checkIn((file+extsep)[:file.rfind(extsep)],lsDic): continue # don't let a .txt override a recording if both exist with same variant number
+        if has_variants and file.find("_",file.find("_")+1)>=0: languageOverride=file[file.find("_")+1:file.find("_",file.find("_")+1)] # for can_be_synthesized below
         else: languageOverride=None
-        if filelower.endswith(dottxt) and checkIn((file+extsep)[:file.rfind(extsep)],lsDic): continue # don't let a .txt override a recording if both exist
         if (filelower.endswith(dottxt) and file.find("_")>=0 and can_be_synthesized(file,directory,languageOverride)) or filelower.endswith(dotwav) or filelower.endswith(dotmp3): val = file
         else:
             val = ""
@@ -134,36 +134,43 @@ def getLsDic(directory):
             elif checkIn((file+extsep)[:file.rfind(extsep)],lsDic): continue # don't let a .txt~ or other unknown extension override a .txt
         lsDic[(file+extsep)[:file.rfind(extsep)]] = val # (this means if there's both mp3 and wav, wav will overwrite as comes later)
     if has_variants:
-        ls=list2set(ls) ; newVs = {}
+        ls=list2set(ls)
+        newVs = {} # variantFiles keys we added or changed
         for k,v in list(lsDic.items()):
             # check for _lang_variant.ext and take out the _variant,
             # but keep them in variantFiles dict for fileToEvent to put back
-            if not v or (not directory==promptsDirectory and v.find("_explain_")>=0): continue # don't get confused by that
+            if not v or (not directory==promptsDirectory and v.find("_explain_")>=0): continue # skip directories, and don't get confused by explanation files
             last_ = v.rfind("_")
             if last_==-1: continue
             penult_ = v.rfind("_",0,last_)
             if penult_==-1: continue
-            del lsDic[k]
-            newK,newV = k[:k.rfind("_")], v[:v.rfind("_")]+v[v.rfind(extsep):]
-            if not checkIn(newK,lsDic): lsDic[newK] = newV
-            else: # variants of different file types? better store them all under one (fileToEvent will sort out).  (Testing if the txt can be synth'd has already been done above)
-                if v.endswith(dottxt) and not lsDic[newK].endswith(dottxt): # if any variants are .txt then we'd better ensure the key is, so transliterate etc finds it. So move the key over to the .txt one.
-                    old_dirV = B(directory+os.sep+lsDic[newK])
+            # Now k = filename without extension but including a variant number, and v = full filename
+            del lsDic[k] # we don't want variant numbers in lsDic, we want them in variantFiles instead
+            newK,newV = k[:k.rfind("_")], v[:v.rfind("_")]+v[v.rfind(extsep):] # = k and v without the variant number (we'll add the real v to variantFiles[dir+newV] below, so it will be findable without variant number)
+            new_dirV = B(directory)+B(os.sep)+B(newV)
+            if not checkIn(newK,lsDic): # filename without variant number doesn't exist (for any extension)
+                lsDic[newK] = newV # so start it
+                assert not checkIn(new_dirV,variantFiles)
+                variantFiles[new_dirV] = [v]
+            elif v.endswith(dottxt) and not lsDic[newK].endswith(dottxt): # filename without variant number DOES exist (or we made the key when we saw a previous variant), and this new variant is .txt but the one without variant number is not.  If any variants are .txt then we'd better ensure the key maps to a .txt file (so transliterate etc finds it) and recordings are counted as variants of this .txt file, rather than .txt as variants of recordings.
+                old_dirV = B(directory+os.sep+lsDic[newK]) # the variantFiles key for the recording(s) we've already put in lsDic (but it'll be in variantFiles only if it HAD a variant number when we saw it, which won't be the case if the first variant had no number)
+                if checkIn(old_dirV,variantFiles):
                     d = variantFiles[old_dirV]
                     del variantFiles[old_dirV]
-                    lsDic[newK] = newV
-                    variantFiles[B(directory)+B(os.sep)+B(newV)] = d
-                    lsDic[newK] = newV # just add to the previous key
-                    if checkIn(old_dirV,newVs):
-                        del newVs[old_dirV]
-                        newVs[B(directory)+B(os.sep)+B(newV)] = 1
-                else: newV = lsDic[newK]
-            dir_newV = B(directory)+B(os.sep)+B(newV)
-            if not checkIn(dir_newV,variantFiles):
-                variantFiles[dir_newV] = []
-                if checkIn(S(newV),ls): variantFiles[dir_newV].append(newV) # the no-variants name is also a valid option
-            variantFiles[dir_newV].append(v)
-            newVs[dir_newV]=1
+                    variantFiles[new_dirV] = d
+                else: variantFiles[new_dirV] = [B(lsDic[newK])] # the recording had no variant number, but now we know it does have variants, so put in the recording as first variant of the .txt key
+                variantFiles[new_dirV].append(v)
+                if checkIn(old_dirV,newVs):
+                    del newVs[old_dirV]
+                newVs[new_dirV] = 1
+                lsDic[newK] = newV
+            else: # filename without variant number does exist (or we made the key), and we need to add new variant
+                newV = lsDic[newK]
+                new_dirV = B(directory)+B(os.sep)+B(newV)
+                if not checkIn(new_dirV,variantFiles): # without variant number exists but isn't in variantFiles, so we need to add it as a variant before we add this new variant.  We know the key from lsDic.
+                    variantFiles[new_dirV] = [B(newV)]
+                variantFiles[new_dirV].append(v)
+            newVs[new_dirV]=1
         for v in list(newVs.keys()):
             assert checkIn(v,variantFiles), repr(sorted(list(variantFiles.keys())))+' '+repr(v)
             random.shuffle(variantFiles[v])
