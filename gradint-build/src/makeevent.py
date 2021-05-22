@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.062 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.063 (c) 2002-21 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -467,7 +467,7 @@ def optimise_partial_playing(ce):
             if wavPlayer=="aplay": wpMod="aplay -q"
             elif wavPlayer.strip().endswith("<"): wpMod=wavPlayer.strip()[:-1] # nc etc
             else: wpMod='sox -t wav - '+sox_type+' '+oss_sound_device
-            s=ShellEvent('set -o pipefail;('+'&&'.join(['cat "%s" | sox -t %s - -t wav - $Vol$ 2>/dev/null' % (ce.eventList[0].file,fileType)]+['cat "%s" | sox -t %s - -t raw - $Vol$'%(e.file,fileType) for e in ce.eventList[1:]])+')'+sox_ignoreLen+'|'+wpMod,True)
+            s=ShellEvent('set -o pipefail;('+'&&'.join(['cat "%s" | sox -t %s - -t wav - $Vol$ 2>/dev/null' % (S(ce.eventList[0].file),fileType)]+['cat "%s" | sox -t %s - -t raw - $Vol$'%(S(e.file),fileType) for e in ce.eventList[1:]])+')'+sox_ignoreLen+'|'+wpMod,True)
             s.VolReplace="sox_effect"
         elif wavPlayer=="aplay" and not sox_effect: s=ShellEvent('aplay -q '+''.join(map(lambda x:' "'+x.file+'"', ce.eventList)),True) # (which is not quite as good but is the next best thing) (and hope they don't then try to re-play a saved lesson with a volume adjustment)
     if s:

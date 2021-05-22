@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.062 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.063 (c) 2002-21 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -42,6 +42,8 @@ def doOneLesson(dbase):
             app.setLabel("Starting lesson")
             app.cancelling = 0
         lesson.play()
+      if not gluedListTracker==None:
+          global lastLessonMade ; lastLessonMade = lesson # used by utils/trace.py
       if dbase and saveProgress and not dbase.saved_completely: # justSaveLesson is a no-op if not first time through lesson (because scripts that use it probably mean "save if not already save"; certainly don't mean "play if is saved")
           if cancelledFiles: dbase.savePartial(cancelledFiles)
           else: dbase.save()

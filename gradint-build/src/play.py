@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.062 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.063 (c) 2002-21 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -273,7 +273,7 @@ class SampleEvent(Event):
           if not fileExists_stat(self.file): break # unlink suceeded and still threw exception ??
     def makesSenseToLog(self):
         if hasattr(self,"is_prompt"): return not self.is_prompt # e.g. prompt from synth-cache
-        return not self.file.startswith(promptsDirectory) # (NB "not prompts" doesn't necessarily mean it'll be a sample - may be a customised additional comment)
+        return not B(self.file).startswith(B(promptsDirectory)) # (NB "not prompts" doesn't necessarily mean it'll be a sample - may be a customised additional comment)
     def play(self): # returns a non-{False,0,None} value on error
         if paranoid_file_management:
             if not hasattr(self,"isTemp"): open(self.file) # ensure ready for reading
@@ -348,7 +348,7 @@ class SampleEvent(Event):
             # riscos can't do re-direction (so hope not using a buggy sox) (but again don't have to worry about this if playing because will use PlayIt)
             # + on some setups (e.g. Linux 2.6 ALSA with OSS emulation), it can fail without returning an error code if the DSP is busy, which it might be if (for example) the previous event is done by festival and is taking slightly longer than estimated
             t = time.time()
-            play_error = system('cat "%s" | sox -t %s - %s %s%s >/dev/null' % (self.file,fileType,sox_type,oss_sound_device,sox_effect))
+            play_error = system('cat "%s" | sox -t %s - %s %s%s >/dev/null' % (S(self.file),fileType,sox_type,oss_sound_device,sox_effect))
             if play_error: return play_error
             else:
                 # no error, but did it take long enough?
@@ -359,7 +359,7 @@ class SampleEvent(Event):
                 return 1
         elif wavPlayer=="aplay" and ((not fileType=="mp3") or madplay_path or gotSox):
             if madplay_path and fileType=="mp3": return system(madplay_path+' -q -A '+str(soundVolume_dB)+' "'+self.file+'" -o wav:-|aplay -q') # changeToDirOf() not needed because this won't be cygwin (hopefully)
-            elif gotSox and (sox_effect or fileType=="mp3"): return system('cat "'+self.file+'" | sox -t '+fileType+' - -t wav '+sox_16bit+' - '+sox_effect+' 2>/dev/null|aplay -q') # (make sure o/p is 16-bit even if i/p is 8-bit, because if sox_effect says "vol 0.1" or something then applying that to 8-bit would lose too many bits)
+            elif gotSox and (sox_effect or fileType=="mp3"): return system('cat "'+S(self.file)+'" | sox -t '+fileType+' - -t wav '+sox_16bit+' - '+sox_effect+' 2>/dev/null|aplay -q') # (make sure o/p is 16-bit even if i/p is 8-bit, because if sox_effect says "vol 0.1" or something then applying that to 8-bit would lose too many bits)
             # (2>/dev/null to suppress sox "can't seek to fix wav header" problems, but don't pick 'au' as the type because sox wav->au conversion can take too long on NSLU2 (probably involves rate conversion))
             else: return system('aplay -q "'+self.file+'"')
         # May also be able to support alsa directly with sox (aplay not needed), if " alsa" is in sox -h's output and there is /dev/snd/pcmCxDxp (e.g. /dev/snd/pcmC0D0p), but sometimes it doesn't work, so best stick with aplay
@@ -489,7 +489,7 @@ class SoundCollector(object):
             os.system("sox -t %s \"%s\" %s tmp0" % (fileType,file,self.soxParams()))
             handle=open("tmp0","rb")
         elif winsound or mingw32: handle = os.popen(("sox -t %s - %s - < \"%s\"" % (fileType,self.soxParams(),file)),popenRB)
-        else: handle = os.popen(("cat \"%s\" | sox -t %s - %s -" % (file,fileType,self.soxParams())),popenRB)
+        else: handle = os.popen(("cat \"%s\" | sox -t %s - %s -" % (S(file),fileType,self.soxParams())),popenRB)
         self.theLen += outfile_writeFile(self.o,handle,file)
         if riscos_sound:
             handle.close() ; os.unlink("tmp0")
@@ -531,7 +531,7 @@ def outfile_writeFile(o,handle,filename):
         data = readB(handle,102400)
         outfile_writeBytes(o,data)
         theLen += len(data)
-    if not filename.startswith(partialsDirectory+os.sep): assert theLen, "No data when reading "+filename+": check for sox crash" # (but allow empty partials e.g. r5.  TODO if it's from EkhoSynth it could be a buggy version of Ekho)
+    if not B(filename).startswith(B(partialsDirectory+os.sep)): assert theLen, "No data when reading "+S(filename)+": check for sox crash" # (but allow empty partials e.g. r5.  TODO if it's from EkhoSynth it could be a buggy version of Ekho)
     return theLen
 def outfile_write_error(): raise IOError("Error writing to outputFile: either you are missing an encoder for "+out_type+", or the disk is full or something.")
 def oggenc(): # 2016: some Windows builds are now called oggenc2
@@ -618,7 +618,7 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,sox_signed) # S=script P=params for 
         self.seconds += length
         if not checkIn(file,self.file2command):
             if fileType=="mp3": fileData,fileType = decode_mp3(file),"wav" # because remote sox may not be able to do it
-            elif compress_SH and unix: handle=os.popen("cat \""+file+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null",popenRB) # 8-bit if possible (but don't change sample rate, as we might not have floating point)
+            elif compress_SH and unix: handle=os.popen("cat \""+S(file)+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null",popenRB) # 8-bit if possible (but don't change sample rate, as we might not have floating point)
             else: handle = open(file,"rb")
             offset, length = self.bytesWritten, outfile_writeFile(self.o,handle,file)
             self.bytesWritten += length
@@ -689,7 +689,7 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
     elif unix:
         if soxMp3:
             warn_sox_decode()
-            return readB(os.popen("cat \""+file+"\" | sox -t mp3 - -t wav"+cond(compress_SH," "+sox_8bit,"")+" - ",popenRB))
+            return readB(os.popen("cat \""+S(file)+"\" | sox -t mp3 - -t wav"+cond(compress_SH," "+sox_8bit,"")+" - ",popenRB))
         else:
             show_warning("Don't know how to decode "+file+" on this system.  Try installing madplay or mpg123.")
             return ""
