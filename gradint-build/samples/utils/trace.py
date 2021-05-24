@@ -37,7 +37,7 @@ parser.add_option("--fps",default=15,dest="theFPS",
                   help="Frames per second (10 is insufficient for fast movement, so recommend at least 15)")
 parser.add_option("--res",default=480,
                   help="Y-resolution: 240=NTSC VCD, 288=PAL VCD, 480=DVD, 720=Standard HD (Blu-Ray), 1080=Full HD (Blu-Ray)")
-parser.add_option("--translucent",default=False,dest="translucent_spheres_when_picture_visible",
+parser.add_option("--translucent",action="store_true",default=False,dest="translucent_spheres_when_picture_visible",
                   help="Translucent spheres when picture visible (slows down rendering but is better quality)")
 parser.add_option("--minutes",default=0,
                   help="Maximum number of minutes to render (0 = unlimited, the default; can limit for test runs)")
