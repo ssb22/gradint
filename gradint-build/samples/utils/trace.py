@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 # trace.py: script to generate raytraced animations of Gradint lessons
-# Version 1.2 (c) 2018-19,2021 Silas S. Brown.  License: GPL
+# Version 1.3 (c) 2018-19,2021 Silas S. Brown.  License: GPL
 
 #  The Disney Pixar film "Inside Out" (2015) represented
 #  memories as spheres.  I don't have their CGI models, but
@@ -12,7 +12,7 @@
 #  (especially if they've seen the Inside Out film).
 
 # This script generates the POV-Ray scenes from a lesson.
-# Gradint is run normally (passing any command-line arguments on,
+# Gradint is run normally (passing any extra command-line arguments on,
 # must include outputFile so audio can be included in the animation)
 # and then the animation is written to /tmp/gradint.mp4.
 
@@ -23,37 +23,45 @@
 # (or png or gif).
 
 # Optionally add an mp4 video of a word in a particular language
-# e.g. word1_en.mp4 (probably best synchronised to word1_en.wav)
-# (can also do this for commentsToAdd and orderlessCommentsToAdd files)
+# e.g. word1_en.mp4 (probably best synchronised to word1_en.wav),
+# can also do this for commentsToAdd and orderlessCommentsToAdd files
 
 # Requires POV-Ray, ffmpeg, and the Python packages vapory
 # and futures (use sudo pip install futures vapory) -
 # futures is used to run multiple instances of POV-Ray on
 # multi-core machines.
 
-theFPS = 15
-# theFPS = 10 # insufficient for fast movement
+from optparse import OptionParser
+parser = OptionParser()
+parser.add_option("--fps",default=15,dest="theFPS",
+                  help="Frames per second (10 is insufficient for fast movement, so recommend at least 15)")
+parser.add_option("--res",default=480,
+                  help="Y-resolution: 240=NTSC VCD, 288=PAL VCD, 480=DVD, 720=Standard HD (Blu-Ray), 1080=Full HD (Blu-Ray)")
+parser.add_option("--translucent",default=False,dest="translucent_spheres_when_picture_visible",
+                  help="Translucent spheres when picture visible (slows down rendering but is better quality)")
+parser.add_option("--minutes",default=0,
+                  help="Maximum number of minutes to render (0 = unlimited, the default; can limit for test runs)")
+parser.add_option("--quality",default=9,dest="povray_quality",
+                  help="POVRay quality setting, default 9: 1=ambient light only, 2=lighting, 4,5=shadows, 8=reflections 9-11=radiosity etc")
 
-# width_height_antialias = (300,200,0.3) # antialias=None doesn't look very good at 300x200, cld try it at higher resolutions (goes to the +A param, PovRay default is 0.3 if -A specified without param; supersample (default 9 rays) if colour differs from neighbours by this amount)
+options, args = parser.parse_args()
+globals().update(options.__dict__)
+theFPS,res,minutes,povray_quality = int(theFPS),int(res),int(minutes),int(povray_quality)
 
-# width_height_antialias = (352,240,0.3) # NTSC VCD (PAL use y=288)
-width_height_antialias = (640,480,0.001) # 480p (DVD)
-# width_height_antialias = (1280,720,None) # Standard HD (Blu-Ray)
-# width_height_antialias = (1920,1080,None) # Full HD (Blu-Ray)
-
-translucent_spheres_when_picture_visible = False # True slows down the rendering
-
-debug_frame_limit = None
-
-povray_quality=9 # default 9: 1=ambient light only, 2=lighting, 4,5=shadows, 8=reflections 9-11=radiosity etc
-
-# debug_frame_limit = 60*theFPS ; povray_quality = 2 # first minute only + rough
+if res in [240,288]:
+    width_height_antialias = (352,res,0.3) # VCD.  antialias=None doesn't look very good at 300x200, cld try it at higher resolutions (goes to the +A param, PovRay default is 0.3 if -A specified without param; supersample (default 9 rays) if colour differs from neighbours by this amount)
+elif res==480: width_height_antialias = (640,480,0.001) # 480p (DVD)
+elif res==720: width_height_antialias = (1280,720,None) # Standard HD (Blu-Ray)
+elif res==1920: width_height_antialias = (1920,1080,None) # Full HD (Blu-Ray)
+else: raise Exception("Unknown vertical resolution specified: "+repr(res))
+debug_frame_limit = minutes * theFPS * 60
 
 import sys,os,traceback
 oldName = __name__ ; from vapory import * ; __name__ = oldName
 from concurrent.futures import ProcessPoolExecutor
 
 assert os.path.exists("gradint.py"), "You must move trace.py to the top-level Gradint directory and run it from there"
+sys.argv = [sys.argv[0]]+args
 import gradint
 assert gradint.outputFile, "You must run trace.py with gradint parameters that include outputFile"
 
@@ -108,7 +116,10 @@ class MovableSphere(MovablePos):
         if self.imageFilename:
             if translucent_spheres_when_picture_visible and bkgScrFade.getPos(t) < 1: transmittence = 0.5
             else: transmittence = 0.3
-            return Sphere(list(pos),r,colour(self.colour,t),Texture(Pigment(ImageMap('"'+S(self.imageFilename)+'"',"once","interpolate 2","transmit all "+str(transmittence)),'scale',[1.5*r,1.5*r,1],'translate',list(pos),'translate',[-.75*r,-.75*r,0])))
+            if r > 0.5: img = wallPic(t) # we're the one that's playing: 'back-copy' video frame if any
+            else: img = None
+            if not img: img = self.imageFilename
+            return Sphere(list(pos),r,colour(self.colour,t),Texture(Pigment(ImageMap('"'+S(img)+'"',"once","interpolate 2","transmit all "+str(transmittence)),'scale',[1.5*r,1.5*r,1],'translate',list(pos),'translate',[-.75*r,-.75*r,0])))
         else: return Sphere(list(pos),r,colour(self.colour,t))
 
 class ObjCollection:
@@ -166,21 +177,26 @@ background_screen = [] # (startTime,endTime,picture)
 background_screen_size = 50
 bkgScrFade = MovableParam() ; bkgScrFade.fixAt(-1,1)
 bkgScrX = MovableParam()
-def wall(t):
-    picToUse = None
+def wallPic(t):
+    if bkgScrFade.getPos(t) == 1: return # no picture if we're faded out
     for st,et,pic in background_screen:
         if st <= t <= et:
-            picToUse = pic
-            if B(picToUse).endswith(B(os.extsep+"mp4")):
+            if B(pic).endswith(B(os.extsep+"mp4")):
                 # need to take single frame from time t-st
-                out = B(picToUse)[:-4]+B("-"+str(t-st)+os.extsep+"jpg")
+                out = B(pic)[:-4]+B("-"+str(t-st)+os.extsep+"jpg")
                 if not os.path.exists(out): # (TODO: if its frame rate is low enough, we might already have the same frame even at a slightly different t-st)
-                    cmd = "ffmpeg -n -threads 1 -accurate_seek -ss "+str(t-st)+" -i "+S(picToUse)+" -vframes 1 -q:v 1 "+S(out)+" </dev/null >/dev/null"
+                    cmd = "ffmpeg -n -threads 1 -accurate_seek -ss "+str(t-st)+" -i "+S(pic)+" -vframes 1 -q:v 1 "+S(out)+" </dev/null >/dev/null"
                     print (cmd)
                     os.system(cmd)
-                picToUse = out
-        elif st > t: break
-    if picToUse and bkgScrFade.getPos(t) < 1: return [Plane([0, 0, 1], 60, Texture(Pigment('color', [1, 1, 1])), Texture(Pigment(ImageMap('"'+S(picToUse)+'"',"once","transmit all "+str(bkgScrFade.getPos(t))),'scale',[background_screen_size,background_screen_size,1],'translate',[bkgScrX.getPos(t)-background_screen_size/2,0,0])), Finish('ambient',0.9))]
+                    if not os.path.exists(out):
+                        # print ("ffmpeg FAIL: skipping picture")
+                        continue # at t=et there might be a static image next
+                return out
+            else: return pic
+        elif st > t: return
+def wall(t):
+    picToUse = wallPic(t)
+    if picToUse: return [Plane([0, 0, 1], 60, Texture(Pigment('color', [1, 1, 1])), Texture(Pigment(ImageMap('"'+S(picToUse)+'"',"once","transmit all "+str(bkgScrFade.getPos(t))),'scale',[background_screen_size,background_screen_size,1],'translate',[bkgScrX.getPos(t)-background_screen_size/2,0,0])), Finish('ambient',0.9))]
     else: return [Plane([0, 0, 1], 60, Texture(Pigment('color', [1, 1, 1])), Finish('ambient',0.9))] # TODO: why does this look brighter than with ImageMap at transmit all 1.0 ?
 
 ground = Plane( [0, 1, 0], -1, Texture( Pigment( 'color', [1, 1, 1]), Finish( 'phong', 0.1, 'reflection',0.4, 'metallic', 0.3))) # from vapory example
@@ -281,7 +297,7 @@ def runGradint():
       i.event.draw(i.getEventStart(glueStart),row,False)
       glueStart = i.getAdjustedEnd(glueStart)
       duration = max(duration,glueStart)
-  for t,e in gradint.lastLessonMade.events:
+  for t,e in gradint.lastLessonMade.events: # check for videos
       if hasattr(e,"file") and hasattr(e,"exactLen"):
           video = B(e.file)[:B(e.file).rindex(B(os.extsep))]+B(os.extsep+"mp4")
           if os.path.exists(video): # overwrite static image while playing
@@ -304,10 +320,10 @@ def runGradint():
       startTime,endTime,img = background_screen[i]
       if i and startTime > background_screen[i-1][1] + 0.5:
           bkgScrFade.fixAt(startTime,1) # start faded out
-      # else (less than 0.5sec between images) don't try to fade out
+      # else (less than 0.5sec between images) don't try to start faded out
       fadeOutTime = endTime
       if i<len(background_screen)-1:
-          if endTime + 0.5 > background_screen[i-1][0]:
+          if endTime + 0.5 > background_screen[i+1][0]:
               fadeOutTime = None # as above (< 0.5sec between images)
           else: fadeOutTime = max(fadeOutTime,min(background_screen[i+1][0]-1,fadeOutTime+5))
           if not fadeOutTime == None:
@@ -317,7 +333,7 @@ def runGradint():
                       bkgScrX.fixed[ii]=((fadeOutTime,bkgScrX.fixed[ii][1]))
                       break
       if not fadeOutTime==None: bkgScrFade.fixAt(fadeOutTime,1)
-      if endTime >= startTime+1:
+      if endTime >= startTime+0.5:
           bkgScrFade.fixAt(startTime+0.5,0.3)
           bkgScrFade.fixAt(endTime-0.5,0.3)
       else:
