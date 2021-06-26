@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 # trace.py: script to generate raytraced animations of Gradint lessons
-# Version 1.3 (c) 2018-19,2021 Silas S. Brown.  License: GPL
+# Version 1.31 (c) 2018-19,2021 Silas S. Brown.  License: GPL
 
 #  The Disney Pixar film "Inside Out" (2015) represented
 #  memories as spheres.  I don't have their CGI models, but
@@ -116,8 +116,7 @@ class MovableSphere(MovablePos):
         if self.imageFilename:
             if translucent_spheres_when_picture_visible and bkgScrFade.getPos(t) < 1: transmittence = 0.5
             else: transmittence = 0.3
-            if r > 0.5: img = wallPic(t) # we're the one that's playing: 'back-copy' video frame if any
-            else: img = None
+            img = wallPic(t,self.imageFilename) # if a video is playing whose key image matches ours, 'back-copy' the video frame (TODO: do this only on the correct L1 or L2 sphere?)
             if not img: img = self.imageFilename
             return Sphere(list(pos),r,colour(self.colour,t),Texture(Pigment(ImageMap('"'+S(img)+'"',"once","interpolate 2","transmit all "+str(transmittence)),'scale',[1.5*r,1.5*r,1],'translate',list(pos),'translate',[-.75*r,-.75*r,0])))
         else: return Sphere(list(pos),r,colour(self.colour,t))
@@ -173,27 +172,31 @@ camera_lookAt = MovablePos()
 def cam(t): return Camera('location',list(camera_position.getPos(t)),'look_at',list(camera_lookAt.getPos(t)))
 def lights(t): return [LightSource([camera_position.x.getPos(t)+10, 15, -20], [1.3, 1.3, 1.3])]
 
-background_screen = [] # (startTime,endTime,picture)
+background_screen = [] # (startTime,endTime,pictureName,pictureActual)
 background_screen_size = 50
 bkgScrFade = MovableParam() ; bkgScrFade.fixAt(-1,1)
 bkgScrX = MovableParam()
-def wallPic(t):
+def wallPic(t,ifImg=None):
     if bkgScrFade.getPos(t) == 1: return # no picture if we're faded out
-    for st,et,pic in background_screen:
-        if st <= t <= et:
-            if B(pic).endswith(B(os.extsep+"mp4")):
-                # need to take single frame from time t-st
-                out = B(pic)[:-4]+B("-"+str(t-st)+os.extsep+"jpg")
-                if not os.path.exists(out): # (TODO: if its frame rate is low enough, we might already have the same frame even at a slightly different t-st)
-                    cmd = "ffmpeg -n -threads 1 -accurate_seek -ss "+str(t-st)+" -i "+S(pic)+" -vframes 1 -q:v 1 "+S(out)+" </dev/null >/dev/null"
-                    print (cmd)
-                    os.system(cmd)
-                    if not os.path.exists(out):
-                        # print ("ffmpeg FAIL: skipping picture")
-                        continue # at t=et there might be a static image next
-                return out
-            else: return pic
-        elif st > t: return
+    found = None
+    for st,et,img,pic in background_screen:
+        if st <= t: found = (st,et,img,pic)
+        elif st > t: break
+    if found:
+        st,et,img,pic = found
+        if ifImg and not img==ifImg: return
+        if B(pic).endswith(B(os.extsep+"mp4")):
+            # need to take single frame
+            T = min(t,et-1.0/theFPS)-st # don't go past last frame
+            out = B(pic)[:-4]+B("-"+str(T)+os.extsep+"jpg")
+            while T > 0 and not os.path.exists(out): # (TODO: if its frame rate is low enough, we might already have the same frame even at a slightly different T)
+                cmd = "ffmpeg -n -threads 1 -accurate_seek -ss "+str(T)+" -i "+S(pic)+" -vframes 1 -q:v 1 "+S(out)+" </dev/null >/dev/null"
+                print (cmd)
+                os.system(cmd)
+                T -= 1.0/theFPS
+            if os.path.exists(out): return out
+            else: return None
+        else: return pic
 def wall(t):
     picToUse = wallPic(t)
     if picToUse: return [Plane([0, 0, 1], 60, Texture(Pigment('color', [1, 1, 1])), Texture(Pigment(ImageMap('"'+S(picToUse)+'"',"once","transmit all "+str(bkgScrFade.getPos(t))),'scale',[background_screen_size,background_screen_size,1],'translate',[bkgScrX.getPos(t)-background_screen_size/2,0,0])), Finish('ambient',0.9))]
@@ -244,7 +247,7 @@ def eDraw(startTime,length,rowNo,colour):
         et = EventTracker(rowNo).get(delta,0,0)
         r = et.radius
         if hasattr(et,"imageFilename"):
-            background_screen.append((startTime,startTime+length,et.imageFilename))
+            background_screen.append((startTime,startTime+length,et.imageFilename,et.imageFilename))
             bkgScrX.fixAt(startTime,4*rowNo)
             bkgScrX.fixAt(startTime+length,4*rowNo)
     else:
@@ -267,6 +270,13 @@ gradint.SampleEvent.draw = SampleEvent_draw
 def SynthEvent_draw(self,startTime,rowNo,inRepeat): eDraw(startTime,self.length,rowNo,self.colour(self.language))
 gradint.SynthEvent.draw = SynthEvent_draw
 
+def chkImg(i):
+    if not "_" in S(i.file): return
+    for imgExt in ["gif","png","jpeg","jpg"]:
+        imageFilename = B(i.file)[:B(i.file).rindex(B("_"))]+B(os.extsep+imgExt) # TODO: we're assuming no _en etc in the image filename (projected onto both L1 and L2)
+        if os.path.exists(imageFilename):
+            return os.path.abspath(imageFilename)
+
 def runGradint():
   gradint.gluedListTracker=[]
   gradint.waitBeforeStart=0
@@ -284,10 +294,9 @@ def runGradint():
        except: el2=[j]
        for i in el2:
         if hasattr(i,"file") and B("_") in B(i.file):
-         for imgExt in ["gif","png","jpeg","jpg"]:
-          imageFilename = B(i.file)[:B(i.file).rindex(B("_"))]+B(os.extsep+imgExt) # TODO: we're assuming no _en etc in the image filename (projected onto both L1 and L2)
-          if os.path.exists(imageFilename):
-              return EventTracker(row,os.path.abspath(imageFilename))
+            imageFilename = chkImg(i)
+            if imageFilename:
+                return EventTracker(row,imageFilename)
     check_for_pictures()
     if hasattr(l[0],"timesDone"): timesDone = l[0].timesDone
     else: timesDone = 0
@@ -301,23 +310,24 @@ def runGradint():
       if hasattr(e,"file") and hasattr(e,"exactLen"):
           video = B(e.file)[:B(e.file).rindex(B(os.extsep))]+B(os.extsep+"mp4")
           if os.path.exists(video): # overwrite static image while playing
-              background_screen.append((t,t+e.exactLen,os.path.abspath(video)))
+              i,v = chkImg(e),os.path.abspath(video)
+              if not i: i=v
+              background_screen.append((t,t+e.exactLen,i,v))
   background_screen.sort()
-  i = 0
+  i = 0 # more items might be inserted, so don't use range here
   while i < len(background_screen)-1:
       if background_screen[i][1] > background_screen[i+1][1]: # overlap: we end after next one ends: insert a jump-back-to-us after
-          background_screen.insert(i+2,(background_screen[i+1][1],background_screen[i][1],background_screen[i][2])) # restore old after new one ends
+          background_screen.insert(i+2,(background_screen[i+1][1],background_screen[i][1],background_screen[i][2],background_screen[i][3])) # restore old after new one ends
       if background_screen[i][1] > background_screen[i+1][0] and background_screen[i][0] < background_screen[i+1][0]: # overlap: we end after next one starts, but we start before it starts
-          background_screen[i] = (background_screen[i][0],background_screen[i+1][0],background_screen[i][2]) # new one takes precedence
+          background_screen[i] = (background_screen[i][0],background_screen[i+1][0],background_screen[i][2],background_screen[i][3]) # new one takes precedence
       if background_screen[i][0]==background_screen[i+1][0]: # equal start, but next one might be longer
-          background_screen[i+1]=(background_screen[i][1],background_screen[i+1][1],background_screen[i+1][2])
-      if background_screen[i][-1]==background_screen[i+1][-1] and background_screen[i][1]+5>=background_screen[i+1][0]:
-          # turning off for 5 seconds or less, then turning back on again with the SAME image: might as well merge
-          background_screen[i] = (background_screen[i][0],background_screen[i+1][1],background_screen[i][2])
-          del background_screen[i+1]
-      else: i += 1
+          background_screen[i+1]=(background_screen[i][1],background_screen[i+1][1],background_screen[i+1][2],background_screen[i+1][3])
+      if background_screen[i][2]==background_screen[i+1][2] and background_screen[i][1]+5>=background_screen[i+1][0] and background_screen[i][1] < background_screen[i+1][0]:
+          # avoid turning off for 5 seconds or less if showing the same image (or a video of it)
+          background_screen.insert(i+1,(background_screen[i][1],background_screen[i+1][0],background_screen[i][2],background_screen[i][2])) # just the image
+      i += 1
   for i in xrange(len(background_screen)):
-      startTime,endTime,img = background_screen[i]
+      startTime,endTime,picName,img = background_screen[i]
       if i and startTime > background_screen[i-1][1] + 0.5:
           bkgScrFade.fixAt(startTime,1) # start faded out
       # else (less than 0.5sec between images) don't try to start faded out
@@ -364,7 +374,7 @@ def main():
     if debug_frame_limit: numFrames=min(numFrames,debug_frame_limit)
     # TODO: pickle all MovableParams so can do the rendering on a different machine than the one that makes the Gradint lesson?
     for c in list(executor.map(tryFrame,[(frame,numFrames) for frame in xrange(numFrames)]))+[
-        "ffmpeg -nostdin -y -framerate "+repr(theFPS)+" -i /tmp/frame%05d.png -i "+gradint.outputFile+" -movflags faststart -pix_fmt yuv420p /tmp/gradint.mp4 && if test -d /Volumes; then open /tmp/gradint.mp4; fi" #  (could alternatively run with -vcodec huffyuv /tmp/gradint.avi for lossless, insead of --movflags etc, but will get over 6 gig and may get A/V desync problems in mplayer/VLC that -delay doesn't fix, however -b:v 1000k seems to look OK; for WeChat etc you need to recode to h.264, and for HTML 5 video need recode to WebM (but ffmpeg -c:v libvpx no good if not compiled with support for those libraries; may hv to convert on another machine i.e. ffmpeg -i gradint.mp4 -vf scale=320:240 -c:v libvpx -b:v 500k gradint.webm))
+        "ffmpeg -nostdin -y -framerate "+repr(theFPS)+" -i /tmp/frame%05d.png -i "+gradint.outputFile+" -movflags faststart -pix_fmt yuv420p -filter_complex tpad=stop=-1:stop_mode=clone -shortest /tmp/gradint.mp4 && if test -d /Volumes; then open /tmp/gradint.mp4; fi" #  (could alternatively run with -vcodec huffyuv /tmp/gradint.avi for lossless, insead of --movflags etc, but will get over 6 gig and may get A/V desync problems in mplayer/VLC that -delay doesn't fix, however -b:v 1000k seems to look OK; for WeChat etc you need to recode to h.264, and for HTML 5 video need recode to WebM (but ffmpeg -c:v libvpx no good if not compiled with support for those libraries; may hv to convert on another machine i.e. ffmpeg -i gradint.mp4 -vf scale=320:240 -c:v libvpx -b:v 500k gradint.webm))
         ]:
         if c: # patch up skipped frames, then run ffmpeg
             print (c) ; os.system(c)
