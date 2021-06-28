@@ -1,7 +1,8 @@
 #!/bin/bash
 export PATH="$PATH:/usr/local/bin" # in case lame etc is there
 export VERSIONER_PYTHON_PREFER_32_BIT=1 # for Tk patch to work in 10.6
-if test -e /usr/lib/libtk.dylib || test -e /usr/lib/tkConfig.sh || test -e /usr/local/lib/tkConfig.sh; then
+export TK_SILENCE_DEPRECATION=1 # 11.4
+if test -e /usr/lib/libtk.dylib || test -e /usr/lib/tkConfig.sh || test -e /usr/local/lib/tkConfig.sh || test -e /usr/bin/tkcon; then
 # run using only the Tk windows:
 cd "$(echo $0 | sed -e 's|start-gradint.app/Contents/MacOS/start-gradint.*$||')"
 exec pythonw gradint.py
