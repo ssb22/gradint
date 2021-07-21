@@ -1,7 +1,7 @@
 #!/usr/bin/env python2
 
 # trace.py: script to generate raytraced animations of Gradint lessons
-# Version 1.31 (c) 2018-19,2021 Silas S. Brown.  License: GPL
+# Version 1.32 (c) 2018-19,2021 Silas S. Brown.  License: GPL
 
 #  The Disney Pixar film "Inside Out" (2015) represented
 #  memories as spheres.  I don't have their CGI models, but
@@ -36,7 +36,7 @@ parser = OptionParser()
 parser.add_option("--fps",default=15,dest="theFPS",
                   help="Frames per second (10 is insufficient for fast movement, so recommend at least 15)")
 parser.add_option("--res",default=480,
-                  help="Y-resolution: 240=NTSC VCD, 288=PAL VCD, 480=DVD, 720=Standard HD (Blu-Ray), 1080=Full HD (Blu-Ray)")
+                  help="Y-resolution: 240=NTSC VCD, 288=PAL VCD, 480=DVD, 607=WeChat channel, 720=Standard HD (Blu-Ray), 1080=Full HD (Blu-Ray)")
 parser.add_option("--translucent",action="store_true",default=False,dest="translucent_spheres_when_picture_visible",
                   help="Translucent spheres when picture visible (slows down rendering but is better quality)")
 parser.add_option("--minutes",default=0,
@@ -51,6 +51,7 @@ theFPS,res,minutes,povray_quality = int(theFPS),int(res),int(minutes),int(povray
 if res in [240,288]:
     width_height_antialias = (352,res,0.3) # VCD.  antialias=None doesn't look very good at 300x200, cld try it at higher resolutions (goes to the +A param, PovRay default is 0.3 if -A specified without param; supersample (default 9 rays) if colour differs from neighbours by this amount)
 elif res==480: width_height_antialias = (640,480,0.001) # 480p (DVD)
+elif res==607: width_height_antialias = (1080,607,None) # WeChat Channels
 elif res==720: width_height_antialias = (1280,720,None) # Standard HD (Blu-Ray)
 elif res==1920: width_height_antialias = (1920,1080,None) # Full HD (Blu-Ray)
 else: raise Exception("Unknown vertical resolution specified: "+repr(res))

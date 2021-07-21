@@ -1667,8 +1667,10 @@ def gui_event_loop():
               if worked:
                 app.setLabel("Compiling...")
                 if system("""tar -zxvf lame*.tar.gz && cd lame-* && if ./configure && make; then ln -s $(pwd)/frontend/lame ../lame || true; else cd .. ; rm -rf lame*; exit 1; fi"""):
-                    if macsound: app.todo.alert = "Compile failed. Check the system has Xcode with command-line license accepted (try running gcc from the Terminal)" # might be asked to run: sudo xcodebuild -license
-                    else: app.todo.alert = "Compile failed"
+                    app.todo.alert = "Compile failed"
+                    if macsound:
+                        app.todo.alert += ". Check the system has Xcode with command-line license accepted (try running gcc from the Terminal)"
+                        # might be asked to run: sudo xcodebuild -license
           app.todo.set_main_menu = 1
         elif (menu_response=="add" or menu_response=="replace") and not (app.Text1.get() and app.Text2.get()): app.todo.alert="You need to type text in both boxes before adding the word/meaning pair to "+vocabFile
         elif menu_response=="add" and hasattr(app,"vocabList") and checkIn((asUnicode(app.Text1.get()),asUnicode(app.Text2.get())),app.vocabList):
