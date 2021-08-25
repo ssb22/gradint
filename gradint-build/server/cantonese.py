@@ -5,12 +5,15 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.32 (c) 2013-15,2017-21 Silas S. Brown.  License: GPL
+# v1.33 (c) 2013-15,2017-21 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping batch it up for later (then run and save cache on first call with False)
 jyutping_cache = {} ; jyutping_dryrun = set()
-import re, pickle
-try: jyutping_cache = pickle.Unpickler(open("/tmp/.jyutping-cache","rb")).load()
+import re, pickle, os, sys
+if '--cache' in sys.argv:
+  cache_fname = sys.argv[sys.argv.index('--cache')+1]
+else: cache_fname = os.environ.get("JYUTPING_CACHE","/tmp/.jyutping-cache")
+try: jyutping_cache = pickle.Unpickler(open(cache_fname,"rb")).load()
 except: pass
 
 extra_zhy_dict = { # TODO: add these to the real zhy_list in eSpeak
@@ -47,7 +50,7 @@ def get_jyutping(hanzi,mustWork=1):
       for k,v in zip(jyutping_dryrun,vals):
         jyutping_cache[k]=S(v).replace("7","1").lower() # see below
       jyutping_dryrun = set()
-      try: pickle.Pickler(open("/tmp/.jyutping-cache","wb"),-1).dump(jyutping_cache)
+      try: pickle.Pickler(open(cache_fname,"wb"),-1).dump(jyutping_cache)
       except: pass
   if hanzi in jyutping_cache: jyutping = jyutping_cache[hanzi]
   else: jyutping_cache[hanzi] = jyutping = S(espeak.transliterate("zhy",hanzi,forPartials=0)).replace("7","1").lower() # .lower() needed because espeak sometimes randomly capitalises e.g. 2nd hanzi of 'hypocrite' (Mandarin xuwei de ren)
@@ -234,8 +237,6 @@ def superscript_digits_UTF8(j):
   for digit in range(1,10): j=j.replace(str(digit),S(u"¹²³⁴⁵⁶⁷⁸⁹"[digit-1].encode('utf-8')))
   if type(j)==type(u""): j=j.encode('utf-8') # Python 3
   return j
-
-import sys
 
 def import_gradint():
     global gradint
