@@ -5,10 +5,11 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.33 (c) 2013-15,2017-21 Silas S. Brown.  License: GPL
+# v1.34 (c) 2013-15,2017-21 Silas S. Brown.  License: GPL
 
 dryrun_mode = False # True makes get_jyutping batch it up for later (then run and save cache on first call with False)
 jyutping_cache = {} ; jyutping_dryrun = set()
+pinyin_cache = {} ; pinyin_dryrun = set()
 import re, pickle, os, sys
 if '--cache' in sys.argv:
   cache_fname = sys.argv[sys.argv.index('--cache')+1]
@@ -67,7 +68,15 @@ def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
   if not re.search(py2j_chars,hanzi): return jyutping
   if not type(pinyin)==type(u""): pinyin = pinyin.decode('utf-8')
   assert pinyin.strip(), "blank pinyin" # saves figuring out a findall TypeError
-  py2 = espeak.transliterate("zh",pinyin,forPartials=0) # TODO: dryrun_mode ?  (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
+  global pinyin_dryrun
+  if pinyin_dryrun:
+    pinyin_dryrun = list(pinyin_dryrun)
+    vals = espeak.transliterate_multiple("zh",pinyin_dryrun,0)
+    for i in range(len(pinyin_dryrun)):
+      pinyin_cache[pinyin_dryrun[i]]=vals[i]
+    pinyin_dryrun = set()
+  if pinyin in pinyin_cache: py2 = pinyin_cache[pinyin]
+  else: py2 = espeak.transliterate("zh",pinyin,forPartials=0) # (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
   assert py2 and py2.strip(), "espeak.transliterate returned %s for %s" % (repr(py2),repr(pinyin))
   pinyin = re.findall('[A-Za-z]*[1-5]',S(py2))
   if not len(pinyin)==len(hanzi): return jyutping # can't fix
@@ -263,8 +272,10 @@ if __name__ == "__main__":
       if '--song-lyrics' in sys.argv: l=do_song_subst(l)
       return l
     for l in lines:
-      if '#' in l: l=l[:l.index('#')]
+      if '#' in l: l,pinyin = l.split('#')
+      else: pinyin = None
       get_jyutping(songSubst(l))
+      if pinyin: pinyin_dryrun.add(pinyin)
     dryrun_mode = False
     for l in lines:
       if '#' in l: l,pinyin = l.split('#')
