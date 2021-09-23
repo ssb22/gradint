@@ -5,16 +5,18 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.34 (c) 2013-15,2017-21 Silas S. Brown.  License: GPL
+# v1.35 (c) 2013-15,2017-21 Silas S. Brown.  License: GPL
 
-dryrun_mode = False # True makes get_jyutping batch it up for later (then run and save cache on first call with False)
-jyutping_cache = {} ; jyutping_dryrun = set()
-pinyin_cache = {} ; pinyin_dryrun = set()
+cache = {} # to avoid repeated eSpeak runs,
+# zi -> jyutping or (pinyin,) -> translit
+dryrun_mode = False # True = prepare to populate cache in batch
+jyutping_dryrun,pinyin_dryrun = set(),set()
+
 import re, pickle, os, sys
 if '--cache' in sys.argv:
   cache_fname = sys.argv[sys.argv.index('--cache')+1]
 else: cache_fname = os.environ.get("JYUTPING_CACHE","/tmp/.jyutping-cache")
-try: jyutping_cache = pickle.Unpickler(open(cache_fname,"rb")).load()
+try: cache = pickle.Unpickler(open(cache_fname,"rb")).load()
 except: pass
 
 extra_zhy_dict = { # TODO: add these to the real zhy_list in eSpeak
@@ -42,19 +44,17 @@ def get_jyutping(hanzi,mustWork=1):
 
   global jyutping_dryrun
   if dryrun_mode:
-      if not hanzi in jyutping_cache: jyutping_dryrun.add(hanzi)
+      if not hanzi in cache: jyutping_dryrun.add(hanzi)
       return "aai1" # dummy value
   elif jyutping_dryrun:
       jyutping_dryrun = list(jyutping_dryrun)
       vals = espeak.transliterate_multiple("zhy",jyutping_dryrun,0)
       assert len(jyutping_dryrun)==len(vals)
       for k,v in zip(jyutping_dryrun,vals):
-        jyutping_cache[k]=S(v).replace("7","1").lower() # see below
+        cache[k]=S(v).replace("7","1").lower() # see below
       jyutping_dryrun = set()
-      try: pickle.Pickler(open(cache_fname,"wb"),-1).dump(jyutping_cache)
-      except: pass
-  if hanzi in jyutping_cache: jyutping = jyutping_cache[hanzi]
-  else: jyutping_cache[hanzi] = jyutping = S(espeak.transliterate("zhy",hanzi,forPartials=0)).replace("7","1").lower() # .lower() needed because espeak sometimes randomly capitalises e.g. 2nd hanzi of 'hypocrite' (Mandarin xuwei de ren)
+  if hanzi in cache: jyutping = cache[hanzi]
+  else: cache[hanzi] = jyutping = S(espeak.transliterate("zhy",hanzi,forPartials=0)).replace("7","1").lower() # .lower() needed because espeak sometimes randomly capitalises e.g. 2nd hanzi of 'hypocrite' (Mandarin xuwei de ren)
   if mustWork: assert jyutping.strip(), "No translit. result for "+repr(hanzi)
   elif not jyutping.strip(): jyutping=""
   return jyutping
@@ -66,16 +66,18 @@ def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
   if not type(hanzi)==type(u""): hanzi = hanzi.decode('utf-8')
   hanzi = hanzi_only(hanzi)
   if not re.search(py2j_chars,hanzi): return jyutping
-  if not type(pinyin)==type(u""): pinyin = pinyin.decode('utf-8')
+  if not type(pinyin)==type(u""):
+    pinyin = pinyin.decode('utf-8')
   assert pinyin.strip(), "blank pinyin" # saves figuring out a findall TypeError
   global pinyin_dryrun
   if pinyin_dryrun:
     pinyin_dryrun = list(pinyin_dryrun)
     vals = espeak.transliterate_multiple("zh",pinyin_dryrun,0)
+    assert len(pinyin_dryrun)==len(vals)
     for i in range(len(pinyin_dryrun)):
-      pinyin_cache[pinyin_dryrun[i]]=vals[i]
+      cache[(pinyin_dryrun[i],)]=vals[i]
     pinyin_dryrun = set()
-  if pinyin in pinyin_cache: py2 = pinyin_cache[pinyin]
+  if (pinyin,) in cache: py2 = cache[(pinyin,)]
   else: py2 = espeak.transliterate("zh",pinyin,forPartials=0) # (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
   assert py2 and py2.strip(), "espeak.transliterate returned %s for %s" % (repr(py2),repr(pinyin))
   pinyin = re.findall('[A-Za-z]*[1-5]',S(py2))
@@ -275,7 +277,10 @@ if __name__ == "__main__":
       if '#' in l: l,pinyin = l.split('#')
       else: pinyin = None
       get_jyutping(songSubst(l))
-      if pinyin: pinyin_dryrun.add(pinyin)
+      if pinyin and not type(pinyin)==type(u""):
+        pinyin = pinyin.decode('utf-8')
+      if pinyin and not (pinyin,) in cache:
+        pinyin_dryrun.add(pinyin)
     dryrun_mode = False
     for l in lines:
       if '#' in l: l,pinyin = l.split('#')
@@ -286,3 +291,5 @@ if __name__ == "__main__":
       elif "--yale#lau#ping" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))+"#"+jyutping.replace(' ',''))
       elif "--yale" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping)))
       else: print (superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping))))
+    try: pickle.Pickler(open(cache_fname,"wb"),-1).dump(cache)
+    except: pass
