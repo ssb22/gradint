@@ -2,10 +2,10 @@
 
 # Convert a Windows gradint.exe or gradint-bundle.exe
 # (optionally with bundled samples, partials etc) into
-# a Linux installation of Gradint.  Use this to support
-# both Windows and Linux from one bundle.
+# a GNU/Linux installation of Gradint.  Use this to
+# support both Windows and GNU/Linux from one bundle.
 
-# (c) 2013 Silas S. Brown.  License: GPL v3 (as Gradint)
+# (c) 2013,2021 Silas S. Brown.  License: GPL v3 (as Gradint)
 
 # This script can be placed on a USB stick or whatever, in
 # the same directory as:
@@ -50,12 +50,12 @@ mkdir -p "$HOME/gradint0"
 if test -e gradint-bundle.exe; then
   PATH="$PATH:.:./bin" 7za "-o$HOME/gradint0" x gradint-bundle.exe || exit 1
 else PATH="$PATH:.:./bin" 7za "-o$HOME/gradint0" x gradint.exe || exit 1; fi
-cd $HOME/gradint0 || exit 1
+cd "$HOME/gradint0" || exit 1
 mv gradint .. || exit 1
 cd .. && rm -rf gradint0
 cd gradint || exit 1
 unzip library.zip gradint.py || exit 1
-rm -rf tcl library.zip *.exe *.pyd *.dll
+rm -rf tcl library.zip ./*.exe ./*.pyd ./*.dll
 if python -c 'import tkinter'; then
  if test -e ~/Desktop && ! test -e ~/Desktop/Gradint; then
   echo "Creating symlink on Desktop"

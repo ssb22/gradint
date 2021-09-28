@@ -3,9 +3,9 @@
 # email-lesson.sh: a script that can help you to
 # automatically distribute daily Gradint lessons
 # to students using a web server with reminder
-# emails.  Version 1.13
+# emails.  Version 1.14
 
-# (C) 2007-2010,2020 Silas S. Brown, License: GPL
+# (C) 2007-2010,2020-2021 Silas S. Brown, License: GPL
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -46,22 +46,22 @@ if test "a$1" == "a--run"; then
     exit 1
   fi
   export Gradint_Dir=$(pwd)
-  cd email_lesson_users
+  cd email_lesson_users || exit
   . config
-  if test -e $Gradint_Dir/.email-lesson-running; then
+  if [ -e "$Gradint_Dir/.email-lesson-running" ]; then
     export Msg="Another email-lesson.sh --run is running - exitting.  (Remove $Gradint_Dir/.email-lesson-running if this isn't the case.)"
     echo "$Msg"
     echo "$Msg"|$MailProg -s email-lesson-not-running $ADMIN_EMAIL # don't worry about retrying that
     exit 1
   fi
-  touch $Gradint_Dir/.email-lesson-running
-  if echo $PUBLIC_HTML | grep : >/dev/null && man ssh 2>/dev/null | grep ControlMaster >/dev/null; then
+  touch "$Gradint_Dir/.email-lesson-running"
+  if echo "$PUBLIC_HTML" | grep : >/dev/null && man ssh 2>/dev/null | grep ControlMaster >/dev/null; then
     # this version of ssh is new enough to support ControlPath, and PUBLIC_HTML indicates a remote host, so let's do it all through one connection
     export ControlPath="-o ControlPath=$TMPDIR/__gradint_ctrl"
-    while true; do ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS -n -o ControlMaster=yes $ControlPath $(echo $PUBLIC_HTML|sed -e 's/:.*//') sleep 86400; sleep 10; done & export MasterPid=$!
+    while true; do ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS -n -o ControlMaster=yes $ControlPath $(echo "$PUBLIC_HTML"|sed -e 's/:.*//') sleep 86400; sleep 10; done & export MasterPid=$!
   else unset MasterPid
   fi
-  (while ! bash -c "$CAT_LOGS_COMMAND"; do echo "cat-logs failed, re-trying in 61 seconds" 1>&2;sleep 61; done) | grep '/user\.' > $TMPDIR/._email_lesson_logs
+  (while ! bash -c "$CAT_LOGS_COMMAND"; do echo "cat-logs failed, re-trying in 61 seconds" 1>&2;sleep 61; done) | grep '/user\.' > "$TMPDIR/._email_lesson_logs"
   # (note: sleeping odd numbers of seconds so we can tell where it is if it gets stuck in one of these loops)
   export Users="$(echo user.*)"
   cd ..
@@ -79,12 +79,12 @@ if test "a$1" == "a--run"; then
     unset Extra_Mailprog_Params1 Extra_Mailprog_Params2 GRADINT_OPTIONS
     export Use_M3U=no
     export FILE_TYPE=mp3
-    if grep $'\r' email_lesson_users/$U/profile >/dev/null; then
+    if grep $'\r' "email_lesson_users/$U/profile" >/dev/null; then
       # Oops, someone edited profile in a DOS line-endings editor (e.g. Wenlin on WINE for CJK stuff).  DOS line endings can mess up Extra_Mailprog_Params settings.
-      cat email_lesson_users/$U/profile | tr -d $'\r' > email_lesson_users/$U/profile.removeCR
-      mv email_lesson_users/$U/profile.removeCR email_lesson_users/$U/profile
+      tr -d $'\r' < "email_lesson_users/$U/profile" > email_lesson_users/$U/profile.removeCR
+      mv "email_lesson_users/$U/profile.removeCR" "email_lesson_users/$U/profile"
     fi
-    . email_lesson_users/$U/profile
+    . "email_lesson_users/$U/profile"
     if test "a$Use_M3U" == ayes; then export FILE_TYPE_2=m3u
     else export FILE_TYPE_2=$FILE_TYPE; fi
     if echo "$MailProg" | grep ssh >/dev/null; then
@@ -93,34 +93,34 @@ if test "a$1" == "a--run"; then
       export Extra_Mailprog_Params1="\"$Extra_Mailprog_Params1\""
       export Extra_Mailprog_Params2="\"$Extra_Mailprog_Params2\""
     fi
-    if test -e email_lesson_users/$U/lastdate; then
-      if test "$(cat email_lesson_users/$U/lastdate)" == "$(date +%Y%m%d)"; then
+    if [ -e "email_lesson_users/$U/lastdate" ]; then
+      if test "$(cat "email_lesson_users/$U/lastdate")" == "$(date +%Y%m%d)"; then
         # still on same day - do nothing with this user this time
 	continue
       fi
-      if ! grep $U-$(cat email_lesson_users/$U/lastdate)\. $TMPDIR/._email_lesson_logs >/dev/null
+      if ! grep "$U-$(cat email_lesson_users/$U/lastdate)"\. "$TMPDIR/._email_lesson_logs" >/dev/null
       # (don't add $FILE_TYPE after \. in case it has been changed)
       then
         export Did_Download=0
-        if test -e email_lesson_users/$U/rollback; then
-          if test -e email_lesson_users/$U/progress.bak; then
-            mv email_lesson_users/$U/progress.bak email_lesson_users/$U/progress.txt
-            rm -f email_lesson_users/$U/progress.bin
+        if test -e "email_lesson_users/$U/rollback"; then
+          if test -e "email_lesson_users/$U/progress.bak"; then
+            mv "email_lesson_users/$U/progress.bak" "email_lesson_users/$U/progress.txt"
+            rm -f "email_lesson_users/$U/progress.bin"
             export Did_Download=1 # (well actually they didn't, but we're rolling back)
           fi # else can't rollback, as no progress.bak
-          if test -e email_lesson_users/$U/podcasts-to-send.old; then
-            mv email_lesson_users/$U/podcasts-to-send.old email_lesson_users/$U/podcasts-to-send
+          if test -e "email_lesson_users/$U/podcasts-to-send.old"; then
+            mv "email_lesson_users/$U/podcasts-to-send.old" "email_lesson_users/$U/podcasts-to-send"
           fi
         fi
       else export Did_Download=1; fi
-      rm -f email_lesson_users/$U/rollback
+      rm -f "email_lesson_users/$U/rollback"
       if test $Did_Download == 0; then
         # send a reminder
         export DaysOld="$(python -c "import os,time;print(int((time.time()-os.stat('email_lesson_users/$U/lastdate').st_mtime)/3600/24))")"
         if test $DaysOld -lt 5 || test $(date +%u) == 1; then # (remind only on Mondays if not checked for 5 days, to avoid filling up inboxes when people are away and can't get to email)
-        while ! $MailProg -s "$SUBJECT_LINE" $STUDENT_EMAIL "$Extra_Mailprog_Params1" "$Extra_Mailprog_Params2" <<EOF
+        while ! $MailProg -s "$SUBJECT_LINE" "$STUDENT_EMAIL" "$Extra_Mailprog_Params1" "$Extra_Mailprog_Params2" <<EOF
 $FORGOT_YESTERDAY
-$OUTSIDE_LOCATION/$U-$(cat email_lesson_users/$U/lastdate).$FILE_TYPE_2
+$OUTSIDE_LOCATION/$U-$(cat "email_lesson_users/$U/lastdate").$FILE_TYPE_2
 $EXPLAIN_FORGOT
 
 $AUTO_MESSAGE
@@ -129,68 +129,68 @@ do echo "mail sending failed; retrying in 62 seconds"; sleep 62; done; fi
         continue
       else
         # delete the previous lesson
-        if echo $PUBLIC_HTML | grep : >/dev/null; then ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo $PUBLIC_HTML|sed -e 's/:.*//') rm $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$(cat email_lesson_users/$U/lastdate).*
-        else rm $PUBLIC_HTML/$U-$(cat email_lesson_users/$U/lastdate).*; fi
+        if echo "$PUBLIC_HTML" | grep : >/dev/null; then ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo "$PUBLIC_HTML"|sed -e 's/:.*//') rm "$(echo "$PUBLIC_HTML"|sed -e 's/[^:]*://')/$U-$(cat "email_lesson_users/$U/lastdate").*"
+        else rm $PUBLIC_HTML/$U-$(cat "email_lesson_users/$U/lastdate").*; fi
 	# (.* because .$FILE_TYPE and possibly .m3u as well)
       fi
     fi
     export CurDate=$(date +%Y%m%d)
     if ! test "a$GRADINT_OPTIONS" == a; then export GRADINT_OPTIONS="$GRADINT_OPTIONS ;"; fi
-    if echo $PUBLIC_HTML | grep : >/dev/null; then export OUTDIR=$TMPDIR
+    if echo "$PUBLIC_HTML" | grep : >/dev/null; then export OUTDIR=$TMPDIR
     else export OUTDIR=$PUBLIC_HTML; fi
     export USER_GRADINT_OPTIONS="$GLOBAL_GRADINT_OPTIONS $GRADINT_OPTIONS samplesDirectory='email_lesson_users/$U/samples'; progressFile='email_lesson_users/$U/progress.txt'; pickledProgressFile='email_lesson_users/$U/progress.bin'; vocabFile='email_lesson_users/$U/vocab.txt';saveLesson='';loadLesson=0;progressFileBackup='email_lesson_users/$U/progress.bak';outputFile="
     # (note: we DO keep progressFileBackup, because it can be useful if the server goes down and the MP3's need to be re-generated or something)
     unset Send_Podcast_Instead
-    if test -s email_lesson_users/$U/podcasts-to-send; then
+    if test -s "email_lesson_users/$U/podcasts-to-send"; then
       export Send_Podcast_Instead="$(head -1 email_lesson_users/$U/podcasts-to-send)"
-      export NumLines=$[$(cat email_lesson_users/$U/podcasts-to-send|wc -l)-1]
-      tail -$NumLines email_lesson_users/$U/podcasts-to-send > email_lesson_users/$U/podcasts-to-send2
-      mv email_lesson_users/$U/podcasts-to-send email_lesson_users/$U/podcasts-to-send.old
-      mv email_lesson_users/$U/podcasts-to-send2 email_lesson_users/$U/podcasts-to-send
+      export NumLines=$[$(cat "email_lesson_users/$U/podcasts-to-send"|wc -l)-1]
+      tail -$NumLines "email_lesson_users/$U/podcasts-to-send" > "email_lesson_users/$U/podcasts-to-send2"
+      mv "email_lesson_users/$U/podcasts-to-send" "email_lesson_users/$U/podcasts-to-send.old"
+      mv "email_lesson_users/$U/podcasts-to-send2" "email_lesson_users/$U/podcasts-to-send"
       if test $NumLines == 0; then
-        echo $U | $MailProg -s Warning:email-lesson-run-out-of-podcasts $ADMIN_EMAIL
+        echo "$U" | $MailProg -s Warning:email-lesson-run-out-of-podcasts $ADMIN_EMAIL
       fi
-    else rm -f email_lesson_users/$U/podcasts-to-send.old # won't be a rollback after this
+    else rm -f "email_lesson_users/$U/podcasts-to-send.old" # won't be a rollback after this
     fi
     if test "$ENCODE_ON_REMOTE_HOST" == 1; then
       export ToSleep=123
       while ! if test "a$Send_Podcast_Instead" == a; then
-        python gradint.py "$USER_GRADINT_OPTIONS '-.sh'" </dev/null 2>$TMPDIR/__stderr | ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo $PUBLIC_HTML|sed -e 's/:.*//') "mkdir -p $REMOTE_WORKING_DIR; cd $REMOTE_WORKING_DIR; cat > __gradint.sh;chmod +x __gradint.sh;PATH=$SOX_PATH ./__gradint.sh|$ENCODING_COMMAND $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$CurDate.$FILE_TYPE;rm -f __gradint.sh";
+        python gradint.py "$USER_GRADINT_OPTIONS '-.sh'" </dev/null 2>"$TMPDIR/__stderr" | ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo "$PUBLIC_HTML"|sed -e 's/:.*//') "mkdir -p $REMOTE_WORKING_DIR; cd $REMOTE_WORKING_DIR; cat > __gradint.sh;chmod +x __gradint.sh;PATH=$SOX_PATH ./__gradint.sh|$ENCODING_COMMAND $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$CurDate.$FILE_TYPE;rm -f __gradint.sh";
       else
-        cd email_lesson_users/$U ; cat "$Send_Podcast_Instead" | ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo $PUBLIC_HTML|sed -e 's/:.*//') "cat > $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$CurDate.$FILE_TYPE"; cd ../..;
+        cd "email_lesson_users/$U" ; cat "$Send_Podcast_Instead" | ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo "$PUBLIC_HTML"|sed -e 's/:.*//') "cat > $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$CurDate.$FILE_TYPE"; cd ../..;
       fi; do
         # (</dev/null so exceptions don't get stuck on 'press enter to continue' to a temp stderr if running from a terminal)
-        $MailProg -s gradint-to-ssh-failed,-will-retry $ADMIN_EMAIL < $TMPDIR/__stderr
+        $MailProg -s gradint-to-ssh-failed,-will-retry $ADMIN_EMAIL < "$TMPDIR/__stderr"
         # (no spaces in subj so no need to decide whether to single or double quote)
         # (don't worry about mail errors - if net is totally down that's ok, admin needs to know if it's a gradint bug causing infinite loop)
         sleep $ToSleep ; export ToSleep=$[$ToSleep*1.5] # (increasing-time retries)
       done
-      rm $TMPDIR/__stderr
+      rm "$TMPDIR/__stderr"
       if test "a$Use_M3U" == ayes; then
-        while ! ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo $PUBLIC_HTML|sed -e 's/:.*//') "echo $OUTSIDE_LOCATION/$U-$CurDate.$FILE_TYPE > $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$CurDate.m3u"; do sleep 63; done
+        while ! ssh -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $ControlPath $(echo "$PUBLIC_HTML"|sed -e 's/:.*//') "echo $OUTSIDE_LOCATION/$U-$CurDate.$FILE_TYPE > $(echo $PUBLIC_HTML|sed -e 's/[^:]*://')/$U-$CurDate.m3u"; do sleep 63; done
       fi
     else # not ENCODE_ON_REMOTE_HOST
       if ! test "a$Send_Podcast_Instead" == a; then
-        (cd email_lesson_users/$U ; cat "$Send_Podcast_Instead") > "$OUTDIR/$U-$CurDate.$FILE_TYPE"
+        (cd "email_lesson_users/$U" ; cat "$Send_Podcast_Instead") > "$OUTDIR/$U-$CurDate.$FILE_TYPE"
       elif ! python gradint.py "$USER_GRADINT_OPTIONS '$OUTDIR/$U-$CurDate.$FILE_TYPE'" </dev/null; then
         echo "Errors from gradint itself (not ssh/network); skipping this user."
         echo "Failed on $U, check output " | $MailProg -s gradint-failed $ADMIN_EMAIL
         continue
       fi
       if test "a$Use_M3U" == ayes; then
-        echo $OUTSIDE_LOCATION/$U-$CurDate.$FILE_TYPE > $OUTDIR/$U-$CurDate.m3u
+        echo "$OUTSIDE_LOCATION/$U-$CurDate.$FILE_TYPE" > "$OUTDIR/$U-$CurDate.m3u"
       fi
-      if echo $PUBLIC_HTML | grep : >/dev/null; then
-        while ! scp $ControlPath -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $OUTDIR/$U-$CurDate.* $PUBLIC_HTML/; do
+      if echo "$PUBLIC_HTML" | grep : >/dev/null; then
+        while ! scp $ControlPath -C $PUBLIC_HTML_EXTRA_SSH_OPTIONS $OUTDIR/$U-$CurDate.* "$PUBLIC_HTML/"; do
           echo "scp failed; re-trying in 60 seconds"
   	sleep 64
         done
-        rm $OUTDIR/$U-$CurDate.*
+        rm "$OUTDIR/$U-$CurDate".*
       fi
     fi
     export NeedRunMirror=1
-    if ! test -e email_lesson_users/$U/progress.bak; then touch email_lesson_users/$U/progress.bak; fi # so rollback works after 1st lesson
-    while ! $MailProg -s "$SUBJECT_LINE" $STUDENT_EMAIL "$Extra_Mailprog_Params1" "$Extra_Mailprog_Params2" <<EOF
+    if ! test -e "email_lesson_users/$U/progress.bak"; then touch "email_lesson_users/$U/progress.bak"; fi # so rollback works after 1st lesson
+    while ! $MailProg -s "$SUBJECT_LINE" "$STUDENT_EMAIL" "$Extra_Mailprog_Params1" "$Extra_Mailprog_Params2" <<EOF
 $NEW_LESSON
 $OUTSIDE_LOCATION/$U-$CurDate.$FILE_TYPE_2
 $LISTEN_TODAY
@@ -198,27 +198,27 @@ $LISTEN_TODAY
 $AUTO_MESSAGE
 EOF
 do echo "mail sending failed; retrying in 65 seconds"; sleep 65; done
-    echo $CurDate > email_lesson_users/$U/lastdate
+    echo "$CurDate" > "email_lesson_users/$U/lastdate"
     unset AdminNote
     if test "a$Send_Podcast_Instead" == a; then
-      if test $(zgrep -H -m 1 lessonsLeft email_lesson_users/$U/progress.txt|sed -e 's/.*=//') == 0; then export AdminNote="Note: $U has run out of new words"; fi
-    elif ! test -e email_lesson_users/$U/podcasts-to-send; then export AdminNote="Note: $U has run out of podcasts"; fi
+      if test "$(zgrep -H -m 1 lessonsLeft "email_lesson_users/$U/progress.txt"|sed -e 's/.*=//')" == 0; then export AdminNote="Note: $U has run out of new words"; fi
+    elif ! test -e "email_lesson_users/$U/podcasts-to-send"; then export AdminNote="Note: $U has run out of podcasts"; fi
     if ! test "a$AdminNote" == a; then
-      while ! echo "$AdminNote"|$MailProg -s gradint-user-ran-out $ADMIN_EMAIL; do echo "Mail sending failed; retrying in 67 seconds"; sleep 67; done
+      while ! echo "$AdminNote"|$MailProg -s gradint-user-ran-out "$ADMIN_EMAIL"; do echo "Mail sending failed; retrying in 67 seconds"; sleep 67; done
     fi
   done # end of per-user loop
   if test "a$NeedRunMirror" == "a1" && ! test "a$PUBLIC_HTML_MIRROR_COMMAND" == a; then
     while ! $PUBLIC_HTML_MIRROR_COMMAND; do
       echo "PUBLIC_HTML_MIRROR_COMMAND failed; retrying in 79 seconds"
-      echo As subject | $MailProg -s "PUBLIC_HTML_MIRROR_COMMAND failed, will retry" $ADMIN_EMAIL || true # ignore errors
+      echo As subject | $MailProg -s "PUBLIC_HTML_MIRROR_COMMAND failed, will retry" "$ADMIN_EMAIL" || true # ignore errors
       sleep 79
     done
   fi
-  rm -f $TMPDIR/._email_lesson_logs
+  rm -f "$TMPDIR/._email_lesson_logs"
   if ! test a$MasterPid == a; then
     kill $MasterPid
-    kill $(ps axwww|grep $TMPDIR/__gradint_ctrl|sed -e 's/^ *//' -e 's/ .*//') 2>/dev/null
-    rm -f $TMPDIR/__gradint_ctrl # in case ssh doesn't
+    kill $(ps axwww|grep "$TMPDIR/__gradint_ctrl"|sed -e 's/^ *//' -e 's/ .*//') 2>/dev/null
+    rm -f "$TMPDIR/__gradint_ctrl" # in case ssh doesn't
   fi
   rm -f "$Gradint_Dir/.email-lesson-running"
   exit 0
@@ -286,8 +286,8 @@ while true; do
   echo "Type a user alias (or just press Enter) to add a new user, or Ctrl-C to quit"
   read Alias
   export ID=$(mktemp -d user.$(python -c 'import random; print(random.random())')XXXXXX) # (newer versions of mktemp allow more than 6 X's so the python step isn't necessary, but just in case we want to make sure that it's hard to guess the ID)
-  if ! test "a$Alias" == a; then ln -s $ID "$Alias"; fi
-  cd $ID
+  if ! test "a$Alias" == a; then ln -s "$ID" "$Alias"; fi
+  cd "$ID" || exit 1
   cat > profile <<EOF
 # You need to edit the settings in this file.
 export STUDENT_EMAIL=student@example.org  # change to student's email address

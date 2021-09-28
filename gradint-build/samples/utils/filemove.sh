@@ -15,15 +15,15 @@ fi
 export Src=$1
 export Dest=$2
 
-find $SamplesDir -follow -type f | grep ^$SamplesDir$Src | \
+find "$SamplesDir" -follow -type f | grep "^$SamplesDir$Src" | \
 while true; do read || break;
   export SrcFile=$REPLY
-  export DestFile=$(echo $SrcFile|sed -e "s|^$SamplesDir$Src|$SamplesDir$Dest|")
-  mkdir -p $DestFile ; rmdir $DestFile # ensure parent dirs exist before moving file across
-  mv -b $SrcFile $DestFile
-  export SrcFile=$(echo $SrcFile|sed -e "s|$SamplesDir||")
-  export DestFile=$(echo $DestFile|sed -e "s|$SamplesDir||")
-  gzip -fdc $ProgressFile | sed -e "s|$SrcFile|$DestFile|g" > /tmp/newprog ; mv /tmp/newprog $ProgressFile # (ideally should re-write to batch these changes, but leave like this for now in case need to recover from unfinished operation)
+  export DestFile=$(echo "$SrcFile"|sed -e "s|^$SamplesDir$Src|$SamplesDir$Dest|")
+  mkdir -p "$DestFile" ; rmdir "$DestFile" # ensure parent dirs exist before moving file across
+  mv -b "$SrcFile" "$DestFile"
+  export SrcFile=$(echo "$SrcFile"|sed -e "s|$SamplesDir||")
+  export DestFile=$(echo "$DestFile"|sed -e "s|$SamplesDir||")
+  gzip -fdc "$ProgressFile" | sed -e "s|$SrcFile|$DestFile|g" > /tmp/newprog ; mv /tmp/newprog "$ProgressFile" # (ideally should re-write to batch these changes, but leave like this for now in case need to recover from unfinished operation)
 done
 
-rmdir $SamplesDir$Src 2>/dev/null >/dev/null # IF it's a directory
+rmdir "$SamplesDir$Src" 2>/dev/null >/dev/null # IF it's a directory
