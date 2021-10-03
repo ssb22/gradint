@@ -5,14 +5,15 @@
 # for summarizing it to a teacher or native speaker.
 # Reads from progressFile and progressFileBackup.
 
-# Version 1.05 (c) 2011, 2020 Silas S. Brown.  License: GPL
+# Version 1.06 (c) 2011, 2020-21 Silas S. Brown.  License: GPL
 
 # Example use:
-# python lesson-table.py | ssh some-server 'mutt -e "set record = \"\";" -e "set charset=\"utf-8\"; set send_charset=\"utf-8\"; set content_type=\"text/html\";" to-address -s "Gradint report"' || echo Send failed
-
-samples_url = None # or "http://example.org/path/to/samples/"
+# export samples_url=http://example.org/path/to/samples/ # or omit
+# python lesson-table.py [gradint-params] | ssh some-server 'mutt -e "set record = \"\";" -e "set charset=\"utf-8\"; set send_charset=\"utf-8\"; set content_type=\"text/html\";" to-address -s "Gradint report"' || echo Send failed
 
 import gradint, os
+samples_url = os.getenv("samples_url","")
+
 from gradint import B,S
 newpf = gradint.progressFile
 gradint.progressFile = gradint.progressFileBackup
@@ -42,7 +43,7 @@ for tries,l1,l2 in newProg.data:
   count += 1
 del newProg,opd
 changes.sort()
-print ('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title></head><body><h2>Gradint lesson report</h2>')
+print ('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title><meta name="mobileoptimized" content="0"><meta name="viewport" content="width=device-width"><script>if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)document.write("<style>body { background-color: black; color: #c0c000; } a:link { color: #00b000; } a:visited { color: #00c0c0; } a:hover { color: red; }</style>");</script></head><body><h2>Gradint lesson report</h2>')
 if gradint.unix and gradint.got_program("zgrep"):
   print (os.popen("zgrep '^# collection=' \"%s\"" % gradint.progressFile).read()[2:].rstrip())
 print ('<table border><tr><th>Repeats before</th><th>Repeats today</th><th>Question</th><th>Answer</th></tr>') # (have Question/Answer order rather than Word/Meaning, because if it's L2-only poetry then the question is the previous line, which is not exactly "meaning")
