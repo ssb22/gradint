@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #  (either Python 2 or Python 3)
 
-program_name = "gradint.cgi v1.3 (c) 2011,2015,2017-20 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.31 (c) 2011,2015,2017-21 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -237,6 +237,7 @@ def htmlOut(body_u8,title_extra="",links=1):
     if title_extra: title_extra=": "+title_extra
     print ('<html><head><title>Gradint Web edition'+title_extra+'</title>')
     print ('<meta name="mobileoptimized" content="0"><meta name="viewport" content="width=device-width">')
+    print ('<script>if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)document.write("<style>body,input,textarea { background-color: black; color: #c0c000; } select,input[type=submit],input[type=button] { background-color: #300020; color: #c0c000; } select[disabled],input[disabled] { background-color: #101010; color: #b0b000; } a:link { color: #00b000; } a:visited { color: #00c0c0; } a:hover { color: red; }</style>");</script>')
     print ('</head><body>')
     if type(body_u8)==type(u""): body_u8=body_u8.encode('utf-8')
     if hasattr(sys.stdout,'buffer'): # Python 3
