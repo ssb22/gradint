@@ -465,6 +465,16 @@ partials_are_sporadic = 0
 # set a default in voiceOption below (blank is normal, or set to "-low" etc)
 voiceOption = ""
 
+# On Unix-like systems (that support pipes) there is also an option
+# to specify external programs to preprocess all input to espeak for
+# a specified language.  For example if you've used Annotator Generator
+# to generate a Chinese-to-pinyin program that's better than espeak
+# then you can use this.
+espeak_preprocessors={
+    # for example:
+    # "zh":"./annotate --raw",
+}
+
 # ------- GUI "preset collections" buttons ---------
 
 # If you are giving gradint to your students then you might

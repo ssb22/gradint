@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.063 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.064 (c) 2002-21 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -381,7 +381,7 @@ espeak_language_aliases = { "cant":"zhy" }
 
 class SimpleZhTransliterator(object): # if not got eSpeak on system
     def can_transliterate(self,lang): return lang=="zh"
-    def transliterate(self,lang,text,forPartials=1,from_espeak=0):
+    def transliterate(self,lang,text,forPartials=1,for_espeak=0):
         text = B(text)
         if lang=="zh" and text.find(B("</"))==-1: # (not </ - don't do this if got SSML)
             text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode("utf-8")
@@ -390,8 +390,8 @@ class SimpleZhTransliterator(object): # if not got eSpeak on system
                 t = text[i:i+1]
                 if ord(t)>=128:
                     found=1 ; break
-            if not found and text.lower()==fix_pinyin(text,[]): return text # don't need espeak
-            elif from_espeak: return [text] # This transliterate() and ESpeakSynth's transliterate() work together - don't call espeak if there aren't any special characters (this saves launching a lot of espeak processes unnecessarily when synthing from partials), but DO proceed if fix_pinyin changes something, as in this case we need to check for embedded en words so fix_pinyin doesn't add spurious 5's, + embedded letters etc.
+            if not found and text.lower()==fix_pinyin(text,[]): return text # don't need espeak if no non-ASCII (but DO need espeak if fix_pinyin changes something, as in this case we need to check for embedded en words so fix_pinyin doesn't add spurious 5's, + embedded letters etc)
+            elif for_espeak: return [text] # as list so ESpeakSynth's transliterate_multiple will further process it
             elif not found: return fix_pinyin(text,[]) # No ESpeak on system and fix_pinyin needed to do something - best we can do is hope there aren't any embedded English words (because if there are, they'll have spurious 5's added)
 simpleZhTransliterator = SimpleZhTransliterator()
 
@@ -591,8 +591,8 @@ class ESpeakSynth(Synth):
         if lang=="zh":
          if keepIndexList: # making the cache - can we go a bit faster?
            try: t = unicode(text,"ascii") # if no utf, know is OK (but ONLY if keepIndexList, as the result is imprecise)
-           except UnicodeDecodeError: t = simpleZhTransliterator.transliterate(lang,text,from_espeak=1)
-         else: t = simpleZhTransliterator.transliterate(lang,text,from_espeak=1)
+           except UnicodeDecodeError: t = simpleZhTransliterator.transliterate(lang,text,for_espeak=1)
+         else: t = simpleZhTransliterator.transliterate(lang,text,for_espeak=1)
         else: t=[fix_compatibility(ensure_unicode(text)).encode("utf-8")]
         if t and not riscos_sound: # same TODO as above re RISC OS
             if type(t)==type([]):
@@ -622,7 +622,8 @@ class ESpeakSynth(Synth):
           translit_out = os.tempnam()
           data=self.winCE_run(' -v%s -q -X -f %s --phonout=%s' % (espeak_language_aliases.get(lang,lang),fname,translit_out),translit_out)
           os.remove(translit_out)
-      else: data=readB(os.popen(self.program+' -v%s -q -X -f %s%s' % (espeak_language_aliases.get(lang,lang),changeToDirOf(fname,1),cond(unix," 2>&1","")),popenRB)) # popen2 might not work, so had better do it this way:
+      elif checkIn(lang,espeak_preprocessors): data=readB(os.popen('%s < %s | %s -v%s -q -X %s' % (espeak_preprocessors[lang],changeToDirOf(fname,1),self.program,espeak_language_aliases.get(lang,lang),cond(unix," 2>&1","")),popenRB))
+      else: data=readB(os.popen('%s -v%s -q -X -f %s%s' % (self.program,espeak_language_aliases.get(lang,lang),changeToDirOf(fname,1),cond(unix," 2>&1","")),popenRB)) # popen2 might not work, so had better do it this way
       os.chdir(oldcwd) ; os.remove(fname)
       data = data.replace(B("\r\n"),B("\n")).split(B("\nTranslate '")+B(split_token)+B("'\n"))
       if len(data)==2*(len(indexList)+len(overruns))-1:
@@ -1008,7 +1009,7 @@ def get_synth_if_possible(language,warn=1,to_transliterate=False):
     if to_transliterate: # for partials: return a synth that can transliterate the language, if possible
         for synth in viable_synths:
             if synth.supports_language(language) and synth.can_transliterate(language): return synth
-        if language=="zh": return simpleZhTransliterator # in case haven't got eSpeak
+        if language=="zh": return simpleZhTransliterator # fallback if no eSpeak
     for synth in viable_synths: # find a good one ?
         if synth.supports_language(language) and not synth.not_so_good_at(language):
             getsynth_cache[language]=synth ; return synth
