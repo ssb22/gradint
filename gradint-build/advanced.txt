@@ -473,6 +473,7 @@ voiceOption = ""
 espeak_preprocessors={
     # for example:
     # "zh":"./annotate --raw",
+    # "zhy":"./annotate --seg",
 }
 
 # ------- GUI "preset collections" buttons ---------
