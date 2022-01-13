@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.064 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.065 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -76,11 +76,11 @@ class OSXSynth_Say(Synth):
         self.voices = osxSayVoicesScan ; return True
     def supports_language(self,lang): return checkIn(lang,self.voices)
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
-    def play(self,lang,text): return system("say %s\"%s\"" % (self.voices[lang],self.transliterate(lang,text).replace('"','')))
+    def play(self,lang,text): return system("say %s\"%s\"" % (S(self.voices[lang]),S(self.transliterate(lang,text)).replace('"','')))
     # TODO 10.7+ may also support -r rate (WPM), make that configurable in advanced.txt ?
     def makefile(self,lang,text):
         fname = os.tempnam()+extsep+"aiff"
-        system("say %s-o %s \"%s\"" % (self.voices[lang],fname,self.transliterate(lang,text).replace('"','')))
+        system("say %s-o %s \"%s\"" % (S(self.voices[lang]),fname,S(self.transliterate(lang,text)).replace('"','')))
         return aiff2wav(fname)
     def transliterate(self,lang,text,forPartials=0):
         if not self.voices[lang]=='-v "Ting-Ting" ': return text
@@ -136,7 +136,7 @@ class OSXSynth_Say(Synth):
                   d2[k] = [vvv] ; found=1 ; raise BreakOut()
          except BreakOut: pass
         if list(d.keys())==['en'] and not found: return {"en":""} # just use the default
-        for k,v in list(d2.items()): d2[k]='-v "'+v[0]+'" '
+        for k,v in list(d2.items()): d2[k]='-v "'+S(v[0])+'" '
         return d2
 
 def aiff2wav(fname):

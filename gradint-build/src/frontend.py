@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.064 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.065 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1470,15 +1470,15 @@ def downloadLAME():
     # Sourceforge keep making this harder!
     # Removed code to check for latest version, as we
     # can't use v3.100 due to Lame bug 488.
-    return not system("""if which curl >/dev/null 2>/dev/null; then export Curl="curl -L"; else export Curl="wget -O -"; fi
-if ! test -e lame*.tar.gz; then
+    return not system("""if which curl >/dev/null 2>/dev/null; then Curl="curl -L"; else Curl="wget -O -"; fi
+if ! [ -e lame*.tar.gz ]; then
   if ! $Curl "https://sourceforge.net/projects/lame/files/lame/3.99/lame-3.99.5.tar.gz/download" > lame.tar.gz; then
     rm -f lame.tar.gz; exit 1
   fi
   if grep downloads.sourceforge lame.tar.gz 2>/dev/null; then
-    export Link="$(cat lame.tar.gz|grep downloads.sourceforge|head -1)"
+    Link="$(cat lame.tar.gz|grep downloads.sourceforge|head -1)"
     echo "Got HTML: $Link" 1>&2
-    export Link="$(echo "$Link"|sed -e 's/.*http/http/' -e 's,.*/projects,http://sourceforge.net/projects,' -e 's/".*//')"
+    Link="$(echo "$Link"|sed -e 's/.*http/http/' -e 's,.*/projects,http://sourceforge.net/projects,' -e 's/".*//')"
     echo "Following link to $Link" 1>&2
     if ! $Curl "$Link" > lame.tar.gz; then
       rm -f lame.tar.gz; exit 1

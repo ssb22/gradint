@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.064 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.065 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -205,7 +205,7 @@ sox_same_endian = sox_little_endian = ""
 if gotSox and unix:
     # should only have to run this test if macsound (don't bother on NSLU2's etc):
     # (wav is little-endian, so if it doesn't pass the string through then it interpreted the i/p as big-endian)
-    if macsound and os.popen('echo "This is a test" | sox -t raw -r 8000 '+sox_16bit+' '+sox_signed+' -c 1 - -t wav - 2>/dev/null').read().find("This is a test")==-1:
+    if macsound and readBuf(os.popen('echo "This is a test" | sox -t raw -r 8000 '+sox_16bit+' '+sox_signed+' -c 1 - -t wav - 2>/dev/null')).find(B("This is a test"))==-1:
         sox_little_endian = " -x"
         if not big_endian: sox_same_endian = " -x"
     elif big_endian: sox_little_endian = " -x"
@@ -588,8 +588,8 @@ class ShSoundCollector(object):
         if write_to_stdout: self.o=sys.stdout
         else: self.o = open(outputFile,"wb")
         start = """#!/bin/bash
-if echo "$0"|grep / >/dev/null; then export S="$0"; else export S=$(which "$0"); fi
-export P="-t raw %s %s -r 44100 -c 1"
+if echo "$0"|grep / >/dev/null; then S="$0"; else S=$(which "$0"); fi
+P="-t raw %s %s -r 44100 -c 1"
 tail -1 "$S" | bash\nexit\n""" % (sox_16bit,sox_signed) # S=script P=params for sox (ignore endian issues because the wav header it generates below will specify the same as its natural endian-ness)
         outfile_writeBytes(self.o,start)
         self.bytesWritten = len(start) # need to keep a count because it might be stdout

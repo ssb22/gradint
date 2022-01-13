@@ -32,7 +32,7 @@ if echo "$SERVER_SOFTWARE"|grep Apache >/dev/null; then
   echo "Status: 200 OK" # overriding the 403
 fi # (mathopd doesn't need this, and not tested with all mathopd versions)
 
-export Filename="$(pwd|sed -e 's,.*/,,').zip"
+Filename="$(pwd|sed -e 's,.*/,,').zip"
 
 if test "$QUERY_STRING" == zip || test "a$(echo "$REQUEST_URI"|sed -e 's/.*?//')" == azip; then
   echo Content-type: application/zip
@@ -70,8 +70,8 @@ function h5a(link) {
 //--></script>
 EOF
   for N in *; do
-    export Size=$(du -h --apparent-size -s "$N"|cut -f1)
-    if echo "$N"|grep '\.txt$'>/dev/null && echo $Size|grep '^[0-9]*$' >/dev/null;then export Size="$(cat "$N")";else export Size="($Size)"; fi
+    Size=$(du -h --apparent-size -s "$N"|cut -f1)
+    if echo "$N"|grep '\.txt$'>/dev/null && echo $Size|grep '^[0-9]*$' >/dev/null;then Size="$(cat "$N")";else Size="($Size)"; fi
     echo "<LI><A HREF=\"$N\" onClick=\"javascript:return h5a(this)\">$N</A> $Size</LI>"
   done
   echo "</UL></BODY></HTML>"

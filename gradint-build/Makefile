@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.064 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.065 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -25,7 +25,7 @@ All_Versions=gradint-build.7z gradint.exe gradint.tbz gradint.bgz gradint.zip gr
 
 SHELL=/bin/bash
 
-EData := $(shell for N in $(Extra_Data); do if test -e $$N; then echo $$N; fi; done)
+EData := $(shell for N in $(Extra_Data); do if [ -e $$N ]; then echo $$N; fi; done)
 
 Common_Files=vocab.txt settings.txt advanced.txt samples $(EData)
 Most_Mac_Files=$(Common_Files) gradint.py
@@ -122,7 +122,7 @@ gradint.cab: $(Common_Files) gradint.py
 	cd PocketPC0 && find . -type f | sort -f | grep -v /mb | grep -v /files.list | sed -e 's,./\(.*\)$$,\1 /\1,' -e 's,/\([^/]*\)/\([^/]*\)$$,/\1,' -e 's, /[^/]*.py$$, /,' -e 's/Program Files/Program~Files/g' > files.list && cd ..
 	cd PocketPC0 && export PATH="/other/downloads/7zip/bin/:$$HOME/bin/p7zip-for-gradint:$$PATH" && ../PocketPC/pocketpc-cab -p "" -a "Gradint $$(head gradint/gradint.py | grep program_name | sed -e 's/.*t v/v/' -e 's/(c).*//')" files.list ../gradint.cab && cd ..
 	# (need pocketpc-cab and lcab binaries for that to work)
-	test -e gradint.cab # pocketpc-cab can fail silently if we add too many files, so check the output exists
+	[ -e gradint.cab ] # pocketpc-cab can fail silently if we add too many files, so check the output exists
 	rm -rf PocketPC0
 
 gradint-S60.zip: $(Common_Files) gradint.py README-S60.txt
@@ -194,8 +194,8 @@ gradint-installer.command: gradint.tbz
 	cat mac/install.sh gradint.tbz > gradint-installer.command
 	chmod +x gradint-installer.command
 gradint.dmg: gradint-installer.command
-	if test -d /Volumes/Gradint; then diskutil eject /Volumes/Gradint; fi
-	if test -e gradint.dmg; then rm gradint.dmg; fi
+	if [ -d /Volumes/Gradint ]; then diskutil eject /Volumes/Gradint; fi
+	if [ -e gradint.dmg ]; then rm gradint.dmg; fi
 	hdiutil create -megabytes $$[$$(du -h gradint-installer.command | sed -e 's/\..*//')+1] -fs HFS+ -volname Gradint gradint
 	open gradint.dmg
 	while ! cp gradint-installer.command /Volumes/Gradint/; do echo Retrying ; sleep 1 ; done # 'open' might delay

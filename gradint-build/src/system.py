@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.064 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.065 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -519,9 +519,10 @@ def got_program(prog):
         if fileExists(prog+".exe"): return prog+".exe"
     elif unix:
         try:
-            import distutils.spawn
+            try: from shutil import which as find_executable # PEP 632
+            except: from distutils.spawn import find_executable
             if (":"+os.environ.get("PATH","")).find(":.")>-1:
-                prog = distutils.spawn.find_executable(prog)
+                prog = find_executable(prog)
             else: # at least some distutils assume that "." is in the PATH even when it isn't, so do it ourselves without checking "."
                 oldCwd = os.getcwd()
                 pList = os.environ.get("PATH","").split(':')
@@ -532,7 +533,7 @@ def got_program(prog):
                     except: continue
                     done=1 ; break
                   if done:
-                    prog = distutils.spawn.find_executable(prog)
+                    prog = find_executable(prog)
                     os.chdir(oldCwd)
         except ImportError:
             # fall back to running 'which' in a shell (probably slower if got_program is called repeatedly)

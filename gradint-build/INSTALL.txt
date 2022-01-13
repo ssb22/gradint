@@ -13,7 +13,7 @@ mkdir /usr/share/gradint
 cp gradint.py /usr/share/gradint/
 cd samples/utils
 for F in *.py *.sh; do
-  export DestFile=/usr/bin/gradint-$(echo $F|sed -e 's/\..*//')
+  DestFile=/usr/bin/gradint-$(echo $F|sed -e 's/\..*//')
   cp $F $DestFile
   chmod +x $DestFile
 done
@@ -22,7 +22,7 @@ tar -zcf /usr/share/gradint/new-user.tgz \
   advanced.txt settings.txt vocab.txt samples
 cat > /usr/bin/gradint <<EOF
 #!/bin/bash
-if ! test -e "$HOME/gradint"; then
+if ! [ -e "$HOME/gradint" ]; then
   echo "You will need some prompts and samples in your home directory."
   echo "Is it OK to unpack an example into $HOME/gradint ?"
   echo "Ctrl-C to quit or Enter to continue"

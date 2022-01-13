@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.064 (c) 2002-21 Silas S. Brown. GPL v3+.
+# gradint v3.065 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -49,7 +49,7 @@ def get_userNames(): # list of unicode user names or []
   ret=[]
   u=userNameFile ; c=0
   while fileExists(u):
-    ret.append(unicode(bwspstrip(u8strip(read(u)),'utf-8')))
+    ret.append(unicode(bwspstrip(u8strip(read(u))),'utf-8'))
     c += 1 ; u=addUserToFname(userNameFile,c)
   global lastUserNames ; lastUserNames = ret
   return ret
