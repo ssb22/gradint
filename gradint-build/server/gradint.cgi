@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #  (either Python 2 or Python 3)
 
-program_name = "gradint.cgi v1.31 (c) 2011,2015,2017-21 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.32 (c) 2011,2015,2017-22 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -235,7 +235,7 @@ def justsynthLink(text,lang=""): # assumes written function h5a
 def htmlOut(body_u8,title_extra="",links=1):
     print ("Content-type: text/html; charset=utf-8\n")
     if title_extra: title_extra=": "+title_extra
-    print ('<html><head><title>Gradint Web edition'+title_extra+'</title>')
+    print ('<html lang="en"><head><title>Gradint Web edition'+title_extra+'</title>')
     print ('<meta name="mobileoptimized" content="0"><meta name="viewport" content="width=device-width">')
     print ('<script>if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)document.write("<style>body,input,textarea { background-color: black; color: #c0c000; } select,input[type=submit],input[type=button] { background-color: #300020; color: #c0c000; } select[disabled],input[disabled] { background-color: #101010; color: #b0b000; } a:link { color: #00b000; } a:visited { color: #00c0c0; } a:hover { color: red; }</style>");</script>')
     print ('</head><body>')
@@ -340,10 +340,12 @@ def langSelect(name,curLang):
 
 def numSelect(name,nums,curNum): return '<select name="'+name+'">'+''.join(['<option value="'+str(num)+'"'+gradint.cond(num==curNum," selected","")+'>'+str(num)+'</option>' for num in nums])+'</select>'
 
-def localise(x):
+def localise(x,span=0):
     r=gradint.localise(x)
     if r==x: return langFullName.get(gradint.espeak_language_aliases.get(x,x),x)
-    elif type(r)==type("")==type(u""): return r # Python 3
+    if span==1: r="<span lang=\""+gradint.firstLanguage+"\">"+r+"</span>"
+    elif span==2: r+='" lang="'+gradint.firstLanguage
+    if type(r)==type("")==type(u""): return r # Python 3
     else: return r.encode('utf-8') # Python 2
 for k,v in {"Swap":{"zh":u"交换","zh2":u"交換"},
             "Text edit":{"zh":u"文本编辑"},
@@ -392,7 +394,7 @@ def listVocab(hasList): # main screen
     # must have autocomplete=off if capturing keycode 13
     if gotVoiceOptions: cacheInfo="&curVopt="+gradint.voiceOption
     else: cacheInfo=""
-    body += (localise("Word in %s") % localise(secondLanguage))+': <input type=text name=l2w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].spk.click();return false} else return true" onfocus="document.forms[0].onsubmit=\'document.forms[0].onsubmit=&quot;return true&quot;;document.forms[0].spk.click();return false\'" onblur="document.forms[0].onsubmit=\'return true\'"> <input type=submit name=spk value="'+localise("Speak")+'" onClick="if (!document.forms[0].l1w.value && !document.forms[0].l2w.value) return true; else return h5a(\''+cginame+'?spk=1&l1w=\'+document.forms[0].l1w.value+\'&l2w=\'+document.forms[0].l2w.value+\'&l1=\'+document.forms[0].l1.value+\'&l2=\'+document.forms[0].l2.value+\''+cacheInfo+'\');"><br>'+(localise("Meaning in %s") % localise(firstLanguage))+': <input type=text name=l1w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].add.click();return false} else return true" onfocus="document.forms[0].onsubmit=\'document.forms[0].onsubmit=&quot;return true&quot;;document.forms[0].add.click();return false\'" onblur="document.forms[0].onsubmit=\'return true\'"> <input type=submit name=add value="'+(localise("Add to %s") % localise("vocab.txt").replace(".txt",""))+'"><script><!--\nvar emptyString="";document.write(\' <input type=submit name=dummy value="'+localise("Clear input boxes")+'" onClick="document.forms[0].l1w.value=document.forms[0].l2w.value=emptyString;document.forms[0].l2w.focus();return false">\')\n//--></script><p>'+localise("Your first language")+': '+langSelect('l1',firstLanguage)+' '+localise("second")+': '+langSelect('l2',secondLanguage)+' <nobr><input type=submit name=clang value="'+localise("Change languages")+'"><input type=submit name=swaplang value="'+localise("Swap")+'"></nobr>' # onfocus..onblur updating onsubmit is needed for iOS "Go" button
+    body += (localise("Word in %s",1) % localise(secondLanguage))+': <input type=text name=l2w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].spk.click();return false} else return true" onfocus="document.forms[0].onsubmit=\'document.forms[0].onsubmit=&quot;return true&quot;;document.forms[0].spk.click();return false\'" onblur="document.forms[0].onsubmit=\'return true\'"> <input type=submit name=spk value="'+localise("Speak",2)+'" onClick="if (!document.forms[0].l1w.value && !document.forms[0].l2w.value) return true; else return h5a(\''+cginame+'?spk=1&l1w=\'+document.forms[0].l1w.value+\'&l2w=\'+document.forms[0].l2w.value+\'&l1=\'+document.forms[0].l1.value+\'&l2=\'+document.forms[0].l2.value+\''+cacheInfo+'\');"><br>'+(localise("Meaning in %s",1) % localise(firstLanguage))+': <input type=text name=l1w autocomplete=off onkeydown="if(event.keyCode==13) {document.forms[0].add.click();return false} else return true" onfocus="document.forms[0].onsubmit=\'document.forms[0].onsubmit=&quot;return true&quot;;document.forms[0].add.click();return false\'" onblur="document.forms[0].onsubmit=\'return true\'"> <input type=submit name=add value="'+(localise("Add to %s",2) % localise("vocab.txt").replace(".txt",""))+'"><script><!--\nvar emptyString="";document.write(\' <input type=submit name=dummy value="'+localise("Clear input boxes",2)+'" onClick="document.forms[0].l1w.value=document.forms[0].l2w.value=emptyString;document.forms[0].l2w.focus();return false">\')\n//--></script><p>'+localise("Your first language",1)+': '+langSelect('l1',firstLanguage)+' '+localise("second",1)+': '+langSelect('l2',secondLanguage)+' <nobr><input type=submit name=clang value="'+localise("Change languages",2)+'"><input type=submit name=swaplang value="'+localise("Swap",2)+'"></nobr>' # onfocus..onblur updating onsubmit is needed for iOS "Go" button
     def htmlize(l,lang):
        if type(l)==type([]) or type(l)==type(()): return htmlize(l[-1],lang)
        l = gradint.B(l)
@@ -403,23 +405,23 @@ def listVocab(hasList): # main screen
        for l in [l2,l1]:
          if type(l)==type([]) or type(l)==type(()) or not gradint.B("!synth:") in l: return "" # Web-GUI delete in poetry etc not yet supported
          r.append(gradint.S(quote(l[l.index(gradint.B("!synth:"))+7:l.rfind(gradint.B("_"))])))
-       r.append(localise("Delete"))
+       r.append(localise("Delete",2))
        return ('<td><input type=submit name="del-%s%%3d%s" value="%s" onClick="return confirm(\''+localise("Really delete this word?")+'\');"></td>') % tuple(r)
     if hasList:
        gradint.availablePrompts = gradint.AvailablePrompts() # needed before ProgressDatabase()
        # gradint.cache_maintenance_mode=1 # don't transliterate on scan -> NO, including this scans promptsDirectory!
        gradint.ESpeakSynth.update_translit_cache=lambda *args:0 # do it this way instead
        data = gradint.ProgressDatabase().data ; data.reverse()
-       if data: hasList = "<p><table style=\"border: thin solid green\"><caption><nobr>"+localise("Your word list")+"</nobr> <nobr>("+localise("click for audio")+")</nobr> <input type=submit name=edit value=\""+localise("Text edit")+"\"></caption><tr><th>"+localise("Repeats")+"</th><th>"+localise(gradint.secondLanguage)+"</th><th>"+localise(gradint.firstLanguage)+"</th></tr>"+"".join(["<tr><td>%d</td><td>%s</td><td>%s</td>%s" % (num,htmlize(dest,gradint.secondLanguage),htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</table>"
+       if data: hasList = "<p><table style=\"border: thin solid green\"><caption><nobr>"+localise("Your word list",1)+"</nobr> <nobr>("+localise("click for audio",1)+")</nobr> <input type=submit name=edit value=\""+localise("Text edit",2)+"\"></caption><tr><th>"+localise("Repeats",1)+"</th><th>"+localise(gradint.secondLanguage,1)+"</th><th>"+localise(gradint.firstLanguage,1)+"</th></tr>"+"".join(["<tr><td>%d</td><td lang=\"%s\">%s</td><td lang=\"%s\">%s</td>%s" % (num,gradint.secondLanguage,htmlize(dest,gradint.secondLanguage),gradint.firstLanguage,htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</table>"
        else: hasList=""
     else: hasList=""
-    if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson")+"""" onClick="if(h5a('"""+cginame+'?lesson='+str(random.random())+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){location.href='"""+cginame+'?lFinish='+str(random.random())+"""'})) return true; else { document.forms[0].lesson.value='Please wait while the lesson starts to play'; document.forms[0].lesson.disabled=1; return false}"></td></tr></table>"""
+    if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson",2)+"""" onClick="if(h5a('"""+cginame+'?lesson='+str(random.random())+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){location.href='"""+cginame+'?lFinish='+str(random.random())+"""'})) return true; else { document.forms[0].lesson.value='Please wait while the lesson starts to play'; document.forms[0].lesson.disabled=1; return false}"></td></tr></table>"""
     if "dictionary" in query:
-        if query.getfirst("dictionary")=="1": body += '<script><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">'+localise("Back to referring site")+'</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
-        else: body += '<p><a href="'+query.getfirst("dictionary")+'">'+localise("Back to dictionary")+'</a>' # TODO check for cross-site scripting
+        if query.getfirst("dictionary")=="1": body += '<script><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">'+localise("Back to referring site",1)+'</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
+        else: body += '<p><a href="'+query.getfirst("dictionary")+'">'+localise("Back to dictionary",1)+'</a>' # TODO check for cross-site scripting
     if hasList:
-      if "SCRIPT_URI" in os.environ: hasList += "<p>"+localise("To edit this list on another computer, type")+" <kbd>"+os.environ["SCRIPT_URI"]+"?id="+getCookieId()+"</kbd>"
-    else: hasList="<P>"+localise("Your word list is empty.")
+      if "SCRIPT_URI" in os.environ: hasList += "<p>"+localise("To edit this list on another computer, type",1)+" <kbd>"+os.environ["SCRIPT_URI"]+"?id="+getCookieId()+"</kbd>"
+    else: hasList="<P>"+localise("Your word list is empty.",1)
     body += hasList
     htmlOut(body+'</form></center><script><!--\ndocument.forms[0].l2w.focus()\n//--></script>')
 
