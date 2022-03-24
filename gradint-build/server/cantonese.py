@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.35 (c) 2013-15,2017-21 Silas S. Brown.  License: GPL
+# v1.36 (c) 2013-15,2017-22 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -61,11 +61,7 @@ def get_jyutping(hanzi,mustWork=1):
 espeak = 0
 
 def hanzi_only(unitext): return u"".join(filter(lambda x:0x4e00<=ord(x)<0xa700 or ord(x)>=0x10000, list(unitext)))
-def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
-  # If we have good quality (proof-read etc) Mandarin pinyin, this can sometimes improve the automatic Cantonese transcription
-  if not type(hanzi)==type(u""): hanzi = hanzi.decode('utf-8')
-  hanzi = hanzi_only(hanzi)
-  if not re.search(py2j_chars,hanzi): return jyutping
+def py2nums(pinyin):
   if not type(pinyin)==type(u""):
     pinyin = pinyin.decode('utf-8')
   assert pinyin.strip(), "blank pinyin" # saves figuring out a findall TypeError
@@ -77,10 +73,16 @@ def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
     for i in range(len(pinyin_dryrun)):
       cache[(pinyin_dryrun[i],)]=vals[i]
     pinyin_dryrun = set()
-  if (pinyin,) in cache: py2 = cache[(pinyin,)]
-  else: py2 = espeak.transliterate("zh",pinyin,forPartials=0) # (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
-  assert py2 and py2.strip(), "espeak.transliterate returned %s for %s" % (repr(py2),repr(pinyin))
-  pinyin = re.findall('[A-Za-z]*[1-5]',S(py2))
+  if (pinyin,) in cache: pyNums = cache[(pinyin,)]
+  else: pyNums = espeak.transliterate("zh",pinyin,forPartials=0) # (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
+  assert pyNums and pyNums.strip(), "espeak.transliterate returned %s for %s" % (repr(pyNums),repr(pinyin))
+  return S(pyNums)
+def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
+  # If we have good quality (proof-read etc) Mandarin pinyin, this can sometimes improve the automatic Cantonese transcription
+  if not type(hanzi)==type(u""): hanzi = hanzi.decode('utf-8')
+  hanzi = hanzi_only(hanzi)
+  if not re.search(py2j_chars,hanzi): return jyutping
+  pinyin = re.findall('[A-Za-z]*[1-5]',py2nums(pinyin))
   if not len(pinyin)==len(hanzi): return jyutping # can't fix
   jyutping = S(jyutping)
   i = 0 ; tones = re.finditer('[1-7]',jyutping) ; j2 = []
@@ -178,8 +180,8 @@ def hyphenate_yale_syl_list(sList,groupLens=None):
     return hyphenate_syl_list(sList,groupLens)
 def hyphenate_syl_list(sList,groupLens=None):
     assert type(sList) == list
-    if not groupLens and '--hyphenate-all' in sys.argv: groupLens = [len(sList)] # this might be suitable for re-annotating hanzi+pinyin to Cantonese in annogen.py's --reannotator option, although it would be better if spacing could be copied from the pinyin for cases where the pinyin line is spaced but the hanzi line is not
-    if not groupLens: groupLens = [1]*len(sList) # don't hyphenate at all if we don't know
+    if '--hyphenate-all' in sys.argv: groupLens = [len(sList)]
+    elif not groupLens: groupLens = [1]*len(sList) # don't hyphenate at all if we don't know
     else: assert sum(groupLens) == len(sList), "sum("+repr(groupLens)+")!=len("+repr(sList)+")"
     r = [] ; start = 0
     for g in groupLens:
@@ -286,10 +288,17 @@ if __name__ == "__main__":
       if '#' in l: l,pinyin = l.split('#')
       else: pinyin = None
       jyutping = get_jyutping(songSubst(l),0)
-      if pinyin: jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
-      if "--yale#lau" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping))))
-      elif "--yale#lau#ping" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping))+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping)))+"#"+jyutping.replace(' ',''))
-      elif "--yale" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping)))
-      else: print (superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping))))
+      if pinyin:
+        jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
+        groupLens = [0]
+        for syl,space in re.findall('([A-Za-z]*[1-5])([ ]*)',py2nums(pinyin)):
+          groupLens[-1] += 1
+          if space: groupLens.append(0)
+        if not groupLens[-1]: groupLens=groupLens[:-1]
+      else: groupLens = None
+      if "--yale#lau" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping),groupLens)+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping),groupLens)))
+      elif "--yale#lau#ping" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping),groupLens)+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping),groupLens))+"#"+jyutping.replace(' ',''))
+      elif "--yale" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping),groupLens))
+      else: print (superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping),groupLens)))
     try: pickle.Pickler(open(cache_fname,"wb"),-1).dump(cache)
     except: pass
