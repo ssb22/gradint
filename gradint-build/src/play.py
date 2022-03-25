@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.065 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.067 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -205,7 +205,7 @@ sox_same_endian = sox_little_endian = ""
 if gotSox and unix:
     # should only have to run this test if macsound (don't bother on NSLU2's etc):
     # (wav is little-endian, so if it doesn't pass the string through then it interpreted the i/p as big-endian)
-    if macsound and readBuf(os.popen('echo "This is a test" | sox -t raw -r 8000 '+sox_16bit+' '+sox_signed+' -c 1 - -t wav - 2>/dev/null')).find(B("This is a test"))==-1:
+    if macsound and readB(os.popen('echo "This is a test" | sox -t raw -r 8000 '+sox_16bit+' '+sox_signed+' -c 1 - -t wav - 2>/dev/null')).find(B("This is a test"))==-1:
         sox_little_endian = " -x"
         if not big_endian: sox_same_endian = " -x"
     elif big_endian: sox_little_endian = " -x"
