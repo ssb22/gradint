@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.067 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.068 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1709,7 +1709,7 @@ def gui_event_loop():
                 writeB(o,text1+B("=")+text2+B("\n")) # was " = " but it slows down parseSynthVocab
                 o.close()
                 if paranoid_file_management:
-                    if filelen(vocabFile)<filelen(vocabFile+"~") or chr(0) in readB(vocabFile,1024): app.todo.alert="Vocab file corruption! You'd better restore the ~ backup."
+                    if filelen(vocabFile)<filelen(vocabFile+"~") or chr(0) in readB(open(vocabFile,"rb"),1024): app.todo.alert="Vocab file corruption! You'd better restore the ~ backup."
                 if hasattr(app,"vocabList"): app.vocabList.append((ensure_unicode(text1),ensure_unicode(text2)))
                 app.todo.clear_text_boxes=app.wordsExist=1
         elif menu_response=="delete" or menu_response=="replace":
