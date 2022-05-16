@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.38 (c) 2013-15,2017-22 Silas S. Brown.  License: GPL
+# v1.39 (c) 2013-15,2017-22 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -65,17 +65,16 @@ def py2nums(pinyin):
   if not type(pinyin)==type(u""):
     pinyin = pinyin.decode('utf-8')
   assert pinyin.strip(), "blank pinyin" # saves figuring out a findall TypeError
-  def preprocess(p): return p.replace(u'\u0144g','ng2').replace(u'\u0148g','ng3').replace(u'\u01f9g','ng4') # espeak workaround (TODO: move to gradint proper)
   global pinyin_dryrun
   if pinyin_dryrun:
     pinyin_dryrun = list(pinyin_dryrun)
-    vals = espeak.transliterate_multiple("zh",map(preprocess,pinyin_dryrun),0)
+    vals = espeak.transliterate_multiple("zh",pinyin_dryrun,0)
     assert len(pinyin_dryrun)==len(vals)
     for i in range(len(pinyin_dryrun)):
       cache[(pinyin_dryrun[i],)]=vals[i]
     pinyin_dryrun = set()
   if (pinyin,) in cache: pyNums = cache[(pinyin,)]
-  else: pyNums = espeak.transliterate("zh",preprocess(pinyin),forPartials=0) # (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
+  else: pyNums = espeak.transliterate("zh",pinyin,forPartials=0) # (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
   assert pyNums and pyNums.strip(), "espeak.transliterate returned %s for %s" % (repr(pyNums),repr(pinyin))
   return re.sub("a$","a5",re.sub("(?<=[a-zA-Z])er([1-5])",r"e\1r5",S(pyNums)))
 def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):

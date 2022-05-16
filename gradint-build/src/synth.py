@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.068 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.069 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -383,18 +383,18 @@ class SimpleZhTransliterator(object): # if not got eSpeak on system
     def can_transliterate(self,lang): return lang=="zh"
     def transliterate(self,lang,text,forPartials=1,for_espeak=0):
         text = B(text)
-        if lang=="zh" and text.find(B("</"))==-1: # (not </ - don't do this if got SSML)
-            text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).encode("utf-8")
-            found=0
-            for i in xrange(len(text)):
-                t = text[i:i+1]
-                if ord(t)>=128:
-                    found=1 ; break
-            if not found and text.lower()==fix_pinyin(text,[]): return text # don't need espeak if no non-ASCII (but DO need espeak if fix_pinyin changes something, as in this case we need to check for embedded en words so fix_pinyin doesn't add spurious 5's, + embedded letters etc)
-            elif for_espeak:
-                for s,r in [('\xc4\x80', '\xc4\x81'), ('\xc3\x81', '\xc3\xa1'), ('\xc7\x8d', '\xc7\x8e'), ('\xc3\x80', '\xc3\xa0'), ('\xc4\x92', '\xc4\x93'), ('\xc3\x89', '\xc3\xa9'), ('\xc4\x9a', '\xc4\x9b'), ('\xc3\x88', '\xc3\xa8'), ('\xc5\x8c', '\xc5\x8d'), ('\xc3\x93', '\xc3\xb3'), ('\xc7\x91', '\xc7\x92'), ('\xc3\x92', '\xc3\xb2')]: text = text.replace(s,r) # work around espeak bug where capital pinyin letters with tone marks can result in bad transiterations
-                return [text] # as list so ESpeakSynth's transliterate_multiple will further process it
-            elif not found: return fix_pinyin(text,[]) # No ESpeak on system and fix_pinyin needed to do something - best we can do is hope there aren't any embedded English words (because if there are, they'll have spurious 5's added)
+        if not lang=="zh": return text
+        if text.find(B("</")) > -1: return text # (SSML)
+        text = preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text))).replace(u'\u0144g','ng2').replace(u'\u0148g','ng3').replace(u'\u01f9g','ng4').encode("utf-8") # (ng2/3/4 substitution here because not all versions of eSpeak can do it)
+        found=0
+        for i in xrange(len(text)):
+            if ord(text[i:i+1])>=128:
+                found=1 ; break
+        if not found and text.lower()==fix_pinyin(text,[]): return text # don't need espeak if no non-ASCII (but DO need espeak if fix_pinyin changes something, as in this case we need to check for embedded en words so fix_pinyin doesn't add spurious 5's, + embedded letters etc)
+        elif for_espeak:
+            for s,r in [('\xc4\x80', '\xc4\x81'), ('\xc3\x81', '\xc3\xa1'), ('\xc7\x8d', '\xc7\x8e'), ('\xc3\x80', '\xc3\xa0'), ('\xc4\x92', '\xc4\x93'), ('\xc3\x89', '\xc3\xa9'), ('\xc4\x9a', '\xc4\x9b'), ('\xc3\x88', '\xc3\xa8'), ('\xc5\x8c', '\xc5\x8d'), ('\xc3\x93', '\xc3\xb3'), ('\xc7\x91', '\xc7\x92'), ('\xc3\x92', '\xc3\xb2')]: text = text.replace(s,r) # work around espeak bug where capital pinyin letters with tone marks can result in bad transiterations
+            return [text] # as list so ESpeakSynth's transliterate_multiple will further process it
+        elif not found: return fix_pinyin(text,[]) # No ESpeak on system and fix_pinyin needed to do something - best we can do is hope there aren't any embedded English words (because if there are, they'll have spurious 5's added)
 simpleZhTransliterator = SimpleZhTransliterator()
 
 def shell_escape(text):
