@@ -50,6 +50,8 @@ online synthesizers (or real people) to the synth cache
 transliterate.py - make a transliterated vocab report
 (for use with grep or on PDAs or whatever)
 
+player.py - play 
+
 diagram.py - make a diagram of a gradint lesson
 
 trace.py - make a raytraced animation of a lesson
