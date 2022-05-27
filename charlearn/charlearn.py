@@ -19,7 +19,7 @@
 # and on GitLab at https://gitlab.com/ssb22/gradint
 # and on BitBucket https://bitbucket.org/ssb22/gradint
 # and at https://gitlab.developers.cam.ac.uk/ssb22/gradint
-# and in China: https://gitee.com/ssb22/gradint
+# and in China: git clone https://gitee.com/ssb22/gradint
 
 listenAddr='127.0.0.1'
 firstPortNo=9876
