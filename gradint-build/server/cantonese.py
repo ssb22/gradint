@@ -45,7 +45,7 @@ def get_jyutping(hanzi,mustWork=1):
   global jyutping_dryrun
   if dryrun_mode:
       if not hanzi in cache: jyutping_dryrun.add(hanzi)
-      return "aai1" # dummy value
+      return "aai1" # placeholder value
   elif jyutping_dryrun:
       jyutping_dryrun = list(jyutping_dryrun)
       vals = espeak.transliterate_multiple("zhy",jyutping_dryrun,0)

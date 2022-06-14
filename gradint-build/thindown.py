@@ -93,7 +93,7 @@ not_android = [
 "def fileExists(f):", # assume we got os.path
 "def fileExists_stat(f):",
 "def isDirectory(directory):",
-"for p in [progressFile,progressFileBackup,pickledProgressFile]:", # this 'sanity check' is not likely to be a problem on Android, and we could do with saving the space
+"for p in [progressFile,progressFileBackup,pickledProgressFile]:", # this coherence check is not likely to be a problem on Android, and we could do with saving the space
 "if need_say_where_put_progress:", # ditto
 'def check_for_interrupts():','if emulated_interruptMain:','if emulated_interruptMain or winCEsound:','def handleInterrupt():', # no current way to do this on Android (unlike S60/WinCE)
 r"if not '\xc4'.lower()=='\xc4':", # this workaround is not needed on Android

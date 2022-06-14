@@ -340,7 +340,7 @@ for p in [progressFile,progressFileBackup,pickledProgressFile]:
     if extsep in p[1]: p=(p[0],p[1][:p[1].rfind(extsep)]) # here rather than earlier to cover cases where extsep is in a directory name but not in the filename
     if oldDir==None: oldDir=p
     elif not oldDir==p:
-        sys.stderr.write("ERROR: progressFile, progressFileBackup and pickledProgressFile, if not None, must have same directory and major part of filename.  Gradint will not run otherwise.  This sanity-check was added in case some script sets progressFile to something special but forgets to set the others.\n")
+        sys.stderr.write("ERROR: progressFile, progressFileBackup and pickledProgressFile, if not None, must have same directory and major part of filename.  Gradint will not run otherwise.  This coherence check was added in case some script sets progressFile to something special but forgets to set the others.\n")
         sys.exit(1)
 
 # Check for RISC OS pre-1970 clock problem (actually quite likely if testing on the rpcemu emulator without setting the clock)
