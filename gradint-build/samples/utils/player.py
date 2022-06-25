@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # (should work in both Python 2 and Python 3)
 
-# Simple sound-playing server v1.1
+# Simple sound-playing server v1.2
 # Silas S. Brown - public domain - no warranty
 
 # connect to port 8124 (assumes behind firewall)
@@ -28,14 +28,19 @@ if type(b"")==type(""): S=lambda x:x # Python 2
 else: S=lambda x:x.decode("latin1") # Python 3
 while True:
     c,a = s.accept()
-    d = S(c.recv(4))
+    c.settimeout(10)
+    try: d = S(c.recv(4))
+    except: # e.g. timeout, or there was an error reading the file on the remote side and we got 0 bytes
+        c.close() ; continue
     if d=='RIFF': # WAV
         player = "play - 2>/dev/null"
     elif d=='STOP':
         c.close()
         while not d=='START':
             c,a = s.accept()
-            d = S(c.recv(5)) ; c.close()
+            try: d = S(c.recv(5))
+            except: d = ""
+            c.close()
         continue
     else: player = "mpg123 - 2>/dev/null" # MP3
     player = os.popen(player,"w")
@@ -46,7 +51,8 @@ while True:
             except TypeError: # Python 3
                 player.buffer.write(d)
         except IOError: break # it was probably killed
-        d = c.recv(4096)
+        try: d = c.recv(4096)
+        except: d = ""
     try:
         c.close() ; player.close()
     except: pass
