@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.069 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.07 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -517,6 +517,12 @@ elif macsound:
 def got_program(prog):
     if winsound:
         if fileExists(prog+".exe"): return prog+".exe"
+    elif riscos_sound:
+        if prog[:1]=="*": # module
+            os.system("help "+prog[1:]+" { > _tstCmd_ }")
+            got = open("_tstCmd_").read().find(prog[1:].upper())>-1
+            os.unlink("_tstCmd_") ; return got
+        return checkIn("Alias$"+prog,os.environ) # works in Python 3.8 but not 2.7 (Alias$ vars hidden)
     elif unix:
         try:
             try: from shutil import which as find_executable # PEP 632

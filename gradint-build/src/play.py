@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.069 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.07 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -100,14 +100,17 @@ def maybe_unicode(label):
         except: return label # ??
     else: return repr(label)
 
+madplay_path = None
 if (winsound or mingw32) and fileExists("madplay.exe"): madplay_path = "madplay.exe"
+elif riscos_sound:
+  # if got_program("madplay"): madplay_path="madplay" # Alias$madplay
+  pass # temporary: madplay won't sound, can be used for decoding only (TODO: could at least use it for that)
 elif unix and hasattr(os,"popen"):
   madplay_path = os.popen("PATH=$PATH:. which madplay 2>/dev/null").read()
   try: madplay_path = wspstrip(madplay_path)
   except: madplay_path = madplay_path.strip()
   if not fileExists(cond(cygwin,madplay_path+".exe",madplay_path)): madplay_path="" # in case of a Unix 'which' returning error on stdout
   if madplay_path and not winsound and not mingw32: madplay_path='"'+madplay_path+'"' # in case there's spaces etc in the path
-else: madplay_path = None
 if madplay_path and not mp3Player: mp3Player=madplay_path
 
 def intor0(v):
@@ -220,11 +223,18 @@ def changeToDirOf(file,winsound_also=0):
     elif (cygwin or ((winsound or mingw32) and winsound_also)) and os.sep in file:
         os.chdir(file[:file.rfind(os.sep)])
         return file[file.rfind(os.sep)+1:]
-    else: return file
+    elif riscos_sound:
+        if file.find("..")==-1:
+            c = os.getcwd()
+            return c[c.index('$'):]+os.sep+file
+    return file
 
 def system(cmd):
     # Don't call os.system for commands like sound playing, because if you do then any Control-C interrupt will go to that rather than to gradint as we want, and it will pop up a large blank console window in Windows GUI-only version
-    if riscos_sound or not hasattr(os,"popen"): return os.system(cmd) # no popen
+    if riscos_sound and type("")==type(u""): # work around memory issues with os.system() in RISC OS Python 3.8
+        import subprocess
+        return subprocess.Popen(cmd,shell=True).wait()
+    if not hasattr(os,"popen"): return os.system(cmd)
     if unix and (';' in cmd or '<' in cmd): cmd='/bin/bash -c "'+cmd.replace('\\','\\\\').replace('"','\\"').replace('$','\\$')+'"' # not /bin/sh if it's complex
     try: r=os.popen(cmd)
     except: return os.system(cmd) # too many file descriptors open or something
@@ -327,7 +337,7 @@ class SampleEvent(Event):
             return ret
           return system(player+" \"%s\"" % (self.file,))
         elif riscos_sound:
-            if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (TODO find a RISC OS program that can play the MP3s directly?)
+            if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (if gets here, madplay not available)
             else: file=self.file
             system("PlayIt_Play \"%s\"" % (file,))
         elif wavPlayer.find('sndrec32')>=0:
@@ -486,7 +496,7 @@ class SoundCollector(object):
         fileType=soundFileType(file)
         if fileType=="mp3": file,fileType = theMp3FileCache.decode_mp3_to_tmpfile(file),"wav" # in case the system needs madplay etc rather than sox
         if riscos_sound:
-            os.system("sox -t %s \"%s\" %s tmp0" % (fileType,file,self.soxParams()))
+            system("sox -t %s \"%s\" %s tmp0" % (fileType,file,self.soxParams()))
             handle=open("tmp0","rb")
         elif winsound or mingw32: handle = os.popen(("sox -t %s - %s - < \"%s\"" % (fileType,self.soxParams(),file)),popenRB)
         else: handle = os.popen(("cat \"%s\" | sox -t %s - %s -" % (S(file),fileType,self.soxParams())),popenRB)
@@ -499,7 +509,7 @@ class SoundCollector(object):
             t1 = self.tell()
             self.addSilence(betweenBeeps/2.0)
             if riscos_sound:
-                os.system(beepCmd(self.soxParams(),"tmp0"))
+                system(beepCmd(self.soxParams(),"tmp0"))
                 data=read("tmp0") ; os.unlink("tmp0")
             else: data=readB(os.popen(beepCmd(self.soxParams(),"-"),popenRB))
             outfile_writeBytes(self.o,data)
@@ -666,7 +676,7 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
     file = S(file)
     if riscos_sound:
         warn_sox_decode()
-        os.system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
+        system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
         data=read("tmp0") ; os.unlink("tmp0")
         return data
     elif madplay_path:
@@ -676,7 +686,7 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
     elif got_program("mpg123"): # do NOT try to read its stdout (not only does it write 0 length, which we can fix, but some versions can also write wrong bitrate, which is harder for us to fix)
         oldDir = os.getcwd()
         tfil = os.tempnam()+dotwav
-        os.system("mpg123 -q -w \""+tfil+"\" \""+changeToDirOf(file)+"\"")
+        system("mpg123 -q -w \""+tfil+"\" \""+changeToDirOf(file)+"\"")
         if compress_SH and gotSox: dat = readB(os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ",popenRB))
         else: dat = open(tfil).read()
         os.unlink(tfil) ; os.chdir(oldDir) ; return dat

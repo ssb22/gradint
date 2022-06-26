@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.069 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.07 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -162,7 +162,7 @@ class OSXSynth_OSAScript(Synth):
 class OldRiscosSynth(Synth):
     def __init__(self): Synth.__init__(self)
     def supports_language(self,lang): return lang=="en"
-    def works_on_this_platform(self): return riscos_sound and not os.system("sayw .")
+    def works_on_this_platform(self): return riscos_sound and got_program("*sayw")
     def guess_length(self,lang,text): return quickGuess(len(text),12) # TODO need a better estimate
     def play(self,lang,text): return system("sayw %s" % (text,))
 
@@ -392,7 +392,7 @@ class SimpleZhTransliterator(object): # if not got eSpeak on system
                 found=1 ; break
         if not found and text.lower()==fix_pinyin(text,[]): return text # don't need espeak if no non-ASCII (but DO need espeak if fix_pinyin changes something, as in this case we need to check for embedded en words so fix_pinyin doesn't add spurious 5's, + embedded letters etc)
         elif for_espeak:
-            for s,r in [('\xc4\x80', '\xc4\x81'), ('\xc3\x81', '\xc3\xa1'), ('\xc7\x8d', '\xc7\x8e'), ('\xc3\x80', '\xc3\xa0'), ('\xc4\x92', '\xc4\x93'), ('\xc3\x89', '\xc3\xa9'), ('\xc4\x9a', '\xc4\x9b'), ('\xc3\x88', '\xc3\xa8'), ('\xc5\x8c', '\xc5\x8d'), ('\xc3\x93', '\xc3\xb3'), ('\xc7\x91', '\xc7\x92'), ('\xc3\x92', '\xc3\xb2')]: text = text.replace(s,r) # work around espeak bug where capital pinyin letters with tone marks can result in bad transiterations
+            for s,r in [('\xc4\x80', '\xc4\x81'), ('\xc3\x81', '\xc3\xa1'), ('\xc7\x8d', '\xc7\x8e'), ('\xc3\x80', '\xc3\xa0'), ('\xc4\x92', '\xc4\x93'), ('\xc3\x89', '\xc3\xa9'), ('\xc4\x9a', '\xc4\x9b'), ('\xc3\x88', '\xc3\xa8'), ('\xc5\x8c', '\xc5\x8d'), ('\xc3\x93', '\xc3\xb3'), ('\xc7\x91', '\xc7\x92'), ('\xc3\x92', '\xc3\xb2')]: text = text.replace(LB(s),LB(r)) # work around espeak bug where capital pinyin letters with tone marks can result in bad transiterations
             return [text] # as list so ESpeakSynth's transliterate_multiple will further process it
         elif not found: return fix_pinyin(text,[]) # No ESpeak on system and fix_pinyin needed to do something - best we can do is hope there aren't any embedded English words (because if there are, they'll have spurious 5's added)
 simpleZhTransliterator = SimpleZhTransliterator()
@@ -408,7 +408,10 @@ class ESpeakSynth(Synth):
         Synth.__init__(self)
         self.languages = {} ; self.program=""
         tryList = []
-        if riscos_sound and checkIn('eSpeak$dir',os.environ): tryList=[os.environ['eSpeak$dir']+'.espeak-dat',os.environ['eSpeak$dir']+'.espeak-data']
+        if riscos_sound:
+            if checkIn('eSpeak$Dir',os.environ):
+                os.system("RMEnsure speak 3.49  Run <eSpeak$Dir>.speakmod")
+                tryList=[os.environ['eSpeak$Dir']+'.espeak-dat',os.environ['eSpeak$Dir']+'.espeak-data']
         elif winsound or mingw32: tryList=[programFiles+"\\eSpeak\\espeak-data"]
         elif winCEsound: tryList=["\\espeak-data"] # Can't try \\Storage Card because our eSpeak compile can't cope with spaces (and quoting it does not work)
         else:
@@ -495,7 +498,7 @@ class ESpeakSynth(Synth):
             return False
         else: # not windows or cygwin
             self.program="speak"
-            if riscos_sound: return True # we've already confirmed <eSpeak$dir> works in the constructor
+            if riscos_sound: return True # we've already confirmed <eSpeak$Dir> works in the constructor
             loc=wspstrip(getoutput("locale -a 2>/dev/null|grep -i 'utf-*8$'|head -1"))
             if loc: loc="LC_CTYPE="+loc+" " # in case espeak can't find a utf-8 locale by itself
             self.program=loc+"speak"
@@ -723,7 +726,7 @@ class ESpeakSynth(Synth):
             # Windows command line is not always 100% UTF-8 safe, so we'd better use a pipe.  Unix command line OK but some espeak versions have a length limit.  (No pipes on riscos.)
             p=os.popen(self.program+cond(B(text).find(B("</"))>=0," -m","")+' -v%s -a%d %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,espeak_pipe_through),"w")
             writeB(p,B(text).replace(B(". "),B(".\n"))+B("\n")) ; return p.close() # (see comment below re adding newlines)
-        else: return system(self.program+cond(text.find("</")>=0," -m","")+' -v%s -a%d %s %s' % (espeak_language_aliases.get(lang,lang),100*soundVolume,shell_escape(text),espeak_pipe_through)) # (-m so accepts SSML tags)
+        else: return system(B(self.program+cond(B(text).find(B("</"))>=0," -m","")+' -v%s -a%d ' % (espeak_language_aliases.get(lang,lang),100*soundVolume))+shell_escape(text)+B(' '+espeak_pipe_through)) # (-m so accepts SSML tags)
     def makefile(self,lang,text,is_winCEhint=0):
         self.check_dicts(lang,text)
         if espeak_language_aliases.get(lang,lang) in ["zhy","zh-yue"]: text=self.escape_jyutping(preprocess_chinese_numbers(fix_compatibility(ensure_unicode(text)),isCant=1).encode("utf-8"))
@@ -987,7 +990,7 @@ for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt 
        all_synth_classes.append(OSXSynth_Say)
        all_synth_classes.append(OSXSynth_OSAScript) # (prefer _Say if >=10.3 because it's faster)
     elif s.lower()=="sapi": all_synth_classes.append(PttsSynth)
-all_synth_classes = all_synth_classes + [FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
+all_synth_classes += [FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
 prefer_espeak = prefer_espeak.split()
 
 viable_synths = []
@@ -1191,9 +1194,11 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
             except ValueError: delayVal = None
             if delayVal==None:
                 # no float value; assume it's a single word to synth in secondLanguage or whatever was the last language used
-                show_warning("Assuming that %s is a word to synthesize in language '%s'" % (repr(l[0]),lastLanguage))
+                r = repr(l[0])
+                if r[:1]=="b": r=r[1:]
+                show_warning("Assuming that %s is a word to synthesize in language '%s'" % (r,lastLanguage))
                 if callSanityCheck and sanityCheck(l[0],lastLanguage,1): return
-                event = checkCanSynth("!synth:"+l[0]+"_"+lastLanguage)
+                event = checkCanSynth("!synth:"+S(l[0])+"_"+S(lastLanguage))
                 if not event: continue # couldn't synth
                 called_synth = 1
             else:
@@ -1213,7 +1218,7 @@ def just_synthesize(callSanityCheck=0,lastLang_override=None):
                     # otherwise, user might have omitted lang by mistake
                     show_warning("Assuming %s was meant to be synthesized in language '%s'" % (cond(B('#') in B(justSynthesize) or len(repr(line))<10,"that '"+repr(line)+"'","this line"),lastLanguage))
                     if callSanityCheck and sanityCheck(line,lastLanguage,1): return
-                    event = checkCanSynth("!synth:"+line+"_"+lastLanguage)
+                    event = checkCanSynth("!synth:"+S(line)+"_"+S(lastLanguage))
                 else:
                     if callSanityCheck and sanityCheck(text,lang,1): return
                     event = checkCanSynth(fname)

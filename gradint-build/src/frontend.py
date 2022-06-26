@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.069 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.07 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -107,7 +107,7 @@ def primitive_synthloop():
               interactive="('a' for again) Say: "
               if B(justSynthesize)==B("a"): justSynthesize=old_js
         oldLang = lang
-        if justSynthesize: lang = just_synthesize(interactive,lang)
+        if justSynthesize: lang = S(just_synthesize(interactive,lang))
         # and see if it transliterates:
         if justSynthesize and lang and not B('#') in B(justSynthesize):
             if B(justSynthesize).startswith(B(lang)+B(" ")):
