@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.07 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.071 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -498,7 +498,7 @@ class ESpeakSynth(Synth):
             return False
         else: # not windows or cygwin
             self.program="speak"
-            if riscos_sound: return True # we've already confirmed <eSpeak$Dir> works in the constructor
+            if riscos_sound: return True # we've already confirmed <eSpeak$Dir> works in the constructor (if it doesn't, we'll just have an empty language list)
             loc=wspstrip(getoutput("locale -a 2>/dev/null|grep -i 'utf-*8$'|head -1"))
             if loc: loc="LC_CTYPE="+loc+" " # in case espeak can't find a utf-8 locale by itself
             self.program=loc+"speak"

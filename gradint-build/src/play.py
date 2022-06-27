@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.07 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.071 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -103,8 +103,9 @@ def maybe_unicode(label):
 madplay_path = None
 if (winsound or mingw32) and fileExists("madplay.exe"): madplay_path = "madplay.exe"
 elif riscos_sound:
-  # if got_program("madplay"): madplay_path="madplay" # Alias$madplay
-  pass # temporary: madplay won't sound, can be used for decoding only (TODO: could at least use it for that)
+  amplay = "$.!Boot.Resources.!System.350.Modules.Audio.MP3.AMPlayer"
+  if fileExists(amplay): os.system(amplay) # seems it doesn't always load at boot; no-op if run again
+  else: amplay = 0
 elif unix and hasattr(os,"popen"):
   madplay_path = os.popen("PATH=$PATH:. which madplay 2>/dev/null").read()
   try: madplay_path = wspstrip(madplay_path)
@@ -231,9 +232,9 @@ def changeToDirOf(file,winsound_also=0):
 
 def system(cmd):
     # Don't call os.system for commands like sound playing, because if you do then any Control-C interrupt will go to that rather than to gradint as we want, and it will pop up a large blank console window in Windows GUI-only version
-    if riscos_sound and type("")==type(u""): # work around memory issues with os.system() in RISC OS Python 3.8
+    if riscos_sound and type("")==type(u""): # work around memory issues with os.system() in RISC OS Python 3.8 (not needed if the command is a module rather than a program)
         import subprocess
-        return subprocess.Popen(cmd,shell=True).wait()
+        return subprocess.Popen(S(cmd).replace('"','').split()).wait() # must be S() not B() here (TODO: what if space in a filename?  TODO: catch swi.error and say please install TaskRunner module?)
     if not hasattr(os,"popen"): return os.system(cmd)
     if unix and (';' in cmd or '<' in cmd): cmd='/bin/bash -c "'+cmd.replace('\\','\\\\').replace('"','\\"').replace('$','\\$')+'"' # not /bin/sh if it's complex
     try: r=os.popen(cmd)
@@ -272,8 +273,8 @@ class SampleEvent(Event):
         if not lessonIsTight() and not useExactLen: approxLen = math.ceil(self.exactLen) # (if <=10min in lesson, don't round up to next second because we want a tighter fit)
         Event.__init__(self,approxLen)
     def __repr__(self):
-        if use_unicode_filenames: return self.file.encode('utf-8')
-        else: return self.file
+        if use_unicode_filenames: return self.file.encode('utf-8') # winCEsound, will be Python 2
+        else: return S(self.file)
     def __del__(self):
       if hasattr(self,"isTemp"):
         import time,os # in case gc'd
@@ -335,11 +336,13 @@ class SampleEvent(Event):
             ret=system(player+" \"%s\"" % (t,))
             os.remove(t)
             return ret
-          return system(player+" \"%s\"" % (self.file,))
+          return system(player+" \"%s\"" % (S(self.file),))
         elif riscos_sound:
-            if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file) # (if gets here, madplay not available)
+            if fileType=="mp3":
+                if amplay: return os.system("AMPlay \"%s\"" % (S(self.file),)) # module call, so no need for subprocess
+                file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
             else: file=self.file
-            system("PlayIt_Play \"%s\"" % (file,))
+            os.system("PlayIt_Play \"%s\"" % (S(file),)) # module call, so no need for subprocess; TODO: not ARMv7 compatible apparently (crashes on Pi400, sox does also, AMPlay can't play wav), saying "use mp3" in index.html for now
         elif wavPlayer.find('sndrec32')>=0:
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
             else: file=self.file
@@ -348,7 +351,7 @@ class SampleEvent(Event):
             os.system(wavPlayer+' "'+changeToDirOf(file)+'"') # don't need to call our version of system() here
             if wavPlayer.find("start")>=0: time.sleep(max(0,self.length-(time.time()-t))) # better do this - don't want events overtaking each other if there are delays.  exactLen not always enough.  (but do subtract the time already taken, in case command extensions have been disabled and "start" is synchronous.)
             os.chdir(oldDir)
-        elif fileType=="mp3" and mp3Player and not sox_effect and not (wavPlayer=="aplay" and mp3Player==madplay_path): return system(mp3Player+' "'+self.file+'"')
+        elif fileType=="mp3" and mp3Player and not sox_effect and not (wavPlayer=="aplay" and mp3Player==madplay_path): return system(mp3Player+' "'+S(self.file)+'"')
         elif wavPlayer=="sox" and (soxMp3 or not fileType=="mp3"):
             # To make it more difficult:
             # sox v12.x (c. 2001) - bug when filenames contain 2 spaces together, and needs input from re-direction in this case
@@ -368,19 +371,19 @@ class SampleEvent(Event):
                 if not app: show_info("play didn't take long enough - maybe ") # .. problem playing sound
                 return 1
         elif wavPlayer=="aplay" and ((not fileType=="mp3") or madplay_path or gotSox):
-            if madplay_path and fileType=="mp3": return system(madplay_path+' -q -A '+str(soundVolume_dB)+' "'+self.file+'" -o wav:-|aplay -q') # changeToDirOf() not needed because this won't be cygwin (hopefully)
+            if madplay_path and fileType=="mp3": return system(madplay_path+' -q -A '+str(soundVolume_dB)+' "'+S(self.file)+'" -o wav:-|aplay -q') # changeToDirOf() not needed because this won't be cygwin (hopefully)
             elif gotSox and (sox_effect or fileType=="mp3"): return system('cat "'+S(self.file)+'" | sox -t '+fileType+' - -t wav '+sox_16bit+' - '+sox_effect+' 2>/dev/null|aplay -q') # (make sure o/p is 16-bit even if i/p is 8-bit, because if sox_effect says "vol 0.1" or something then applying that to 8-bit would lose too many bits)
             # (2>/dev/null to suppress sox "can't seek to fix wav header" problems, but don't pick 'au' as the type because sox wav->au conversion can take too long on NSLU2 (probably involves rate conversion))
-            else: return system('aplay -q "'+self.file+'"')
+            else: return system('aplay -q "'+S(self.file)+'"')
         # May also be able to support alsa directly with sox (aplay not needed), if " alsa" is in sox -h's output and there is /dev/snd/pcmCxDxp (e.g. /dev/snd/pcmC0D0p), but sometimes it doesn't work, so best stick with aplay
         # TODO: auplay can take -volume (int 0-100) and stdin; check esdplay capabilities also
-        elif fileType=="mp3" and mp3Player and not sox_effect: return system(mp3Player+' "'+self.file+'"')
+        elif fileType=="mp3" and mp3Player and not sox_effect: return system(mp3Player+' "'+S(self.file)+'"')
         elif wavPlayer:
             if fileType=="mp3" and not wavPlayer=="mplayer": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
-            else: file=self.file
+            else: file=S(self.file)
             if sox_effect and wavPlayer.strip().endswith("<"): return system('sox "%s" -t wav - %s | %s' % (file,sox_effect,wavPlayer.strip()[:-1]))
             return system(wavPlayer+' "'+file+'"')
-        elif fileType=="mp3" and mp3Player: return system(mp3Player+' "'+self.file+'"') # ignore sox_effect
+        elif fileType=="mp3" and mp3Player: return system(mp3Player+' "'+S(self.file)+'"') # ignore sox_effect
         else: show_warning("Don't know how to play \""+self.file+'" on this system')
 
 br_tab=[(0 , 0 , 0 , 0 , 0),
@@ -445,7 +448,7 @@ def pcmlen(file):
             d = open(file).read()
             if 'mdat' in d: return (len(d)-d.index('mdat'))/1500.0 # this assumes the bitrate is roughly the same as in my tests, TODO figure it out properly
     divisor = wrate*wchannels*wbits/8 # do NOT optimise with (wbits>>3), because wbits could be 4
-    if not divisor: raise IOError("Cannot parse sample format of '%s'" % (file,))
+    if not divisor: raise IOError("Cannot parse sample format of '%s': %s" % (file,repr(header)))
     return (filelen(file) - 44.0) / divisor # 44 is a typical header length, and .0 to convert to floating-point
 
 ##########################################################
@@ -675,7 +678,7 @@ def warn_sox_decode():
 def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes it's always small enough to read the whole thing into RAM (should be true if it's 1 word though, and decode_mp3 isn't usually used unless we're making a lesson file rather than running something in justSynthesize)
     file = S(file)
     if riscos_sound:
-        warn_sox_decode()
+        warn_sox_decode() # TODO: can use madplay or AMPlay to decode if correctly installed
         system("sox -t mp3 \""+file+"\" -t wav"+cond(compress_SH," "+sox_8bit,"")+" tmp0")
         data=read("tmp0") ; os.unlink("tmp0")
         return data
