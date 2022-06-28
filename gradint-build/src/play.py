@@ -342,6 +342,9 @@ class SampleEvent(Event):
                 if amplay: return os.system("AMPlay \"%s\"" % (S(self.file),)) # module call, so no need for subprocess
                 file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
             else: file=self.file
+            global playit_loaded
+            try: playit_loaded
+            except: playit_loaded=not os.system("Run PlayIt:Ensure -e 1.68") # relies on PlayIt$Path having been set by !PlayIt.!Boot when seen by filer
             os.system("PlayIt_Play \"%s\"" % (S(file),)) # module call, so no need for subprocess; TODO: not ARMv7 compatible apparently (crashes on Pi400, sox does also, AMPlay can't play wav), saying "use mp3" in index.html for now
         elif wavPlayer.find('sndrec32')>=0:
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)

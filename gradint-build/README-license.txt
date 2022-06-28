@@ -30,12 +30,6 @@ provision of "mere aggregation".  (I could give special permission,
 but my permission would not be valid if the above "borderline" cases
 really do mean that Gradint must be GPL with no extra permissions.)
 
-The RISC OS distribution of Gradint includes PlayIt, which is licensed
-for non-commercial use only.  Since Gradint's use of PlayIt is
-optional, and it is run as an independent system command with a very
-simple command line (no complex exchange of data structures etc), I
-believe this should qualify as "mere aggregation".
-
 The Windows and Mac versions of Gradint include not only eSpeak but
 also some customised dictionary files, one of which contains
 pronunciation data derived from the OALD with a "non-commercial only"
