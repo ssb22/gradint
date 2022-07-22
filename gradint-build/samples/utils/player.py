@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # (should work in both Python 2 and Python 3)
 
-# Simple sound-playing server v1.2
+# Simple sound-playing server v1.3
 # Silas S. Brown - public domain - no warranty
 
 # connect to port 8124 (assumes behind firewall)
@@ -19,8 +19,11 @@ for a in sys.argv:
   elif a.startswith("--rpi-bluetooth-setup-eth="):
     eth=a.split('=')[1]
     os.system('mkdir -p /home/pi/.config/lxsession/LXDE-pi && cp /etc/xdg/lxsession/LXDE-pi/autostart /home/pi/.config/lxsession/LXDE-pi/ && echo python '+os.path.join(os.getcwd(),sys.argv[0])+' --rpi-bluetooth-eth='+eth+' >> /home/pi/.config/lxsession/LXDE-pi/autostart && sudo "usermod -G bluetooth -a pi ; (echo load-module module-switch-on-connect;echo load-module module-bluetooth-policy;echo load-module module-bluetooth-discover) >> /etc/pulse/default.pa ; (echo [General];echo FastConnectable = true) >> /etc/bluetooth/main.conf ; reboot"')
+  elif a=="--aplay": use_aplay = True # aplay and madplay, for older embedded devices, NOT tested together with --rpi-bluetooth-* above
 
 os.environ["PATH"] += ":/usr/local/bin"
+try: use_aplay
+except: use_aplay = False
 s=socket.socket()
 s.bind(('',8124))
 s.listen(5)
@@ -33,7 +36,8 @@ while True:
     except: # e.g. timeout, or there was an error reading the file on the remote side and we got 0 bytes
         c.close() ; continue
     if d=='RIFF': # WAV
-        player = "play - 2>/dev/null"
+        if use_aplay: player = "aplay -q"
+        else: player = "play - 2>/dev/null"
     elif d=='STOP':
         c.close()
         while not d=='START':
@@ -42,7 +46,8 @@ while True:
             except: d = ""
             c.close()
         continue
-    else: player = "mpg123 - 2>/dev/null" # MP3
+    elif use_aplay: player = "madplay -Q -o wav:- - | aplay -q" # MP3
+    else: player = "mpg123 - 2>/dev/null" # MP3 non-aplay
     player = os.popen(player,"w")
     d = d.encode("latin1") # no-op on Python 2
     while d:
