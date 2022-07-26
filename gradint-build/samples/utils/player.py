@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # (should work in both Python 2 and Python 3)
 
-# Simple sound-playing server v1.4
+# Simple sound-playing server v1.5
 # Silas S. Brown - public domain - no warranty
 
 # connect to port 8124 (assumes behind firewall)
@@ -11,7 +11,7 @@
 # wavPlayer = mp3Player = "nc HostName 8124 -q 0 <"
 # (most of this script assumes GNU/Linux)
 
-import socket, os, sys, os.path, time
+import socket, select, os, sys, os.path, time
 for a in sys.argv:
   if a.startswith("--rpi-bluetooth-eth="):
     # tested on Raspberry Pi 400 with Raspbian 11
@@ -21,14 +21,17 @@ for a in sys.argv:
     eth=a.split('=')[1]
     os.system('mkdir -p /home/pi/.config/lxsession/LXDE-pi && cp /etc/xdg/lxsession/LXDE-pi/autostart /home/pi/.config/lxsession/LXDE-pi/ && echo python '+os.path.join(os.getcwd(),sys.argv[0])+' --rpi-bluetooth-eth='+eth+' >> /home/pi/.config/lxsession/LXDE-pi/autostart && sudo "usermod -G bluetooth -a pi ; (echo load-module module-switch-on-connect;echo load-module module-bluetooth-policy;echo load-module module-bluetooth-discover) >> /etc/pulse/default.pa ; (echo [General];echo FastConnectable = true) >> /etc/bluetooth/main.conf ; reboot"')
   elif a=="--aplay": use_aplay = True # aplay and madplay, for older embedded devices, NOT tested together with --rpi-bluetooth-* above
-  elif a.startswith("--delegate="): # --delegate=IP address, will ping that IP and delegate all sound to it when it's up.  E.g. if it has better amplification but it's not always switched on.
-    delegate_to_check=a.split('=')[1]
+  elif a.startswith("--delegate="): delegate_to_check=a.split('=')[1] # will ping that IP and delegate all sound to it when it's up.  E.g. if it has better amplification but it's not always switched on.
+  elif a.startswith("--chime="): chime_mp3=a.split('=')[1] # if clock bell desired, e.g. echo '$i-14vfff$c48o0l1b- @'|mwr2ly > chime.ly && lilypond chime.ly && timidity -Ow chime.midi && audacity chime.wav (amplify + trim) + mp3-encode (keep default 44100 sample rate so ~38 frames per sec).  Not designed to work with --delegate.  Pi1's 3.5mm o/p doesn't sound very good with this bell.
 
 os.environ["PATH"] += ":/usr/local/bin"
 try: use_aplay
 except: use_aplay = False
 try: delegate_to_check
 except: delegate_to_check = None
+try: chime_mp3
+except: chime_mp3 = None
+last_chime = last_play = 0
 delegate_known_down = 0
 s=socket.socket()
 s.bind(('',8124))
@@ -36,6 +39,20 @@ s.listen(5)
 if type(b"")==type(""): S=lambda x:x # Python 2
 else: S=lambda x:x.decode("latin1") # Python 3
 while True:
+    if chime_mp3:
+        t = time.time()
+        if t > last_chime+60 and t%1800 < 60 and not t<last_play+20:
+            last_chime = t ; h,m=time.localtime(t)[3:5]
+            if m>1: numChimes = 1
+            elif not h%12: numChimes = 12
+            else: numChimes = h%12
+            if not 7<=h%24<=22: pass # silence the chime at night
+            elif use_aplay:
+              if numChimes > 1: os.system("(madplay -Q -t 1 -o wav:- '"+chime_mp3+"'"+(";madplay -Q -t 1 -o raw:- '"+chime_mp3+"'")*(numChimes-2)+";madplay -Q -o raw:- '"+chime_mp3+"') | aplay -q")
+              else: os.system("madplay -Q -o wav:- '%s' | aplay -q" % chime_mp3)
+            elif numChimes > 1: os.system("(mpg123 -w - -n 38 --loop %d '%s' ; mpg123 -s '%s') 2>/dev/null | play -t wav --ignore-length - 2>/dev/null" % (numChimes-1,chime_mp3,chime_mp3))
+            else: os.system("mpg123 -q '%s'" % chime_mp3)
+        if not select.select([s],[],[],1800-time.time()%1800)[0]: continue
     c,(a,port) = s.accept()
     c.settimeout(10)
     try: d = S(c.recv(4))
@@ -69,3 +86,4 @@ while True:
     try:
         c.close() ; player.close()
     except: pass
+    last_play = time.time()
