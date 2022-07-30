@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # (should work in both Python 2 and Python 3)
 
-# Simple sound-playing server v1.51
+# Simple sound-playing server v1.52
 # Silas S. Brown - public domain - no warranty
 
 # connect to port 8124 (assumes behind firewall)
@@ -70,6 +70,8 @@ while True:
             except: d = ""
             c.close()
         continue
+    elif d=='QUIT':
+        s.close() ; break
     elif use_aplay: player = "madplay -Q -o wav:- - | aplay -q" # MP3
     else: player = "mpg123 - 2>/dev/null" # MP3 non-aplay
     if delegate_known_down < time.time()-60 and not player.startswith("nc -N "): delegate_known_down = time.time()
