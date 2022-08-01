@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # (should work in both Python 2 and Python 3)
 
-# Simple sound-playing server v1.52
+# Simple sound-playing server v1.53
 # Silas S. Brown - public domain - no warranty
 
 # connect to port 8124 (assumes behind firewall)
@@ -11,18 +11,14 @@
 # wavPlayer = mp3Player = "nc HostName 8124 -q 0 <"
 # (most of this script assumes GNU/Linux)
 
-import socket, select, os, sys, os.path, time
-for a in sys.argv:
-  if a.startswith("--rpi-bluetooth-eth="):
-    # tested on Raspberry Pi 400 with Raspbian 11
-    eth=a.split('=')[1]
-    os.system("if ! pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then while true; do bluetoothctl --timeout 1 disconnect "+eth+" ; sleep 5 ; while ! bluetoothctl --timeout 5 connect "+eth+" | egrep 'Connection.successful|Connected'; do sleep 5; done ; Got=0; for Try in 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z; do if pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then Got=1; break; fi; sleep 1; done; if [ $Got = 1 ] ; then break; fi; done; fi; pacmd set-default-sink bluez_sink."+eth.replace(":","_")+".a2dp_sink; play /usr/share/scratch/Media/Sounds/Animal/Dog1.wav; sudo ethtool --set-eee eth0 eee off; echo Ready") # (eee off: improves reliability of gigabit ethernet on RPi400)
-  elif a.startswith("--rpi-bluetooth-setup-eth="):
-    eth=a.split('=')[1]
-    os.system('mkdir -p /home/pi/.config/lxsession/LXDE-pi && cp /etc/xdg/lxsession/LXDE-pi/autostart /home/pi/.config/lxsession/LXDE-pi/ && echo python '+os.path.join(os.getcwd(),sys.argv[0])+' --rpi-bluetooth-eth='+eth+' >> /home/pi/.config/lxsession/LXDE-pi/autostart && sudo "usermod -G bluetooth -a pi ; (echo load-module module-switch-on-connect;echo load-module module-bluetooth-policy;echo load-module module-bluetooth-discover) >> /etc/pulse/default.pa ; (echo [General];echo FastConnectable = true) >> /etc/bluetooth/main.conf ; reboot"')
+import socket, select, os, sys, os.path, time, re
+for a in sys.argv[1:]:
+  if a.startswith("--rpi-bluetooth-setup"): # tested on Raspberry Pi 400 with Raspbian 11, send Eth=(bluetooth Ethernet addr) to start.  Note that the setup command reboots the system.
+    os.system('mkdir -p /home/pi/.config/lxsession/LXDE-pi && cp /etc/xdg/lxsession/LXDE-pi/autostart /home/pi/.config/lxsession/LXDE-pi/ && echo sudo ethtool --set-eee eth0 eee off >> /home/pi/.config/lxsession/LXDE-pi/autostart && echo python '+os.path.join(os.getcwd(),sys.argv[0])+' >> /home/pi/.config/lxsession/LXDE-pi/autostart && sudo "apt-get -y install sox mpg123 && usermod -G bluetooth -a pi && (echo load-module module-switch-on-connect;echo load-module module-bluetooth-policy;echo load-module module-bluetooth-discover) >> /etc/pulse/default.pa && (echo [General];echo FastConnectable = true) >> /etc/bluetooth/main.conf && reboot"') # (eee off: improves reliability of gigabit ethernet on RPi400)
   elif a=="--aplay": use_aplay = True # aplay and madplay, for older embedded devices, NOT tested together with --rpi-bluetooth-* above
   elif a.startswith("--delegate="): delegate_to_check=a.split('=')[1] # will ping that IP and delegate all sound to it when it's up.  E.g. if it has better amplification but it's not always switched on.
   elif a.startswith("--chime="): chime_mp3=a.split('=')[1] # if clock bell desired, e.g. echo '$i-14vfff$c48o0l1b- @'|mwr2ly > chime.ly && lilypond chime.ly && timidity -Ow chime.midi && audacity chime.wav (amplify + trim) + mp3-encode (keep default 44100 sample rate so ~38 frames per sec).  Not designed to work with --delegate.  Pi1's 3.5mm o/p doesn't sound very good with this bell.
+  else: assert 0, "unknown option "+a
 
 os.environ["PATH"] += ":/usr/local/bin"
 try: use_aplay
@@ -38,6 +34,7 @@ s.bind(('',8124))
 s.listen(5)
 if type(b"")==type(""): S=lambda x:x # Python 2
 else: S=lambda x:x.decode("latin1") # Python 3
+eth = ""
 while True:
     if chime_mp3:
         t = time.time()
@@ -72,6 +69,14 @@ while True:
         continue
     elif d=='QUIT':
         s.close() ; break
+    elif d=="Eth=": # Eth=ethernet address, to connect via Bluetooth, tested on Raspberry Pi 400 with Raspbian 11
+        eth = S(c.recv(17))
+        assert re.match("^[A-Fa-f0-9:]*$",eth)
+        os.system("if ! pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then while true; do bluetoothctl --timeout 1 disconnect "+eth+" ; sleep 5 ; while ! bluetoothctl --timeout 5 connect "+eth+" | egrep 'Connection.successful|Connected'; do sleep 5; done ; Got=0; for Try in 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z; do if pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then Got=1; break; fi; sleep 1; done; if [ $Got = 1 ] ; then break; fi; done; fi; pacmd set-default-sink bluez_sink."+eth.replace(":","_")+".a2dp_sink") # ; play /usr/share/scratch/Media/Sounds/Animal/Dog1.wav # (not really necessary if using 'close the socket' to signal we're ready)
+        c.close() ; continue
+    elif d=="Eth0":
+      if eth: os.system("bluetoothctl --timeout 1 disconnect "+eth)
+      c.close() ; continue
     elif use_aplay: player = "madplay -Q -o wav:- - | aplay -q" # MP3
     else: player = "mpg123 - 2>/dev/null" # MP3 non-aplay
     if delegate_known_down < time.time()-60 and not player.startswith("nc -N "): delegate_known_down = time.time()
