@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # (should work in both Python 2 and Python 3)
 
-# Simple sound-playing server v1.53
+# Simple sound-playing server v1.54
 # Silas S. Brown - public domain - no warranty
 
 # connect to port 8124 (assumes behind firewall)
@@ -81,7 +81,7 @@ while True:
     else: player = "mpg123 - 2>/dev/null" # MP3 non-aplay
     if delegate_known_down < time.time()-60 and not player.startswith("nc -N "): delegate_known_down = time.time()
     player = os.popen(player,"w")
-    d = d.encode("latin1") # no-op on Python 2
+    if type(d)==type(u""): d = d.encode("latin1")
     while d:
         try:
             try: player.write(d)
