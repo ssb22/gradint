@@ -72,7 +72,7 @@ while True:
     elif d=="Eth=": # Eth=ethernet address, to connect via Bluetooth, tested on Raspberry Pi 400 with Raspbian 11
         eth = S(c.recv(17))
         assert re.match("^[A-Fa-f0-9:]*$",eth)
-        os.system("if ! pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then while true; do bluetoothctl --timeout 1 disconnect "+eth+" ; sleep 5 ; while ! bluetoothctl --timeout 5 connect "+eth+" | egrep 'Connection.successful|Connected'; do sleep 5; done ; Got=0; for Try in 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z; do if pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then Got=1; break; fi; sleep 1; done; if [ $Got = 1 ] ; then break; fi; done; fi; pacmd set-default-sink bluez_sink."+eth.replace(":","_")+".a2dp_sink") # ; play /usr/share/scratch/Media/Sounds/Animal/Dog1.wav # (not really necessary if using 'close the socket' to signal we're ready)
+        os.system("if ! pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then while true; do bluetoothctl --timeout 1 disconnect ; sleep 5 ; while ! bluetoothctl --timeout 5 connect "+eth+" | egrep 'Connection.successful|Connected'; do sleep 5; done ; Got=0; for Try in 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z; do if pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then Got=1; break; fi; sleep 1; done; if [ $Got = 1 ] ; then break; fi; done; fi; pacmd set-default-sink bluez_sink."+eth.replace(":","_")+".a2dp_sink") # ; play /usr/share/scratch/Media/Sounds/Animal/Dog1.wav # (not really necessary if using 'close the socket' to signal we're ready)
         c.close() ; continue
     elif d=="Eth0":
       if eth: os.system("bluetoothctl --timeout 1 disconnect "+eth)
