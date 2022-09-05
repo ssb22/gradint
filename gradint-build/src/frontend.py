@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.071 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.072 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -1140,14 +1140,14 @@ def guiVocabList(parsedVocab):
     sl2Len,fl2Len = -len(sl2),-len(fl2)
     ret = []
     for a,b,c in parsedVocab:
-        if c.endswith(B(sl2)): c=c[:sl2Len]
-        elif c.endswith(B(sl3)): c=readText(c)
+        if c.endswith(sl2): c=c[:sl2Len]
+        elif c.endswith(sl3): c=readText(c)
         else: continue
         if type(b)==type([]): b=b[cond(len(b)==3,1,-1)]
-        if b.endswith(B(fl2)): b=b[:fl2Len]
-        elif b.endswith(B(fl3)): b=readText(b)
+        if b.endswith(fl2): b=b[:fl2Len]
+        elif b.endswith(fl3): b=readText(b)
         else: continue
-        ret.append((unicode(c,"utf-8"),unicode(b,"utf-8")))
+        ret.append((ensure_unicode(c),ensure_unicode(b)))
     return ret
 def readText(l): # see utils/transliterate.py (running guiVocabList on txt files from scanSamples)
     l = B(samplesDirectory)+B(os.sep)+B(l)
@@ -1679,13 +1679,13 @@ def gui_event_loop():
             t1,t2 = asUnicode(app.Text1.get()),asUnicode(app.Text2.get())
             lang2,lang1=t1.lower(),t2.lower() # because it's .lower()'d in progress.txt
             d = ProgressDatabase(0)
-            l1find = "!synth:"+lang1.encode('utf-8')+"_"+firstLanguage
+            l1find = S(B("!synth:")+lang1.encode('utf-8')+B("_"+firstLanguage))
             found = 0
             msg=(ensure_unicode(localise("%s=%s is already in %s.")) % (t1,t2,vocabFile))
             for listToCheck in [d.data,d.unavail]:
               if found: break
               for item in listToCheck:
-                if (item[1]==l1find or (type(item[1])==type([]) and checkIn(l1find,item[1]))) and item[2]=="!synth:"+lang2.encode('utf-8')+"_"+secondLanguage:
+                if (item[1]==l1find or (type(item[1])==type([]) and checkIn(l1find,item[1]))) and item[2]==S(B("!synth:")+lang2.encode('utf-8')+B("_"+secondLanguage)):
                     if not item[0]: break # not done yet - as not-found
                     newItem0 = reviseCount(item[0])
                     app.unset_watch_cursor = 1
@@ -1722,19 +1722,19 @@ def gui_event_loop():
             if found and menu_response=="replace": # maybe hack progress.txt as well (taken out of the above loop for better failsafe)
                 d = ProgressDatabase(0)
                 lang2,lang1=lang2.lower(),lang1.lower() # because it's .lower()'d in progress.txt
-                l1find = B("!synth:")+lang1.encode('utf-8')+B("_"+firstLanguage)
+                l1find = S(B("!synth:")+lang1.encode('utf-8')+B("_"+firstLanguage))
                 for item in d.data:
-                    if (item[1]==l1find or (type(item[1])==type([]) and checkIn(l1find,item[1]))) and item[2]==B("!synth:")+lang2.encode('utf-8')+B("_"+secondLanguage) and item[0]:
+                    if (item[1]==l1find or (type(item[1])==type([]) and checkIn(l1find,item[1]))) and item[2]==S(B("!synth:")+lang2.encode('utf-8')+B("_"+secondLanguage)) and item[0]:
                         app.unset_watch_cursor = 1
                         if not getYN(localise("You have repeated %s=%s %d times.  Do you want to pretend you already repeated %s=%s %d times?") % (S(lang2),S(lang1),item[0],S(t2),S(t1),item[0])):
                             app.set_watch_cursor = 1 ; break
                         d.data.remove(item)
-                        l1replace = B("!synth:")+t2.encode('utf-8')+B("_"+firstLanguage)
+                        l1replace = S(B("!synth:")+t2.encode('utf-8')+B("_"+firstLanguage))
                         if type(item[1])==type([]):
                             l = item[1]
                             l[l.index(l1find)] = l1replace
                         else: l=l1replace
-                        item = (item[0],l,B("!synth:")+t1.encode('utf-8')+B("_"+secondLanguage))
+                        item = (item[0],l,S(B("!synth:")+t1.encode('utf-8')+B("_"+secondLanguage)))
                         d.data.append(item)
                         app.set_watch_cursor = 1
                         for i2 in d.unavail:

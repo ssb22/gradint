@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.071 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.072 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -97,7 +97,7 @@ if ask_teacherMode:
 def maybe_unicode(label):
     if app or appuifw or android:
         try: return unicode(label,'utf-8')
-        except: return label # ??
+        except: return label # e.g. Python 3
     else: return repr(label)
 
 madplay_path = None

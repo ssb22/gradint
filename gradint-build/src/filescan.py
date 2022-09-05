@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.071 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.072 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -311,8 +311,8 @@ def parseSynthVocab(fname,forGUI=0):
         prompt_L1only = prompt # before we possibly change it into a list etc.  (Actually not necessarily L1 see above, but usually is)
         if doPoetry:
             if prompt and lastPromptAndWord:
-                if lastPromptAndWord[0]: prompt=[lastPromptAndWord[0],prompt,lastPromptAndWord[1]] # L1 for line 1, L1 for line2, L2 for line 1
-                else: prompt=[lastPromptAndWord[1],prompt] # line 1 doesn't have L1 but line 2 does, so have L2 for line 1 + L1 for line 2
+                if lastPromptAndWord[0]: prompt=[S(lastPromptAndWord[0]),S(prompt),S(lastPromptAndWord[1])] # L1 for line 1, L1 for line2, L2 for line 1
+                else: prompt=[S(lastPromptAndWord[1]),S(prompt)] # line 1 doesn't have L1 but line 2 does, so have L2 for line 1 + L1 for line 2
             elif not prompt:
                 if lastPromptAndWord:
                     prompt=lastPromptAndWord[-1]
@@ -331,7 +331,7 @@ def parseSynthVocab(fname,forGUI=0):
                     if prompt==1 or prompt==f: # a file with itself as the prompt (either explicitly or by omitting any other prompt)
                         prompt=f
                         singleLinePoems[f]=1
-                    ret.append((0,prompt,f))
+                    ret.append((0,S(prompt),S(f)))
                     if emptyCheck_hack: return ret
                     if doLimit: limitedFiles[f]=B("synth:"+str(limitNo))
                     if doPoetry: lastPromptAndWord = [prompt_L1only,f]
