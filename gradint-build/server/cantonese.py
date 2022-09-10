@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.39 (c) 2013-15,2017-22 Silas S. Brown.  License: GPL
+# v1.4 (c) 2013-15,2017-22 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -151,6 +151,9 @@ def jyutping_to_lau(j):
   j = S(j).lower().replace("j","y").replace("z","j")
   for k,v in jlRep: j=j.replace(k,v)
   return j.lower().replace("aa","a").replace("ohek","euk")
+def jyutping_to_lau_java(jyutpingNo=2,lauNo=1):
+  # for annogen.py 3.29+ --annotation-postprocess to ship Jyutping and generate Lau at runtime
+  return 'if(annotNo=='+str(jyutpingNo)+'||annotNo=='+str(lauNo)+'){m=Pattern.compile("<rt>(.*?)</rt>").matcher(r);sb=new StringBuffer();while(m.find()){String r2=(annotNo=='+str(jyutpingNo)+'?m.group(1).replaceAll("([1-7])","$1&shy;"):(m.group(1)+" ").toLowerCase().replace("j","y").replace("z","j")'+''.join('.replace("'+k+'","'+v+'")' for k,v in jlRep)+'.toLowerCase().replace("aa","a").replace("ohek","euk").replaceAll("([1-7])","<sup>$1</sup>-").replace("- "," ").replaceAll(" $","")),tmp=m.group(1).substring(0,1);if(annotNo=='+str(lauNo)+'&&tmp.equals(tmp.toUpperCase()))r2=r2.substring(0,1).toUpperCase()+r2.substring(1);m.appendReplacement(sb,"<rt>"+r2+"</rt>");}m.appendTail(sb); r=sb.toString();}' # TODO: can probably go faster with mapping for some of this
 def incomplete_lau_to_jyutping(l):
   # incomplete: assumes Lau didn't do the "aa" -> "a" rule
   l = S(l).lower().replace("euk","ohek")
@@ -267,7 +270,8 @@ def do_song_subst(hanzi_u8): return B(hanzi_u8).replace(unichr(0x4f7f).encode('u
 if __name__ == "__main__":
     # command-line use: output Lau for each line of stdin
     # (or Yale if there's a --yale in sys.argv, or both
-    # with '#' separators if --yale#lau in sys.argv);
+    # with '#' separators if --yale#lau in sys.argv,
+    # also --yale#ping and --yale#lau#ping accepted);
     # if there's a # in the line, assume it's hanzi#pinyin
     # (for annogen.py --reannotator="##python cantonese.py")
     lines = sys.stdin.read().replace("\r\n","\n").split("\n")
@@ -308,6 +312,7 @@ if __name__ == "__main__":
           groupLens = None ; jyutping = ""
       else: groupLens = None
       if "--yale#lau" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping),groupLens)+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping),groupLens)))
+      elif '--yale#ping' in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping),groupLens)+"#"+jyutping.replace(' ',''))
       elif "--yale#lau#ping" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping),groupLens)+"#"+superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping),groupLens))+"#"+jyutping.replace(' ',''))
       elif "--yale" in sys.argv: print (hyphenate_yale_syl_list(jyutping_to_yale_u8(jyutping),groupLens))
       else: print (superscript_digits_HTML(hyphenate_ping_or_lau_syl_list(jyutping_to_lau(jyutping),groupLens)))
