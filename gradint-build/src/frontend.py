@@ -1,5 +1,5 @@
 # This file is part of the source code of
-# gradint v3.072 (c) 2002-22 Silas S. Brown. GPL v3+.
+# gradint v3.073 (c) 2002-22 Silas S. Brown. GPL v3+.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -815,7 +815,12 @@ def startTk():
             for control,current,restoreTo in self.toRestore:
                 if asUnicode(control.get())==current: control.set(restoreTo)
             self.toRestore = []
-        def stripText(self,*args): self.Text1.set(fix_commas(hanzi_and_punc(asUnicode(self.Text1.get()))))
+        def stripText(self,*args):
+            t = self.Text1.get()
+            u = asUnicode(t)
+            v = fix_commas(hanzi_and_punc(u))
+            if t==u: v=asUnicode(v)
+            self.Text1.set(v)
         def thin_down_for_lesson(self):
             if hasattr(self,"OutputRow"): self.OutputRow.pack_forget()
             if hasattr(self,"CopyFromButton"):
