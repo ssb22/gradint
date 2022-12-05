@@ -689,6 +689,9 @@ randomDropThreshold = 14 # after which drop some words even if they can fit
 randomDropLevel = 0.67 # fraction of above that is dropped
 randomDropThreshold2 = 35 # (or set to the same as above)
 randomDropLevel2 = 0.97
+seedless = 0 # set this to 1 to make all "random" choices
+# reproducible (on the same installation), in case you
+# need to reproduce the same Gradint run exactly
 shuffleConstant = 2.0 # Used to control how much the number
 # of repetitions matters when it is high.  Higher values of
 # this constant mean it doesn't matter so much and samples

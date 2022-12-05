@@ -320,6 +320,8 @@ if paranoid_file_management:
         r=tryIO(lambda x=file,m=mode:_old_open(x,m))
     return r
 
+if seedless: random.seed(0)
+
 # Different extension separators again
 if not extsep==".":
     # only do the below if defaults haven't been changed
