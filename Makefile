@@ -1,5 +1,5 @@
-# This file is part of the source code of
-# gradint v3.073 (c) 2002-22 Silas S. Brown. GPL v3+.
+# This file is part of the source code of Gradint
+# (c) Silas S. Brown.
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
 #    the Free Software Foundation; either version 3 of the License, or
@@ -8,8 +8,6 @@
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
-
-# Do NOT run with "make -j" or other parallelisations - some of these rules have conflicting tempfiles
 
 # Stuff in Extra_Data does not have to be present,
 # but if present will be included in all versions.
@@ -45,6 +43,9 @@ gradint.py: $(SOURCES) cleanup
 	chmod +x gradint.py
 	python2 -c "import gradint" && rm -f gradint.pyc # just to make sure it compiles in Python 2
 	python3 -c "import gradint" && rm -f gradint.pyc # just to make sure it compiles in Python 3 as well
+
+# Do NOT run with "make -j" or other parallelisations - some of these rules have conflicting tempfiles
+.NOTPARALLEL:
 
 src/defaults.py: settings.txt advanced.txt Makefile
 	echo "# This is the start of defaults.py - configuration defaults, automatically extracted from default settings.txt and advanced.txt, so user customisations don't have to be complete (helps with upgrades)" > src/defaults.py
@@ -220,7 +221,7 @@ gradint.zip: $(Riscos_Files) riscos.zip
 	zip -9 -r gradint.zip \!gradint/* # update with gradint sources
 	rm -rf \!gradint
 
-publish0: $(All_Versions) gradint.py
+publish: $(All_Versions) gradint.py
 	scp -C gradint.py srcf:gradint/
 	scp -C server/gradint.cgi srcf:public_html/
 	mv $(All_Versions) ~/homepage/public/gradint/
@@ -232,20 +233,11 @@ publish0: $(All_Versions) gradint.py
 	~/homepage/update
 	ssh st0rage "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c 'sleep 60;. build-sync.sh'"
 
-publish:
-	# do it from /tmp so as to avoid confusing HomeSync if ssh'ing in from a PWF Mac
-	# + include chmod -x in case the PWF can't remember attributes this year
-	rm -rf /tmp/ssb22/gradint0
-	mkdir -p /tmp/ssb22/gradint0
-	cp -r * /tmp/ssb22/gradint0
-	pushd /tmp/ssb22/gradint0 && find . '(' -name '*.txt' -o -name Makefile -o -name '*.zip' -o -name '*.7z' -o -name '*.py' -o -name '*.lnk' -o -name '*.exe' -o -name '*.tbz' -o -name '*copyright' -o -name '*README' -o -name '*.bat' -o -name '*.sfx' -o -name '*.conf' ')' -exec chmod -x '{}' ';' && make publish0 && popd
-	rm -rf /tmp/ssb22/gradint0
-
 gradint-build.7z:
-	mkdir ../gradint-build00
-	cp -r * ../gradint-build00
-	mv ../gradint-build00 gradint
-	cd gradint; for N in *.py src/*.py Makefile; do if ! test $$N == src/top.py && ! test $$N == gradint.py; then (echo "# This file is part of the source code of";grep "^program_name" src/top.py|sed -e 's/[^"]*"//' -e 's/"//' -e 's/^/# /';grep "^#    " src/top.py;cat $$N) > $$N-new; mv $$N-new $$N; fi; done; cd ..
+	mkdir /tmp/gradint-build00
+	cp -r * /tmp/gradint-build00
+	rm -r /tmp/gradint-build00/LICENSE /tmp/gradint-build00/README.md /tmp/gradint-build00/charlearn
+	mv /tmp/gradint-build00 gradint
 	cd gradint ; make clean ; rm -rf extras ; cd ..
 	7za a gradint-build.7z gradint/
 	rm -rf gradint
