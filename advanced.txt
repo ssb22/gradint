@@ -166,7 +166,7 @@ sapiSpeeds = {
 
 macVoices = {
 "en":"Emily Daniel Alex Vicki",
-"zh":"Ting-Ting", # OS 10.7+, can read hanzi, pinyin+tone numbers (5 for neutral) and English
+"zh":"Ting-Ting Tingting", # OS 10.7+, can read hanzi, pinyin+tone numbers (5 for neutral) and English
 "cant":"Sin-Ji", # OS 10.7+
 "jp":"Kyoko", # OS 10.7+ ("ja" will auto-detect, but we're adding the alias "jp")
 "ind":"Damayanti", # OS 10.7+ ("id" will auto-detect: we're adding "ind")

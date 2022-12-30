@@ -83,7 +83,7 @@ class OSXSynth_Say(Synth):
         system("say %s-o %s \"%s\"" % (S(self.voices[lang]),fname,S(self.transliterate(lang,text)).replace('"','')))
         return aiff2wav(fname)
     def transliterate(self,lang,text,forPartials=0):
-        if not self.voices[lang]=='-v "Ting-Ting" ': return text
+        if not self.voices[lang] in ['-v "Ting-Ting" ','-v "Tingting" ']: return text
         # The hanzi-to-pinyin conversion in the Ting-Ting voice is not always as good as eSpeak's, but it can be controlled with pinyin.
         ut = ensure_unicode(text)
         if u"\u513f" in ut or u"\u5152" in ut: return text # might be erhua - better pass to the synth as-is
@@ -91,7 +91,7 @@ class OSXSynth_Say(Synth):
         if not es.works_on_this_platform() or not es.supports_language('zh'): return text
         return es.transliterate('zh',text,0)
     def can_transliterate(self,lang):
-        if not self.voices.get(lang,0)=='-v "Ting-Ting" ': return 0
+        if not self.voices.get(lang,0) in ['-v "Ting-Ting" ','-v "Tingting" ']: return 0
         es = ESpeakSynth()
         return es.works_on_this_platform() and es.supports_language('zh')
     def scanVoices(self):
@@ -101,9 +101,9 @@ class OSXSynth_Say(Synth):
             voiceAttrs=[NSSpeechSynthesizer.attributesForVoice_(vocId) for vocId in NSSpeechSynthesizer.availableVoices()]
         except: # maybe we're running under Homebrew Python instead of /usr/bin/python; in at least some recent OS X versions we should be able to get a voice list with 'say -v ?' instead (I'm not sure how far back that goes, so leaving in the above NSSpeechSynthesizer method as well)
             voiceAttrs = []
-            for l in os.popen("say -v ? </dev/null 2>/dev/null").readlines():
+            for l in os.popen('say -v "?" </dev/null 2>/dev/null').readlines():
                 if not '#' in l: continue
-                name,lang=l[:l.index('#')].split()
+                name,lang=l[:l.index('#')].rsplit(None,1)
                 voiceAttrs.append({'VoiceName':name,'VoiceLanguage':lang.replace('_','-')})
             if not voiceAttrs: return {"en":""} # maybe we're on ancient OS X: don't use a -v parameter at all
         for vocAttrib in voiceAttrs:
@@ -122,8 +122,8 @@ class OSXSynth_Say(Synth):
               try:
                 for m in macVoices[k].split():
                   for vv in v:
-                    if m.lower() == vv.lower():
-                        d2[k] = [vv] ; found=1 ; del macVoices[k] ; raise BreakOut()
+                    if B(m.lower()) == B(vv.lower()):
+                        d2[k] = [S(vv)] ; found=1 ; del macVoices[k] ; raise BreakOut()
               except BreakOut: pass
             if len(d2[k])>1: d2[k]=[d2[k][0]]
         # Then check across languages (e.g. cant -> zh-...)
@@ -132,8 +132,8 @@ class OSXSynth_Say(Synth):
           for kk,vv in list(d.items()):
             for m in v.split():
               for vvv in vv:
-                if m.lower() == vvv.lower():
-                  d2[k] = [vvv] ; found=1 ; raise BreakOut()
+                if B(m.lower()) == B(vvv.lower()):
+                  d2[k] = [S(vvv)] ; found=1 ; raise BreakOut()
          except BreakOut: pass
         if list(d.keys())==['en'] and not found: return {"en":""} # just use the default
         for k,v in list(d2.items()): d2[k]='-v "'+S(v[0])+'" '
