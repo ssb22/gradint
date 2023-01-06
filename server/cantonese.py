@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.41 (c) 2013-15,2017-22 Silas S. Brown.  License: GPL
+# v1.42 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -77,6 +77,9 @@ def py2nums(pinyin):
   else: pyNums = espeak.transliterate("zh",pinyin,forPartials=0) # (this transliterate just does tone marks to numbers, adds 5, etc; forPartials=0 because we DON'T want to change letters like X into syllables, as that won't happen in jyutping and we're going through it tone-by-tone)
   assert pyNums and pyNums.strip(), "espeak.transliterate returned %s for %s" % (repr(pyNums),repr(pinyin))
   return re.sub("a$","a5",re.sub("(?<=[a-zA-Z])er([1-5])",r"e\1r5",S(pyNums)))
+if type(u"")==type(""): # Python 3
+  getNext = lambda gen: gen.__next__()
+else: getNext = lambda gen: gen.next()
 def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
   # If we have good quality (proof-read etc) Mandarin pinyin, this can sometimes improve the automatic Cantonese transcription
   if not type(hanzi)==type(u""): hanzi = hanzi.decode('utf-8')
@@ -87,8 +90,8 @@ def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
   jyutping = S(jyutping)
   i = 0 ; tones = re.finditer('[1-7]',jyutping) ; j2 = []
   for h,p in zip(list(hanzi),pinyin):
-    try: j = tones.next().end()
-    except StopIteration: raise Exception("Ran out of tones in "+jyutping+" when zipping "+repr(hanzi)+'/'+repr(pinyin))
+    try: j = getNext(tones).end()
+    except StopIteration: return jyutping # one of the zin has no Cantonese reading, which we'll pick up later on "failed to fix"
     j2.append(jyutping[i:j]) ; i = j
     if h in py2j and p.lower() in py2j[h]: j2[-1]=j2[-1][:re.search("[A-Za-z]*[1-7]$",j2[-1]).start()]+py2j[h][p.lower()]
   return "".join(j2)+jyutping[i:]

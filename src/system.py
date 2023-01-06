@@ -283,7 +283,7 @@ if paranoid_file_management:
   # For ftpfs etc.  Retry on errno 13 (permission denied), and turn append into a copy.  Otherwise occasionally get vocab.txt truncated.
   _old_open = open
   def tryIO(func):
-    for tries in range(10)+["last"]:
+    for tries in list(range(10))+["last"]:
         try: return func()
         except IOError:
             err = sys.exc_info()[1]
