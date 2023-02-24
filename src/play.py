@@ -688,19 +688,20 @@ def decode_mp3(file): # Returns WAV data including header.  TODO: this assumes i
     elif madplay_path:
         oldDir = os.getcwd()
         d=readB(os.popen(madplay_path+cond(compress_SH," -R 16000 -b 8","")+" -q \""+changeToDirOf(file)+"\" -o wav:-",popenRB))
+        if winsound: d=d.replace(B("data\xFF"),B("data\x7F"),1) # sox bug workaround
         os.chdir(oldDir) ; return d
     elif got_program("mpg123"): # do NOT try to read its stdout (not only does it write 0 length, which we can fix, but some versions can also write wrong bitrate, which is harder for us to fix)
         oldDir = os.getcwd()
         tfil = os.tempnam()+dotwav
         system("mpg123 -q -w \""+tfil+"\" \""+changeToDirOf(file)+"\"")
         if compress_SH and gotSox: dat = readB(os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ",popenRB))
-        else: dat = open(tfil).read()
+        else: dat = open(tfil,"rb").read()
         os.unlink(tfil) ; os.chdir(oldDir) ; return dat
     elif macsound and got_program("afconvert"):
         tfil = os.tempnam()+dotwav
         system("afconvert -f WAVE -d I16@44100 \""+file+"\" \""+tfil+"\"")
         if compress_SH and gotSox: dat = readB(os.popen("sox \""+tfil+"\" -t wav "+sox_8bit+" - ",popenRB))
-        else: dat = open(tfil).read()
+        else: dat = open(tfil,"rb").read()
         os.unlink(tfil) ; return dat
     elif unix:
         if soxMp3:

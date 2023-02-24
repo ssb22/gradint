@@ -32,13 +32,14 @@ Linux_Files=$(Common_Files) gradint.py INSTALL.txt
 Riscos_Files=$(Common_Files) gradint.py
 
 CODE=src/lessonplan.py src/sequence.py src/loop.py src/booktime.py src/play.py src/synth.py src/makeevent.py src/filescan.py src/recording.py src/users.py
-SETUP=src/top.py src/defaults.py src/system.py
+TOP=src/top.py
+SETUP=src/defaults.py src/system.py
 ENDING=src/frontend.py
 SOURCES=$(SETUP) $(CODE) $(ENDING)
 
 gradint.py: $(SOURCES) cleanup
 	chmod +w gradint.py 2>/dev/null || true
-	cat $(SOURCES) > gradint.py
+	(cat $(TOP);for N in $(SOURCES); do awk 'BEGIN {p=1} /^# This file is part of the source code of Gradint/ {p=0} /^$$/ {p=1} // {if(p) print}' < $$N; done) > gradint.py
 	chmod a-w gradint.py
 	chmod +x gradint.py
 	python2 -c "import gradint" && rm -f gradint.pyc # just to make sure it compiles in Python 2
