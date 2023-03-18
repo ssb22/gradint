@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.42 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
+# v1.43 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -64,7 +64,7 @@ def hanzi_only(unitext): return u"".join(filter(lambda x:0x4e00<=ord(x)<0xa700 o
 def py2nums(pinyin):
   if not type(pinyin)==type(u""):
     pinyin = pinyin.decode('utf-8')
-  assert pinyin.strip(), "blank pinyin" # saves figuring out a findall TypeError
+  if not pinyin.strip(): return ""
   global pinyin_dryrun
   if pinyin_dryrun:
     pinyin_dryrun = list(pinyin_dryrun)
@@ -291,6 +291,9 @@ if __name__ == "__main__":
         pinyin = pinyin.decode('utf-8')
       if pinyin and not (pinyin,) in cache:
         pinyin_dryrun.add(pinyin)
+        for w in pinyin.split():
+          for h in w.split('-'):
+            pinyin_dryrun.add(h)
     dryrun_mode = False
     for l in lines:
       if '#' in l: l,pinyin = l.split('#')
@@ -300,7 +303,7 @@ if __name__ == "__main__":
       elif pinyin:
         jyutping = adjust_jyutping_for_pinyin(l,jyutping,pinyin)
         groupLens = [0]
-        for syl,space in re.findall('([A-Za-z]*[1-5])( *)',py2nums(pinyin)):
+        for syl,space in re.findall('([A-Za-z]*[1-5])( *)',' '.join('-'.join(py2nums(h) for h in w.split('-')) for w in pinyin.split())): # doing it this way so we're not relying on espeak transliterate_multiple to preserve spacing and hyphenation
           groupLens[-1] += 1
           if space: groupLens.append(0)
         if not groupLens[-1]: groupLens=groupLens[:-1]
