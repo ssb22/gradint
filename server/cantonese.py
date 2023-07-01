@@ -91,7 +91,7 @@ def adjust_jyutping_for_pinyin(hanzi,jyutping,pinyin):
   i = 0 ; tones = re.finditer('[1-7]',jyutping) ; j2 = []
   for h,p in zip(list(hanzi),pinyin):
     try: j = getNext(tones).end()
-    except StopIteration: return jyutping # one of the zin has no Cantonese reading, which we'll pick up later on "failed to fix"
+    except StopIteration: return jyutping # one of the hanzi has no Cantonese reading in our data: we'll warn "failed to fix" below
     j2.append(jyutping[i:j]) ; i = j
     if h in py2j and p.lower() in py2j[h]: j2[-1]=j2[-1][:re.search("[A-Za-z]*[1-7]$",j2[-1]).start()]+py2j[h][p.lower()]
   return "".join(j2)+jyutping[i:]
