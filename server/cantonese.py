@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.44 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
+# v1.45 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -156,7 +156,7 @@ def jyutping_to_lau(j):
   return j.lower().replace("ohek","euk")
 def jyutping_to_lau_java(jyutpingNo=2,lauNo=1):
   # for annogen.py 3.29+ --annotation-postprocess to ship Jyutping and generate Lau at runtime
-  return 'if(annotNo=='+str(jyutpingNo)+'||annotNo=='+str(lauNo)+'){m=Pattern.compile("<rt>(.*?)</rt>").matcher(r);sb=new StringBuffer();while(m.find()){String r2=(annotNo=='+str(jyutpingNo)+'?m.group(1).replaceAll("([1-7])(.)","$1&shy;$2"):(m.group(1)+" ").toLowerCase().replace("j","y").replace("z","j")'+''.join('.replace("'+k+'","'+v+'")' for k,v in jlRep)+'.toLowerCase().replace("aa","a").replace("ohek","euk").replaceAll("([1-7])","<sup>$1</sup>-").replace("- "," ").replaceAll(" $","")),tmp=m.group(1).substring(0,1);if(annotNo=='+str(lauNo)+'&&tmp.equals(tmp.toUpperCase()))r2=r2.substring(0,1).toUpperCase()+r2.substring(1);m.appendReplacement(sb,"<rt>"+r2+"</rt>");}m.appendTail(sb); r=sb.toString();}' # TODO: can probably go faster with mapping for some of this
+  return 'if(annotNo=='+str(jyutpingNo)+'||annotNo=='+str(lauNo)+'){m=Pattern.compile("<rt>(.*?)</rt>").matcher(r);sb=new StringBuffer();while(m.find()){String r2=(annotNo=='+str(jyutpingNo)+'?m.group(1).replaceAll("([1-7])(.)","$1&shy;$2"):(m.group(1)+" ").toLowerCase().replace("j","y").replace("z","j")'+''.join('.replace("'+k+'","'+v+'")' for k,v in jlRep)+'.toLowerCase().replace("ohek","euk").replaceAll("([1-7])","<sup>$1</sup>-").replace("- "," ").replaceAll(" $","")),tmp=m.group(1).substring(0,1);if(annotNo=='+str(lauNo)+'&&tmp.equals(tmp.toUpperCase()))r2=r2.substring(0,1).toUpperCase()+r2.substring(1);m.appendReplacement(sb,"<rt>"+r2+"</rt>");}m.appendTail(sb); r=sb.toString();}' # TODO: can probably go faster with mapping for some of this
 def incomplete_lau_to_jyutping(l):
   # incomplete: assumes Lau didn't do the "aa" -> "a" rule
   l = S(l).lower().replace("euk","ohek")
