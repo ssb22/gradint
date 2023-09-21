@@ -678,6 +678,7 @@ class ESpeakSynth(Synth):
                     delete_last_r_if_blank = 1 # this depends on original Jonathan Duddington eSpeak and is not compatible with eSpeak NG which does not always give us blank lines.  TODO: if want eSpeak NG compatibility (which might be a good idea as mainstream GNU/Linux distributions now ship eSpeak NG and just call it "espeak"), we might want to pick up on THIS l ending with B("[_^_]") and next Translate being an identical syllable.  That might not be the only problem.
                   else: en_words[toAppend]=1
               else: # not Translate
+                  if lang=="zhy" and l.endswith(B("[_^_]")): del r[-1] # will be duplicated
                   if lang=="zh" and l.startswith(B("Found: ")) and ((l[7:8]==l[9:10]==B("'") and B("a")<=l[8:9]<=B("z")) or (l[8:9]==B(" ") and B("a")<=l[7:8]<=B("z"))): # an alphabetical letter - we can say this as a Chinese letter and it should be compatible with more partials-based synths.  But DON'T do this if going to give it to a unit-selection synth - 'me1' and 'ne1' don't have hanzi and some synths will have difficulty saying them.
                       if l[8:9]==B(' '): letter=l[7:8]
                       else: letter=l[8:9]
