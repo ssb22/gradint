@@ -659,7 +659,7 @@ class ESpeakSynth(Synth):
               if int0:
                   if int0 > thisgroup_max_priority:
                       thisgroup_max_priority = int0
-                      if lWords[-1]=="[_^_]": thisgroup_enWord_priority = int0 # so far it looks like this is going to be an English word
+                      if lWords[-1]==B("[_^_]"): thisgroup_enWord_priority = int0 # so far it looks like this is going to be an English word
               else: # a split between the groups
                   if thisgroup_enWord_priority == thisgroup_max_priority: # the choice with the highest priority was the one containing the [_^_] to put the word into English
                       en_words[r[-1]]=1
