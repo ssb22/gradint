@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.45 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
+# v1.46 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -101,7 +101,7 @@ u"\u4E3A\u70BA":{"wei2":"wai4","wei4":"wai6"},
 u"\u4E50\u6A02":{"le4":"lok6","yue4":"ngok6"},
 u"\u4EB2\u89AA":{"qin1":"can1","qing4":"can3"},
 u"\u4F20\u50B3":{"chuan2":"cyun4","zhuan4":"zyun6"},
-u"\u4FBF":{"bian4":"pin4","pian2":"bin6"},
+u"\u4FBF":{"bian4":"bin6","pian2":"pin4"},
 u"\u5047":{"jia3":"gaa2","jia4":"gaa3"},
 u"\u5174\u8208":{"xing1":"hing1","xing4":"hing3"},
 # u"\u5207":{"qie4":"cai3","qie1":"cit3"}, # WRONG (rm'd v1.17).  It's cit3 in re4qie4.  It just wasn't in yiqie4 (which zhy_list has as an exception anyway)
