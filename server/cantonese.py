@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.46 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
+# v1.47 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -100,6 +100,7 @@ u"\u4E2D":{"zhong1":"zung1","zhong4":"zung3"},
 u"\u4E3A\u70BA":{"wei2":"wai4","wei4":"wai6"},
 u"\u4E50\u6A02":{"le4":"lok6","yue4":"ngok6"},
 u"\u4EB2\u89AA":{"qin1":"can1","qing4":"can3"},
+u"\u4EC0":{"shen2":"sam6","shi2":"sap6"}, # unless zaap6
 u"\u4F20\u50B3":{"chuan2":"cyun4","zhuan4":"zyun6"},
 u"\u4FBF":{"bian4":"bin6","pian2":"pin4"},
 u"\u5047":{"jia3":"gaa2","jia4":"gaa3"},
