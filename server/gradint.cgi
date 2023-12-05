@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #  (either Python 2 or Python 3)
 
-program_name = "gradint.cgi v1.32 (c) 2011,2015,2017-22 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.33 (c) 2011,2015,2017-23 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -142,7 +142,7 @@ def main():
     try: v=open(gradint.vocabFile).read()
     except: v="" # (shouldn't get here unless they hack URLs)
     htmlOut('<form action="'+cginame+'" method="post"><textarea name="vocab" style="width:100%;height:80%" rows="15" cols="50">'+v+'</textarea><br><input type=submit name=editsave value="Save changes"> | <input type=submit name=placeholder value="Cancel"></form>',"Text edit your vocab list")
-  elif "lesson" in query: # make lesson
+  elif "lesson" in query: # make lesson ("Start lesson" button)
     setup_userID()
     gradint.maxNewWords = int(query.getfirst("new")) # (shouldn't need sensible-range check here if got a dropdown; if they really want to hack the URL then ok...)
     gradint.maxLenOfLesson = int(float(query.getfirst("mins"))*60)
@@ -415,7 +415,7 @@ def listVocab(hasList): # main screen
        if data: hasList = "<p><table style=\"border: thin solid green\"><caption><nobr>"+localise("Your word list",1)+"</nobr> <nobr>("+localise("click for audio",1)+")</nobr> <input type=submit name=edit value=\""+localise("Text edit",2)+"\"></caption><tr><th>"+localise("Repeats",1)+"</th><th>"+localise(gradint.secondLanguage,1)+"</th><th>"+localise(gradint.firstLanguage,1)+"</th></tr>"+"".join(["<tr><td>%d</td><td lang=\"%s\">%s</td><td lang=\"%s\">%s</td>%s" % (num,gradint.secondLanguage,htmlize(dest,gradint.secondLanguage),gradint.firstLanguage,htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</table>"
        else: hasList=""
     else: hasList=""
-    if hasList: body += '<P><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson",2)+"""" onClick="if(h5a('"""+cginame+'?lesson='+str(random.random())+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){location.href='"""+cginame+'?lFinish='+str(random.random())+"""'})) return true; else { document.forms[0].lesson.value='Please wait while the lesson starts to play'; document.forms[0].lesson.disabled=1; return false}"></td></tr></table>"""
+    if hasList: body += '<p><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson",2)+"""" onClick="document.forms[0].lesson.disabled=1; document.forms[0].lesson.value='Please wait while the lesson starts to play'; return h5a('"""+cginame+'?lesson='+str(random.random())+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){location.href='"""+cginame+'?lFinish='+str(random.random())+"""'})"></td></tr></table>"""
     if "dictionary" in query:
         if query.getfirst("dictionary")=="1": body += '<script><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">'+localise("Back to referring site",1)+'</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
         else: body += '<p><a href="'+query.getfirst("dictionary")+'">'+localise("Back to dictionary",1)+'</a>' # TODO check for cross-site scripting

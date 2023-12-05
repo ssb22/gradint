@@ -232,7 +232,6 @@ publish: $(All_Versions) gradint.py
 	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/homepage/public/gradint/latest-version.txt
 	make clean
 	~/homepage/update
-	ssh st0rage "cd eGuidedog/ssb22/gradint; screen -d -m /bin/bash -c 'sleep 60;. build-sync.sh'"
 
 gradint-build.7z:
 	mkdir /tmp/gradint-build00
