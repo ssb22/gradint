@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+#  (works on either Python 2 or Python 3)
+
+# program to "thin down" the gradint .py for low memory environments
+# by taking out some of the code that's unused on that platform
+
 # This file is part of the source code of Gradint
 # (c) Silas S. Brown.
 #    This program is free software; you can redistribute it and/or modify
@@ -8,11 +14,6 @@
 #    but WITHOUT ANY WARRANTY; without even the implied warranty of
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
-#!/usr/bin/env python
-#  (works on either Python 2 or Python 3)
-
-# program to "thin down" the gradint .py for low memory environments
-# by taking out some of the code that's unused on that platform
 
 import sys, re
 
@@ -230,7 +231,67 @@ elif "wince" in sys.argv: # Windows Mobile version
   to_omit = desktop_only + S60_only + android_only + android_or_S60 + not_winCE + riscos_only + mac_only
 elif "core" in sys.argv: # experimental "core code only" for 'minimal embedded porting' starting point (no UI, no synth, limited file I/O; you'll probably have to load up the event data yourself)
   version = "core"
-  to_omit = tk_only + not_S60_or_android + not_android + riscos_only + mac_only + desktop_only + winCE_only + S60_only + android_only + android_or_S60 + ["def main():","def rest_of_main():",'if __name__=="__main__":',"def transliterates_differently(text,lang):","def primitive_synthloop():","def appendVocabFileInRightLanguages():",'def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):',"def sanityCheck(text,language,pauseOnError=0):","def localise(s):","def singular(number,s):","def readText(l):","def asUnicode(x):","def updateSettingsFile(fname,newVals):","def clearScreen():","def startBrowser(url):",'def getYN(msg,defaultIfEof="n"):',"def waitOnMessage(msg):","def interrupt_instructions():","def parseSynthVocab(fname,forGUI=0):","def scanSamples_inner(directory,retVal,doLimit):","def getLsDic(directory):","def check_has_variants(directory,ls):","def exec_in_a_func(x):","def scanSamples(directory=None):","def synth_from_partials(text,lang,voice=None,isStart=1):","def partials_langname(lang):","if partialsDirectory and isDirectory(partialsDirectory):",'for zipToCheck in ["yali-voice","yali-lower","cameron-voice"]:','def stripPuncEtc(text):','def can_be_synthesized(fname,dirBase=None,lang=None):','def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=None):','def textof(fname):','if synthCache and transTbl in synthCache_contents:','if synthCache:','class Partials_Synth(Synth):','def abspath_from_start(p):','class SynthEvent(Event):','def pinyin_uColon_to_V(pinyin):','def synth_event(language,text,is_prompt=0):','def get_synth_if_possible(language,warn=1,to_transliterate=False):','if wavPlayer_override or (unix and not macsound and not (oss_sound_device=="/dev/sound/dsp" or oss_sound_device=="/dev/dsp")):','def fix_compatibility(utext):','def read_chinese_number(num):','def preprocess_chinese_numbers(utext,isCant=0):','def intor0(v):','def fix_pinyin(pinyin,en_words):','def fix_commas(text):','def shell_escape(text):','class SimpleZhTransliterator(object):','def sort_out_pinyin_3rd_tones(pinyin):','def ensure_unicode(text):','def unzip_and_delete(f,specificFiles="",ignore_fail=0):','class Synth(object):','def quickGuess(letters,lettersPerSec):',"def changeToDirOf(file,winsound_also=0):",'if app or appuifw or android:','def subst_some_synth_for_synthcache(events):','def decide_subst_synth(cache_fname):','if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam") or android:','if len(sys.argv)>1:','def readSettings(f):','def exc_info(inGradint=True):','if not fileExists(configFiles[0]):','def u8strip(d):',]
+  to_omit = tk_only + not_S60_or_android + not_android + riscos_only + mac_only + desktop_only + winCE_only + S60_only + android_only + android_or_S60 + [
+"def main():",
+"def rest_of_main():",
+'if __name__=="__main__":',
+"def transliterates_differently(text,lang):",
+"def primitive_synthloop():",
+"def appendVocabFileInRightLanguages():",
+'def delOrReplace(L2toDel,L1toDel,newL2,newL1,action="delete"):',
+"def generalCheck(text,language,pauseOnError=0):",
+"def localise(s):",
+"def singular(number,s):",
+"def readText(l):",
+"def asUnicode(x):",
+"def updateSettingsFile(fname,newVals):",
+"def clearScreen():",
+"def startBrowser(url):",'def getYN(msg,defaultIfEof="n"):',"def waitOnMessage(msg):",
+"def interrupt_instructions():",
+"def parseSynthVocab(fname,forGUI=0):",
+"def scanSamples_inner(directory,retVal,doLimit):",
+"def getLsDic(directory):",
+"def check_has_variants(directory,ls):",
+"def exec_in_a_func(x):",
+"def scanSamples(directory=None):",
+"def synth_from_partials(text,lang,voice=None,isStart=1):",
+"def partials_langname(lang):",
+"if partialsDirectory and isDirectory(partialsDirectory):",
+'for zipToCheck in ["yali-voice","yali-lower","cameron-voice"]:',
+'def stripPuncEtc(text):',
+'def can_be_synthesized(fname,dirBase=None,lang=None):',
+'def synthcache_lookup(fname,dirBase=None,printErrors=0,justQueryCache=0,lang=None):',
+'def textof(fname):',
+'if synthCache and transTbl in synthCache_contents:',
+'if synthCache:',
+'class Partials_Synth(Synth):',
+'def abspath_from_start(p):',
+'class SynthEvent(Event):',
+'def pinyin_uColon_to_V(pinyin):',
+'def synth_event(language,text,is_prompt=0):',
+'def get_synth_if_possible(language,warn=1,to_transliterate=False):',
+'if wavPlayer_override or (unix and not macsound and not (oss_sound_device=="/dev/sound/dsp" or oss_sound_device=="/dev/dsp")):',
+'def fix_compatibility(utext):',
+'def read_chinese_number(num):',
+'def preprocess_chinese_numbers(utext,isCant=0):',
+'def intor0(v):',
+'def fix_pinyin(pinyin,en_words):',
+'def fix_commas(text):',
+'def shell_escape(text):',
+'class SimpleZhTransliterator(object):',
+'def sort_out_pinyin_3rd_tones(pinyin):',
+'def ensure_unicode(text):',
+'def unzip_and_delete(f,specificFiles="",ignore_fail=0):',
+'class Synth(object):',
+'def quickGuess(letters,lettersPerSec):',"def changeToDirOf(file,winsound_also=0):",'if app or appuifw or android:',
+'def subst_some_synth_for_synthcache(events):',
+'def decide_subst_synth(cache_fname):',
+'if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam") or android:',
+'if len(sys.argv)>1:',
+'def readSettings(f):',
+'def exc_info(inGradint=True):',
+'if not fileExists(configFiles[0]):',
+'def u8strip(d):']
 else: assert 0, "Unrecognised version on command line"
 
 revertToIndent = lastIndentLevel = indentLevel = -1

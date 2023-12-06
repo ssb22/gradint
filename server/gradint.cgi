@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #  (either Python 2 or Python 3)
 
-program_name = "gradint.cgi v1.33 (c) 2011,2015,2017-23 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.34 (c) 2011,2015,2017-23 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@ path_add = "$HOME/gradint/bin" # include sox, lame, espeak, maybe oggenc
 lib_path_add = "$HOME/gradint/lib"
 espeak_data_path = "$HOME/gradint"
 
-import os, os.path, sys, cgi, urllib, time
+import os, os.path, sys, cgi, urllib, time, re
 try: from commands import getoutput # Python 2
 except: from subprocess import getoutput # Python 3
 try: from urllib import quote,quote_plus,unquote # Python 2
@@ -74,8 +74,10 @@ reinit_gradint()
 
 def main():
   if "id" in query: # e.g. from redirectHomeKeepCookie
-    os.environ["HTTP_COOKIE"]="id="+query.getfirst("id")
-    print ('Set-Cookie: id=' + query.getfirst("id")+'; expires=Wed, 1 Dec 2036 23:59:59 GMT')
+    queryID = query.getfirst("id")
+    if not re.match("[A-Za-z0-9_.-]",queryID): return htmlOut("Bad query.&nbsp; Bad, bad query.") # to avoid cluttering the disk if we're being given random queries by an attacker.  IDs we generate are numeric only, but allow alphanumeric in case server admin wants to generate them.  Don't allow =, parens, etc (likely random SQL query)
+    os.environ["HTTP_COOKIE"]="id="+queryID
+    print ('Set-Cookie: id=' + queryID+'; expires=Wed, 1 Dec 2036 23:59:59 GMT') # TODO: S2G
   if has_userID(): setup_userID() # always, even for justSynth, as it may include a voice selection (TODO consequently being called twice in many circumstances, could make this more efficient)
   filetype=""
   if "filetype" in query: filetype=query.getfirst("filetype")
@@ -95,7 +97,7 @@ def main():
     gradint.justSynthesize="0"
     if "l2w" in query and query.getfirst("l2w"):
       gradint.startBrowser=lambda *args:0
-      if query.getfirst("l2")=="zh" and gradint.sanityCheck(query.getfirst("l2w"),"zh"): gradint.justSynthesize += "#en Pinyin needs tones.  Please go back and add tone numbers." # speaking it because alert box might not work and we might be being called from HTML5 Audio stuff (TODO maybe duplicate sanityCheck in js, if so don't call HTML5 audio, then we can have an on-screen message here)
+      if query.getfirst("l2")=="zh" and gradint.generalCheck(query.getfirst("l2w"),"zh"): gradint.justSynthesize += "#en Pinyin needs tones.  Please go back and add tone numbers." # speaking it because alert box might not work and we might be being called from HTML5 Audio stuff (TODO maybe duplicate generalCheck in js, if so don't call HTML5 audio, then we can have an on-screen message here)
       else: gradint.justSynthesize += "#"+query.getfirst("l2").replace("#","").replace('"','')+" "+query.getfirst("l2w").replace("#","").replace('"','')
     if "l1w" in query and query.getfirst("l1w"): gradint.justSynthesize += "#"+query.getfirst("l1").replace("#","").replace('"','')+" "+query.getfirst("l1w").replace("#","").replace('"','')
     if gradint.justSynthesize=="0": return htmlOut('You must type a word in the box before pressing the Speak button.'+backLink) # TODO maybe add a Javascript test to the form also, IF can figure out if window.alert works
@@ -103,9 +105,9 @@ def main():
   elif "add" in query: # add to vocab (l1,l2 the langs, l1w,l2w the words)
     if "l2w" in query and query.getfirst("l2w") and "l1w" in query and query.getfirst("l1w"):
       gradint.startBrowser=lambda *args:0
-      if query.getfirst("l2")=="zh": scmsg=gradint.sanityCheck(query.getfirst("l2w"),"zh")
-      else: scmsg=None
-      if scmsg: htmlOut(gradint.B(scmsg)+gradint.B(backLink))
+      if query.getfirst("l2")=="zh": gcmsg=gradint.generalCheck(query.getfirst("l2w"),"zh")
+      else: gcmsg=None
+      if gcmsg: htmlOut(gradint.B(gcmsg)+gradint.B(backLink))
       else: addWord(query.getfirst("l1w"),query.getfirst("l2w"),query.getfirst("l1"),query.getfirst("l2"))
     else: htmlOut('You must type words in both boxes before pressing the Add button.'+backLink) # TODO maybe add a Javascript test to the form also, IF can figure out a way to tell whether window.alert() works or not
   elif "bulkadd" in query: # bulk adding, from authoring options

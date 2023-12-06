@@ -1295,10 +1295,10 @@ def openDirectory(dir,inGuiThread=0):
         if inGuiThread: tkMessageBox.showinfo(app.master.title(),msg)
         else: waitOnMessage(msg)
 
-def sanityCheck(text,language,pauseOnError=0): # text is utf-8; returns error message if any
+def generalCheck(text,language,pauseOnError=0): # text is utf-8; returns error message if any
     if not text: return # always OK empty strings
     if pauseOnError:
-        ret = sanityCheck(text,language)
+        ret = generalCheck(text,language)
         if ret: waitOnMessage(ret)
         return ret
     if language=="zh":
@@ -1329,7 +1329,7 @@ def s60_addVocab():
     result = appuifw.multi_query(label1,label2) # unfortunately multi_query can't take default items (and sometimes no T9!), but Form is too awkward (can't see T9 mode + requires 2-button save via Options) and non-multi query would be even more modal
     if not result: return # cancelled
     l2,l1 = result # guaranteed to both be populated
-    while sanityCheck(l2.encode('utf-8'),secondLanguage,1):
+    while generalCheck(l2.encode('utf-8'),secondLanguage,1):
         l2=appuifw.query(label1,"text",u"")
         if not l2: return # cancelled
     # TODO detect duplicates like Tk GUI does?
@@ -1371,7 +1371,7 @@ def s60_viewVocab():
           oldL1,oldL2 = l1,l2
           if action==2:
               first=1
-              while first or (l2 and sanityCheck(l2.encode('utf-8'),secondLanguage,1)):
+              while first or (l2 and generalCheck(l2.encode('utf-8'),secondLanguage,1)):
                   first=0 ; l2=appuifw.query(ensure_unicode(secondLanguage),"text",l2)
               if not l2: continue
           elif action==3:
@@ -1386,7 +1386,7 @@ def s60_viewVocab():
 def android_addVocab():
   while True:
     l2 = None
-    while not l2 or sanityCheck(l2.encode('utf-8'),secondLanguage,1):
+    while not l2 or generalCheck(l2.encode('utf-8'),secondLanguage,1):
       l2 = android.dialogGetInput("Add word","Word in %s" % localise(secondLanguage)).result
       if not l2: return # cancelled
     l1 = android.dialogGetInput("Add word","Meaning in %s" % localise(firstLanguage)).result
@@ -1585,7 +1585,7 @@ def gui_event_loop():
             if not text1 and not text2: app.todo.alert=u"Before pressing the "+localise("Speak")+u" button, you need to type the text you want to hear into the box."
             else:
               if text1.startswith(B('#')): msg="" # see below
-              else: msg=sanityCheck(text1,secondLanguage)
+              else: msg=generalCheck(text1,secondLanguage)
               if msg: app.todo.alert=ensure_unicode(msg)
               else:
                 app.set_watch_cursor = 1 ; app.toRestore = []
@@ -1706,7 +1706,7 @@ def gui_event_loop():
                 app.todo.alert=msg+" "+localise("Repeat count is 0, so we cannot reduce it for extra revision.")
         elif menu_response=="add":
             text1 = asUnicode(app.Text1.get()).encode('utf-8') ; text2 = asUnicode(app.Text2.get()).encode('utf-8')
-            msg=sanityCheck(text1,secondLanguage)
+            msg=generalCheck(text1,secondLanguage)
             if msg: app.todo.alert=ensure_unicode(msg)
             else:
                 o=appendVocabFileInRightLanguages()
