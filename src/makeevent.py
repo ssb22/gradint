@@ -363,7 +363,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
       except OSError: pass
   if partials_raw_mode:
     (wtype,wrate,wchannels,wframes,wbits) = sndhdr.what(partialsDirectory+os.sep+"header"+dotwav)
-    partials_raw_0bytes = int(betweenPhrasePause*wrate)*wchannels*(wbits/8)
+    partials_raw_0bytes = int(betweenPhrasePause*wrate)*wchannels*int(wbits/8)
 else: synth_partials_voices,partials_raw_mode = {},None
 
 if checkIn("cant",synth_partials_voices): synth_partials_voices["zhy"]=synth_partials_voices["zh-yue"]=synth_partials_voices["cant"]

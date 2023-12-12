@@ -450,7 +450,7 @@ def pcmlen(file):
         if wrate==6144: # might be a .3gp from android_recordFile
             d = open(file).read()
             if 'mdat' in d: return (len(d)-d.index('mdat'))/1500.0 # this assumes the bitrate is roughly the same as in my tests, TODO figure it out properly
-    divisor = wrate*wchannels*wbits/8 # do NOT optimise with (wbits>>3), because wbits could be 4
+    divisor = wrate*wchannels*int(wbits/8) # do NOT optimise with (wbits>>3), because wbits could be 4
     if not divisor: raise IOError("Cannot parse sample format of '%s': %s" % (file,repr(header)))
     return (filelen(file) - 44.0) / divisor # 44 is a typical header length, and .0 to convert to floating-point
 
