@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #   (Python 2 or Python 3, but more fully tested on 2)
 
-program_name = "gradint v3.076 (c) 2002-23 Silas S. Brown. GPL v3+."
+program_name = "gradint v3.077 (c) 2002-23 Silas S. Brown. GPL v3+."
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -32,7 +32,9 @@ if sys.version_info[0]>2:
     def chr(x): return unichr(x).encode('latin1')
     from subprocess import getoutput
     popenRB,popenWB = "r","w"
-    def unicode(b,enc): return b.decode(enc)
+    def unicode(b,enc):
+        if type(b)==str: return b
+        return b.decode(enc)
 else: # Python 2
     def sort(l,c): l.sort(c)
     popenRB,popenWB = "rb","wb"
