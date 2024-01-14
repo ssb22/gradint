@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # (should work in both Python 2 and Python 3)
 
-# Simple sound-playing server v1.57
+# Simple sound-playing server v1.58
 # Silas S. Brown - public domain - no warranty
 
 # connect to port 8124 (assumes behind firewall)
@@ -14,7 +14,7 @@
 import socket, select, os, sys, os.path, time, re
 for a in sys.argv[1:]:
   if a.startswith("--rpi-bluetooth-setup"): # tested on Raspberry Pi 400 with Raspbian 11 and Raspbian 12; also tested on Raspberry Pi Zero W with Raspbian 10 Lite (with the device already paired: needed to say "scan on", "discovery on", remove + pair in bluetoothctl).  Send Eth=(bluetooth Ethernet addr) to start.  Note that the setup command reboots the system.
-    os.system('(echo "[Unit]";echo "Description=Gradint player utility";echo "[Service]";echo "Type=oneshot";echo "ExecStart='+os.path.join(os.getcwd(),sys.argv[0])+'";echo "WorkingDirectory='+os.path.getcwd()+'";echo User="$(whoami)";echo "[Install]";echo "WantedBy=multi-user.target") > player.service && sudo mv player.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable player && chmod +x '+sys.argv[0]+' && awk '+"'"+'// {print} /^import / {print "os.system('+"'"+'"'+"'"+'"'+"'"+'pulseaudio --start'+"'"+'"'+"'"+'"'+"'"+')"}'+"'"+' < '+sys.argv[0]+' > .playerTMP && cat .playerTMP > '+sys.argv[0]+' && rm .playerTMP && sudo bash -c "apt-get -y install sox mpg123 pulseaudio pulseaudio-module-bluetooth && usermod -G bluetooth -a $USER && (echo load-module module-switch-on-connect;echo load-module module-bluetooth-policy;echo load-module module-bluetooth-discover) >> /etc/pulse/default.pa && (echo [General];echo FastConnectable = true) >> /etc/bluetooth/main.conf && reboot"') # (eee off: improves reliability of gigabit ethernet on RPi400)
+    os.system('(echo "[Unit]";echo "Description=Gradint player utility";echo "[Service]";echo "Type=oneshot";echo "ExecStart='+os.path.join(os.getcwd(),sys.argv[0])+'";echo "WorkingDirectory='+os.path.getcwd()+'";echo User="$(whoami)";echo "[Install]";echo "WantedBy=multi-user.target") > player.service && sudo mv player.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable player && chmod +x '+sys.argv[0]+' && sudo bash -c "apt-get -y install sox mpg123 pulseaudio pulseaudio-module-bluetooth && usermod -G bluetooth -a $USER && (echo load-module module-switch-on-connect;echo load-module module-bluetooth-policy;echo load-module module-bluetooth-discover) >> /etc/pulse/default.pa && (echo [General];echo FastConnectable = true) >> /etc/bluetooth/main.conf && reboot"') # (eee off: improves reliability of gigabit ethernet on RPi400)
   elif a=="--aplay": use_aplay = True # aplay and madplay, for older embedded devices, NOT tested together with --rpi-bluetooth-* above
   elif a.startswith("--delegate="): delegate_to_check=a.split('=')[1] # will ping that IP and delegate all sound to it when it's up.  E.g. if it has better amplification but it's not always switched on.
   elif a.startswith("--chime="): chime_mp3=a.split('=')[1] # if clock bell desired, e.g. echo '$i-14vfff$c48o0l1b- @'|mwr2ly > chime.ly && lilypond chime.ly && timidity -Ow chime.midi && audacity chime.wav (amplify + trim) + mp3-encode (keep default 44100 sample rate so ~38 frames per sec).  Not designed to work with --delegate.  Pi1's 3.5mm o/p doesn't sound very good with this bell.
@@ -69,9 +69,9 @@ while True:
         continue
     elif d=='QUIT':
         s.close() ; break
-    elif d=="Eth=": # Eth=ethernet address, to connect via Bluetooth, tested on Raspberry Pi 400 with Raspbian 11
+    elif d=="Eth=": # Eth=ethernet address to connect via Bluetooth (see --rpi-bluetooth-setup above)
         eth = S(c.recv(17))
-        assert re.match("^[A-Fa-f0-9:]*$",eth)
+        assert re.match("^[A-Fa-f0-9:]+$",eth)
         os.system("M=/dev/null;E="+eth+";if ! pacmd list-sinks | grep "+eth.replace(":","_")+" >$M; then while true; do bluetoothctl --timeout 1 disconnect | grep Missing >$M||sleep 5;T=5;while ! bluetoothctl --timeout $T connect $E | tee $M | egrep \"Connection successful|Device $E Connected: yes\"; do sleep 5; T=10;M=/dev/stderr;bluetoothctl --timeout 1 devices;echo Retrying $E; done ; Got=0; for Try in 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z; do if pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then Got=1; break; fi; sleep 1; done; if [ $Got = 1 ] ; then break; fi; done; fi; pacmd set-default-sink bluez_sink."+eth.replace(":","_")+".a2dp_sink") # ; play /usr/share/scratch/Media/Sounds/Animal/Dog1.wav # (not really necessary if using 'close the socket' to signal we're ready)
         c.close() ; continue
     elif d=="Eth0":
