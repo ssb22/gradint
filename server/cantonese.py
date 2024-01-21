@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.47 (c) 2013-15,2017-23 Silas S. Brown.  License: GPL
+# v1.48 (c) 2013-15,2017-24 Silas S. Brown.  License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -237,7 +237,10 @@ def jyutping_to_yale_u8(j): # returns space-separated syllables
       z = re.sub(re.escape(x)+r"(.)",r"\1"+y,z)
     return z
   if type(u"")==type(""): U=str # Python 3
-  else: U=unicode # Python 2
+  else: # Python 2
+    def U(x):
+      try: return x.decode('utf-8') # might be an emoji pass-through
+      except: return x # already Unicode
   return unicodedata.normalize('NFC',mysub(U(jyutping_to_yale_TeX(j).replace(r"\i{}","i").replace(r"\I{}","I")),[(r"\`",u"\u0300"),(r"\'",u"\u0301"),(r"\=",u"\u0304")])).encode('utf-8')
 
 def superscript_digits_TeX(j):
