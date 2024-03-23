@@ -599,7 +599,7 @@ def beepCmd(soxParams,fname):
 class ShSoundCollector(object):
     def __init__(self):
         self.file2command = {}
-        self.commands = ["C() { echo -n $1% completed $'\r' 1>&2;}"]
+        self.commands = ["C() { echo -n $1% completed $'\r' >&2;}"]
         self.seconds = self.lastProgress = 0
         if write_to_stdout: self.o=sys.stdout
         else: self.o = open(outputFile,"wb")
@@ -656,7 +656,7 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,sox_signed) # S=script P=params for 
     def finished(self):
         if outputFile_appendSilence: self.addSilence(outputFile_appendSilence,False)
         outfile_writeBytes(self.o,"\n") # so "tail" has a start of a line
-        self.commands.append("C 100;echo 1>&2;exit")
+        self.commands.append("C 100;echo >&2;exit")
         for c in self.commands: outfile_writeBytes(self.o,c+"\n")
         outfile_writeBytes(self.o,"tail -%d \"$S\" | bash\n" % (len(self.commands)+1))
         if not write_to_stdout:

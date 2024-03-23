@@ -63,7 +63,7 @@ if winsound:
         try: ctypes.cdll.commdlg
         except: WMstandard = True
 
-if macsound and __name__=="__main__": os.system("clear 1>&2") # so warnings etc start with a clear terminal (1>&2 just in case using stdout for something else)
+if macsound and __name__=="__main__": os.system("clear >&2") # so warnings etc start with a clear terminal (>&2 just in case using stdout for something else)
 if riscos_sound: sys.stderr.write("Loading Gradint...\n") # in case it takes a while
 
 try: import androidhelper as android

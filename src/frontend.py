@@ -150,7 +150,7 @@ def clearScreen():
         warnings_printed = []
         return
     if winsound or mingw32: os.system("cls")
-    else: os.system("clear 1>&2") # (1>&2 in case using stdout for something else)
+    else: os.system("clear >&2") # (>&2 in case using stdout for something else)
     return True
 
 cancelledFiles = []
@@ -1482,9 +1482,9 @@ if ! [ -e lame*.tar.gz ]; then
   fi
   if grep downloads.sourceforge lame.tar.gz 2>/dev/null; then
     Link="$(cat lame.tar.gz|grep downloads.sourceforge|head -1)"
-    echo "Got HTML: $Link" 1>&2
+    echo "Got HTML: $Link" >&2
     Link="$(echo "$Link"|sed -e 's/.*http/http/' -e 's,.*/projects,http://sourceforge.net/projects,' -e 's/".*//')"
-    echo "Following link to $Link" 1>&2
+    echo "Following link to $Link" >&2
     if ! $Curl "$Link" > lame.tar.gz; then
       rm -f lame.tar.gz; exit 1
     fi
