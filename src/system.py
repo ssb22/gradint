@@ -224,7 +224,7 @@ if not fileExists(configFiles[0]):
 
 # directory should be OK by now
 if sys.platform.find("ymbian")>-1: sys.path.insert(0,os.getcwd()+os.sep+"lib")
-import time,sched,sndhdr,random,math,pprint,codecs
+import time,sched,random,math,pprint,codecs
 
 def exc_info(inGradint=True):
     import sys # in case it's been gc'd

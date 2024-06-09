@@ -362,7 +362,7 @@ if partialsDirectory and isDirectory(partialsDirectory):
       except IOError: pass # ignore write errors as it's only a cache
       except OSError: pass
   if partials_raw_mode:
-    (wtype,wrate,wchannels,wframes,wbits) = sndhdr.what(partialsDirectory+os.sep+"header"+dotwav)
+    (wtype,wrate,wchannels,wframes,wbits) = swhat(partialsDirectory+os.sep+"header"+dotwav)
     partials_raw_0bytes = int(betweenPhrasePause*wrate)*wchannels*int(wbits/8)
 else: synth_partials_voices,partials_raw_mode = {},None
 
@@ -476,7 +476,8 @@ def optimise_partial_playing(ce):
         return s
     else: return ce # can't figure out an optimisation in these circumstances
 def simplified_header(fname):
-    h=sndhdr.what(fname)
+    # called by optimise_partial_playing(_list)
+    h=swhat(fname)
     # ignore num frames i.e. h[3], just compare formats
     if h: return h[:3]+h[4:]
 def optimise_partial_playing_list(ceList):

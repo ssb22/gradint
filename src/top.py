@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #   (Python 2 or Python 3, but more fully tested on 2)
 
-program_name = "gradint v3.078 (c) 2002-24 Silas S. Brown. GPL v3+."
+program_name = "gradint v3.079 (c) 2002-24 Silas S. Brown. GPL v3+."
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -45,11 +45,11 @@ else: # Python 2
     try: True
     except: exec("True = 1 ; False = 0")
 def readB(f,m=None):
-    if hasattr(f,"buffer"): f=f.buffer # Python 3 non-"b" file
+    if hasattr(f,"buffer"): f0,f=f,f.buffer # Python 3 non-"b" file
     if m: return f.read(m)
     else: return f.read() # no "None" in Python 2
 def writeB(f,b):
-    if hasattr(f,"buffer"): f=f.buffer # Python 3 non-"b" file
+    if hasattr(f,"buffer"): f0,f=f,f.buffer # Python 3 non-"b" file
     f.write(b)
 def B(x):
     if type(x)==bytes: return x

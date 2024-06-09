@@ -439,12 +439,20 @@ def lengthOfSound(file):
     if B(file).lower().endswith(B(dotmp3)): return rough_guess_mp3_length(file)
     else: return pcmlen(file)
 
+if type("")==type(u""): # Python 3
+    import wave
+    def swhat(file):
+        if file.lower().endswith(os.extsep+"wav"):
+            o = wave.open(file,'rb')
+            return "wav",o.getframerate(),o.getnchannels(),o.getnframes(),8*o.getsampwidth()
+        else: # fallback non-WAV
+            import sndhdr # before Python 3.13
+            return sndhdr.what(file)
+else: # Python 2
+    import sndhdr
+    swhat = sndhdr.what
 def pcmlen(file):
-    header = sndhdr.what(file)
-    if not header:
-        # some Python 3 installations seem less able to run sndhdr
-        if gotSox: return len(readB(os.popen("sox \""+file+"\" -t raw "+sox_8bit+" "+sox_signed+" -c 1 -r 8000 - ",popenRB)))/8000.0
-        else: raise IOError("sndhdr can't analyse file '%s'" % (file,))
+    header = swhat(file)
     (wtype,wrate,wchannels,wframes,wbits) = header
     if android:
         if wrate==6144: # might be a .3gp from android_recordFile
