@@ -47,7 +47,8 @@ otherLanguages = ["cant","ko","jp"]
 # able to tell the difference between cant_en.wav and an
 # ordinary English prompt and might use it wrongly.
 
-possible_otherLanguages = ["cant","ko","jp","en","zh"]
+possible_otherLanguages = ["cant","ko","jp","en","zh",
+                           "zhy","zh-yue"]
 
 # You can also fill in otherFirstLanguages below
 # (using the same ["item","item"] format) to
