@@ -104,15 +104,19 @@ class ProgressDatabase(object):
         self._py3_fix()
     def _py3_fix(self):
         if not type("")==type(u""): return
-        # we're Python 3, and we might have just loaded data from Python 2
+        # we're Python 3, and we might have just loaded data from Python 2.  Might have to encode as Latin-1 then decode as UTF-8.  But don't do this if file was in fact saved by Python 3.
+        if any(ord(c) > 255 for l in [self.data,self.unavail] for i in l for j in i[1:] for k in ([j] if type(j)==str else j) for c in k): return # must have been written by the Python 3 version
         for l in [self.data,self.unavail]:
             for i in range(len(l)):
                 for j in [1,2]:
                     if type(l[i][j])==str: l[i]=l[i][:j]+(S2(LB(l[i][j])),)+l[i][j+1:]
                     elif type(l[i][j])==list: l[i]=l[i][:j]+(map(lambda x:S2(LB(x)),l[i][j]),)+l[i][j+1:]
+    def _py3_fix_on_save(self):
+        if type("")==type(u"") and not(any(ord(c) > 255 for l in [self.data,self.unavail] for i in l for j in i[1:] for k in ([j] if type(j)==str else j) for c in k)): self.unavail.append((1,u"\u2014","[Py3]")) # ensure there's at least one, to prevent a py3_fix redo
     def save(self,partial=0):
         if need_say_where_put_progress: show_info("Saving "+cond(partial,"partial ","")+"progress to "+progressFile+"... ")
         else: show_info("Saving "+cond(partial,"partial ","")+"progress... ")
+        self._py3_fix_on_save()
         global progressFileBackup
         # Remove 0-repeated items (helps editing by hand)
         data = [] # don't use self.data - may want to make another lesson after saving
@@ -159,6 +163,7 @@ class ProgressDatabase(object):
         if not app and not appuifw and not android: show_info("done\n")
     def save_binary(self,data): # save a pickled version if possible (no error if not)
         if not (pickledProgressFile and pickle): return
+        self._py3_fix_on_save()
         try:
             if compress_progress_file:
               if paranoid_file_management: fn=os.tempnam()

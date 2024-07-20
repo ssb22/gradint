@@ -672,6 +672,7 @@ class ESpeakSynth(Synth):
               foundLetter=0
               if l.startswith(B("Translate ")):
                   toAppend=l[l.index(B("'"))+1:-1].replace(LB("\xc3\xbc"),B("v"))
+                  if toAppend==LB("\xc2\xa0"): continue # stray no-break space (don't let this interfere with being able to do partials)
                   if not (checkIn(toAppend,en_words) and r and toAppend==r[-1]):
                     # TODO what about partial English words? e.g. try "kao3 testing" - translate 'testing' results in a translate of 'test' also (which assumes it's already in en mode), resulting in a spurious word "test" added to the text box; not sure how to pick this up without parsing the original text and comparing with the Replace rules that occurred
                     r.append(toAppend)
