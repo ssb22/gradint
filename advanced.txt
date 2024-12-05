@@ -202,7 +202,7 @@ systemVoice = "en"
 #    - Festival Lite on Windows (if all else fails) :
 #      put flite.exe in the gradint folder
 #
-#    - Linux: install Festival, or flite if you want a US accent
+#    - GNU/Linux: install Festival, or flite for US accent
 #
 #    - S60: the phone's built-in speech can be used
 #
@@ -211,6 +211,22 @@ systemVoice = "en"
 #      version of Jonathan Duddington's !Speak, or the even
 #      older "Speech!" utility.  These can be used only for
 #      playing in real-time, not for generating files.
+
+# Coqui voices are experimentally supported on GNU/Linux.
+# Setup: pip install coqui-tts[server,zh,ja,ko]
+# Then download the voices you want, e.g.:
+# from TTS.api import TTS;langs = {}
+# for m in TTS().list_models(): langs.setdefault(m.split('/')[1].split('-')[0],[]).append(m)
+# 
+# TTS(langs["zh"][0])
+# TTS('tts_models/en/jenny/jenny')
+# (If any model crashes during download, be sure to delete the
+# result from ~/.local/share/tts before running Gradint.  For
+# example vocoder_models--ja--kokoro--hifigan_v1 may crash.
+# I did say support for these voices is experimental.)
+# Gradint detects voices that have been downloaded
+# (but prefer_espeak overrides this).  The Chinese
+# voice does NOT support pinyin.
 
 # You can also set extra_speech to a list of
 # (language prefix, command), for example:
@@ -351,7 +367,7 @@ lily_file = "C:\\Program Files\\NeoSpeech\\Lily16\\data-common\\userdict\\userdi
 # somewhere under C:\Program Files\VW\VT\Lily\M16-SAPI5\lib\
 # but I don't know exactly)
 
-# If you want to use SAPI under WINE in Linux
+# If you want to use SAPI under WINE in GNU/Linux
 # then you can set ptts_program:
 ptts_program = None
 # (hint: run winecfg and set Windows version to Millenium (ME)
@@ -760,7 +776,7 @@ gui_output_directory = "output"
 # in which case the first directory that EXISTS will be used
 # (or the last one on the list if all else fail).
 # Useful if the directory to your MP3 player only appears when
-# it's plugged in for example.  With Linux automounters you can
+# it's plugged in for example.  With GNU/Linux automounters
 # set "/media/*" as one of the directories, and it will expand to
 # whatever removable device is mounted IF there is only one.
 

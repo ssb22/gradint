@@ -945,6 +945,26 @@ class FestivalSynth(Synth):
         if self.theProcess: self.theProcess.close()
         self.theProcess = None
 
+class CoquiSynth(Synth):
+    def __init__(self):
+        Synth.__init__(self)
+        self.synths = {}
+    def works_on_this_platform(self):
+        if not unix: return 0 # I'm unable to test elsewhere
+        self.base = os.environ.get("HOME","")+".local/share/tts"
+        if not isDirectory(self.base): return 0 # As voices require large downloads the first time they are used, we'll use only already-downloaded voices
+    def supports_language(self,lang): return any(a.startswith("tts_models--"+lang+"-") for a in os.listdir(self.base)) # TODO: might not want to use all downloaded models, or might not want to use for all input types (e.g. zh does not support pinyin)
+    def guess_length(self,lang,text): return quickGuess(len(text),6 if lang in ["zh"] else 12) # need better estimate
+    def makefile(self,lang,text):
+        text = ensure_unicode(text)
+        if lang=="zh": text += u"\u3002" # otherwise that model can glitch and repeat the last word of the phrase
+        if not lang in self.synths:
+            import torch;from TTS.api import TTS # shouldn't fault if models are downloaded to ~/.local/share/tts (unless uninstalled and not cleaned up...)
+            self.synths[lang]=TTS([a if a.startswith("tts_models--"+lang+"-") for a in os.listdir(self.base)][0].replace("--","/")).to("cuda" if torch.cuda.is_available() else "cpu")
+        fname = os.tempnam()+dotwav
+        self.synths[lang].tts_to_file(text,file_path=fname)
+        return fname
+
 class GeneralSynth(Synth):
     def __init__(self): Synth.__init__(self)
     def supports_language(self,lang):
@@ -991,7 +1011,7 @@ for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt 
        all_synth_classes.append(OSXSynth_Say)
        all_synth_classes.append(OSXSynth_OSAScript) # (prefer _Say if >=10.3 because it's faster)
     elif s.lower()=="sapi": all_synth_classes.append(PttsSynth)
-all_synth_classes += [FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
+all_synth_classes += [CoquiSynth,FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
 prefer_espeak = prefer_espeak.split()
 
 viable_synths = []
