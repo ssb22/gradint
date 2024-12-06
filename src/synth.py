@@ -932,13 +932,13 @@ class FestivalSynth(Synth):
     if oss_sound_device:
       def play(self,lang,text):
         if not self.theProcess: self.startProcess()
-        self.theProcess.write("(Parameter.set 'Audio_Command \"play --device=%s \$FILE vol %.1f\")\n(tts_text \"%s\" nil)\n" % (oss_sound_device,5*soundVolume,text)) # (tts_text text nil) can be better than (SayText text) because it splits into multiple utterances if necessary
+        self.theProcess.write("(Parameter.set 'Audio_Command \"play --device=%s \\$FILE vol %.1f\")\n(tts_text \"%s\" nil)\n" % (oss_sound_device,5*soundVolume,text)) # (tts_text text nil) can be better than (SayText text) because it splits into multiple utterances if necessary
         self.theProcess.flush()
     # else send it via a file, because we haven't got code to give it to play to the other devices directly
     def makefile(self,lang,text):
         if not self.theProcess: self.startProcess()
         fname = os.tempnam()+dotwav
-        self.theProcess.write("(Parameter.set 'Audio_Command \"sox \$FILE %s vol 5\")\n(SayText \"%s\")\n" % (fname,text))
+        self.theProcess.write("(Parameter.set 'Audio_Command \"sox \\$FILE %s vol 5\")\n(SayText \"%s\")\n" % (fname,text))
         self.theProcess.flush()
         return fname
     def finish_makefile(self):
@@ -951,8 +951,8 @@ class CoquiSynth(Synth):
         self.synths = {}
     def works_on_this_platform(self):
         if not unix: return 0 # I'm unable to test elsewhere
-        self.base = os.environ.get("HOME","")+".local/share/tts"
-        if not isDirectory(self.base): return 0 # As voices require large downloads the first time they are used, we'll use only already-downloaded voices
+        self.base = os.environ.get("HOME","")+"/.local/share/tts"
+        return isDirectory(self.base) # Voices require large downloads the first time they are used, so we'll use only already-downloaded voices
     def supports_language(self,lang): return any(a.startswith("tts_models--"+lang+"-") for a in os.listdir(self.base)) # TODO: might not want to use all downloaded models, or might not want to use for all input types (e.g. zh does not support pinyin)
     def guess_length(self,lang,text): return quickGuess(len(text),6 if lang in ["zh"] else 12) # need better estimate
     def makefile(self,lang,text):
@@ -960,7 +960,11 @@ class CoquiSynth(Synth):
         if lang=="zh": text += u"\u3002" # otherwise that model can glitch and repeat the last word of the phrase
         if not lang in self.synths:
             import torch;from TTS.api import TTS # shouldn't fault if models are downloaded to ~/.local/share/tts (unless uninstalled and not cleaned up...)
-            self.synths[lang]=TTS([a if a.startswith("tts_models--"+lang+"-") for a in os.listdir(self.base)][0].replace("--","/")).to("cuda" if torch.cuda.is_available() else "cpu")
+            # We can assume Python 3 by this point, but must still use syntax compatible with Python 2
+            for a in sorted(os.listdir(self.base)):
+                if a.startswith("tts_models--"+lang+"-"):
+                    self.synths[lang]=TTS(a.replace("--","/")).to(cond(torch.cuda.is_available(),"cuda","cpu"))
+                    break
         fname = os.tempnam()+dotwav
         self.synths[lang].tts_to_file(text,file_path=fname)
         return fname
