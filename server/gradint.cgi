@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #  (either Python 2 or Python 3)
 
-program_name = "gradint.cgi v1.36 (c) 2011,2015,2017-24 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.37 (c) 2011,2015,2017-24 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@ lib_path_add = "$HOME/gradint/lib"
 espeak_data_path = "$HOME/gradint"
 
 import os, os.path, sys, cgi, urllib, time, re
+import tempfile, getpass
+myTmp = tempfile.gettempdir()+os.sep+getpass.getuser()+"-gradint-cgi"
 try: from commands import getoutput # Python 2
 except: from subprocess import getoutput # Python 3
 try: from urllib import quote,quote_plus,unquote # Python 2
@@ -269,7 +271,7 @@ def htmlOut(body_u8,title_extra="",links=1):
     else: print(body_u8)
     print ('<HR>')
     if links:
-        print ('This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="http://ssb22.user.srcf.net/gradint/">download the full version of Gradint</A>.')
+        print ('This is Gradint Web edition.  If you need recorded words or additional functions, please <A HREF="//ssb22.user.srcf.net/gradint/">download the full version of Gradint</A>.')
         # TODO @ low-priority: Android 3 <input type="file" accept="audio/*;capture=microphone"></input>
     print ('<p>'+program_name[:program_name.index("(")]+"using "+gradint.program_name[:gradint.program_name.index("(")])
     print ("</body></html>")
@@ -279,45 +281,30 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
   # caller imports gradint (and sets justSynthesize or whatever) first
   if os.environ.get("HTTP_IF_MODIFIED_SINCE",""):
     print ("Status: 304 Not Modified\n\n") ; return
+  httpRange = re.match("bytes=([0-9]*)-([0-9]*)$",os.environ.get('HTTP_RANGE','')) # we MUST support Range: for some iOS players (Apple did not follow the HTTP standard of having a sensible fallback if servers respond with 200, and Apache will not do Range for us if we're CGI).  Single Range should be sufficient.
+  if httpRange: httpRange = httpRange.groups()
+  if httpRange==('',''): httpRange = None # must spec one
+  if httpRange:
+    if not httpRange[0]: httpRange=[-int(httpRange[1]),None]
+    elif not httpRange[1]: httpRange=[int(httpRange[0]),None]
+    else: httpRange=[int(httpRange[0]),int(httpRange[1])+1]
+    print ("Status: 206 Partial Content")
+    stream = 0
   if filetype=="mp3": print ("Content-type: audio/mpeg")
   else: print ("Content-type: audio/"+filetype) # ok for ogg, wav?
   if inURL:
     print ("Last-Modified: Sun, 06 Jul 2008 13:20:05 GMT")
     print ("Expires: Wed, 1 Dec 2036 23:59:59 GMT") # TODO: S2G
-  print ("Content-disposition: attachment; filename=gradint."+filetype+"\n") # helps with some browsers that can't really do streaming
+  print ("Content-disposition: attachment; filename=gradint."+filetype) # helps with some browsers that can't really do streaming
   gradint.out_type = filetype
   gradint.waitBeforeStart = 0
   def mainOrSynth():
     oldProgress = None ; rollback = False
     if not gradint.justSynthesize and 'h5a' in query:
-      # TODO: if os.environ.get('HTTP_RANGE','')=='bytes=0-1' then that'll be '\xff' for mp3 but would need to stop the web server from adding a Content-Length etc (flush stdout and wait indefinitely for server to terminate the cgi process??)
       try: oldProgress = open(gradint.progressFile,'rb').read()
       except: pass
       rollback = True
-      if 'lesson' in query: random.seed(query.getfirst('lesson')) # so clients that re-GET same lesson from partway through can work
-      if os.environ.get('HTTP_X_PLAYBACK_SESSION_ID',''): # seen on iOS: assumes the stream is a live broadcast and reconnecting to it continues where it left off.  TODO: cache the mp3 output? (but don't delay the initial response)  Recalculating for now with sox trim:
-        if os.path.exists(gradint.progressFile+'-ts'):
-         trimTo = time.time() - os.stat(gradint.progressFile+'-ts').st_mtime
-         if 15 < trimTo < gradint.maxLenOfLesson: # lower limit added due to Safari requesting whole lesson twice within the first few seconds and before the 1st one had finished generating: will result in 1st seconds missing if we trim
-          cmd = "sox "+(gradint.soundCollector.soxParams()+' - ')*2+" trim "+str(int(trimTo))
-          if type("")==type(u""): # Python 3
-            from subprocess import Popen,PIPE
-            global p # please don't gc it
-            p=Popen(cmd.split(),stdin=PIPE,stdout=gradint.soundCollector.o)
-            gradint.soundCollector.o = p.stdin
-          else: # Python 2
-            cin,cout = os.popen2(cmd)
-            gradint.soundCollector.o,copyTo = cin,gradint.soundCollector.o
-            def copyStream(a,b):
-              while True:
-                try: x = a.read(1024)
-                except EOFError: break
-                b.write(x)
-              b.close()
-            import thread ; thread.start_new(copyStream,(cout,copyTo))
-         else: open(gradint.progressFile+'-ts','w') # previous one was abandoned, restart
-        else: open(gradint.progressFile+'-ts','w') # create 1st one
-      # end of if HTTP_X_PLAYBACK_SESSION_ID
+      if "lesson" in query: random.seed(query.getfirst("lesson")) # so clients that re-GET same lesson from partway through can work
     try: gradint.main()
     except SystemExit:
       if not gradint.justSynthesize:
@@ -333,18 +320,36 @@ def serveAudio(stream=0, filetype="mp3", inURL=1):
       if oldProgress: open(gradint.progressFile,'wb').write(oldProgress)
     # end of def mainOrSynth
   if stream:
+    print ("")
     sys.stdout.flush()
     gradint.write_to_stdout = 1
     gradint.outputFile="-."+filetype ; gradint.setSoundCollector(gradint.SoundCollector())
     mainOrSynth()
   else:
-    tempdir = getoutput("mktemp -d")
     gradint.write_to_stdout = 0
-    gradint.outputFile=tempdir+"/serveThis."+filetype ; gradint.setSoundCollector(gradint.SoundCollector())
-    mainOrSynth()
-    print ("Content-Length: "+repr(os.stat(tempdir+"/serveThis."+filetype).st_size)+"\n")
+    tempdir = tempfile.mkdtemp()
+    fn,fn2 = tempdir+"/I."+filetype, tempdir+"/O."+filetype
+    if httpRange and "lesson" in query: # try to cache it
+      try: os.mkdir(myTmp)
+      except: pass # exist ok
+      for f in os.listdir(myTmp):
+        if os.stat(myTmp+os.sep+f).st_mtime < time.time()-4000:
+          os.remove(myTmp+os.sep+f)
+      fn = gradint.outputPrefix+str(int(query.getfirst("lesson")))+"."+filetype # (don't be tricked into clobbering paths with non-int lesson IDs)
+    if not os.path.exists(fn):
+      gradint.outputFile=fn
+      gradint.setSoundCollector(gradint.SoundCollector())
+      mainOrSynth()
+    if httpRange:
+      total = os.stat(fn).st_size
+      open(fn2,"wb").write(open(fn,"rb").read()[httpRange[0]:httpRange[1]])
+      if httpRange[0]<0: httpRange[0] += total
+      if not httpRange[1]: httpRange[1] = total
+      print("Content-Range: bytes %d-%d/%d" % (httpRange[0],httpRange[1]-1,total))
+    else: fn2 = fn
+    print ("Content-Length: "+repr(os.stat(fn2).st_size)+"\n")
     sys.stdout.flush()
-    os.system("cat "+tempdir+"/serveThis."+filetype)
+    os.system("cat "+fn2) # components already validated so no quoting required
     os.system("rm -r "+tempdir)
 
 def addWord(l1w,l2w,l1,l2,out=True):
@@ -363,7 +368,7 @@ def addWord(l1w,l2w,l1,l2,out=True):
 
 def redirectHomeKeepCookie(dirID,extra=""):
     dirID = gradint.S(dirID) # just in case
-    print ("Location: "+cginame+"?random="+str(random.random())+"&id="+dirID[dirID.rindex("/")+1:]+extra+"\n")
+    print ("Location: "+cginame+"?random="+str(random.random())[2:]+"&id="+dirID[dirID.rindex("/")+1:]+extra+"\n")
 
 def langSelect(name,curLang):
     curLang = gradint.espeak_language_aliases.get(curLang,curLang)
@@ -465,7 +470,7 @@ def listVocab(hasList): # main screen
        if data: hasList = "<p><table style=\"border: thin solid green\"><caption><nobr>"+localise("Your word list",1)+"</nobr> <nobr>("+localise("click for audio",1)+")</nobr> <input type=submit name=edit value=\""+localise("Text edit",2)+"\"></caption><tr><th>"+localise("Repeats",1)+"</th><th>"+localise(gradint.secondLanguage,1)+"</th><th>"+localise(gradint.firstLanguage,1)+"</th></tr>"+"".join(["<tr><td>%d</td><td lang=\"%s\">%s</td><td lang=\"%s\">%s</td>%s" % (num,gradint.secondLanguage,htmlize(dest,gradint.secondLanguage),gradint.firstLanguage,htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</table>"
        else: hasList=""
     else: hasList=""
-    if hasList: body += '<p><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson",2)+"""" onClick="document.forms[0].lesson.disabled=1; document.forms[0].lesson.value=&quot;"""+localise("Please wait while the lesson starts to play")+"""&quot;;document.d0=new Date();return h5a('"""+cginame+'?lesson='+str(random.random())+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){if(new Date()-document.d0>60000)location.href='"""+cginame+'?lFinish='+str(random.random())+"""';else{document.forms[0].lesson.value='PLAY ERROR'}})"></td></tr></table>""" # when lesson ended, refresh with lFinish which saves progress (interrupts before then cancel it), but don't save progress if somehow got the ended event in 1st minute as that could be a browser issue
+    if hasList: body += '<p><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson",2)+"""" onClick="document.forms[0].lesson.disabled=1; document.forms[0].lesson.value=&quot;"""+localise("Please wait while the lesson starts to play")+"""&quot;;document.d0=new Date();return h5a('"""+cginame+'?lesson='+str(random.random())[2:]+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){if(new Date()-document.d0>60000)location.href='"""+cginame+'?lFinish='+str(random.random())[2:]+"""';else{document.forms[0].lesson.value='PLAY ERROR'}})"></td></tr></table>""" # when lesson ended, refresh with lFinish which saves progress (interrupts before then cancel it), but don't save progress if somehow got the ended event in 1st minute as that could be a browser issue
     if "dictionary" in query:
         if query.getfirst("dictionary")=="1": body += '<script><!--\ndocument.write(\'<p><a href="javascript:history.go(-1)">'+localise("Back to referring site",1)+'</a>\')\n//--></script>' # apparently it is -1, not -2; the redirect doesn't count as one (TODO are there any JS browsers that do count it as 2?)
         else: body += '<p><a href="'+query.getfirst("dictionary")+'">'+localise("Back to dictionary",1)+'</a>' # TODO check for cross-site scripting
@@ -504,11 +509,12 @@ def setup_userID():
         open(dirName+'/'+userID+'-settings.txt','w') # TODO this could still be a race condition (but should be OK under normal circumstances)
         need_write = 1
         print ('Set-Cookie: id=' + userID+'; expires=Wed, 1 Dec 2036 23:59:59 GMT') # TODO: S2G
-    userID = dirName+'/'+userID
+    userID0, userID = userID, dirName+os.sep+userID # already validated
     gradint.progressFileBackup=gradint.pickledProgressFile=None
     gradint.vocabFile = userID+"-vocab.txt"
     gradint.progressFile = userID+"-progress.txt"
     gradint.settingsFile = userID+"-settings.txt"
+    gradint.outputPrefix = myTmp+os.sep+userID0+"-"
     if need_write: gradint.updateSettingsFile(gradint.settingsFile,{'firstLanguage':gradint.firstLanguage,'secondLanguage':gradint.secondLanguage})
     else: gradint.readSettings(gradint.settingsFile)
     gradint.auto_advancedPrompt=1 # prompt in L2 if we don't have L1 prompts on the server, what else can we do...

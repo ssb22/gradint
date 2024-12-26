@@ -1,5 +1,5 @@
 #!/bin/bash
-export PATH="$PATH:/usr/local/bin" # in case lame etc is there
+export PATH="/usr/local/bin:$PATH" # for python3 override + in case lame etc is there
 cd "${BASH_SOURCE%/*}/../.." # needed on macOS 14, possibly 13
 if sw_vers 2>/dev/null|grep ^ProductVersion.*1[2-9]; then # macOS 12+
   if test $(python3 -c 'import tkinter,sys;print(sys.version_info[:3]>=(3,10,1))' 2>/dev/null) = "True"; then exec python3 gradint.py; fi
