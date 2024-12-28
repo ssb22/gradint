@@ -238,7 +238,8 @@ gradint-build.7z:
 	cp -r * /tmp/gradint-build00
 	rm -r /tmp/gradint-build00/LICENSE /tmp/gradint-build00/README.md /tmp/gradint-build00/charlearn
 	mv /tmp/gradint-build00 gradint
-	cd gradint ; make clean ; rm -rf extras ; cd ..
+	make -C gradint clean
+	rm -rf gradint/extras
 	7za a gradint-build.7z gradint/
 	rm -rf gradint
 
@@ -265,6 +266,7 @@ CD: $(Mac_Files) gradint.zip
 	echo;echo;echo "Made CD directory.  Can add gradint/samples, gradint/vocab.txt, gradint/espeak for Windows, gradint/espeak-.. for OSX, sox Win/Mac binaries, oggenc or whatever for Windows, etc."
 
 cleanup:
-	rm -f `find . -type f -name '*~' -o -name '*.pyc' -o -name DEADJOE`
+	find . -type f '(' -name '*~' -o -name '*.pyc' -o -name DEADJOE ')' -exec rm -vf '{}' ';'
+	rm -rvf __pycache__ # must be separate from find, as some find implementations exec before trying to descend and then error
 clean: cleanup
-	rm -f gradint.py $(All_Versions) src/defaults.py gradint-installer.command gradint.dmg
+	rm -rf gradint.py $(All_Versions) src/defaults.py gradint-installer.command gradint.dmg
