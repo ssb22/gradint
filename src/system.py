@@ -261,6 +261,7 @@ del dir1
 GUI_translations_old.update(GUI_translations) ; GUI_translations = GUI_translations_old # in case more have been added since advanced.txt last update
 
 def cond(a,b,c):
+    # Python 2.4 can inline "b if a else c" but Python 2.3 can't
     if a: return b
     else: return c
 
