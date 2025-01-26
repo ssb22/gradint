@@ -953,7 +953,9 @@ class CoquiSynth(Synth):
         if not unix: return 0 # I'm unable to test elsewhere
         self.base = os.environ.get("HOME","")+"/.local/share/tts"
         return isDirectory(self.base) # Voices require large downloads the first time they are used, so we'll use only already-downloaded voices
-    def supports_language(self,lang): return any(a.startswith("tts_models--"+lang+"-") for a in os.listdir(self.base)) # TODO: might not want to use all downloaded models, or might not want to use for all input types (e.g. zh does not support pinyin)
+    def supports_language(self,lang):
+        for a in os.listdir(self.base): # don't use any() with a generator func because we need to be Python 2.3 compatible
+            if a.startswith("tts_models--"+lang+"-"): return True # TODO: might not want to use all downloaded models, or might not want to use for all input types (e.g. zh does not support pinyin)
     def guess_length(self,lang,text): return quickGuess(len(text),6 if lang in ["zh"] else 12) # need better estimate
     def makefile(self,lang,text):
         text = ensure_unicode(text)
