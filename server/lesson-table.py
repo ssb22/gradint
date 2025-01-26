@@ -5,7 +5,7 @@
 # for summarizing it to a teacher or native speaker.
 # Reads from progressFile and progressFileBackup.
 
-# Version 1.06 (c) 2011, 2020-21 Silas S. Brown.  License: GPL
+# Version 1.07 (c) 2011, 2020-21, 2025 Silas S. Brown.  License: GPL
 
 # Example use:
 # export samples_url=http://example.org/path/to/samples/ # or omit
@@ -43,7 +43,7 @@ for tries,l1,l2 in newProg.data:
   count += 1
 del newProg,opd
 changes.sort()
-print ('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title><meta name="mobileoptimized" content="0"><meta name="viewport" content="width=device-width"><script>if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)document.write("<style>body { background-color: black; color: #c0c000; } a:link { color: #00b000; } a:visited { color: #00c0c0; } a:hover { color: red; }</style>");</script></head><body><h2>Gradint lesson report</h2>')
+print ('<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"><title>Gradint lesson report</title><meta name="mobileoptimized" content="0"><meta name="viewport" content="width=device-width"><script>if(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches)document.write("<style>body { background-color: black; color: #c0c000; } a:link { color: #00b000; } a:visited { color: #00c0c0; } a:hover { color: red; }</style>");if(navigator.languages && navigator.languages.indexOf("en")>=0) document.write(\'<meta name="google" content="notranslate">\')</script></head><body><h2>Gradint lesson report</h2>')
 if gradint.unix and gradint.got_program("zgrep"):
   print (os.popen("zgrep '^# collection=' \"%s\"" % gradint.progressFile).read()[2:].rstrip())
 print ('<table border><tr><th>Repeats before</th><th>Repeats today</th><th>Question</th><th>Answer</th></tr>') # (have Question/Answer order rather than Word/Meaning, because if it's L2-only poetry then the question is the previous line, which is not exactly "meaning")
@@ -97,5 +97,5 @@ def link(l):
     return l.replace('&','&amp;').replace('<','&lt;')
   if samples_url: return '<A HREF="'+samples_url+checkVariant(l)+'"'+h5aCode(checkVariant(l))+'>'+wrappable(l)+'</A>'
   return wrappable(l).replace('&','&amp;').replace('<','&lt;')
-for b4,pos,today,l1,l2 in changes: print ('<tr><td>%d</td><td>%d</td><td>%s</td><td>%s</td></tr>' % (b4,today,link(l1),link(l2)))
+for b4,pos,today,l1,l2 in changes: print ('<tr><td>%d</td><td>%d</td><td class="notranslate">%s</td><td class="notranslate">%s</td></tr>' % (b4,today,link(l1),link(l2)))
 print ('</table></body></html>')

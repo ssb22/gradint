@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #  (either Python 2 or Python 3)
 
-program_name = "gradint.cgi v1.37 (c) 2011,2015,2017-24 Silas S. Brown.  GPL v3+"
+program_name = "gradint.cgi v1.38 (c) 2011,2015,2017-25 Silas S. Brown.  GPL v3+"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -71,10 +71,16 @@ def reinit_gradint(): # if calling again, also redo setup_userID after
         for c in [',',';','-']:
             if c in lang: lang=lang[:lang.index(c)]
         if not lang in langFullName: lang=""
+    global noGTranslate
     if lang:
         gradint.firstLanguage = lang
-        if not lang=="en": gradint.secondLanguage="en"
-    elif " zh-" in os.environ.get("HTTP_USER_AGENT",""): gradint.firstLanguage,gradint.secondLanguage = "zh","en" # Chinese iPhone
+        if lang=="en": noGTranslate = True
+        else:
+          gradint.secondLanguage="en" # (most probable default)
+          noGTranslate = lang in gradint.GUI_translations # (unless perhaps any are incomplete)
+    elif " zh-" in os.environ.get("HTTP_USER_AGENT",""): # Chinese iPhone w/out Accept-Language
+      gradint.firstLanguage,gradint.secondLanguage = "zh","en"
+      noGTranslate = True # (don't know if it even pops up on that browser, but anyway)
 
 reinit_gradint()
 
@@ -228,7 +234,7 @@ def authorWordList(lines,l1,l2):
     r.append('<form action="%s" method="post" accept-charset="utf-8"><table style="margin-left:auto;margin-right:auto;border:thin solid blue"><tr><td colspan=3 style="text-align:center"><em>Click on each word for audio</em></td></tr>' % gradintUrl)
     for l in lines:
         l2w,l1w = l.split('=',1)
-        r.append('<tr><td><input type="checkbox" name="W%d" value="%s=%s" checked></td><td>%s</td><td>%s</td></tr>' % (count,l2w,l1w,U(justsynthLink(l2w.encode('utf-8'),l2)).replace('HREF="'+cginame+'?','HREF="'+gradintUrl+'?'),U(justsynthLink(l1w.encode('utf-8'),l1)).replace('HREF="'+cginame+'?','HREF="'+gradintUrl+'?')))
+        r.append('<tr class="notranslate"><td><input type="checkbox" name="W%d" value="%s=%s" checked></td><td>%s</td><td>%s</td></tr>' % (count,l2w,l1w,U(justsynthLink(l2w.encode('utf-8'),l2)).replace('HREF="'+cginame+'?','HREF="'+gradintUrl+'?'),U(justsynthLink(l1w.encode('utf-8'),l1)).replace('HREF="'+cginame+'?','HREF="'+gradintUrl+'?')))
         count += 1
     # could have target="gradint" in the following href, but see comment above
     r.append('<tr><td colspan=3><input type="submit" name="bulkadd" value="Add selected words"> to your <a href="%s">personal list</a></td></tr></table><input type="hidden" name="l1" value="%s"><input type="hidden" name="l2" value="%s"></form>' % (gradintUrl,l1,l2))
@@ -255,7 +261,9 @@ def justsynthLink(text,lang=""): # assumes written function h5a
 # TODO if h5a's canPlayType etc works, cld o/p a lesson as a JS web page that does its own 'take out of event stream' and 'progress write-back'.  wld need to code that HERE by inspecting the finished Lesson object, don't call play().
 
 zoom = 100 # in case browser device lacks a zoom UI, we'll provide one
+noGTranslate = False
 def htmlOut(body_u8,title_extra="",links=1):
+    if noGTranslate: print ("Google: notranslate")
     print ("Content-type: text/html; charset=utf-8\n")
     if title_extra: title_extra=": "+title_extra
     print ('<html lang="en"><head><title>Gradint Web edition'+title_extra+'</title>')
@@ -467,7 +475,7 @@ def listVocab(hasList): # main screen
        # gradint.cache_maintenance_mode=1 # don't transliterate on scan -> NO, including this scans promptsDirectory!
        gradint.ESpeakSynth.update_translit_cache=lambda *args:0 # do it this way instead
        data = gradint.ProgressDatabase().data ; data.reverse()
-       if data: hasList = "<p><table style=\"border: thin solid green\"><caption><nobr>"+localise("Your word list",1)+"</nobr> <nobr>("+localise("click for audio",1)+")</nobr> <input type=submit name=edit value=\""+localise("Text edit",2)+"\"></caption><tr><th>"+localise("Repeats",1)+"</th><th>"+localise(gradint.secondLanguage,1)+"</th><th>"+localise(gradint.firstLanguage,1)+"</th></tr>"+"".join(["<tr><td>%d</td><td lang=\"%s\">%s</td><td lang=\"%s\">%s</td>%s" % (num,gradint.secondLanguage,htmlize(dest,gradint.secondLanguage),gradint.firstLanguage,htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</table>"
+       if data: hasList = "<p><table style=\"border: thin solid green\"><caption><nobr>"+localise("Your word list",1)+"</nobr> <nobr>("+localise("click for audio",1)+")</nobr> <input type=submit name=edit value=\""+localise("Text edit",2)+"\"></caption><tr><th>"+localise("Repeats",1)+"</th><th>"+localise(gradint.secondLanguage,1)+"</th><th>"+localise(gradint.firstLanguage,1)+"</th></tr>"+"".join(["<tr class=\"notranslate\"><td>%d</td><td lang=\"%s\">%s</td><td lang=\"%s\">%s</td>%s" % (num,gradint.secondLanguage,htmlize(dest,gradint.secondLanguage),gradint.firstLanguage,htmlize(src,gradint.firstLanguage),deleteLink(src,dest)) for num,src,dest in data])+"</table>"
        else: hasList=""
     else: hasList=""
     if hasList: body += '<p><table style="border:thin solid blue"><tr><td>'+numSelect('new',range(2,10),gradint.maxNewWords)+' '+localise("new words in")+' '+numSelect('mins',[15,20,25,30],int(gradint.maxLenOfLesson/60))+' '+localise('mins')+""" <input type=submit name=lesson value="""+'"'+localise("Start lesson",2)+"""" onClick="document.forms[0].lesson.disabled=1; document.forms[0].lesson.value=&quot;"""+localise("Please wait while the lesson starts to play")+"""&quot;;document.d0=new Date();return h5a('"""+cginame+'?lesson='+str(random.random())[2:]+"""&h5a=1&new='+document.forms[0].new.value+'&mins='+document.forms[0].mins.value,function(){if(new Date()-document.d0>60000)location.href='"""+cginame+'?lFinish='+str(random.random())[2:]+"""';else{document.forms[0].lesson.value='PLAY ERROR'}})"></td></tr></table>""" # when lesson ended, refresh with lFinish which saves progress (interrupts before then cancel it), but don't save progress if somehow got the ended event in 1st minute as that could be a browser issue
