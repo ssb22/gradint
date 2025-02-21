@@ -216,22 +216,27 @@ android_only = [
 "def android_changeLang():",
 ]
 
+unix_only = [
+"class CoquiSynth(Synth):",
+"class PiperSynth(Synth):",
+]
+
 android_or_S60 = [
 "def droidOrS60RecWord(recFunc,inputFunc):",
 ]
 
 if "s60" in sys.argv: # S60 version
   version = "S60"
-  to_omit = tk_only + desktop_only + winCE_only + not_S60_or_android + android_only + riscos_only + mac_only
+  to_omit = tk_only + desktop_only + winCE_only + not_S60_or_android + android_only + riscos_only + mac_only + unix_only
 elif "android" in sys.argv: # Android version
   version = "Android"
-  to_omit = tk_only + desktop_only + winCE_only + S60_only + not_S60_or_android + not_android + riscos_only + mac_only
+  to_omit = tk_only + desktop_only + winCE_only + S60_only + not_S60_or_android + not_android + riscos_only + mac_only + unix_only
 elif "wince" in sys.argv: # Windows Mobile version
   version = "WinCE"
-  to_omit = desktop_only + S60_only + android_only + android_or_S60 + not_winCE + riscos_only + mac_only
+  to_omit = desktop_only + S60_only + android_only + android_or_S60 + not_winCE + riscos_only + mac_only + unix_only
 elif "core" in sys.argv: # experimental "core code only" for 'minimal embedded porting' starting point (no UI, no synth, limited file I/O; you'll probably have to load up the event data yourself)
   version = "core"
-  to_omit = tk_only + not_S60_or_android + not_android + riscos_only + mac_only + desktop_only + winCE_only + S60_only + android_only + android_or_S60 + [
+  to_omit = tk_only + not_S60_or_android + not_android + riscos_only + mac_only + desktop_only + winCE_only + S60_only + android_only + android_or_S60 + unix_only + [
 "def main():",
 "def rest_of_main():",
 'if __name__=="__main__":',

@@ -89,7 +89,7 @@ class OSXSynth_Say(Synth):
         if u"\u513f" in ut or u"\u5152" in ut: return text # might be erhua - better pass to the synth as-is
         es = ESpeakSynth()
         if not es.works_on_this_platform() or not es.supports_language('zh'): return text
-        return es.transliterate('zh',text,0)
+        return es.transliterate('zh',text,forPartials)
     def can_transliterate(self,lang):
         if not self.voices.get(lang,0) in ['-v "Ting-Ting" ','-v "Tingting" ']: return 0
         es = ESpeakSynth()
@@ -971,6 +971,39 @@ class CoquiSynth(Synth):
         self.synths[lang].tts_to_file(text,file_path=fname)
         return fname
 
+class PiperSynth(Synth):
+    def __init__(self):
+        Synth.__init__(self)
+        self.lCache = {}
+    def works_on_this_platform(self):
+        if not unix: return 0 # I can't test on other platforms
+        for self.program in ["piper/piper","piper"]:
+            if fileExists(self.program): return True
+    def supports_language(self,lang):
+        if lang in self.lCache: return self.lCache[lang]
+        for d in [".","piper"]:
+            foundSubdir = False
+            for f in os.listdir(d):
+                if f=="piper": foundSubdir=True
+                if (f.startswith(lang+"_") or f.startswith(lang+"-")) and f.endswith('.onnx'):
+                    self.lCache[lang] = d+"/"+f
+                    return self.lCache[lang]
+            if not found: break
+    def guess_length(self,lang,text): return quickGuess(len(text),cond(lang in ["zh"],6,12)) # need better estimate
+    def transliterate(self,lang,text,forPartials=0):
+        # Piper TTS models are controlled by eSpeak phonemes, so we should be able to get eSpeak to do this
+        es = ESpeakSynth()
+        if not es.works_on_this_platform() or not es.supports_language(lang): return text
+        return es.transliterate(lang,text,forPartials)
+    def can_transliterate(self,lang):
+        es = ESpeakSynth()
+        return es.works_on_this_platform() and es.supports_language(lang)
+    def makefile(self,lang,text):
+        text = ensure_unicode(text)
+        fname = os.tempnam()+dotwav
+        os.popen(self.program+' --model "'+self.supports_language(lang)+'" --output_file "'+fname+'"',"w").write(text)
+        return fname
+
 class GeneralSynth(Synth):
     def __init__(self): Synth.__init__(self)
     def supports_language(self,lang):
@@ -1017,7 +1050,7 @@ for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt 
        all_synth_classes.append(OSXSynth_Say)
        all_synth_classes.append(OSXSynth_OSAScript) # (prefer _Say if >=10.3 because it's faster)
     elif s.lower()=="sapi": all_synth_classes.append(PttsSynth)
-all_synth_classes += [CoquiSynth,FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
+all_synth_classes += [CoquiSynth,PiperSynth,FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
 prefer_espeak = prefer_espeak.split()
 
 viable_synths = []

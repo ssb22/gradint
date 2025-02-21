@@ -212,6 +212,13 @@ systemVoice = "en"
 #      older "Speech!" utility.  These can be used only for
 #      playing in real-time, not for generating files.
 
+# OTHER MULTI-LANGUAGE SYNTHESISERS:
+#
+# Piper voices are experimentally supported on GNU/Linux.
+# Setup: Download binaries and voices from
+# https://github.com/rhasspy/piper
+# and put them in the gradint directory (or piper subdirectory)
+#
 # Coqui voices are experimentally supported on GNU/Linux.
 # Setup: pip install coqui-tts[server,zh,ja,ko]
 # Then download the voices you want, e.g.:
