@@ -227,7 +227,10 @@ for zipToCheck in ["yali-voice","yali-lower","cameron-voice"]:
     elif not winsound: # ok if mingw32, appuifw etc (unzip_and_delete will warn)
         for d in [os.getcwd()+cwd_addSep,".."+os.sep,samplesDirectory+os.sep]:
             f=d+zipToCheck+".exe"
-            if fileExists(f): unzip_and_delete(f,ignore_fail=1) # ignore the error exit status from unzip, which will be because of extra bytes at the beginning
+            if fileExists(f):
+                unzip_and_delete(f,ignore_fail=1) # ignore the error exit status from unzip, which will be because of extra bytes at the beginning
+                try: os.unlink("setup.bat")
+                except: pass
 
 # Filename / Unicode translation - need some safety across filesystems.  synthCache(+utils) could be done this way also rather than having TRANS.TBL (however I'm not sure it would save that much code)
 non_normal_filenames = {} ; using_unicode_filenames=0

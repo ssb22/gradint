@@ -166,7 +166,7 @@ elif unix and not macsound:
         # (need a warning here, because if using 'aplay' then sox o/p is 2>/dev/null (see below) so a missing sox won't be obvious)
     if sox_formats.find("alsa")>=0 and isDirectory("/dev/snd"):
         sox_type=sox_type.replace("ossdsp","alsa")
-        oss_sound_device = "hw:0,0"
+        oss_sound_device = " " # older versions could take "hw:0,0" but just leave at -t alsa now?
     if not oss_sound_device:
         dsps_to_check = []
         if sox_formats.find("ossdsp")>=0:
@@ -239,6 +239,7 @@ def system(cmd):
     try: r=os.popen(cmd)
     except: return os.system(cmd) # too many file descriptors open or something
     r.read() ; return r.close()
+signal=0
 if unix:
   # Unix: make sure "kill" on gradint's pid includes the players:
   try:
@@ -250,7 +251,6 @@ if unix:
         raise KeyboardInterrupt # clean up, rm tempfiles etc
     signal.signal(signal.SIGTERM,siggrp)
   except: pass
-else: signal=0
 
 # Event(len) gives a pause of that length
 # SampleEvent extends this to actually play something:

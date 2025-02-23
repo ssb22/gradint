@@ -977,7 +977,7 @@ class PiperSynth(Synth):
         self.lCache = {}
     def works_on_this_platform(self):
         if not unix: return 0 # I can't test on other platforms
-        for self.program in ["piper/piper","piper"]:
+        for self.program in ["piper/piper","./piper"]:
             if fileExists(self.program): return True
     def supports_language(self,lang):
         if lang in self.lCache: return self.lCache[lang]
@@ -988,7 +988,7 @@ class PiperSynth(Synth):
                 if (f.startswith(lang+"_") or f.startswith(lang+"-")) and f.endswith('.onnx'):
                     self.lCache[lang] = d+"/"+f
                     return self.lCache[lang]
-            if not found: break
+            if not foundSubdir: break
     def guess_length(self,lang,text): return quickGuess(len(text),cond(lang in ["zh"],6,12)) # need better estimate
     def transliterate(self,lang,text,forPartials=0):
         # Piper TTS models are controlled by eSpeak phonemes, so we should be able to get eSpeak to do this
@@ -999,9 +999,9 @@ class PiperSynth(Synth):
         es = ESpeakSynth()
         return es.works_on_this_platform() and es.supports_language(lang)
     def makefile(self,lang,text):
-        text = ensure_unicode(text)
         fname = os.tempnam()+dotwav
-        os.popen(self.program+' --model "'+self.supports_language(lang)+'" --output_file "'+fname+'"',"w").write(text)
+        f=os.popen(self.program+' --model "'+self.supports_language(lang)+'" --output_file "'+fname+'"',popenWB)
+        f.write(text+"\n") ; f.close()
         return fname
 
 class GeneralSynth(Synth):
@@ -1043,6 +1043,7 @@ class GeneralFileSynth(Synth):
                 return fname
 
 all_synth_classes = [GeneralSynth,GeneralFileSynth] # at the beginning so user can override
+all_synth_classes += [CoquiSynth,PiperSynth] # override espeak if present (especially PiperSynth)
 for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt (see system.py above) but we can still support it
     if s.lower()=="ekho": all_synth_classes.append(EkhoSynth)
     elif s.lower()=="espeak": all_synth_classes.append(ESpeakSynth)
@@ -1050,7 +1051,7 @@ for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt 
        all_synth_classes.append(OSXSynth_Say)
        all_synth_classes.append(OSXSynth_OSAScript) # (prefer _Say if >=10.3 because it's faster)
     elif s.lower()=="sapi": all_synth_classes.append(PttsSynth)
-all_synth_classes += [CoquiSynth,PiperSynth,FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
+all_synth_classes += [FestivalSynth,FliteSynth,OldRiscosSynth,S60Synth,AndroidSynth]
 prefer_espeak = prefer_espeak.split()
 
 viable_synths = []
