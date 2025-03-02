@@ -1240,6 +1240,8 @@ if useTK:
         elif not olpc and got_program("gnome-open"):
             textEditorCommand=explorerCommand="gnome-open"
         elif got_program("nautilus"): explorerCommand="nautilus"
+        elif got_program("pcmanfm"): explorerCommand="pcmanfm" # LXDE, LXQt
+        elif got_program("pcmanfm-qt"): explorerCommand="pcmanfm-qt" # might not work as well as pcmanfm on 24.04
         elif got_program("rox"):
             # rox is available - try using that to open directories
             # (better not use it for editor as it might not be configured)
