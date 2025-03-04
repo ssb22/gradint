@@ -28,7 +28,7 @@ EData := $(shell for N in $(Extra_Data); do if [ -e $$N ]; then echo $$N; fi; do
 Common_Files=vocab.txt settings.txt advanced.txt samples $(EData)
 Most_Mac_Files=$(Common_Files) gradint.py
 Mac_Files=$(Most_Mac_Files) mac/start-gradint.app
-Linux_Files=$(Common_Files) gradint.py INSTALL.txt
+Linux_Files=$(Common_Files) gradint.py install.sh
 Riscos_Files=$(Common_Files) gradint.py
 
 CODE=src/lessonplan.py src/sequence.py src/loop.py src/booktime.py src/play.py src/synth.py src/makeevent.py src/filescan.py src/recording.py src/users.py
@@ -207,6 +207,7 @@ gradint.dmg: gradint-installer.command
 gradint.bgz: $(Linux_Files)
 	mkdir gradint
 	cp -r $(Linux_Files) gradint
+	chmod +x gradint/install.sh
 	tar -c gradint/ | bzip2 -9 > gradint.bgz
 	rm -rf gradint
 
