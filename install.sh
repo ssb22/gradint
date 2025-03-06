@@ -21,7 +21,7 @@
 
 set -e
 PREFIX=/usr/local # or /usr
-if which python; then PYTHON=python; else PYTHON=python3; fi
+if which python >/dev/null 2>/dev/null; then PYTHON=python; else PYTHON=python3; fi
 
 mkdir -p "$PREFIX/share/gradint"
 mv gradint.py "$PREFIX/share/gradint/"
@@ -62,4 +62,4 @@ Categories=Education;Languages
 EOF
 
 echo; echo "Installation complete."
-echo "To uninstall: sudo rm -rf \"$PREFIX/bin/gradint\" \"$PREFIX/share/gradint\""
+echo "To uninstall: sudo rm -rf \"$PREFIX/bin/gradint\" \"$PREFIX/share/gradint\" \"$PREFIX/share/applications/gradint.desktop\" "
