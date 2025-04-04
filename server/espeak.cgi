@@ -3,8 +3,8 @@
 
 # espeak.cgi - a CGI script for the eSpeak speech synthesizer
 
-# (c) 2008,2011,2020 Silas S. Brown, License: GPL
-version="1.3"
+# (c) 2008,2011,2020,2025 Silas S. Brown, License: GPL
+version="1.31"
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -22,6 +22,9 @@ version="1.3"
 # then add code here to modify PATH and ESPEAK_DATA_PATH, e.g.
 # import os ; os.environ["PATH"]="/my/espeak/path:"+os.environ["PATH"]
 # )
+
+# If your Python is 3.13 or above (expected in Ubuntu 2.26 LTS)
+# then you will need: pip install legacy-cgi
 
 import cgi, cgitb ; cgitb.enable()
 f = cgi.FieldStorage()
@@ -145,13 +148,13 @@ elif t:
         sys.stdout.flush()
         getBuf(sys.stdout).write(open(fname2,"rb").read())
 else:
-    sys.stdout.write('Content-Type: text/html; charset=utf-8\n\n<HTML><head><meta name="viewport" content="width=device-width"></head><BODY>') # (specify utf-8 here in case accept-charset is not recognised, e.g. some versions of IE6)
+    sys.stdout.write('Content-Type: text/html; charset=utf-8\n\n<html><head><meta name="viewport" content="width=device-width"></head><body>') # (specify utf-8 here in case accept-charset is not recognised, e.g. some versions of IE6)
     banner = S(getoutput(prog+" --help|head -3").strip())
-    sys.stdout.write("This is espeak.cgi version "+version+", using <A HREF=http://espeak.sourceforge.net/>eSpeak</A> "+" ".join(banner.split()[1:]))
+    sys.stdout.write("This is espeak.cgi version "+version+', using <a href="http://espeak.sourceforge.net/">eSpeak</a> '+" ".join(banner.split()[1:]))
     if not loc: sys.stdout.write("<br>Warning: could not find a UTF-8 locale; espeak may malfunction on some languages")
     warnings=S(getoutput(prog+" -q -x .").strip()) # make sure any warnings about locales are output
     if warnings: sys.stdout.write("<br>"+warnings)
-    sys.stdout.write("<FORM method=post accept-charset=UTF-8>Text or SSML: <INPUT TYPE=text NAME=t STYLE='width:80%'><br>Language: <SELECT NAME=l>")
+    sys.stdout.write('<form method="post" accept-charset="UTF-8">Text or SSML: <input type="text" name="t" style="width:80%"><br>Language: <select name="l">')
     ld=os.listdir(voiceDir)
     directories = {}
     for f in ld[:]:
@@ -163,22 +166,22 @@ else:
                 directories[f2]=f
     ld.sort()
     for f in ld:
-        sys.stdout.write("<OPTION VALUE="+f)
-        if f==lang: sys.stdout.write(" SELECTED")
+        sys.stdout.write('<option value="'+f+'"')
+        if f==lang: sys.stdout.write(" selected")
         if f in directories: name=getName(voiceDir+"/"+directories[f]+"/"+f)
         else: name=getName(voiceDir+"/"+f)
-        sys.stdout.write(">"+f+" ("+name+")</OPTION>")
-    sys.stdout.write("</SELECT> Voice: <SELECT NAME=v>")
+        sys.stdout.write(">"+f+" ("+name+")</option>")
+    sys.stdout.write('</select> Voice: <select name="v">')
     for v in variants:
         if v=="default": name="default"
         else: name=getName(voiceDir+"/!v/"+v)
-        sys.stdout.write("<OPTION VALUE="+v)
-        if v==variant: sys.stdout.write(" SELECTED")
-        sys.stdout.write(">"+name+"</OPTION>")
-    sys.stdout.write("</SELECT> Speed: <SELECT NAME=s>")
+        sys.stdout.write('<option value="'+v+'"')
+        if v==variant: sys.stdout.write(" selected")
+        sys.stdout.write(">"+name+"</option>")
+    sys.stdout.write('</select> Speed: <select name="s">')
     for ss in list(range(minSpeed,maxSpeed,speedStep))+[maxSpeed]:
-        sys.stdout.write("<OPTION VALUE="+str(ss))
-        if ss==speed: sys.stdout.write(" SELECTED")
-        sys.stdout.write(">"+str(ss)+"</OPTION>")
-    sys.stdout.write("</SELECT> <INPUT TYPE=submit NAME=qx VALUE=\"View phonemes\"><center><big><INPUT TYPE=submit VALUE=SPEAK></big></center></FORM></BODY></HTML>")
+        sys.stdout.write('<option value="'+str(ss)+'"')
+        if ss==speed: sys.stdout.write(" selected")
+        sys.stdout.write(">"+str(ss)+"</option>")
+    sys.stdout.write('</select> <input type="submit" name="qx" value="View phonemes"><center><big><input type="submit" value="SPEAK"></big></center></form></body></html>')
 if fname: os.system("rm -rf \""+fname+"\"") # clean up temp dir

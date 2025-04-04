@@ -14,12 +14,15 @@ program_name = "gradint.cgi v1.38 (c) 2011,2015,2017-25 Silas S. Brown.  GPL v3+
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #    GNU General Public License for more details.
 
+# If your Python is 3.13 or above (expected in Ubuntu 2.26 LTS)
+# then you will need: pip install legacy-cgi
+
 gradint_dir = "$HOME/gradint" # include samples/prompts
 path_add = "$HOME/gradint/bin" # include sox, lame, espeak, maybe oggenc
 lib_path_add = "$HOME/gradint/lib"
 espeak_data_path = "$HOME/gradint"
 
-import os, os.path, sys, cgi, urllib, time, re
+import os, os.path, sys, cgi, urllib, time, re # if this fails, see note above
 import tempfile, getpass
 myTmp = tempfile.gettempdir()+os.sep+getpass.getuser()+"-gradint-cgi"
 try: from commands import getoutput # Python 2
