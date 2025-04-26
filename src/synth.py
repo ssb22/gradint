@@ -865,7 +865,7 @@ def fix_compatibility(utext): # convert 'compatibility full-width' characters to
         if 0xff01<=ord(c)<=0xff5e: r.append(unichr(ord(c)-0xfee0))
         elif 0x2010 <= ord(c) <= 0x2015: r.append("-")
         elif c==unichr(0x201a): r.append(",") # sometimes used as comma (incorrectly)
-        elif 0x2018 <= ord(c) <= 0x201f: r.append('"')
+        elif 0x2018 <= ord(c) <= 0x201f or 0x3008 <= ord(c) <= 0x301b: r.append('"')
         elif c==unichr(0xff61): r.append(".")
         else: r.append(c)
     return u"".join(r)
