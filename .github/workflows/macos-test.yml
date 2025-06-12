@@ -1,0 +1,50 @@
+name: macOS custom test
+run-name: macOS custom test
+on:
+  workflow_dispatch:
+    inputs:
+      samplesUrl:
+        description: 'samples zip URL (if any)'
+      vocabUrl:
+        description: 'vocab.txt URL (if any)'
+      progressUrl:
+        description: 'progress.txt URL (if any)'
+      L1:
+        description: 'first language'
+        default: 'en'
+      L2:
+        description: 'second language'
+        default: 'zh'
+      maxNew:
+        description: 'max new words'
+        default: 5
+jobs:
+  Test-Run:
+    runs-on: macos-latest
+    steps:
+      - name: Install sound tools
+        run: brew install sox lame
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up input
+        run: |
+          cd ${{ github.workspace }}
+          mv hanzi-prompts/*.txt samples/prompts/
+          if [ "${{ inputs.samplesUrl }}" ] ; then curl -L "${{ inputs.samplesUrl }}" > samples.zip && cd samples && unzip -o ../samples.zip && cd .. ; fi
+          if [ "${{ inputs.vocabUrl }}" ] ; then curl -L "${{ inputs.vocabUrl }}" > vocab.txt ; fi
+          if [ "${{ inputs.progressUrl }}" ] ; then curl -L "${{ inputs.progressUrl }}" > progress.txt ; fi
+          echo firstLanguage = '"'${{ inputs.L1 }}'"' > settings.txt
+          echo secondLanguage = '"'${{ inputs.L2 }}'"' >> settings.txt
+          echo maxNewWords = ${{ inputs.maxNew }} >> advanced.txt
+          echo 'outputFile="lesson.mp3"' >> advanced.txt
+      - name: Make MP3
+        run: |
+          cd ${{ github.workspace }}
+          python3 gradint.py
+          mkdir out
+          mv progress.txt lesson.mp3 out/
+      - name: Upload output
+        uses: actions/upload-artifact@v4
+        with:
+          name: output
+          path: ${{ github.workspace }}/out/
