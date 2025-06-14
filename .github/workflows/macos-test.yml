@@ -29,6 +29,7 @@ jobs:
       - name: Set up input
         run: |
           cd ${{ github.workspace }}
+          make gradint.py || true # missing python2 not an issue
           mv hanzi-prompts/*.txt samples/prompts/
           if [ "${{ inputs.samplesUrl }}" ] ; then curl -L "${{ inputs.samplesUrl }}" > samples.zip && cd samples && unzip -o ../samples.zip && cd .. ; fi
           if [ "${{ inputs.vocabUrl }}" ] ; then curl -L "${{ inputs.vocabUrl }}" > vocab.txt ; fi
