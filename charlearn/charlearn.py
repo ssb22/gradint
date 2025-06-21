@@ -256,7 +256,7 @@ class CharDbase:
     return self.thisSession.pop()
   def save(self): Pickler(open(dumpFile,"wb"),-1).dump(self)
   def countKnown(self):
-    charsSeen = sessnLen = charsSecure = newChars = 0
+    charsSeen = sessnLen = newChars = 0
     secure=[] ; insecure=[]
     self.chars.sort(key=byPriority)
     for c in self.chars:

@@ -448,7 +448,6 @@ def optimise_partial_playing(ce):
     # ce is a CompositeEvent of SampleEvents.  See if we can change it to a ShellEvent that plays all partial-samples in a single command - this helps with continuity on some low-end platforms.
     if soundCollector and not saveLesson: return ce # no point doing this optimisation if won't ever play in real time
     fileType = soundFileType(ce.eventList[0].file)
-    hasPauses = 0
     for e in ce.eventList[1:]:
         if not soundFileType(e.file)==fileType: return ce # must be all the same type for this optimisation
     s = None

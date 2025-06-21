@@ -101,10 +101,10 @@ class OSXSynth_Say(Synth):
             voiceAttrs=[NSSpeechSynthesizer.attributesForVoice_(vocId) for vocId in NSSpeechSynthesizer.availableVoices()]
         except: # maybe we're running under Homebrew Python instead of /usr/bin/python; in at least some recent OS X versions we should be able to get a voice list with 'say -v ?' instead (I'm not sure how far back that goes, so leaving in the above NSSpeechSynthesizer method as well)
             voiceAttrs = []
-            for l in os.popen('say -v "?" </dev/null 2>/dev/null').readlines():
-                if not '#' in l: continue
-                name,lang=l[:l.index('#')].rsplit(None,1)
-                voiceAttrs.append({'VoiceName':name,'VoiceLanguage':lang.replace('_','-')})
+            for l in readB(os.popen('say -v "?" </dev/null 2>/dev/null',popenRB)).split(B("\n")):
+                if not B('#') in l: continue
+                name,lang=l[:l.index(B('#'))].rsplit(None,1)
+                voiceAttrs.append({'VoiceName':S(name),'VoiceLanguage':S(lang).replace('_','-')})
             if not voiceAttrs: return {"en":""} # maybe we're on ancient OS X: don't use a -v parameter at all
         for vocAttrib in voiceAttrs:
             if not checkIn('VoiceName',vocAttrib): continue
@@ -113,7 +113,7 @@ class OSXSynth_Say(Synth):
                 if not lang: continue # TODO: output VoiceName in a warning?
             else: lang = vocAttrib['VoiceLanguage']
             if '-' in lang: lang=lang[:lang.index("-")]
-            d.setdefault(lang,[]).append(vocAttrib['VoiceName'].encode('utf-8'))
+            d.setdefault(lang,[]).append(B(vocAttrib['VoiceName']))
         found=0 ; d2=d.copy()
         class BreakOut(Exception): pass
         # First, check for voice matches in same language beginning

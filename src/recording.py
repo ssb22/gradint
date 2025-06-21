@@ -555,7 +555,6 @@ class RecorderControls(ButtonScrollingMixin):
         if app.scanrow.get()=="2": # "stop"
           focusButton(self.coords2buttons[(row,3+3*languageNo)])
         else:
-          moved = 0
           if app.scanrow.get()=="1": # move along 1st
             while languageNo+1<len(self.languagesToDraw):
               languageNo += 1

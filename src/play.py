@@ -312,7 +312,7 @@ class SampleEvent(Event):
             # we can handle MP3 on WinCE by opening in Media Player.  Too bad it ignores requests to run minimized.
             fname = self.file
             if not B(fname[0])==B("\\"): fname=os.getcwd()+cwd_addSep+fname # must be full path
-            r=not ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=ensure_unicode(fname))))
+            ctypes.cdll.coredll.ShellExecuteEx(ctypes.byref(ShellExecuteInfo(60,File=ensure_unicode(fname))))
             time.sleep(self.length) # exactLen may not be enough
         elif (winsound and not (self.length>10 and wavPlayer)) or winCEsound: # (don't use winsound for long files if another player is available - it has been known to stop prematurely)
             if fileType=="mp3": file=theMp3FileCache.decode_mp3_to_tmpfile(self.file)
@@ -640,10 +640,13 @@ tail -1 "$S" | bash\nexit\n""" % (sox_16bit,sox_signed) # S=script P=params for 
         fileType=soundFileType(file)
         self.seconds += length
         if not checkIn(file,self.file2command):
-            if fileType=="mp3": fileData,fileType = decode_mp3(file),"wav" # because remote sox may not be able to do it
+            if fileType=="mp3": handle,fileData,fileType = None,decode_mp3(file),"wav" # because remote sox may not be able to do it
             elif compress_SH and unix: handle=os.popen("cat \""+S(file)+"\" | sox -t "+fileType+" - -t "+fileType+" "+sox_8bit+" - 2>/dev/null",popenRB) # 8-bit if possible (but don't change sample rate, as we might not have floating point)
             else: handle = open(file,"rb")
-            offset, length = self.bytesWritten, outfile_writeFile(self.o,handle,file)
+            if handle: offset, length = self.bytesWritten, outfile_writeFile(self.o,handle,file)
+            else:
+                outfile_writeBytes(self.o,fileData)
+                length = len(fileData)
             self.bytesWritten += length
             # dd is more efficient when copying large chunks - try to align to 1k
             first_few_bytes = min(length,(1024-(offset%1024))%1024)
