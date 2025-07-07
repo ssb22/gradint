@@ -103,7 +103,7 @@ def getLsDic(directory):
     except: return {} # (can run without a 'samples' directory at all if just doing synth)
     if checkIn("settings"+dottxt,ls):
         # Sort out the o/p from import_recordings (and legacy record-with-HDogg.bat if anyone's still using that)
-        oddLanguage,evenLanguage = exec_in_a_func(wspstrip(u8strip(read(directory+os.sep+"settings"+dottxt).replace("\r\n","\n"))))
+        oddLanguage,evenLanguage = exec_in_a_func(wspstrip(u8strip(read(directory+os.sep+"settings"+dottxt).replace(B("\r\n"),B("\n")))))
         if oddLanguage==evenLanguage: oddLanguage,evenLanguage="_"+oddLanguage,"-meaning_"+evenLanguage # if user sets languages the same, assume they want -meaning prompts
         else: oddLanguage,evenLanguage="_"+oddLanguage,"_"+evenLanguage
         for f in ls:
