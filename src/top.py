@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #   (Python 2 or Python 3, but more fully tested on 2)
 
-program_name = "gradint v3.097 (c) 2002-25 Silas S. Brown. GPL v3+."
+program_name = "gradint v3.098 (c) 2002-25 Silas S. Brown. GPL v3+."
 
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by

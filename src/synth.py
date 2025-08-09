@@ -945,6 +945,26 @@ class FestivalSynth(Synth):
         if self.theProcess: self.theProcess.close()
         self.theProcess = None
 
+class ChatterboxSynth(Synth):
+    def __init__(self):
+        Synth.__init__(self) ; self.model = None
+    def works_on_this_platform(self):
+        try:
+            import importlib
+            return importlib.util.find_spec('chatterbox')
+        except: return 0
+    def supports_language(self,lang): return lang=="en"
+    def guess_length(self,lang,text): return quickGuess(len(text),12) # need better estimate
+    def makefile(self,lang,text):
+        if not self.model:
+            import torch;from chatterbox.tts import ChatterboxTTS
+            self.model = ChatterboxTTS.from_pretrained(device=cond(torch.cuda.is_available(),"cuda","cpu"))
+        text = ensure_unicode(text)
+        fname = os.tempnam()+dotwav
+        import torchaudio
+        torchaudio.save(fname,self.model.generate(text),self.model.sr) # (generate can also take an audio_prompt_path wav for voice cloning; Coqui below does this only on selected models)
+        return fname
+
 class CoquiSynth(Synth):
     def __init__(self):
         Synth.__init__(self)
@@ -1043,7 +1063,7 @@ class GeneralFileSynth(Synth):
                 return fname
 
 all_synth_classes = [GeneralSynth,GeneralFileSynth] # at the beginning so user can override
-all_synth_classes += [CoquiSynth,PiperSynth] # override espeak if present (especially PiperSynth)
+all_synth_classes += [CoquiSynth,PiperSynth,ChatterboxSynth] # override espeak if present (especially PiperSynth)
 for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt (see system.py above) but we can still support it
     if s.lower()=="ekho": all_synth_classes.append(EkhoSynth)
     elif s.lower()=="espeak": all_synth_classes.append(ESpeakSynth)

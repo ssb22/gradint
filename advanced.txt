@@ -211,6 +211,10 @@ systemVoice = "en"
 #      version of Jonathan Duddington's !Speak, or the even
 #      older "Speech!" utility.  These can be used only for
 #      playing in real-time, not for generating files.
+#
+#    - ChatterboxTTS: do: pip install chatterbox-tts
+#      (Python 3 required, and brings in lots of neural dependencies
+#      - likely too slow for real-time use)
 
 # OTHER MULTI-LANGUAGE SYNTHESISERS:
 #
