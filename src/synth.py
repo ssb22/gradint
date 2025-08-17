@@ -958,7 +958,7 @@ class ChatterboxSynth(Synth):
     def makefile(self,lang,text):
         if not self.model:
             import torch;from chatterbox.tts import ChatterboxTTS
-            self.model = ChatterboxTTS.from_pretrained(device=cond(torch.cuda.is_available(),"cuda","cpu"))
+            self.model = ChatterboxTTS.from_pretrained(device=cond(torch.cuda.is_available(),"cuda","cpu")) # cuda can run out of GPU RAM if reading long texts; may need cpu (slower) for that.  But cuda is probably OK for the short words / phrases Gradint is likely to use, and anyway cpu + long texts can result in some sections of the text missing.
         text = ensure_unicode(text)
         fname = os.tempnam()+dotwav
         import torchaudio
@@ -1023,6 +1023,27 @@ class PiperSynth(Synth):
         f=os.popen(self.program+' --model "'+self.supports_language(lang)+'" --output_file "'+fname+'"',popenWB)
         f.write(text+"\n") ; f.close()
         return fname
+
+class GeminiSynth(Synth):
+    def __init__(self):
+        Synth.__init__(self)
+        self.lCache = {}
+    def works_on_this_platform(self):
+        if os.environ.get("GEMINI_API_KEY"):
+            try:
+                global genai, wave
+                from google import genai
+                import wave # assume have full library if got genai
+                return True
+            except: pass
+    def supports_language(self,lang): return True # if they set up Gemini we just "hope" its auto-detect works (see advanced.txt)
+    def guess_length(self,lang,text): return quickGuess(len(text),cond(lang in ["zh"],6,12)) # need better estimate
+    def makefile(self,lang,text):
+        fname = os.tempnam()+dotwav
+        w=wave.open(fname,'wb')
+        w.setnchannels(1),w.setsampwidth(2),w.setframerate(24000)
+        w.writeframes(client.models.generate_content(model="gemini-2.5-flash-preview-tts",contents=ensure_unicode(text),config=genai.types.GenerateContentConfig(response_modalities=["AUDIO"],speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=random.choice(os.environ.get('GEMINI_VOICES','Kore,Charon,Sadaltager,Iapetus').split(','))))))).candidates[0].content.parts[0].inline_data.data)
+        w.close() ; return fname
 
 class GeneralSynth(Synth):
     def __init__(self): Synth.__init__(self)

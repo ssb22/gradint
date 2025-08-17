@@ -238,6 +238,16 @@ systemVoice = "en"
 # Gradint detects voices that have been downloaded
 # (but prefer_espeak overrides this).  The Chinese
 # voice does NOT support pinyin.
+#
+# Gemini voices are experimentally supported on some platforms.
+# Needs Gemini API key (they have a free-tier quota as of 2025)
+# and their language detection is automatic, which means it
+# might not work for very short phrases and you might not be
+# able to specify e.g. Mandarin vs Cantonese, so it's limited.
+# Setup: pip install google-genai, put the API key into an
+# environment variable called GEMINI_API_KEY and optionally
+# set GEMINI_VOICES to a comma-separated list of voice names
+# to use (randomly selected)
 
 # You can also set extra_speech to a list of
 # (language prefix, command), for example:
