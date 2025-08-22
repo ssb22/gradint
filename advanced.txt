@@ -245,9 +245,10 @@ systemVoice = "en"
 # might not work for very short phrases and you might not be
 # able to specify e.g. Mandarin vs Cantonese, so it's limited.
 # Setup: pip install google-genai, put the API key into an
-# environment variable called GEMINI_API_KEY and optionally
-# set GEMINI_VOICES to a comma-separated list of voice names
-# to use (randomly selected)
+# environment variable called GEMINI_API_KEY
+# (or set os.environ["GEMINI_API_KEY"] from here)
+# and optionally set GEMINI_VOICES to a comma-separated list
+# of voice names to use (randomly selected)
 
 # You can also set extra_speech to a list of
 # (language prefix, command), for example:

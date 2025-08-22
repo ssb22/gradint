@@ -1042,7 +1042,7 @@ class GeminiSynth(Synth):
         fname = os.tempnam()+dotwav
         w=wave.open(fname,'wb')
         w.setnchannels(1),w.setsampwidth(2),w.setframerate(24000)
-        w.writeframes(client.models.generate_content(model="gemini-2.5-flash-preview-tts",contents=ensure_unicode(text),config=genai.types.GenerateContentConfig(response_modalities=["AUDIO"],speech_config=types.SpeechConfig(voice_config=types.VoiceConfig(prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=random.choice(os.environ.get('GEMINI_VOICES','Kore,Charon,Sadaltager,Iapetus').split(','))))))).candidates[0].content.parts[0].inline_data.data)
+        w.writeframes(genai.Client().models.generate_content(model="gemini-2.5-flash-preview-tts",contents=ensure_unicode(text),config=genai.types.GenerateContentConfig(response_modalities=["AUDIO"],speech_config=genai.types.SpeechConfig(voice_config=genai.types.VoiceConfig(prebuilt_voice_config=genai.types.PrebuiltVoiceConfig(voice_name=random.choice(os.environ.get('GEMINI_VOICES','Aoede,Kore,Laomedeia,Sulafat').split(','))))))).candidates[0].content.parts[0].inline_data.data)
         w.close() ; return fname
 
 class GeneralSynth(Synth):
@@ -1084,7 +1084,7 @@ class GeneralFileSynth(Synth):
                 return fname
 
 all_synth_classes = [GeneralSynth,GeneralFileSynth] # at the beginning so user can override
-all_synth_classes += [CoquiSynth,PiperSynth,ChatterboxSynth] # override espeak if present (especially PiperSynth)
+all_synth_classes += [GeminiSynth,CoquiSynth,PiperSynth,ChatterboxSynth] # override espeak if present (especially PiperSynth)
 for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt (see system.py above) but we can still support it
     if s.lower()=="ekho": all_synth_classes.append(EkhoSynth)
     elif s.lower()=="espeak": all_synth_classes.append(ESpeakSynth)
