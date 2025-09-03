@@ -28,10 +28,11 @@ jobs:
         uses: actions/checkout@v4
       - name: Set up input
         run: |
+          set -e
           cd ${{ github.workspace }}
           make gradint.py || true # missing python2 not an issue
           mv hanzi-prompts/*.txt samples/prompts/
-          if [ "${{ inputs.samplesUrl }}" ] ; then curl -L "${{ inputs.samplesUrl }}" > samples.zip && cd samples && unzip -o ../samples.zip && cd .. ; fi
+          if [ "${{ inputs.samplesUrl }}" ]; then curl -L "${{ inputs.samplesUrl }}" > samples.zip; cd samples ; unzip -o ../samples.zip ; cd .. ; fi
           if [ "${{ inputs.vocabUrl }}" ] ; then curl -L "${{ inputs.vocabUrl }}" > vocab.txt ; fi
           if [ "${{ inputs.progressUrl }}" ] ; then curl -L "${{ inputs.progressUrl }}" > progress.txt ; fi
           echo firstLanguage = '"'${{ inputs.L1 }}'"' > settings.txt
@@ -40,6 +41,7 @@ jobs:
           echo 'outputFile="lesson.mp3"' >> advanced.txt
       - name: Make MP3
         run: |
+          set -e
           cd ${{ github.workspace }}
           python3 gradint.py
           mkdir out
