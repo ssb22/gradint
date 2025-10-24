@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # (should work in both Python 2 and Python 3)
 
-# Simple sound-playing server v1.59
+# Simple sound-playing server v1.6
 # Silas S. Brown - public domain - no warranty
 
 # connect to port 8124 (assumes behind firewall)
@@ -13,7 +13,11 @@
 
 import socket, select, os, sys, os.path, time, re
 for a in sys.argv[1:]:
-  if a.startswith("--rpi-bluetooth-setup"): # tested on Raspberry Pi 400 with OS versions 11 and 12; also tested on Raspberry Pi Zero W with Raspbian 10 Lite (with the device already paired: needed to say "scan on", "discovery on", remove + pair in bluetoothctl).  Send Eth=(bluetooth Ethernet addr) to start.  Note that the setup command reboots the system.
+  if a.startswith("--rpi-bluetooth-setup"):
+    # tested on Raspberry Pi 400 and Raspberry Pi Zero W with OS versions 11 through 13
+    # (also tested on Raspberry Pi Zero W with Raspbian 10 Lite with the device already paired: needed to say "scan on", "discovery on", remove + pair in bluetoothctl)
+    # Note that the setup command reboots the system.
+    # Once set up, send Eth=(bluetooth Ethernet addr) to start.
     os.system(r'if ! grep "$(cat ~/.ssh/*.pub)" ~/.ssh/authorized_keys; then cat ~/.ssh/*.pub >> ~/.ssh/authorized_keys;fi && (echo "[Unit]";echo "Description=Gradint player utility";echo "[Service]";echo "Type=oneshot";echo "ExecStart=bash -c \"while ! ssh localhost true; do sleep 1; done; ssh localhost '+os.path.join(os.getcwd(),sys.argv[0])+r'\"";echo "WorkingDirectory='+os.getcwd()+'";echo User="$(whoami)";echo "[Install]";echo "WantedBy=multi-user.target") > player.service && sudo mv player.service /etc/systemd/system/ && sudo systemctl daemon-reload && sudo systemctl enable player && chmod +x '+sys.argv[0]+' && sudo bash -c "apt-get -y install sox mpg123 pulseaudio pulseaudio-module-bluetooth && usermod -G bluetooth -a $USER && (echo load-module module-switch-on-connect;echo load-module module-bluetooth-policy;echo load-module module-bluetooth-discover) >> /etc/pulse/default.pa && (echo [General];echo FastConnectable = true) >> /etc/bluetooth/main.conf && reboot"') # (eee off: improves reliability of gigabit ethernet on RPi400)
   elif a=="--aplay": use_aplay = True # aplay and madplay, for older embedded devices, NOT tested together with --rpi-bluetooth-* above
   elif a.startswith("--delegate="): delegate_to_check=a.split('=')[1] # will ping that IP and delegate all sound to it when it's up.  E.g. if it has better amplification but it's not always switched on.
@@ -72,7 +76,7 @@ while True:
     elif d=="Eth=": # Eth=ethernet address to connect via Bluetooth (see --rpi-bluetooth-setup above)
         eth = S(c.recv(17))
         assert re.match("^[A-Fa-f0-9:]+$",eth)
-        os.system("E="+eth+";if ! pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then while true; do bluetoothctl --timeout 1 disconnect | grep Missing >/dev/null||sleep 5;T=5;while ! bluetoothctl --timeout $T connect $E | egrep \"Connection successful|Device $E Connected: yes\"; do sleep 5; T=10;bluetoothctl --timeout 1 devices;echo Retrying $E; done ; Got=0; for Try in 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z; do if pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then Got=1; break; fi; sleep 1; done; if [ $Got = 1 ] ; then break; fi; done; fi; pacmd set-default-sink bluez_sink."+eth.replace(":","_")+".a2dp_sink") # ; play /usr/share/scratch/Media/Sounds/Animal/Dog1.wav # (not really necessary if using 'close the socket' to signal we're ready)
+        os.system("E="+eth+";if ! pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then while true; do rfkill block bluetooth; rfkill unblock bluetooth; bluetoothctl --timeout 1 power on; bluetoothctl --timeout 1 disconnect | grep Missing >/dev/null||sleep 5;T=5;while ! bluetoothctl --timeout $T connect $E | egrep \"Connection successful|Device $E Connected: yes\"; do sleep 5; T=10;bluetoothctl --timeout 1 devices;echo Retrying $E; done ; Got=0; for Try in 1 2 3 4 5 6 7 8 9 a b c d e f g h i j k l m n o p q r s t u v w x y z; do if pacmd list-sinks | grep "+eth.replace(":","_")+" >/dev/null; then Got=1; break; fi; sleep 1; done; if [ $Got = 1 ] ; then break; fi; done; fi; pacmd set-default-sink bluez_sink."+eth.replace(":","_")+".a2dp_sink") # ; play /usr/share/scratch/Media/Sounds/Animal/Dog1.wav # (not really necessary if using 'close the socket' to signal we're ready)
         c.close() ; continue
     elif d=="Eth0":
       if eth: os.system("bluetoothctl --timeout 1 disconnect "+eth)

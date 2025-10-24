@@ -232,7 +232,7 @@ publish: $(All_Versions) gradint.py
 	cp samples/prompts/README.txt ~/homepage/public/gradint/prompts-readme.txt
 	grep ^program_name < src/top.py|head -1|sed -e 's/.*radint v/v/' -e 's/ .*/./' > ~/homepage/public/gradint/latest-version.txt
 	make clean
-	~/homepage/update
+	make -C ~/homepage
 
 gradint-build.7z:
 	mkdir /tmp/gradint-build00
