@@ -240,8 +240,13 @@ systemVoice = "en"
 # voice does NOT support pinyin.
 #
 # Gemini voices are experimentally supported on some platforms.
-# Needs Gemini API key (they have a free-tier quota as of 2025)
-# and their language detection is automatic, which means it
+# Needs Gemini API key: they have a free-tier quota, but as of
+# October 2025 it's just 3 queries a minute and 15 a day
+# (10 a minute 100 a day if connected to a billing account)
+# see https://ai.google.dev/gemini-api/docs/rate-limits
+# so you might prefer to send a single comma-separated list of
+# words to read and cut up the wav file it returns.
+# And their language detection is automatic, which means it
 # might not work for very short phrases and you might not be
 # able to specify e.g. Mandarin vs Cantonese, so it's limited.
 # Setup: pip install google-genai, put the API key into an

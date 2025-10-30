@@ -1039,10 +1039,18 @@ class GeminiSynth(Synth):
     def supports_language(self,lang): return True # if they set up Gemini we just "hope" its auto-detect works (see advanced.txt)
     def guess_length(self,lang,text): return quickGuess(len(text),cond(lang in ["zh"],6,12)) # need better estimate
     def makefile(self,lang,text):
+        for Try in [2,1,0]:
+            try: frames=genai.Client().models.generate_content(model="gemini-2.5-flash-preview-tts",contents=ensure_unicode(text),config=genai.types.GenerateContentConfig(response_modalities=["AUDIO"],speech_config=genai.types.SpeechConfig(voice_config=genai.types.VoiceConfig(prebuilt_voice_config=genai.types.PrebuiltVoiceConfig(voice_name=random.choice(os.environ.get('GEMINI_VOICES','Aoede,Kore,Laomedeia,Sulafat').split(','))))))).candidates[0].content.parts[0].inline_data.data
+            except:
+                if Try:
+                    sys.stderr.write("Gemini fetch error: waiting 1 minute before retry\n"), time.sleep(60)
+                    continue
+                raise
+            break
         fname = os.tempnam()+dotwav
         w=wave.open(fname,'wb')
         w.setnchannels(1),w.setsampwidth(2),w.setframerate(24000)
-        w.writeframes(genai.Client().models.generate_content(model="gemini-2.5-flash-preview-tts",contents=ensure_unicode(text),config=genai.types.GenerateContentConfig(response_modalities=["AUDIO"],speech_config=genai.types.SpeechConfig(voice_config=genai.types.VoiceConfig(prebuilt_voice_config=genai.types.PrebuiltVoiceConfig(voice_name=random.choice(os.environ.get('GEMINI_VOICES','Aoede,Kore,Laomedeia,Sulafat').split(','))))))).candidates[0].content.parts[0].inline_data.data)
+        w.writeframes(frames)
         w.close() ; return fname
 
 class GeneralSynth(Synth):
