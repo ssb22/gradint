@@ -220,7 +220,7 @@ systemVoice = "en"
 #
 # Piper voices are experimentally supported on GNU/Linux.
 # Setup: Download binaries and voices from
-# https://github.com/rhasspy/piper
+# https://github.com/rhasspy/piper/tree/4147f9629e88d3c1d4915a127f2d843f98347303
 # and put them in the gradint directory (or piper subdirectory)
 #
 # Coqui voices are experimentally supported on GNU/Linux.
