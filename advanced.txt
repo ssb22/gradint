@@ -219,7 +219,13 @@ systemVoice = "en"
 # OTHER MULTI-LANGUAGE SYNTHESISERS:
 #
 # Piper voices are experimentally supported on GNU/Linux.
-# Setup: Download binaries and voices from
+# (Although Piper uses eSpeak, its Chinese voice may not read pinyin.)
+# Setup: pip install piper-tts
+# if you have an NVidia/CUDA GPU, also pip install onnxruntime-gpu
+# Download voices: be in the gradint directory (or piper subdirectory) and do
+# python3 -m piper.download_voices en_GB-cori-high zh_CN-huayan-medium
+# (see https://rhasspy.github.io/piper-samples/ for voice names)
+# Older setup: Download binaries and voices from
 # https://github.com/rhasspy/piper/tree/4147f9629e88d3c1d4915a127f2d843f98347303
 # and put them in the gradint directory (or piper subdirectory)
 #

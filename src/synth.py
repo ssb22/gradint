@@ -999,6 +999,11 @@ class PiperSynth(Synth):
         if not unix: return 0 # I can't test on other platforms
         for self.program in ["piper/piper","./piper"]:
             if fileExists(self.program): return True
+        self.program = None
+        try:
+            import piper, wave
+            return True
+        except: pass
     def supports_language(self,lang):
         if lang in self.lCache: return self.lCache[lang]
         for d in [".","piper"]:
@@ -1020,8 +1025,20 @@ class PiperSynth(Synth):
         return es.works_on_this_platform() and es.supports_language(lang)
     def makefile(self,lang,text):
         fname = os.tempnam()+dotwav
-        f=os.popen(self.program+' --model "'+self.supports_language(lang)+'" --output_file "'+fname+'"',popenWB)
-        f.write(text+"\n") ; f.close()
+        if self.program:
+            f=os.popen(self.program+' --model "'+self.supports_language(lang)+'" --output_file "'+fname+'"',popenWB)
+            f.write(text+"\n") ; f.close()
+        else: # no same-directory binary -> use Python API
+            import piper,wave
+            L = self.supports_language(lang)
+            if type(L)==str:
+                try:
+                    import torch,onnxruntime
+                    uc=torch.cuda.is_available()
+                except: uc=False
+                L=piper.PiperVoice.load(L,use_cuda=uc)
+                self.lCache[lang]=L
+            with wave.open(fname,"wb") as w: L.synthesize_wav(text,w)
         return fname
 
 class GeminiSynth(Synth):
