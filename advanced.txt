@@ -96,7 +96,7 @@ prefer_espeak = "en"
 # "zh" for Zhongwen (Mandarin).
 #    - You can improve eSpeak's English by installing
 #    Festival's dictionary and using lexconvert to convert
-#    it, see http://ssb22.user.srcf.net/lexconvert/
+#    it, see https://ssb22.user.srcf.net/lexconvert/
 #    (this has already been done in the bundled version).
 #    - eSpeak is not very natural-sounding, but it is very
 #    clear and accurate in English and some other languages

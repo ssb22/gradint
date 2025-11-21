@@ -237,7 +237,7 @@ def exc_info(inGradint=True):
     if tbObj and hasattr(tbObj,"tb_lineno"): w += (" at line "+str(tbObj.tb_lineno))
     if inGradint:
         if tbObj and hasattr(tbObj,"tb_frame") and hasattr(tbObj.tb_frame,"f_code") and hasattr(tbObj.tb_frame.f_code,"co_filename") and not tbObj.tb_frame.f_code.co_filename.find("gradint"+extsep+"py")>=0: w += (" in "+tbObj.tb_frame.f_code.co_filename)
-        else: w += (" in "+program_name[:program_name.index("(c)")])
+        else: w += (" in "+program_name[:program_name.index(" (c)")])
         w += " on Python "+sys.version.split()[0]+"\n"
     del tbObj
     return w
@@ -429,7 +429,7 @@ if winsound or winCEsound or mingw32 or riscos_sound or not hasattr(os,"tempnam"
         # put temp files in the current directory, EXCEPT if the current directory contains non-ASCII characters then check C:\TEMP and C:\ first (just in case the non-ASCII characters create problems for command lines etc; gradint *should* be able to cope but it's not possible to test in advance on *everybody's* localised system so best be on the safe side).  TODO check for quotes etc in pathnames too.
         def isAscii():
           for c in os.getcwd():
-            if c<' ' or c>chr(127): return False
+            if not 32<=ord(c)<=127: return False
           return True
         tmpPrefix = None
         if winCEsound or not isAscii():

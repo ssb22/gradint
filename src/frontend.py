@@ -1935,8 +1935,8 @@ def rest_of_main():
         exitStatus = 1
         if appuifw: raw_input() # so traceback stays visible
     # It is not guaranteed that __del__() methods are called for objects that still exist when the interpreter exits.  So:
-    global viable_synths,getsynth_cache,theMp3FileCache
-    del viable_synths,getsynth_cache,theMp3FileCache
+    global viable_synths,getsynth_cache,theMp3FileCache,globalEspeakSynth
+    del viable_synths,getsynth_cache,theMp3FileCache,globalEspeakSynth
     if app:
         app.todo.exit_ASAP=1
         while app: time.sleep(0.2)
