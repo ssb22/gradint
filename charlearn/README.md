@@ -1,0 +1,14 @@
+# charlearn
+This program is meant to help you learn to recognise foreign characters, taking just a few minutes each day.  It remembers which characters you have recently found difficult and what you confuse them with.  It uses a simple HTML user interface, the appearance of which can be customised by user-supplied stylesheets or normal browser customisation.
+
+Note: in its present form, this program is not as effective with characters as [gradint](../README.md) is with audio.  While I have a collection of thousands of words in gradint, charlearn only took me up to about 150 Chinese characters and then constant misidentifications virtually stalled any progress (but then I do have cortical visual impairment so your result may differ).  It might be useful to get you started with 100 or so however.
+
+## Setup instructions
+Make sure your machine has Python 2 (version 2.3+; download from www.python.org if necessary).  Download [charlearn.py](charlearn.py) and [characters.txt](characters.txt) and save them both in the same place.  Run charlearn.py with Python.
+
+That characters.txt contains frequently-used Chinese characters and their definitions from CEDICT.  If you want to learn hiragana and katakana instead, download this [alternative characters.txt](jp/characters.txt).  Alternatively you can make your own in the same format.  (If you want to learn several things, put them in different directories and run charlearn.py separately.  If you already know some characters, list them one per line in a file called known-chars.txt, using the same encoding as characters.txt and putting it in the same directory.)
+
+## Mobile phone version
+A simpler flashcard program is available for running on mobile phones, using images to achieve large print.  You will need a phone that can display short Web pages with some Javascript functionality, but it doesn’t have to be a “smartphone”—in 2008 I used it on a Nokia 6500s from Three, which was a Symbian S40 phone; similar “mid-range” handsets should also work (but not the very simple ones that don’t even have a browser).  Download [charlearn.zip](https://ssb22.user.srcf.net/gradint/charlearn.zip) and put `flashcards.html` on the phone, together with the F folder which contains the pictures.  Some pictures for hanzi-to-pinyin at 240x320 pixels are included, as is the program to generate them in case you need to do something different.  Start the program on the phone by opening the flashcards.html file.
+
+Technical notes: You can also put this file and the `F` folder onto a Web server and browse the flashcards remotely, but that may incur a lot of bandwidth, so it would be better to transfer them onto the phone by cable etc.  The Javascript does not do anything heavyweight like DOM, Cookies or Events; it uses only `document.write` and links back to itself, and you can save the state at any time using Bookmarks.
