@@ -1,6 +1,6 @@
 # Graduated Interval Recall tool
 from https://ssb22.user.srcf.net/gradint
-(also [mirrored on GitLab Pages](https://ssb22.gitlab.io/gradint) just in case)
+(also [mirrored on GitLab Pages](https://ssb22.gitlab.io/gradint) just in case) | [Chinese version](README-zh.md)
 
 Gradint is a program that can be used to make your own self-study audio tapes for learning foreign-language vocabulary.  You can use it to help with a course, to prepare for speaking assignments, or just to keep track of the vocabulary you come across.
 
