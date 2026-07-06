@@ -1,7 +1,8 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
+# (should work on both Python 2 and Python 3)
 
 # trace.py: script to generate raytraced animations of Gradint lessons
-# Version 1.32 (c) 2018-19,2021 Silas S. Brown.  License: GPL
+# Version 1.33 (c) 2018-19,2021,2026 Silas S. Brown.  License: GPL
 
 #  The Disney Pixar film "Inside Out" (2015) represented
 #  memories as spheres.  I don't have their CGI models, but
@@ -33,21 +34,19 @@
 
 from optparse import OptionParser
 parser = OptionParser()
-parser.add_option("--fps",default=15,dest="theFPS",
+parser.add_option("--fps",type="int",default=15,dest="theFPS",
                   help="Frames per second (10 is insufficient for fast movement, so recommend at least 15)")
-parser.add_option("--res",default=480,
+parser.add_option("--res",type="int",default=480,
                   help="Y-resolution: 240=NTSC VCD, 288=PAL VCD, 480=DVD, 607=WeChat channel, 720=Standard HD (Blu-Ray), 1080=Full HD (Blu-Ray)")
 parser.add_option("--translucent",action="store_true",default=False,dest="translucent_spheres_when_picture_visible",
                   help="Translucent spheres when picture visible (slows down rendering but is better quality)")
-parser.add_option("--minutes",default=0,
+parser.add_option("--minutes",type="int",default=0,
                   help="Maximum number of minutes to render (0 = unlimited, the default; can limit for test runs)")
-parser.add_option("--quality",default=9,dest="povray_quality",
+parser.add_option("--quality",type="int",default=9,dest="povray_quality",
                   help="POVRay quality setting, default 9: 1=ambient light only, 2=lighting, 4,5=shadows, 8=reflections 9-11=radiosity etc")
 
 options, args = parser.parse_args()
 globals().update(options.__dict__)
-theFPS,res,minutes,povray_quality = int(theFPS),int(res),int(minutes),int(povray_quality)
-
 if res in [240,288]:
     width_height_antialias = (352,res,0.3) # VCD.  antialias=None doesn't look very good at 300x200, cld try it at higher resolutions (goes to the +A param, PovRay default is 0.3 if -A specified without param; supersample (default 9 rays) if colour differs from neighbours by this amount)
 elif res==480: width_height_antialias = (640,480,0.001) # 480p (DVD)

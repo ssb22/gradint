@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-#   (Python 2 or Python 3, but more fully tested on 2)
+# (should work on both Python 2 and Python 3)
 
 program_name = "gradint v3.11 (c) 2002-25 Silas S. Brown. GPL v3+."
 
