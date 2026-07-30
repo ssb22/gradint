@@ -1042,9 +1042,7 @@ class PiperSynth(Synth):
         return fname
 
 class GeminiSynth(Synth):
-    def __init__(self):
-        Synth.__init__(self)
-        self.lCache = {}
+    def __init__(self): Synth.__init__(self)
     def works_on_this_platform(self):
         if os.environ.get("GEMINI_API_KEY"):
             try:
@@ -1057,7 +1055,9 @@ class GeminiSynth(Synth):
     def guess_length(self,lang,text): return quickGuess(len(text),cond(lang in ["zh"],6,12)) # need better estimate
     def makefile(self,lang,text):
         for Try in [2,1,0]:
-            try: frames=genai.Client().models.generate_content(model="gemini-2.5-flash-preview-tts",contents=ensure_unicode(text),config=genai.types.GenerateContentConfig(response_modalities=["AUDIO"],speech_config=genai.types.SpeechConfig(voice_config=genai.types.VoiceConfig(prebuilt_voice_config=genai.types.PrebuiltVoiceConfig(voice_name=random.choice(os.environ.get('GEMINI_VOICES','Aoede,Kore,Laomedeia,Sulafat').split(','))))))).candidates[0].content.parts[0].inline_data.data
+            try:
+                c = genai.Client() # don't free till all done
+                frames=c.models.generate_content(model="gemini-2.5-flash-preview-tts",contents=ensure_unicode(text),config=genai.types.GenerateContentConfig(response_modalities=["AUDIO"],speech_config=genai.types.SpeechConfig(voice_config=genai.types.VoiceConfig(prebuilt_voice_config=genai.types.PrebuiltVoiceConfig(voice_name=random.choice(os.environ.get('GEMINI_VOICES','Aoede,Kore,Laomedeia,Sulafat').split(','))))))).candidates[0].content.parts[0].inline_data.data
             except:
                 if Try:
                     sys.stderr.write("Gemini fetch error: waiting 1 minute before retry\n"), time.sleep(60)
@@ -1069,6 +1069,27 @@ class GeminiSynth(Synth):
         w.setnchannels(1),w.setsampwidth(2),w.setframerate(24000)
         w.writeframes(frames)
         w.close() ; return fname
+
+class EdgeSynth(Synth):
+    def __init__(self): Synth.__init__(self)
+    def works_on_this_platform(self):
+        try:
+            global edge_tts
+            import edge_tts
+            self.voiceList = []
+            for l in getoutput("edge-tts -l").split("\n"): # easier than running VoicesManager async/await with Python2 compatible syntax
+                self.voiceList.append(l.split()[0])
+            return True
+        except: pass
+    def supports_language(self,lang):
+        lang=lang.replace("zh-yue","zh-HK").replace("zhy","zh-HK").replace("cant","zh-HK").replace("zh","zh-CN") # or TW
+        for v in self.voiceList:
+            if v.startswith(lang+"-"): return v # (could also random.choice between matches or allow a per-language user preference list, but the whole thing's on an endpoint that could disappear so no point implementing too much)
+    def guess_length(self,lang,text): return quickGuess(len(text),cond(lang in ["zh"],6,12)) # need better estimate
+    def makefile(self,lang,text):
+        fname = os.tempnam()+dotmp3 # (wav not supported)
+        edge_tts.Communicate(ensure_unicode(text),self.supports_language(lang)).save_sync(fname)
+        return fname
 
 class GeneralSynth(Synth):
     def __init__(self): Synth.__init__(self)
@@ -1109,7 +1130,7 @@ class GeneralFileSynth(Synth):
                 return fname
 
 all_synth_classes = [GeneralSynth,GeneralFileSynth] # at the beginning so user can override
-all_synth_classes += [GeminiSynth,CoquiSynth,PiperSynth,ChatterboxSynth] # override espeak if present (especially PiperSynth)
+all_synth_classes += [GeminiSynth,EdgeSynth,CoquiSynth,PiperSynth,ChatterboxSynth] # override espeak if present (especially PiperSynth)
 for s in synth_priorities.split(): # synth_priorities no longer in advanced.txt (see system.py above) but we can still support it
     if s.lower()=="ekho": all_synth_classes.append(EkhoSynth)
     elif s.lower()=="espeak": all_synth_classes.append(ESpeakSynth)

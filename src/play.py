@@ -133,7 +133,7 @@ if unix:
   def sox_check():
    global sox_8bit, sox_16bit, sox_ignoreLen, sox_signed, sox_formats
    sox_formats=os.popen("sox --help 2>&1").read() # NOT .lower() yet
-   sf2 = ' '.join(sox_formats.lower().split())
+   sf2 = ' '.join(sox_formats.lower().replace("sox_ng","sox").split())
    if sf2.startswith("sox: sox v"):
     if sf2[10]==' ': soxMaj=15 # guess (broken HomeBrew install)
     else: soxMaj = intor0(sf2[10:sf2.index('.')])

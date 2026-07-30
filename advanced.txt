@@ -114,7 +114,7 @@ sapiVoices = {
     # "en" : ("Microsoft Hazel Desktop", 16000),
     # "zh" : ("Microsoft Huihui Desktop", 16000),
     # "zhy"     : ("Microsoft Tracy Desktop", 16000),
-    # "zhy-yue" : ("Microsoft Tracy Desktop", 16000),
+    # "zh-yue"  : ("Microsoft Tracy Desktop", 16000),
     # "cant"    : ("Microsoft Tracy Desktop", 16000),
 # (make sure to set prefer_espeak="" if you want the MS English voice)
 # 
@@ -131,7 +131,7 @@ sapiVoices = {
 # 
 # or for Ekho Cantonese you can have:
     # "zhy"     : ("Ekho Cantonese", 8000), # or 16000 for v4.5+
-    # "zhy-yue" : ("Ekho Cantonese", 8000), # ditto
+    # "zh-yue"  : ("Ekho Cantonese", 8000), # ditto
     # "cant"    : ("Ekho Cantonese", 8000), # ditto
 # 
 # or if you have other voices in other languages, you can
@@ -260,6 +260,10 @@ systemVoice = "en"
 # (or set os.environ["GEMINI_API_KEY"] from here)
 # and optionally set GEMINI_VOICES to a comma-separated list
 # of voice names to use (randomly selected)
+#
+# Edge voices are also experimentally supported on some
+# platforms if you do: pip install edge-tts
+# (caution this is a reverse-engineered endpoint)
 
 # You can also set extra_speech to a list of
 # (language prefix, command), for example:

@@ -25,7 +25,7 @@ Animation (“memory balls” reinforcement)
 
 **Gradint *只* 用声音, 所以你能集中发音。** (也意味你能一面梳洗一面听, 因为不需要盯着显示器看。) Gradint 或者做MP3(或其他声音文件格式)让你以后听, 或者直接播放而试试适应你的紧急打断。 所用的词语或者是真正录音或者是机器声音。 你可以随时把词语加到你的目录。 Gradint 能管理一万多词语的积攒。也能帮你排练诗歌等。
 
-Gradint 是免费的自由开源软件。 The latest release is v3.11.
+Gradint 是免费的自由开源软件。 The latest release is v3.12.
 
 ## 如何安装
 1. 下载合适的译本。
