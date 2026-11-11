@@ -89,7 +89,7 @@ Gradint 是免費的自由開源軟件。 The latest release is v3.12.
 
 還有Bitbucket的倉儲: `git clone https://bitbucket.org/ssb22/gradint.git`
 
-## 學術引用
+### 學術引用
 
 Silas S. Brown and Peter Robinson. Addressing Print Disabilities in Adult Foreign-language Acquisition. In: Proceedings of the 10th International Conference on Human-Computer Interaction (HCII 2003, Crete, Greece), Vol.4: Universal Access in HCI, pp 38-42. [PDF](https://ssb22.user.srcf.net/papers/hcii.pdf)
 
