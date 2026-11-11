@@ -225,7 +225,7 @@ gradint.zip: $(Riscos_Files) riscos.zip
 
 publish: $(All_Versions) gradint.py
 	scp -C gradint.py srcf:gradint/
-	scp -C server/gradint.cgi srcf:public_html/
+	sed '/env python$$/env python3' < server/gradint.cgi | ssh srcf 'cat > public_html/gradint.cgi' # srcf didn't install python-is-python3 after Ubuntu 24.04 update
 	mv $(All_Versions) ~/homepage/public/gradint/
 	cp vocab.txt advanced.txt ~/homepage/public/gradint/
 	cp samples/README.txt ~/homepage/public/gradint/samples-readme.txt

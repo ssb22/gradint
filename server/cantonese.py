@@ -5,7 +5,7 @@
 # cantonese.py - Python functions for processing Cantonese transliterations
 # (uses eSpeak and Gradint for help with some of them)
 
-# v1.48 (c) 2013-15,2017-24 Silas S. Brown.  License: GPL
+# v1.49 (c) 2013-15,2017-24,2026 Silas S. Brown. License: GPL
 
 cache = {} # to avoid repeated eSpeak runs,
 # zi -> jyutping or (pinyin,) -> translit
@@ -223,7 +223,7 @@ def jyutping_to_yale_TeX(j): # returns space-separated syllables
       # should be "7"s, but if you pass any "7" into the
       # jyutping_to_yale functions we can at least process
       # it here:
-      tone = ["\=",r"\'","",r"\`",r"\'","",r"\`"][int(syl[-1])-1]
+      tone = [r"\=",r"\'","",r"\`",r"\'","",r"\`"][int(syl[-1])-1]
       if syl[-1] in "456":
         syl=syl[:lastVowel+1]+"h"+syl[lastVowel+1:]
       ret.append((syl[:vowel]+tone+syl[vowel:-1]).replace(r"\=i",r"\=\i{}").replace(r"\=I",r"\=\I{}"))
@@ -272,6 +272,7 @@ def import_gradint():
     gradint.espeak_preprocessors = {}
     return gradint
 
+if type("")==type(u""): unichr=chr
 def do_song_subst(hanzi_u8): return B(hanzi_u8).replace(unichr(0x4f7f).encode('utf-8'),unichr(0x38c8).encode('utf-8')) # Mandarin shi3 (normally jyutping sai2) is usually si3 in songs, so substitute a rarer character that unambiguously has that reading before sending to get_jyutping
 
 if __name__ == "__main__":

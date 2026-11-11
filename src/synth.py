@@ -1091,6 +1091,11 @@ class EdgeSynth(Synth):
         edge_tts.Communicate(ensure_unicode(text),self.supports_language(lang)).save_sync(fname)
         return fname
 
+# gTTS similar with Google Translate endpoints, but do not use
+# - drops too many consonants at the start when synth'ing isolated phrases
+# pip install gtts or sudo apt install python3-gtts
+# gTTS(text="考验", lang="zh").save("test.mp3")
+
 class GeneralSynth(Synth):
     def __init__(self): Synth.__init__(self)
     def supports_language(self,lang):
